@@ -152,7 +152,7 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
         {/* Tabs for switching certificates */}
         <div className="bg-black/40 border-b border-white/10 p-4 flex justify-center sticky top-0 z-20">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full max-w-md">
-            <TabsList className="grid w-full grid-cols-2 bg-white/5">
+            <TabsList className="grid w-full grid-cols-2 bg-card/5">
               <TabsTrigger value="ownership" className="data-[state=active]:bg-[#D4AF37] data-[state=active]:text-black">
                 <Award className="w-4 h-4 mr-2" />
                 Digital Ownership
@@ -266,7 +266,7 @@ export default function DigitalCertificateModal({ request, open, onOpenChange }:
 
           {/* STORAGE CERTIFICATE (WinGold Style) */}
           {activeTab === 'storage' && (
-            <div className="relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-card text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
               
               {/* Watermark Background */}
               <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none select-none">

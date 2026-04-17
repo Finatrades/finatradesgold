@@ -18,7 +18,7 @@ export default function WalletCard({ goldGrams = 0, goldPrice = 85 }: WalletCard
 
   return (
     <Card className="p-6 bg-gradient-to-br from-primary to-primary/80 border border-transparent shadow-md relative overflow-hidden group text-white">
-       <div className="absolute bottom-0 left-0 w-40 h-40 bg-white/10 blur-[60px] rounded-full pointer-events-none group-hover:bg-white/20 transition-colors duration-500" />
+       <div className="absolute bottom-0 left-0 w-40 h-40 bg-card/10 blur-[60px] rounded-full pointer-events-none group-hover:bg-card/20 transition-colors duration-500" />
 
        <div className="relative z-10 flex flex-col h-full justify-between">
          <div className="flex items-start justify-between mb-6">
@@ -26,7 +26,7 @@ export default function WalletCard({ goldGrams = 0, goldPrice = 85 }: WalletCard
               <h3 className="text-lg font-bold text-white mb-1">FinaPay Wallet</h3>
               <p className="text-xs text-white/80 font-medium uppercase tracking-wider">Available Balance</p>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-card/20 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-white" />
             </div>
          </div>
@@ -43,12 +43,12 @@ export default function WalletCard({ goldGrams = 0, goldPrice = 85 }: WalletCard
 
          <div className="flex gap-3">
            <Link href="/finapay?action=deposit" className="flex-1">
-             <Button className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/10" data-testid="button-add-funds">
+             <Button className="w-full bg-card/20 hover:bg-card/30 text-white border border-white/10" data-testid="button-add-funds">
                <Plus className="w-4 h-4 mr-2" /> Add Funds
              </Button>
            </Link>
            <Link href="/finapay" className="flex-1">
-             <Button className="w-full bg-white text-primary hover:bg-white/90" data-testid="button-open-wallet">
+             <Button className="w-full bg-card text-primary hover:bg-card/90" data-testid="button-open-wallet">
                Open Wallet <ArrowRight className="w-4 h-4 ml-2" />
              </Button>
            </Link>

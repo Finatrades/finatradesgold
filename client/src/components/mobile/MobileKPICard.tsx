@@ -14,7 +14,7 @@ interface MobileKPICardProps {
 
 const gradientStyles = {
   purple: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-purple-200/50',
     iconBg: 'bg-gradient-to-br from-purple-500 to-violet-600',
     iconColor: 'text-white',
@@ -22,7 +22,7 @@ const gradientStyles = {
     glow: 'shadow-purple-200/50',
   },
   amber: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-amber-200/50',
     iconBg: 'bg-gradient-to-br from-amber-400 to-orange-500',
     iconColor: 'text-white',
@@ -30,7 +30,7 @@ const gradientStyles = {
     glow: 'shadow-amber-200/50',
   },
   emerald: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-emerald-200/50',
     iconBg: 'bg-gradient-to-br from-emerald-400 to-green-600',
     iconColor: 'text-white',
@@ -38,7 +38,7 @@ const gradientStyles = {
     glow: 'shadow-emerald-200/50',
   },
   blue: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-blue-200/50',
     iconBg: 'bg-gradient-to-br from-blue-400 to-indigo-600',
     iconColor: 'text-white',
@@ -46,7 +46,7 @@ const gradientStyles = {
     glow: 'shadow-blue-200/50',
   },
   pink: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-pink-200/50',
     iconBg: 'bg-gradient-to-br from-pink-400 to-rose-600',
     iconColor: 'text-white',
@@ -54,7 +54,7 @@ const gradientStyles = {
     glow: 'shadow-pink-200/50',
   },
   teal: {
-    bg: 'bg-white/80 backdrop-blur-xl',
+    bg: 'bg-card/80 backdrop-blur-xl',
     border: 'border-teal-200/50',
     iconBg: 'bg-gradient-to-br from-teal-400 to-cyan-600',
     iconColor: 'text-white',
@@ -99,9 +99,9 @@ export default function MobileKPICard({
           >
             <Icon className={`w-5 h-5 ${style.iconColor}`} />
           </motion.div>
-          <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">{label}</p>
+          <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wide">{label}</p>
         </div>
-        <p className="text-xl font-bold text-gray-900 tracking-tight">{value}</p>
+        <p className="text-xl font-bold text-foreground tracking-tight">{value}</p>
         {subValue && (
           <p className={`text-[11px] font-semibold ${style.subColor} mt-0.5`}>{subValue}</p>
         )}

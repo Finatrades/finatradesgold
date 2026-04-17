@@ -189,7 +189,7 @@ function BnslTemplatesManager() {
       <Card>
         <CardContent className="p-8 text-center">
           <Loader2 className="w-6 h-6 animate-spin mx-auto" />
-          <p className="mt-2 text-gray-500">Loading templates...</p>
+          <p className="mt-2 text-muted-foreground">Loading templates...</p>
         </CardContent>
       </Card>
     );
@@ -209,13 +209,13 @@ function BnslTemplatesManager() {
         </CardHeader>
         <CardContent>
           {templates.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-muted-foreground">
               No templates found. Create your first template to get started.
             </div>
           ) : (
             <div className="space-y-4">
               {templates.map((template) => (
-                <div key={template.id} className="border rounded-lg p-4 bg-white" data-testid={`template-card-${template.id}`}>
+                <div key={template.id} className="border rounded-lg p-4 bg-card" data-testid={`template-card-${template.id}`}>
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2">
@@ -224,7 +224,7 @@ function BnslTemplatesManager() {
                           {template.status}
                         </Badge>
                       </div>
-                      {template.description && <p className="text-sm text-gray-600 mt-1">{template.description}</p>}
+                      {template.description && <p className="text-sm text-muted-foreground mt-1">{template.description}</p>}
                     </div>
                     <div className="flex gap-2">
                       <Button variant="outline" size="sm" onClick={() => openEdit(template)}>
@@ -238,16 +238,16 @@ function BnslTemplatesManager() {
                   
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm mb-4">
                     <div>
-                      <span className="text-gray-500">Min Gold:</span> {template.minGoldGrams}g
+                      <span className="text-muted-foreground">Min Gold:</span> {template.minGoldGrams}g
                     </div>
                     <div>
-                      <span className="text-gray-500">Max Gold:</span> {template.maxGoldGrams}g
+                      <span className="text-muted-foreground">Max Gold:</span> {template.maxGoldGrams}g
                     </div>
                     <div>
-                      <span className="text-gray-500">Payout:</span> {template.payoutFrequency}
+                      <span className="text-muted-foreground">Payout:</span> {template.payoutFrequency}
                     </div>
                     <div>
-                      <span className="text-gray-500">Term Fee:</span> {template.earlyTerminationFeePercent}%
+                      <span className="text-muted-foreground">Term Fee:</span> {template.earlyTerminationFeePercent}%
                     </div>
                   </div>
 
@@ -261,7 +261,7 @@ function BnslTemplatesManager() {
                     {template.variants && template.variants.length > 0 ? (
                       <div className="flex flex-wrap gap-2">
                         {template.variants.map((v) => (
-                          <div key={v.id} className="flex items-center gap-2 bg-gray-100 rounded px-3 py-1 text-sm">
+                          <div key={v.id} className="flex items-center gap-2 bg-muted rounded px-3 py-1 text-sm">
                             <span>{v.tenorMonths} months @ {v.marginRatePercent}%</span>
                             <button onClick={() => handleDeleteVariant(v.id)} className="text-red-500 hover:text-red-700">
                               <Trash2 className="w-3 h-3" />
@@ -270,7 +270,7 @@ function BnslTemplatesManager() {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500">No variants. Add tenor/rate options.</p>
+                      <p className="text-sm text-muted-foreground">No variants. Add tenor/rate options.</p>
                     )}
                   </div>
                 </div>
@@ -438,28 +438,28 @@ function BnslAgreementsManager() {
       <CardContent>
         {loading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/70" />
           </div>
         ) : agreements.length === 0 ? (
-          <div className="text-center py-8 text-gray-500">No signed agreements found.</div>
+          <div className="text-center py-8 text-muted-foreground">No signed agreements found.</div>
         ) : (
           <div className="space-y-4">
             {agreements.map((agreement) => (
-              <div key={agreement.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+              <div key={agreement.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border/60 rounded-lg bg-card hover:bg-muted/40 transition-colors">
                 <div className="flex items-center gap-4 mb-4 md:mb-0">
                   <div className="p-2 rounded border bg-purple-50 border-purple-100 text-purple-600">
                     <FileText className="w-6 h-6" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h4 className="font-bold text-gray-900">Plan: {agreement.planId.substring(0, 8)}...</h4>
+                      <h4 className="font-bold text-foreground">Plan: {agreement.planId.substring(0, 8)}...</h4>
                       <Badge variant="outline" className="text-xs">v{agreement.templateVersion}</Badge>
                       {agreement.emailSent && <Badge className="bg-green-100 text-green-700 text-xs">Email Sent</Badge>}
                     </div>
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-muted-foreground">
                       Signed by: <span className="font-medium">{agreement.signatureName}</span>
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-muted-foreground mt-1">
                       Signed: {new Date(agreement.signedAt).toLocaleString()} 
                       {agreement.planDetails?.goldSoldGrams && ` • ${agreement.planDetails.goldSoldGrams.toFixed(2)}g`}
                       {agreement.planDetails?.tenorMonths && ` • ${agreement.planDetails.tenorMonths} months`}
@@ -545,8 +545,8 @@ export default function BNSLManagement() {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">BNSL Management</h1>
-            <p className="text-gray-500">Buy Now Sell Later – Admin Panel & Risk Monitoring</p>
+            <h1 className="text-3xl font-bold text-foreground">BNSL Management</h1>
+            <p className="text-muted-foreground">Buy Now Sell Later – Admin Panel & Risk Monitoring</p>
           </div>
         </div>
 
@@ -681,24 +681,24 @@ export default function BNSLManagement() {
                   <CardContent>
                      <div className="space-y-4">
                        {plans.length === 0 ? (
-                         <div className="text-center py-8 text-gray-500">No active plans found. Create one to get started.</div>
+                         <div className="text-center py-8 text-muted-foreground">No active plans found. Create one to get started.</div>
                        ) : (
                          plans.map((plan) => (
-                           <div key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors cursor-pointer group">
+                           <div key={plan.id} onClick={() => handleOpenPlan(plan.id)} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border/60 rounded-lg bg-card hover:bg-muted/40 transition-colors cursor-pointer group">
                                <div className="flex items-center gap-4 mb-4 md:mb-0">
-                                 <div className={`p-2 rounded border ${plan.status === 'Active' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-gray-50 border-gray-100 text-gray-600'}`}>
+                                 <div className={`p-2 rounded border ${plan.status === 'Active' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-muted/40 border-border/60 text-muted-foreground'}`}>
                                      <FileText className="w-6 h-6" />
                                  </div>
                                  <div>
                                      <div className="flex items-center gap-2">
-                                       <h4 className="font-bold text-gray-900 group-hover:text-purple-600 transition-colors">{plan.contractId}</h4>
+                                       <h4 className="font-bold text-foreground group-hover:text-purple-600 transition-colors">{plan.contractId}</h4>
                                        <Badge variant="outline" className="text-xs">{plan.status}</Badge>
                                        {plan.earlyTermination?.status === 'Requested' && <Badge variant="destructive" className="text-xs animate-pulse">Termination Requested</Badge>}
                                      </div>
-                                     <p className="text-sm text-gray-600">
+                                     <p className="text-sm text-muted-foreground">
                                        {plan.participant.name} • {plan.tenorMonths} Months @ {plan.agreedMarginAnnualPercent}%
                                      </p>
-                                     <p className="text-xs text-gray-500 mt-1">
+                                     <p className="text-xs text-muted-foreground mt-1">
                                         Gold Sold: {plan.goldSoldGrams}g • Base: ${plan.basePriceComponentUsd.toLocaleString()}
                                      </p>
                                  </div>
@@ -736,9 +736,9 @@ export default function BNSLManagement() {
                      
                      if (terminationPlans.length === 0) {
                        return (
-                         <div className="text-center py-12 text-gray-500">
+                         <div className="text-center py-12 text-muted-foreground">
                            <CheckCircle className="w-16 h-16 mx-auto mb-4 text-green-300" />
-                           <h3 className="text-lg font-semibold text-gray-700 mb-2">No Pending Termination Requests</h3>
+                           <h3 className="text-lg font-semibold text-foreground/85 mb-2">No Pending Termination Requests</h3>
                            <p>All early termination requests have been processed.</p>
                          </div>
                        );
@@ -755,40 +755,40 @@ export default function BNSLManagement() {
                              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                                <div className="flex-1">
                                  <div className="flex items-center gap-2 mb-2">
-                                   <h4 className="font-bold text-gray-900">{plan.contractId}</h4>
+                                   <h4 className="font-bold text-foreground">{plan.contractId}</h4>
                                    <Badge variant="destructive" className="animate-pulse">Termination Requested</Badge>
                                  </div>
-                                 <p className="text-sm text-gray-600 mb-1">
+                                 <p className="text-sm text-muted-foreground mb-1">
                                    <strong>User:</strong> {plan.participant.name} ({plan.participant.email})
                                  </p>
-                                 <p className="text-sm text-gray-600 mb-1">
+                                 <p className="text-sm text-muted-foreground mb-1">
                                    <strong>Plan Details:</strong> {plan.tenorMonths} Months @ {plan.agreedMarginAnnualPercent}% • Gold: {plan.goldSoldGrams}g • Base: ${plan.basePriceComponentUsd.toLocaleString()}
                                  </p>
                                  {plan.earlyTermination && (
                                    <>
-                                     <p className="text-sm text-gray-600 mb-1">
+                                     <p className="text-sm text-muted-foreground mb-1">
                                        <strong>Requested:</strong> {new Date(plan.earlyTermination.requestedAt).toLocaleString()}
                                      </p>
                                      {plan.earlyTermination.reason && (
-                                       <p className="text-sm text-red-600 mt-2 p-2 bg-white rounded border border-red-100">
+                                       <p className="text-sm text-red-600 mt-2 p-2 bg-card rounded border border-red-100">
                                          <strong>Reason:</strong> {plan.earlyTermination.reason}
                                        </p>
                                      )}
                                      <div className="mt-3 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
-                                       <div className="p-2 bg-white rounded border">
-                                         <p className="text-gray-500">Net Value</p>
+                                       <div className="p-2 bg-card rounded border">
+                                         <p className="text-muted-foreground">Net Value</p>
                                          <p className="font-bold text-green-600">${plan.earlyTermination.netValueUsd?.toFixed(2) || '0.00'}</p>
                                        </div>
-                                       <div className="p-2 bg-white rounded border">
-                                         <p className="text-gray-500">Return Gold</p>
+                                       <div className="p-2 bg-card rounded border">
+                                         <p className="text-muted-foreground">Return Gold</p>
                                          <p className="font-bold text-amber-600">{plan.earlyTermination.finalGoldGrams?.toFixed(4) || '0'}g</p>
                                        </div>
-                                       <div className="p-2 bg-white rounded border">
-                                         <p className="text-gray-500">Penalty</p>
+                                       <div className="p-2 bg-card rounded border">
+                                         <p className="text-muted-foreground">Penalty</p>
                                          <p className="font-bold text-red-600">{plan.earlyTermination.penaltyPercent?.toFixed(1) || '0'}%</p>
                                        </div>
-                                       <div className="p-2 bg-white rounded border">
-                                         <p className="text-gray-500">Margin Paid</p>
+                                       <div className="p-2 bg-card rounded border">
+                                         <p className="text-muted-foreground">Margin Paid</p>
                                          <p className="font-bold text-blue-600">${plan.earlyTermination.totalDisbursedMarginUsd?.toFixed(2) || '0.00'}</p>
                                        </div>
                                      </div>
@@ -890,25 +890,25 @@ export default function BNSLManagement() {
                           const totalGold = tenorPlans.reduce((sum, p) => sum + p.goldSoldGrams, 0);
                           
                           return (
-                            <div key={tenor} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div key={tenor} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg">
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-12 flex items-center justify-center bg-purple-100 rounded-lg">
                                   <span className="font-bold text-purple-700">{tenor}M</span>
                                 </div>
                                 <div>
-                                  <p className="font-medium text-gray-900">{tenorPlans.length} Plan{tenorPlans.length !== 1 ? 's' : ''}</p>
-                                  <p className="text-sm text-gray-500">{totalGold.toFixed(2)}g locked</p>
+                                  <p className="font-medium text-foreground">{tenorPlans.length} Plan{tenorPlans.length !== 1 ? 's' : ''}</p>
+                                  <p className="text-sm text-muted-foreground">{totalGold.toFixed(2)}g locked</p>
                                 </div>
                               </div>
                               <div className="text-right">
-                                <p className="font-bold text-gray-900">${(totalBase + totalMargin).toLocaleString()}</p>
-                                <p className="text-xs text-gray-500">Base: ${totalBase.toLocaleString()} | Margin: ${totalMargin.toLocaleString()}</p>
+                                <p className="font-bold text-foreground">${(totalBase + totalMargin).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground">Base: ${totalBase.toLocaleString()} | Margin: ${totalMargin.toLocaleString()}</p>
                               </div>
                             </div>
                           );
                         })}
                         {plans.filter(p => p.status === 'Active' || p.status === 'Maturing').length === 0 && (
-                          <div className="text-center py-8 text-gray-500">No active plans to analyze</div>
+                          <div className="text-center py-8 text-muted-foreground">No active plans to analyze</div>
                         )}
                       </div>
                     </CardContent>
@@ -935,14 +935,14 @@ export default function BNSLManagement() {
                         .sort((a, b) => new Date(a.scheduledDate).getTime() - new Date(b.scheduledDate).getTime())
                         .slice(0, 10)
                         .map(pay => (
-                          <div key={pay.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                          <div key={pay.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40">
                             <div className="flex items-center gap-3">
                               <Badge variant={pay.status === 'Processing' ? 'destructive' : 'outline'} className="text-xs">
                                 {pay.status}
                               </Badge>
                               <div>
                                 <p className="font-medium text-sm">{pay.plan.contractId} - Payout #{pay.sequence}</p>
-                                <p className="text-xs text-gray-500">{new Date(pay.scheduledDate).toLocaleDateString()}</p>
+                                <p className="text-xs text-muted-foreground">{new Date(pay.scheduledDate).toLocaleDateString()}</p>
                               </div>
                             </div>
                             <div className="text-right">
@@ -951,7 +951,7 @@ export default function BNSLManagement() {
                           </div>
                         ))}
                         {plans.flatMap(p => p.payouts || []).filter(pay => pay.status === 'Scheduled' || pay.status === 'Processing').length === 0 && (
-                          <div className="text-center py-8 text-gray-500">No upcoming payouts</div>
+                          <div className="text-center py-8 text-muted-foreground">No upcoming payouts</div>
                         )}
                       </div>
                     </CardContent>
@@ -976,19 +976,19 @@ export default function BNSLManagement() {
                           .map(plan => {
                             const daysToMaturity = Math.ceil((new Date(plan.maturityDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                             return (
-                              <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
+                              <div key={plan.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/40 cursor-pointer" onClick={() => handleOpenPlan(plan.id)}>
                                 <div className="flex items-center gap-3">
                                   <Badge variant={daysToMaturity <= 7 ? 'destructive' : daysToMaturity <= 30 ? 'default' : 'outline'} className="text-xs">
                                     {daysToMaturity <= 0 ? 'OVERDUE' : `${daysToMaturity} days`}
                                   </Badge>
                                   <div>
                                     <p className="font-medium text-sm">{plan.contractId}</p>
-                                    <p className="text-xs text-gray-500">{plan.participant.name} • {plan.goldSoldGrams}g</p>
+                                    <p className="text-xs text-muted-foreground">{plan.participant.name} • {plan.goldSoldGrams}g</p>
                                   </div>
                                 </div>
                                 <div className="text-right">
                                   <p className="font-bold">${plan.basePriceComponentUsd.toLocaleString()}</p>
-                                  <p className="text-xs text-gray-500">Due: {new Date(plan.maturityDate).toLocaleDateString()}</p>
+                                  <p className="text-xs text-muted-foreground">Due: {new Date(plan.maturityDate).toLocaleDateString()}</p>
                                 </div>
                               </div>
                             );
@@ -999,7 +999,7 @@ export default function BNSLManagement() {
                           const daysToMaturity = Math.ceil((maturity.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
                           return daysToMaturity <= 60;
                         }).length === 0 && (
-                          <div className="text-center py-8 text-gray-500">No plans maturing soon</div>
+                          <div className="text-center py-8 text-muted-foreground">No plans maturing soon</div>
                         )}
                       </div>
                     </CardContent>
@@ -1015,20 +1015,20 @@ export default function BNSLManagement() {
                  <CardContent>
                     <div className="space-y-0">
                        {auditLogs.length === 0 ? (
-                         <div className="text-center py-8 text-gray-500">
+                         <div className="text-center py-8 text-muted-foreground">
                            No BNSL audit logs found. Actions like plan creation, status changes, and payouts will appear here.
                          </div>
                        ) : (
                          auditLogs.map((log) => (
-                           <div key={log.id} className="flex gap-4 p-3 border-b last:border-0 hover:bg-gray-50">
-                              <div className="text-xs text-gray-500 w-32 shrink-0">
+                           <div key={log.id} className="flex gap-4 p-3 border-b last:border-0 hover:bg-muted/40">
+                              <div className="text-xs text-muted-foreground w-32 shrink-0">
                                  {new Date(log.timestamp).toLocaleString()}
                               </div>
                               <div>
-                                 <p className="font-medium text-sm text-gray-900">
+                                 <p className="font-medium text-sm text-foreground">
                                    <span className="font-bold">{log.actor}</span> ({log.actorRole}) - {log.actionType}
                                  </p>
-                                 <p className="text-sm text-gray-600">{log.details}</p>
+                                 <p className="text-sm text-muted-foreground">{log.details}</p>
                               </div>
                            </div>
                          ))

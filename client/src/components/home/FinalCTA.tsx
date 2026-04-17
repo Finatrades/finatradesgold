@@ -27,14 +27,14 @@ export default function FinalCTA() {
             <span className="text-sm font-medium text-purple-600">Start Today</span>
           </div>
           
-          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-gray-900">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-foreground">
             Ready to Start Your <br />
             <span className="bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">
               Gold Journey?
             </span>
           </h2>
           
-          <p className="text-lg text-gray-600 mb-10 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground mb-10 max-w-2xl mx-auto">
             {accountType === 'personal'
               ? 'Join thousands of individuals who trust Finatrades for secure gold ownership and wealth preservation.'
               : 'Partner with Finatrades for enterprise-grade gold management, trade finance, and treasury solutions.'}
@@ -55,7 +55,7 @@ export default function FinalCTA() {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="h-14 px-10 border-gray-300 hover:bg-gray-50 text-gray-700 rounded-full text-base"
+                className="h-14 px-10 border-border hover:bg-muted/40 text-foreground/85 rounded-full text-base"
                 data-testid="button-cta-signin"
               >
                 Sign In

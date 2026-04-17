@@ -89,7 +89,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
 
   const getColor = (type: string, isSwap: boolean = false, isMpgwToFpgw: boolean = false, isFpgwToMpgw: boolean = false) => {
     if (isMpgwToFpgw) return 'bg-green-500/10 text-green-600';
-    if (isFpgwToMpgw) return 'bg-gray-500/10 text-gray-500';
+    if (isFpgwToMpgw) return 'bg-gray-500/10 text-muted-foreground';
     if (isSwap) return 'bg-green-500/10 text-green-600';
     switch (type) {
       case 'Buy': return 'bg-green-500/10 text-green-500';
@@ -98,7 +98,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
       case 'Send': return 'bg-purple-500/10 text-purple-500';
       case 'Receive': return 'bg-blue-500/10 text-blue-500';
       case 'Request': return 'bg-purple-500/10 text-purple-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 
@@ -107,8 +107,8 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
        case 'Completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
        case 'Pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
        case 'Failed': return 'bg-red-500/10 text-red-600 border-red-500/20';
-       case 'Declined': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
-       default: return 'bg-white/5 text-white/60';
+       case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
+       default: return 'bg-card/5 text-white/60';
      }
   };
 
@@ -268,7 +268,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
 
   return (
     <>
-      <Card className="bg-white shadow-sm border border-border h-full flex flex-col">
+      <Card className="bg-card shadow-sm border border-border h-full flex flex-col">
         <CardHeader className="pb-4 border-b border-border">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
@@ -391,9 +391,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 </div>
                                 <div className="text-right shrink-0">
                                   {(isMpgwToFpgw || isFpgwToMpgw) ? (
-                                    <p className="font-semibold text-gray-500 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
+                                    <p className="font-semibold text-muted-foreground text-sm">{tx.amountGrams?.toFixed(4)}g</p>
                                   ) : isSwap ? (
-                                    <p className="font-semibold text-gray-500 text-sm">{tx.amountGrams?.toFixed(4)}g</p>
+                                    <p className="font-semibold text-muted-foreground text-sm">{tx.amountGrams?.toFixed(4)}g</p>
                                   ) : isCredit ? (
                                     <p className="font-semibold text-green-600 text-sm">+{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
                                   ) : isDebit ? (
@@ -537,11 +537,11 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                 <span className="font-medium text-foreground">
                                   {(currentBalance / goldPrice).toFixed(4)} g
                                 </span>
-                                <div className="text-xs text-gray-400">(unchanged)</div>
+                                <div className="text-xs text-muted-foreground/70">(unchanged)</div>
                               </div>
                             ) : (isMpgwToFpgw || isFpgwToMpgw) ? (
                               <div>
-                                <span className="text-gray-400 font-medium text-sm">unchanged</span>
+                                <span className="text-muted-foreground/70 font-medium text-sm">unchanged</span>
                               </div>
                             ) : currentBalance !== null ? (
                               <div>

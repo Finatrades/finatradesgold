@@ -199,14 +199,14 @@ export default function AdminDashboard() {
             <h1 className="text-3xl font-bold text-foreground" data-testid="text-admin-title">Admin Dashboard</h1>
             <p className="text-muted-foreground mt-1">Unified control center for platform management</p>
           </div>
-          <div className="hidden md:flex items-center gap-2 text-sm text-gray-500">
+          <div className="hidden md:flex items-center gap-2 text-sm text-muted-foreground">
             <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
             <span>Live data</span>
           </div>
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
           <div className="flex flex-wrap gap-2">
             {filteredQuickActions.map((action) => {
               const Icon = action.icon;
@@ -218,7 +218,7 @@ export default function AdminDashboard() {
                 indigo: 'border-indigo-200 bg-indigo-50 text-indigo-700 hover:bg-indigo-500 hover:text-white hover:border-indigo-500',
                 teal: 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white hover:border-teal-500',
                 pink: 'border-pink-200 bg-pink-50 text-pink-700 hover:bg-pink-500 hover:text-white hover:border-pink-500',
-                gray: 'border-gray-200 bg-gray-50 text-gray-700 hover:bg-gray-500 hover:text-white hover:border-gray-500',
+                gray: 'border-border bg-muted/40 text-foreground/85 hover:bg-gray-500 hover:text-white hover:border-gray-500',
               };
               return (
                 <Link key={action.label} href={action.href}>
@@ -475,19 +475,19 @@ export default function AdminDashboard() {
             <CardContent>
               {isLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                  <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/70" />
                 </div>
               ) : stats?.pendingKycRequests && stats.pendingKycRequests.length > 0 ? (
                 <div className="space-y-4">
                   {stats.pendingKycRequests.map((item) => (
-                    <div key={item.id} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50 transition-colors" data-testid={`row-kyc-${item.id}`}>
+                    <div key={item.id} className="flex items-center justify-between p-4 border border-border/60 rounded-lg hover:bg-muted/40 transition-colors" data-testid={`row-kyc-${item.id}`}>
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center font-bold text-muted-foreground">
                           {item.name[0]}
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{item.name}</p>
-                          <p className="text-xs text-gray-500">{item.type} Account • {formatTimeAgo(item.createdAt)}</p>
+                          <p className="font-medium text-foreground">{item.name}</p>
+                          <p className="text-xs text-muted-foreground">{item.type} Account • {formatTimeAgo(item.createdAt)}</p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
@@ -502,8 +502,8 @@ export default function AdminDashboard() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShieldCheck className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
                   <p>No pending KYC requests</p>
                 </div>
               )}
@@ -543,7 +543,7 @@ export default function AdminDashboard() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground/70" />
               </div>
             ) : stats?.recentTransactions && stats.recentTransactions.length > 0 ? (
               <div className="overflow-x-auto">
@@ -609,8 +609,8 @@ export default function AdminDashboard() {
                 </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500">
-                <Activity className="w-12 h-12 mx-auto mb-3 text-gray-300" />
+              <div className="text-center py-8 text-muted-foreground">
+                <Activity className="w-12 h-12 mx-auto mb-3 text-muted-foreground/50" />
                 <p>No recent transactions</p>
               </div>
             )}
@@ -634,23 +634,23 @@ function GlassStatsCard({ title, value, subtitle, icon, gradient, loading, perce
   const content = (
     <div className="relative group">
       <div className={`absolute inset-0 bg-gradient-to-r ${gradient} rounded-2xl blur-xl opacity-25 group-hover:opacity-40 transition-opacity duration-500`} />
-      <Card className={`relative overflow-hidden border-0 shadow-lg bg-white/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${href ? 'cursor-pointer' : ''}`}>
+      <Card className={`relative overflow-hidden border-0 shadow-lg bg-card/80 backdrop-blur-sm hover:shadow-xl transition-all duration-300 ${href ? 'cursor-pointer' : ''}`}>
         <CardContent className="p-6">
           <div className="flex items-start justify-between">
             <div className="flex-1">
-              <p className="text-sm font-medium text-gray-500 mb-1">{title}</p>
-              <h3 className="text-3xl font-bold text-gray-900 tracking-tight" data-testid={`text-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+              <p className="text-sm font-medium text-muted-foreground mb-1">{title}</p>
+              <h3 className="text-3xl font-bold text-foreground tracking-tight" data-testid={`text-stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
                 {loading ? (
                   <div className="flex items-center gap-2">
-                    <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+                    <Loader2 className="w-5 h-5 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : value}
               </h3>
               <div className="flex items-center gap-2 mt-1">
-                <p className="text-xs text-gray-400">{subtitle}</p>
+                <p className="text-xs text-muted-foreground/70">{subtitle}</p>
                 {!loading && percentChange !== undefined && (
                   <span className={`text-xs font-medium flex items-center gap-0.5 ${
-                    percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-gray-400'
+                    percentChange > 0 ? 'text-green-600' : percentChange < 0 ? 'text-red-600' : 'text-muted-foreground/70'
                   }`}>
                     {percentChange > 0 ? (
                       <ArrowUpRight className="w-3 h-3" />
@@ -687,10 +687,10 @@ function StatusItem({ label, status, color }: any) {
   
   return (
     <div className="flex items-center justify-between">
-      <span className="text-sm font-medium text-gray-700">{label}</span>
+      <span className="text-sm font-medium text-foreground/85">{label}</span>
       <div className="flex items-center gap-2">
         <div className={`w-2 h-2 rounded-full ${(colors as any)[color]}`} />
-        <span className="text-xs text-gray-500">{status}</span>
+        <span className="text-xs text-muted-foreground">{status}</span>
       </div>
     </div>
   );
@@ -768,7 +768,7 @@ function PendingCard({ title, count, icon, color, loading, href }: {
             {icon}
           </div>
           <div>
-            <p className="text-sm text-gray-600">{title}</p>
+            <p className="text-sm text-muted-foreground">{title}</p>
             <p className={`text-2xl font-bold ${colors.text}`}>
               {loading ? '...' : count}
             </p>

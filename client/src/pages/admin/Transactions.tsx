@@ -264,7 +264,7 @@ export default function Transactions() {
       case 'Rejected':
         return <Badge className="bg-red-100 text-red-800 hover:bg-red-200 border-none">Rejected</Badge>;
       case 'Cancelled':
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200 border-none">Cancelled</Badge>;
+        return <Badge className="bg-muted text-foreground hover:bg-muted border-none">Cancelled</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
@@ -285,7 +285,7 @@ export default function Transactions() {
       'BNSL': 'bg-teal-100 text-teal-800',
       'Vault Deposit': 'bg-amber-100 text-amber-800',
     };
-    return <Badge className={`${colors[type] || 'bg-gray-100 text-gray-800'} border-none`}>{type}</Badge>;
+    return <Badge className={`${colors[type] || 'bg-muted text-foreground'} border-none`}>{type}</Badge>;
   };
 
   return (
@@ -293,8 +293,8 @@ export default function Transactions() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">All Transactions</h1>
-            <p className="text-gray-500">Monitor all platform financial activities in real-time.</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">All Transactions</h1>
+            <p className="text-muted-foreground">Monitor all platform financial activities in real-time.</p>
           </div>
           <div className="flex gap-2">
             <DropdownMenu>
@@ -345,10 +345,10 @@ export default function Transactions() {
 
         <div className="flex gap-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
             <Input 
               placeholder="Search by ID, User ID, or Description..." 
-              className="pl-10 bg-white" 
+              className="pl-10 bg-card" 
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               data-testid="input-search"
@@ -402,13 +402,13 @@ export default function Transactions() {
           </CardHeader>
           <CardContent>
             {isLoading ? (
-              <div className="text-center py-12 text-gray-500">Loading transactions...</div>
+              <div className="text-center py-12 text-muted-foreground">Loading transactions...</div>
             ) : filteredTransactions.length === 0 ? (
-              <div className="text-center py-12 text-gray-500">No transactions found</div>
+              <div className="text-center py-12 text-muted-foreground">No transactions found</div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                     <tr>
                       <th className="px-4 py-4 font-semibold tracking-wide">Transaction ID</th>
                       <th className="px-4 py-4 font-semibold tracking-wide">Finatrades ID</th>
@@ -423,23 +423,23 @@ export default function Transactions() {
                     {filteredTransactions.map((tx, index) => (
                       <tr 
                         key={tx.id} 
-                        className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
+                        className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
                         data-testid={`row-transaction-${tx.id}`}
                       >
-                        <td className="px-4 py-4 font-mono text-xs text-gray-500">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
+                        <td className="px-4 py-4 font-mono text-xs text-muted-foreground">TX-{tx.id.slice(0, 8).toUpperCase()}</td>
                         <td className="px-4 py-4">
                           <span className="font-mono text-sm font-medium text-purple-600">{tx.finatradesId || `FT-${tx.userId.slice(0, 8).toUpperCase()}`}</span>
                         </td>
                         <td className="px-4 py-4">
                           <div className="flex flex-col">
-                            <span className="font-medium text-gray-900">{tx.userName || 'Unknown'}</span>
-                            <span className="text-xs text-gray-500">{tx.userEmail || ''}</span>
+                            <span className="font-medium text-foreground">{tx.userName || 'Unknown'}</span>
+                            <span className="text-xs text-muted-foreground">{tx.userEmail || ''}</span>
                           </div>
                         </td>
                         <td className="px-4 py-4">{getTypeBadge(tx.type)}</td>
-                        <td className="px-4 py-4 font-medium text-gray-900">{formatAmount(tx)}</td>
+                        <td className="px-4 py-4 font-medium text-foreground">{formatAmount(tx)}</td>
                         <td className="px-4 py-4">{getStatusBadge(tx.status)}</td>
-                        <td className="px-4 py-4 text-gray-500">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
+                        <td className="px-4 py-4 text-muted-foreground">{format(new Date(tx.createdAt), 'MMM dd, yyyy HH:mm')}</td>
                       </tr>
                     ))}
                   </tbody>

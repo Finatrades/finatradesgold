@@ -54,7 +54,7 @@ export default function DashboardWalletCards({
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center shadow-md">
                 <Wallet className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold text-[14px] text-gray-900">FinaPay Wallet</span>
+              <span className="font-semibold text-[14px] text-foreground">FinaPay Wallet</span>
             </div>
             <div className="flex items-center gap-2">
               <TooltipProvider>
@@ -78,21 +78,21 @@ export default function DashboardWalletCards({
           </div>
         
           <div>
-            <p className="text-[12px] text-gray-500 mb-0.5">Available Balance</p>
-            <p className="text-[24px] font-bold text-gray-900">
-              {Number(finaPayWallet.goldGrams).toFixed(2)} <span className="text-base text-gray-500">g</span>
+            <p className="text-[12px] text-muted-foreground mb-0.5">Available Balance</p>
+            <p className="text-[24px] font-bold text-foreground">
+              {Number(finaPayWallet.goldGrams).toFixed(2)} <span className="text-base text-muted-foreground">g</span>
             </p>
-            <p className="text-[12px] text-gray-400">≈ ${Number(finaPayWallet.usdValue).toFixed(2)} USD</p>
+            <p className="text-[12px] text-muted-foreground/70">≈ ${Number(finaPayWallet.usdValue).toFixed(2)} USD</p>
           </div>
           
           <div className="flex justify-between pt-3 mt-3 border-t border-emerald-200">
             <div>
-              <p className="text-[12px] text-gray-500">Pending</p>
+              <p className="text-[12px] text-muted-foreground">Pending</p>
               <p className="text-sm font-semibold text-emerald-600">{Number(finaPayWallet.pending || 0).toFixed(2)}g</p>
             </div>
             <div className="text-right">
-              <p className="text-[12px] text-gray-500">Transactions</p>
-              <p className="text-sm font-semibold text-gray-900">{finaPayWallet.transactions || 0}</p>
+              <p className="text-[12px] text-muted-foreground">Transactions</p>
+              <p className="text-sm font-semibold text-foreground">{finaPayWallet.transactions || 0}</p>
             </div>
           </div>
         </div>
@@ -106,7 +106,7 @@ export default function DashboardWalletCards({
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-md">
                   <Briefcase className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-semibold text-[14px] text-gray-900">FinaBridge</span>
+                <span className="font-semibold text-[14px] text-foreground">FinaBridge</span>
               </div>
               <div className="flex items-center gap-2">
                 <TooltipProvider>
@@ -130,41 +130,41 @@ export default function DashboardWalletCards({
             </div>
           
             <div>
-              <p className="text-[12px] text-gray-500 mb-0.5">Available Balance</p>
-              <p className="text-[24px] font-bold text-gray-900">
-                {(finaBridgeData?.goldGrams || 0).toFixed(2)} <span className="text-base text-gray-500">g</span>
+              <p className="text-[12px] text-muted-foreground mb-0.5">Available Balance</p>
+              <p className="text-[24px] font-bold text-foreground">
+                {(finaBridgeData?.goldGrams || 0).toFixed(2)} <span className="text-base text-muted-foreground">g</span>
               </p>
-              <p className="text-[12px] text-gray-400">≈ ${(finaBridgeData?.usdValue || 0).toFixed(2)} USD</p>
+              <p className="text-[12px] text-muted-foreground/70">≈ ${(finaBridgeData?.usdValue || 0).toFixed(2)} USD</p>
             </div>
             
             <div className="flex justify-between pt-3 mt-3 border-t border-blue-200">
               <div>
-                <p className="text-[12px] text-gray-500">Active Cases</p>
+                <p className="text-[12px] text-muted-foreground">Active Cases</p>
                 <p className="text-sm font-semibold text-blue-600">{finaBridgeData?.activeCases || 0}</p>
               </div>
               <div className="text-right">
-                <p className="text-[12px] text-gray-500">Trade Volume</p>
-                <p className="text-sm font-semibold text-gray-900">${(finaBridgeData?.tradeVolume || 0).toLocaleString()}</p>
+                <p className="text-[12px] text-muted-foreground">Trade Volume</p>
+                <p className="text-sm font-semibold text-foreground">${(finaBridgeData?.tradeVolume || 0).toLocaleString()}</p>
               </div>
             </div>
           </div>
         </Card>
       ) : (
-        <Card className="group relative p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-gray-200 rounded-xl shadow-sm opacity-75" data-testid="finacard-coming-soon">
+        <Card className="group relative p-4 bg-gradient-to-br from-gray-50 to-gray-100 border-2 border-border rounded-xl shadow-sm opacity-75" data-testid="finacard-coming-soon">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-gray-400 flex items-center justify-center">
                   <CreditCard className="w-4 h-4 text-white" />
                 </div>
-                <span className="font-semibold text-[14px] text-gray-500">FinaCard</span>
+                <span className="font-semibold text-[14px] text-muted-foreground">FinaCard</span>
               </div>
               <div className="flex items-center gap-2">
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <div className="w-7 h-7 rounded-full bg-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
-                        <Info className="w-4 h-4 text-gray-500" />
+                      <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center cursor-pointer hover:bg-gray-300 transition-colors">
+                        <Info className="w-4 h-4 text-muted-foreground" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -172,14 +172,14 @@ export default function DashboardWalletCards({
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
-                <Badge className="bg-gray-200 text-gray-600 border-0 text-xs font-medium px-2 py-0.5">
+                <Badge className="bg-muted text-muted-foreground border-0 text-xs font-medium px-2 py-0.5">
                   Coming Soon
                 </Badge>
               </div>
             </div>
           
             <div className="text-center py-3">
-              <p className="text-gray-500 text-sm font-medium mb-4">Gold-backed debit card</p>
+              <p className="text-muted-foreground text-sm font-medium mb-4">Gold-backed debit card</p>
               <Button
                 size="sm"
                 variant="outline"
@@ -202,7 +202,7 @@ export default function DashboardWalletCards({
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
                 <TrendingUp className="w-4 h-4 text-white" />
               </div>
-              <span className="font-semibold text-[14px] text-gray-900">BNSL Wallet</span>
+              <span className="font-semibold text-[14px] text-foreground">BNSL Wallet</span>
             </div>
             <div className="flex items-center gap-2">
               <TooltipProvider>
@@ -226,21 +226,21 @@ export default function DashboardWalletCards({
           </div>
         
           <div>
-            <p className="text-[12px] text-gray-500 mb-0.5">Available Balance</p>
-            <p className="text-[24px] font-bold text-gray-900">
-              {Number(bnslData.goldGrams).toFixed(2)} <span className="text-base text-gray-500">g</span>
+            <p className="text-[12px] text-muted-foreground mb-0.5">Available Balance</p>
+            <p className="text-[24px] font-bold text-foreground">
+              {Number(bnslData.goldGrams).toFixed(2)} <span className="text-base text-muted-foreground">g</span>
             </p>
-            <p className="text-[12px] text-gray-400">≈ ${Number(bnslData.usdValue).toFixed(2)} USD</p>
+            <p className="text-[12px] text-muted-foreground/70">≈ ${Number(bnslData.usdValue).toFixed(2)} USD</p>
           </div>
           
           <div className="flex justify-between pt-3 mt-3 border-t border-violet-200">
             <div>
-              <p className="text-[12px] text-gray-500">Locked</p>
+              <p className="text-[12px] text-muted-foreground">Locked</p>
               <p className="text-sm font-semibold text-violet-600">{Number(bnslData.lockedGrams).toFixed(2)}g</p>
             </div>
             <div className="text-right">
-              <p className="text-[12px] text-gray-500">Active Plans</p>
-              <p className="text-sm font-semibold text-gray-900">{bnslData.activePlans}</p>
+              <p className="text-[12px] text-muted-foreground">Active Plans</p>
+              <p className="text-sm font-semibold text-foreground">{bnslData.activePlans}</p>
             </div>
           </div>
         </div>

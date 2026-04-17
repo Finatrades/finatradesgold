@@ -321,14 +321,14 @@ export default function FinaPay() {
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
 
         {/* Quick Actions - Horizontal Pill Tabs - TOP */}
-        <div className="bg-white rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white hover:border-green-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-add-funds"
             >
@@ -342,7 +342,7 @@ export default function FinaPay() {
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-buy-gold"
             >
@@ -356,7 +356,7 @@ export default function FinaPay() {
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-withdraw-gold"
             >
@@ -373,7 +373,7 @@ export default function FinaPay() {
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-500 hover:text-white hover:border-blue-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-send-funds"
             >
@@ -387,7 +387,7 @@ export default function FinaPay() {
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white hover:border-teal-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-request-funds"
             >
@@ -410,7 +410,7 @@ export default function FinaPay() {
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
                   ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-500 hover:text-white hover:border-violet-500 hover:shadow-md' 
-                  : 'border-gray-200 bg-gray-50 text-gray-400 cursor-not-allowed'
+                  : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-lock-gold-price"
             >
@@ -426,7 +426,7 @@ export default function FinaPay() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
 
             {/* LEFT PANEL — Digital Gold Payments summary */}
-            <div id="finapay-wallet-section" className={`bg-white rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 flex flex-col ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
+            <div id="finapay-wallet-section" className={`bg-card rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 flex flex-col ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-purple-100 rounded-lg shrink-0">
                   <WalletIcon className="w-5 h-5 text-fuchsia-600" />
@@ -569,7 +569,7 @@ export default function FinaPay() {
         </div>
 
         {/* Transaction History */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           <h3 className="text-lg font-bold text-foreground mb-4">Recent Transactions</h3>
           {transactions.length === 0 && ledgerEntries.length === 0 ? (
             <div className="text-center py-8">
@@ -612,7 +612,7 @@ export default function FinaPay() {
         />
         {/* Deposit Callback Modal */}
         <Dialog open={depositCallbackStatus !== null} onOpenChange={closeDepositCallback}>
-          <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+          <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 {depositCallbackStatus === 'success' && (

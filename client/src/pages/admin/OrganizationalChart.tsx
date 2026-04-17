@@ -303,13 +303,13 @@ export default function OrganizationalChart() {
                               {position.photoUrl ? (
                                 <AvatarImage src={position.photoUrl} alt={position.name} />
                               ) : null}
-                              <AvatarFallback className="bg-white/20 text-white font-bold">
+                              <AvatarFallback className="bg-card/20 text-white font-bold">
                                 {getInitials(position.name)}
                               </AvatarFallback>
                             </Avatar>
                             <h3 className="font-bold text-sm">{position.name}</h3>
                             <p className="text-xs opacity-90">{position.title}</p>
-                            <Badge variant="secondary" className="mt-2 text-xs bg-white/20 hover:bg-white/30 text-white border-0">
+                            <Badge variant="secondary" className="mt-2 text-xs bg-card/20 hover:bg-card/30 text-white border-0">
                               {position.department}
                             </Badge>
                           </div>

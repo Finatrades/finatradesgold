@@ -96,7 +96,7 @@ export default function OnboardingTour({ onComplete }: OnboardingTourProps) {
                   <div
                     key={idx}
                     className={`w-2 h-2 rounded-full transition-all ${
-                      idx === currentStep ? 'bg-white w-6' : 'bg-white/40'
+                      idx === currentStep ? 'bg-card w-6' : 'bg-card/40'
                     }`}
                   />
                 ))}

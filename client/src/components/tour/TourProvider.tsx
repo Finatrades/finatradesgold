@@ -301,7 +301,7 @@ function TourOverlay({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="absolute bg-white rounded-xl shadow-2xl border border-purple-200 overflow-hidden"
+          className="absolute bg-card rounded-xl shadow-2xl border border-purple-200 overflow-hidden"
           style={{
             top: tooltipPosition.top,
             left: tooltipPosition.left,
@@ -324,11 +324,11 @@ function TourOverlay({
           </div>
           
           <div className="p-4">
-            <p className="text-gray-600 text-sm leading-relaxed">{step.content}</p>
+            <p className="text-muted-foreground text-sm leading-relaxed">{step.content}</p>
           </div>
           
           <div className="px-4 pb-4 flex items-center justify-between">
-            <span className="text-xs text-gray-400">
+            <span className="text-xs text-muted-foreground/70">
               Step {stepNumber} of {totalSteps}
             </span>
             <div className="flex gap-2">
@@ -354,7 +354,7 @@ function TourOverlay({
             </div>
           </div>
           
-          <div className="h-1 bg-gray-100">
+          <div className="h-1 bg-muted">
             <div 
               className="h-full bg-gradient-to-r from-purple-500 to-purple-400 transition-all duration-300"
               style={{ width: `${(stepNumber / totalSteps) * 100}%` }}

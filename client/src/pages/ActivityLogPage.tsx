@@ -85,7 +85,7 @@ const getActivityIcon = (type: string) => {
     case 'login':
       return <LogIn className="w-4 h-4 text-green-500" />;
     case 'logout':
-      return <LogOut className="w-4 h-4 text-gray-500" />;
+      return <LogOut className="w-4 h-4 text-muted-foreground" />;
     case 'login_failed':
       return <AlertCircle className="w-4 h-4 text-red-500" />;
     case 'password_change':
@@ -95,7 +95,7 @@ const getActivityIcon = (type: string) => {
     case 'profile_update':
       return <UserCog className="w-4 h-4 text-orange-500" />;
     case 'settings_change':
-      return <Settings className="w-4 h-4 text-gray-600" />;
+      return <Settings className="w-4 h-4 text-muted-foreground" />;
     case 'mfa_enabled':
       return <Shield className="w-4 h-4 text-green-600" />;
     case 'mfa_disabled':
@@ -122,12 +122,12 @@ const getActivityIcon = (type: string) => {
 const getActivityBadge = (type: string) => {
   const typeConfig: Record<string, { color: string; label: string }> = {
     login: { color: 'bg-green-100 text-green-700', label: 'Login' },
-    logout: { color: 'bg-gray-100 text-gray-700', label: 'Logout' },
+    logout: { color: 'bg-muted text-foreground/85', label: 'Logout' },
     login_failed: { color: 'bg-red-100 text-red-700', label: 'Failed Login' },
     password_change: { color: 'bg-purple-100 text-purple-700', label: 'Password Change' },
     email_change: { color: 'bg-blue-100 text-blue-700', label: 'Email Change' },
     profile_update: { color: 'bg-orange-100 text-orange-700', label: 'Profile Update' },
-    settings_change: { color: 'bg-gray-100 text-gray-700', label: 'Settings' },
+    settings_change: { color: 'bg-muted text-foreground/85', label: 'Settings' },
     mfa_enabled: { color: 'bg-green-100 text-green-700', label: 'MFA Enabled' },
     mfa_disabled: { color: 'bg-red-100 text-red-700', label: 'MFA Disabled' },
     kyc_submitted: { color: 'bg-blue-100 text-blue-700', label: 'KYC Submitted' },
@@ -140,7 +140,7 @@ const getActivityBadge = (type: string) => {
     price_alert_triggered: { color: 'bg-green-100 text-green-700', label: 'Alert Triggered' },
   };
 
-  const config = typeConfig[type.toLowerCase()] || { color: 'bg-gray-100 text-gray-700', label: type };
+  const config = typeConfig[type.toLowerCase()] || { color: 'bg-muted text-foreground/85', label: type };
   return <Badge className={config.color}>{config.label}</Badge>;
 };
 

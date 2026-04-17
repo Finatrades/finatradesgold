@@ -489,17 +489,17 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
             
             <div className="space-y-4 animate-pulse">
               <div>
-                <div className="h-4 w-24 bg-gray-200 rounded mb-2"></div>
-                <div className="h-12 bg-gray-100 rounded-lg border"></div>
+                <div className="h-4 w-24 bg-muted rounded mb-2"></div>
+                <div className="h-12 bg-muted rounded-lg border"></div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <div className="h-4 w-16 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-12 bg-gray-100 rounded-lg border"></div>
+                  <div className="h-4 w-16 bg-muted rounded mb-2"></div>
+                  <div className="h-12 bg-muted rounded-lg border"></div>
                 </div>
                 <div>
-                  <div className="h-4 w-12 bg-gray-200 rounded mb-2"></div>
-                  <div className="h-12 bg-gray-100 rounded-lg border"></div>
+                  <div className="h-4 w-12 bg-muted rounded mb-2"></div>
+                  <div className="h-12 bg-muted rounded-lg border"></div>
                 </div>
               </div>
             </div>
@@ -550,7 +550,7 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
     return (
       <div className="flex flex-col w-full overflow-hidden">
         <div 
-          className="w-full rounded-lg overflow-hidden border border-gray-200" 
+          className="w-full rounded-lg overflow-hidden border border-border" 
           style={{ 
             height: 'min(400px, 60vh)',
             minHeight: '300px',
@@ -592,7 +592,7 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
   if (awaiting3DS) {
     return (
       <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
-        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div className="bg-card rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
           <div className="bg-gradient-to-r from-primary to-purple-600 px-6 py-4 text-white">
             <div className="flex items-center gap-3">
               <Lock className="w-6 h-6" />
@@ -606,7 +606,7 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
           <div className="p-4">
             <div 
               id="threeds-challenge-container" 
-              className="border-2 border-gray-200 rounded-xl bg-white overflow-auto"
+              className="border-2 border-border rounded-xl bg-card overflow-auto"
               style={{ 
                 minHeight: '550px',
                 maxHeight: '75vh',
@@ -661,7 +661,7 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
       <div 
         ref={containerRef}
         id="hybrid-card-input" 
-        className="border border-border rounded-xl bg-white"
+        className="border border-border rounded-xl bg-card"
         style={{ 
           height: '280px', 
           maxWidth: '100%', 

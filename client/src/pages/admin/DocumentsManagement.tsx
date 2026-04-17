@@ -265,12 +265,12 @@ export default function DocumentsManagement() {
     if (module.includes('bnsl') || type.toLowerCase().includes('bnsl')) {
       return <Wallet className="w-4 h-4 text-purple-600" />;
     }
-    return <Receipt className="w-4 h-4 text-gray-600" />;
+    return <Receipt className="w-4 h-4 text-muted-foreground" />;
   };
 
   const getTypeBadge = (type: string, sourceModule: string | null) => {
     const displayType = type || sourceModule || 'Unknown';
-    let bgColor = 'bg-gray-100 text-gray-800';
+    let bgColor = 'bg-muted text-foreground';
     
     if (displayType.toLowerCase().includes('deposit')) {
       bgColor = 'bg-green-100 text-green-800';
@@ -298,8 +298,8 @@ export default function DocumentsManagement() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">Documents Management</h1>
-            <p className="text-gray-500">Manage invoices and certificate deliveries</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Documents Management</h1>
+            <p className="text-muted-foreground">Manage invoices and certificate deliveries</p>
           </div>
           <Button variant="outline" onClick={refetch} data-testid="button-refresh">
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
@@ -309,31 +309,31 @@ export default function DocumentsManagement() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-gray-500">Total Invoices</div>
+              <div className="text-sm text-muted-foreground">Total Invoices</div>
               <div className="text-2xl font-bold">{invoiceStats.total}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-gray-500">Invoices Sent</div>
+              <div className="text-sm text-muted-foreground">Invoices Sent</div>
               <div className="text-2xl font-bold text-green-600">{invoiceStats.sent}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-gray-500">Certificates Delivered</div>
+              <div className="text-sm text-muted-foreground">Certificates Delivered</div>
               <div className="text-2xl font-bold text-green-600">{deliveryStats.sent}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-gray-500">Transaction Receipts</div>
+              <div className="text-sm text-muted-foreground">Transaction Receipts</div>
               <div className="text-2xl font-bold text-purple-600">{receiptStats.total}</div>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="pt-6">
-              <div className="text-sm text-gray-500">Failed Deliveries</div>
+              <div className="text-sm text-muted-foreground">Failed Deliveries</div>
               <div className="text-2xl font-bold text-red-600">{invoiceStats.failed + deliveryStats.failed}</div>
             </CardContent>
           </Card>
@@ -357,10 +357,10 @@ export default function DocumentsManagement() {
 
           <div className="flex gap-4 flex-wrap mt-4">
             <div className="relative flex-1 min-w-[200px]">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
               <Input 
                 placeholder="Search..." 
-                className="pl-10 bg-white" 
+                className="pl-10 bg-card" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 data-testid="input-search"
@@ -408,36 +408,36 @@ export default function DocumentsManagement() {
               </CardHeader>
               <CardContent>
                 {invoicesLoading ? (
-                  <div className="text-center py-8 text-gray-500">Loading invoices...</div>
+                  <div className="text-center py-8 text-muted-foreground">Loading invoices...</div>
                 ) : filteredInvoices.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No invoices found</div>
+                  <div className="text-center py-8 text-muted-foreground">No invoices found</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Invoice #</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Customer</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Amount</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Invoice #</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Customer</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Amount</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredInvoices.map((invoice) => (
-                          <tr key={invoice.id} className="border-b hover:bg-gray-50" data-testid={`row-invoice-${invoice.id}`}>
+                          <tr key={invoice.id} className="border-b hover:bg-muted/40" data-testid={`row-invoice-${invoice.id}`}>
                             <td className="py-3 px-4 font-mono text-sm">{invoice.invoiceNumber}</td>
                             <td className="py-3 px-4">
                               <div className="font-medium">{invoice.customerName}</div>
-                              <div className="text-sm text-gray-500">{invoice.customerEmail}</div>
+                              <div className="text-sm text-muted-foreground">{invoice.customerEmail}</div>
                             </td>
                             <td className="py-3 px-4">
                               <div className="font-medium">${parseFloat(invoice.totalUsd).toLocaleString()}</div>
-                              <div className="text-sm text-gray-500">{parseFloat(invoice.goldGrams).toFixed(4)}g</div>
+                              <div className="text-sm text-muted-foreground">{parseFloat(invoice.goldGrams).toFixed(4)}g</div>
                             </td>
                             <td className="py-3 px-4">{getStatusBadge(invoice.status)}</td>
-                            <td className="py-3 px-4 text-sm text-gray-500">
+                            <td className="py-3 px-4 text-sm text-muted-foreground">
                               {format(new Date(invoice.createdAt), 'MMM dd, yyyy')}
                             </td>
                             <td className="py-3 px-4">
@@ -490,30 +490,30 @@ export default function DocumentsManagement() {
               </CardHeader>
               <CardContent>
                 {deliveriesLoading ? (
-                  <div className="text-center py-8 text-gray-500">Loading deliveries...</div>
+                  <div className="text-center py-8 text-muted-foreground">Loading deliveries...</div>
                 ) : filteredDeliveries.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No certificate deliveries found</div>
+                  <div className="text-center py-8 text-muted-foreground">No certificate deliveries found</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Certificate #</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Recipient</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Gold</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Sent At</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Certificate #</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Recipient</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Gold</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Sent At</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredDeliveries.map((delivery) => (
-                          <tr key={delivery.id} className="border-b hover:bg-gray-50" data-testid={`row-delivery-${delivery.id}`}>
+                          <tr key={delivery.id} className="border-b hover:bg-muted/40" data-testid={`row-delivery-${delivery.id}`}>
                             <td className="py-3 px-4 font-mono text-sm">{delivery.certificateNumber || 'N/A'}</td>
                             <td className="py-3 px-4">
                               <div className="font-medium">{delivery.userName || 'Unknown'}</div>
-                              <div className="text-sm text-gray-500">{delivery.recipientEmail}</div>
+                              <div className="text-sm text-muted-foreground">{delivery.recipientEmail}</div>
                             </td>
                             <td className="py-3 px-4">
                               <Badge variant="outline">{delivery.certificateType || 'Unknown'}</Badge>
@@ -527,7 +527,7 @@ export default function DocumentsManagement() {
                                 <div className="text-xs text-red-500 mt-1">{delivery.failureReason}</div>
                               )}
                             </td>
-                            <td className="py-3 px-4 text-sm text-gray-500">
+                            <td className="py-3 px-4 text-sm text-muted-foreground">
                               {delivery.sentAt ? format(new Date(delivery.sentAt), 'MMM dd, yyyy HH:mm') : 'Not sent'}
                             </td>
                             <td className="py-3 px-4">
@@ -580,44 +580,44 @@ export default function DocumentsManagement() {
                   <Receipt className="w-5 h-5" />
                   Transaction Receipts for Evidence
                 </CardTitle>
-                <p className="text-sm text-gray-500">Download transaction receipts as PDF for auditing and evidence purposes</p>
+                <p className="text-sm text-muted-foreground">Download transaction receipts as PDF for auditing and evidence purposes</p>
               </CardHeader>
               <CardContent>
                 {receiptsLoading ? (
-                  <div className="text-center py-8 text-gray-500">Loading transaction receipts...</div>
+                  <div className="text-center py-8 text-muted-foreground">Loading transaction receipts...</div>
                 ) : filteredReceipts.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">No transaction receipts found</div>
+                  <div className="text-center py-8 text-muted-foreground">No transaction receipts found</div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
                         <tr className="border-b">
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Transaction ID</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">User</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Type</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Amount</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Date</th>
-                          <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Transaction ID</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">User</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Amount</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                          <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredReceipts.map((receipt) => (
-                          <tr key={receipt.id} className="border-b hover:bg-gray-50" data-testid={`row-receipt-${receipt.id}`}>
+                          <tr key={receipt.id} className="border-b hover:bg-muted/40" data-testid={`row-receipt-${receipt.id}`}>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-2">
                                 {getTypeIcon(receipt.type, receipt.sourceModule)}
                                 <div>
                                   <div className="font-mono text-sm">{receipt.odooId || `TXN-${receipt.id}`}</div>
                                   {receipt.odooName && (
-                                    <div className="text-xs text-gray-500">{receipt.odooName}</div>
+                                    <div className="text-xs text-muted-foreground">{receipt.odooName}</div>
                                   )}
                                 </div>
                               </div>
                             </td>
                             <td className="py-3 px-4">
                               <div className="font-medium">{receipt.userName || `User #${receipt.userId}`}</div>
-                              <div className="text-sm text-gray-500">{receipt.userEmail || '-'}</div>
+                              <div className="text-sm text-muted-foreground">{receipt.userEmail || '-'}</div>
                             </td>
                             <td className="py-3 px-4">
                               {getTypeBadge(receipt.type, receipt.sourceModule)}
@@ -627,14 +627,14 @@ export default function DocumentsManagement() {
                                 <div className="font-medium">${parseFloat(receipt.amountUsd).toLocaleString()}</div>
                               )}
                               {receipt.amountGold && (
-                                <div className="text-sm text-gray-500">{parseFloat(receipt.amountGold).toFixed(4)}g gold</div>
+                                <div className="text-sm text-muted-foreground">{parseFloat(receipt.amountGold).toFixed(4)}g gold</div>
                               )}
                               {receipt.goldPriceAtTransaction && (
-                                <div className="text-xs text-gray-400">@ ${parseFloat(receipt.goldPriceAtTransaction).toFixed(2)}/g</div>
+                                <div className="text-xs text-muted-foreground/70">@ ${parseFloat(receipt.goldPriceAtTransaction).toFixed(2)}/g</div>
                               )}
                             </td>
                             <td className="py-3 px-4">{getStatusBadge(receipt.status)}</td>
-                            <td className="py-3 px-4 text-sm text-gray-500">
+                            <td className="py-3 px-4 text-sm text-muted-foreground">
                               {format(new Date(receipt.createdAt), 'MMM dd, yyyy HH:mm')}
                             </td>
                             <td className="py-3 px-4">
@@ -685,7 +685,7 @@ export default function DocumentsManagement() {
                     size="sm" 
                     variant="secondary"
                     onClick={handlePrint}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className="bg-card/20 hover:bg-card/30 text-white border-white/30"
                     data-testid="button-print-document"
                   >
                     <Printer className="w-4 h-4 mr-2" />
@@ -695,7 +695,7 @@ export default function DocumentsManagement() {
                     size="sm" 
                     variant="secondary"
                     onClick={() => window.open(previewUrl, '_blank')}
-                    className="bg-white/20 hover:bg-white/30 text-white border-white/30"
+                    className="bg-card/20 hover:bg-card/30 text-white border-white/30"
                     data-testid="button-download-from-preview"
                   >
                     <Download className="w-4 h-4 mr-2" />
@@ -704,18 +704,18 @@ export default function DocumentsManagement() {
                 </div>
               </div>
             </DialogHeader>
-            <div className="flex-1 bg-gray-100 p-4 overflow-hidden flex flex-col items-center justify-center">
+            <div className="flex-1 bg-muted p-4 overflow-hidden flex flex-col items-center justify-center">
               {previewUrl && (
                 <object
                   data={previewUrl}
                   type="application/pdf"
-                  className="w-full h-full border-0 rounded-lg shadow-lg bg-white"
+                  className="w-full h-full border-0 rounded-lg shadow-lg bg-card"
                   title={previewTitle}
                   data-testid="object-document-preview"
                 >
-                  <div className="flex flex-col items-center justify-center h-full bg-white rounded-lg p-8 text-center">
+                  <div className="flex flex-col items-center justify-center h-full bg-card rounded-lg p-8 text-center">
                     <FileText className="w-16 h-16 text-purple-400 mb-4" />
-                    <p className="text-gray-600 mb-4">PDF preview not available in your browser.</p>
+                    <p className="text-muted-foreground mb-4">PDF preview not available in your browser.</p>
                     <Button 
                       onClick={() => window.open(previewUrl, '_blank')}
                       className="bg-purple-600 hover:bg-purple-700"

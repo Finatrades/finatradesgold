@@ -108,7 +108,7 @@ function TypingIndicator() {
     <div className="flex justify-start">
       <div className="flex items-start gap-2 max-w-[85%]">
         <BotAvatar size="sm" />
-        <div className="bg-gray-100 border border-gray-200 rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
+        <div className="bg-muted border border-border rounded-2xl rounded-tl-md px-4 py-3 flex items-center gap-1.5">
           <motion.div
             className="w-2 h-2 rounded-full bg-violet-400"
             animate={{ y: [0, -6, 0] }}
@@ -427,22 +427,22 @@ function FloatingAgentChatContent() {
             initial={{ opacity: 0, x: 20, scale: 0.8 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: 20, scale: 0.8 }}
-            className={`fixed z-50 bg-white border border-gray-200 rounded-2xl shadow-xl p-4 min-w-[220px] ${isMobile ? 'bottom-36 right-3' : 'bottom-24 right-6'}`}
+            className={`fixed z-50 bg-card border border-border rounded-2xl shadow-xl p-4 min-w-[220px] ${isMobile ? 'bottom-36 right-3' : 'bottom-24 right-6'}`}
           >
             <button
               onClick={() => setShowNotification(false)}
-              className="absolute -top-2 -right-2 w-6 h-6 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 hover:bg-gray-200 transition-colors border border-gray-200"
+              className="absolute -top-2 -right-2 w-6 h-6 bg-muted rounded-full flex items-center justify-center text-muted-foreground hover:bg-muted transition-colors border border-border"
             >
               <X className="w-3 h-3" />
             </button>
             <div className="flex items-center gap-3">
               <BotAvatar size="md" />
               <div>
-                <p className="text-sm font-medium text-gray-900">Hey, I'm here! 👋</p>
-                <p className="text-xs text-gray-500">Need any help?</p>
+                <p className="text-sm font-medium text-foreground">Hey, I'm here! 👋</p>
+                <p className="text-xs text-muted-foreground">Need any help?</p>
               </div>
             </div>
-            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-white border-r border-b border-gray-200 transform rotate-45" />
+            <div className="absolute -bottom-2 right-8 w-4 h-4 bg-card border-r border-b border-border transform rotate-45" />
           </motion.div>
         )}
       </AnimatePresence>
@@ -492,14 +492,14 @@ function FloatingAgentChatContent() {
             initial={{ opacity: 0, y: 100 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 100 }}
-            className={`fixed z-50 bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'bottom-2 right-2 left-2 w-auto max-w-none max-h-[80vh]' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
+            className={`fixed z-50 bg-card border border-border rounded-2xl overflow-hidden shadow-2xl ${isMobile ? 'bottom-2 right-2 left-2 w-auto max-w-none max-h-[80vh]' : 'bottom-6 right-6 w-[380px] max-w-[calc(100vw-48px)]'}`}
           >
             <div className="bg-gradient-to-r from-[#7C3AED] via-[#6D28D9] to-[#1e1b4b] p-4 flex items-center gap-3">
               {showAgentList ? (
                 <>
                   <button
                     onClick={() => setShowAgentList(false)}
-                    className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+                    className="w-8 h-8 rounded-full bg-card/15 flex items-center justify-center hover:bg-card/25 transition-colors"
                   >
                     <ChevronLeft className="w-5 h-5 text-white" />
                   </button>
@@ -529,7 +529,7 @@ function FloatingAgentChatContent() {
               )}
               <button
                 onClick={closeChat}
-                className="w-8 h-8 rounded-full bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+                className="w-8 h-8 rounded-full bg-card/15 flex items-center justify-center hover:bg-card/25 transition-colors"
               >
                 <X className="w-5 h-5 text-white" />
               </button>
@@ -542,7 +542,7 @@ function FloatingAgentChatContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="h-96 overflow-y-auto p-3 space-y-2 bg-gray-50"
+                  className="h-96 overflow-y-auto p-3 space-y-2 bg-muted/40"
                 >
                   {agents.map((agent, idx) => (
                     <div
@@ -551,7 +551,7 @@ function FloatingAgentChatContent() {
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                         currentAgent.name === agent.name
                           ? 'bg-violet-50 border border-violet-200'
-                          : 'bg-white hover:bg-gray-50 border border-gray-100'
+                          : 'bg-card hover:bg-muted/40 border border-border/60'
                       }`}
                       data-testid={`agent-option-${agent.name.toLowerCase()}`}
                     >
@@ -565,14 +565,14 @@ function FloatingAgentChatContent() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <h4 className="text-gray-900 font-medium text-sm">{agent.name}</h4>
+                          <h4 className="text-foreground font-medium text-sm">{agent.name}</h4>
                           {!agent.active && (
-                            <span className="px-2 py-0.5 text-[10px] font-medium bg-gray-100 border border-gray-200 text-gray-500 rounded-full">
+                            <span className="px-2 py-0.5 text-[10px] font-medium bg-muted border border-border text-muted-foreground rounded-full">
                               Coming Soon
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-500 text-xs">{agent.role}</p>
+                        <p className="text-muted-foreground text-xs">{agent.role}</p>
                       </div>
                     </div>
                   ))}
@@ -583,14 +583,14 @@ function FloatingAgentChatContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="bg-white p-6"
+                  className="bg-card p-6"
                 >
                   <div className="text-center mb-6">
                     <div className="flex justify-center mb-4">
                       <BotAvatar size="lg" />
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900">Hi! I'm your Finatrades Assistant</h3>
-                    <p className="text-sm text-gray-500 mt-1">Ask me anything about gold trading.</p>
+                    <h3 className="text-lg font-semibold text-foreground">Hi! I'm your Finatrades Assistant</h3>
+                    <p className="text-sm text-muted-foreground mt-1">Ask me anything about gold trading.</p>
                   </div>
 
                   <div className="flex flex-wrap gap-2 justify-center mb-6">
@@ -608,9 +608,9 @@ function FloatingAgentChatContent() {
 
                   <form onSubmit={handleGuestSubmit} className="space-y-4">
                     <div className="space-y-2">
-                      <Label htmlFor="guest-name" className="text-gray-700 text-sm">Your Name</Label>
+                      <Label htmlFor="guest-name" className="text-foreground/85 text-sm">Your Name</Label>
                       <div className="relative">
-                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                         <Input
                           id="guest-name"
                           type="text"
@@ -624,9 +624,9 @@ function FloatingAgentChatContent() {
                       </div>
                     </div>
                     <div className="space-y-2">
-                      <Label htmlFor="guest-email" className="text-gray-700 text-sm">Email Address</Label>
+                      <Label htmlFor="guest-email" className="text-foreground/85 text-sm">Email Address</Label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                         <Input
                           id="guest-email"
                           type="email"
@@ -655,7 +655,7 @@ function FloatingAgentChatContent() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
-                  className="bg-gray-50"
+                  className="bg-muted/40"
                 >
                   <div className="h-72 overflow-y-auto p-4 space-y-3">
                     {displayMessages.map((msg, idx) => {
@@ -680,7 +680,7 @@ function FloatingAgentChatContent() {
                             <div className="flex items-start gap-2 max-w-[85%]">
                               <BotAvatar size="sm" />
                               <div className="flex flex-col gap-2">
-                                <div className="rounded-2xl rounded-tl-md px-4 py-2.5 bg-white text-gray-900 border border-gray-200 shadow-sm">
+                                <div className="rounded-2xl rounded-tl-md px-4 py-2.5 bg-card text-foreground border border-border shadow-sm">
                                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                                 </div>
                                 {isBot && chatbotMsg.suggestedActions && chatbotMsg.suggestedActions.length > 0 && (
@@ -711,7 +711,7 @@ function FloatingAgentChatContent() {
                           <button
                             key={chip.label}
                             onClick={() => handleChipClick(chip.label)}
-                            className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 text-violet-700 bg-white hover:bg-violet-50 transition-colors shadow-sm"
+                            className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 text-violet-700 bg-card hover:bg-violet-50 transition-colors shadow-sm"
                             data-testid={`chip-${chip.label.toLowerCase().replace(/\s+/g, '-')}`}
                           >
                             {chip.icon} {chip.label}
@@ -723,11 +723,11 @@ function FloatingAgentChatContent() {
                   </div>
 
                   {!useHumanAgent && (
-                    <div className="px-4 py-2 border-t border-gray-200 bg-white">
+                    <div className="px-4 py-2 border-t border-border bg-card">
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => escalateToHuman()}
-                          className="text-xs px-3 py-1.5 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors border border-gray-200"
+                          className="text-xs px-3 py-1.5 rounded-full bg-muted text-muted-foreground hover:bg-muted transition-colors border border-border"
                           data-testid="speak-to-agent"
                         >
                           Speak to Agent
@@ -736,13 +736,13 @@ function FloatingAgentChatContent() {
                     </div>
                   )}
 
-                  <div className="p-4 border-t border-gray-200 flex gap-2 bg-white">
+                  <div className="p-4 border-t border-border flex gap-2 bg-card">
                     <Input
                       value={message}
                       onChange={(e) => setMessage(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && !isLoading && handleSendMessage()}
                       placeholder={useHumanAgent ? "Message support..." : "Ask me anything..."}
-                      className="flex-1 bg-gray-50 border-gray-200 text-gray-900 placeholder:text-[#9CA3AF] focus:border-violet-400 focus:ring-violet-400"
+                      className="flex-1 bg-muted/40 border-border text-foreground placeholder:text-[#9CA3AF] focus:border-violet-400 focus:ring-violet-400"
                       disabled={isLoading}
                       data-testid="input-chat-message"
                     />
@@ -775,7 +775,7 @@ function FloatingAgentChatContent() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.8, opacity: 0 }}
-              className="bg-white border border-gray-200 rounded-2xl p-6 max-w-sm w-full shadow-2xl"
+              className="bg-card border border-border rounded-2xl p-6 max-w-sm w-full shadow-2xl"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex justify-center mb-4">
@@ -790,58 +790,58 @@ function FloatingAgentChatContent() {
               </div>
 
               <div className="text-center">
-                <span className="inline-block px-3 py-1 text-xs font-medium bg-gray-100 border border-gray-200 text-gray-500 rounded-full mb-3">
+                <span className="inline-block px-3 py-1 text-xs font-medium bg-muted border border-border text-muted-foreground rounded-full mb-3">
                   Coming Soon
                 </span>
-                <h3 className="text-xl font-bold text-gray-900 mb-1">{comingSoonAgent.name}</h3>
+                <h3 className="text-xl font-bold text-foreground mb-1">{comingSoonAgent.name}</h3>
                 <p className="text-violet-600 text-sm mb-3">{comingSoonAgent.role}</p>
-                <p className="text-gray-500 text-sm mb-6">
+                <p className="text-muted-foreground text-sm mb-6">
                   {comingSoonAgent.name} is currently under development and will be available soon with advanced capabilities for {comingSoonAgent.role.toLowerCase()}.
                 </p>
 
-                <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left border border-gray-100">
-                  <p className="text-gray-400 text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
+                <div className="bg-muted/40 rounded-xl p-4 mb-6 text-left border border-border/60">
+                  <p className="text-muted-foreground/70 text-xs uppercase tracking-wider mb-2">Upcoming Features</p>
                   <ul className="space-y-2">
                     {comingSoonAgent.name === "Vaultis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Gold storage management</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Vault allocation tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Certificate verification</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Gold storage management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Vault allocation tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Certificate verification</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Payis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Payment initiation</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Transaction tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Wallet management</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Payment initiation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Transaction tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Wallet management</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Tradis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Trade document generation</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Deal structuring assistance</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Settlement coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trade document generation</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Deal structuring assistance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Settlement coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Juris" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Compliance checks</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Regulatory guidance</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Legal document review</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Compliance checks</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Regulatory guidance</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Legal document review</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Logis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Shipment tracking</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Documentation handling</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Delivery coordination</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Shipment tracking</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Documentation handling</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Delivery coordination</li>
                       </>
                     )}
                     {comingSoonAgent.name === "Markis" && (
                       <>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Market analysis</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Price predictions</li>
-                        <li className="text-gray-600 text-sm flex items-center gap-2">• Trend insights</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Market analysis</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Price predictions</li>
+                        <li className="text-muted-foreground text-sm flex items-center gap-2">• Trend insights</li>
                       </>
                     )}
                   </ul>

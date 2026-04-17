@@ -134,7 +134,7 @@ export default function MobileQuickActions({
           <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${action.gradient} flex items-center justify-center text-white shadow-lg haptic-press`}>
             {action.icon}
           </div>
-          <span className="text-[11px] font-semibold text-gray-700 text-center leading-tight">{action.label}</span>
+          <span className="text-[11px] font-semibold text-foreground/85 text-center leading-tight">{action.label}</span>
         </motion.button>
       ))}
     </div>

@@ -37,7 +37,7 @@ export default function IdleTimeoutWarning({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-0">
-          <AlertDialogCancel onClick={onLogout} className="bg-gray-100 hover:bg-gray-200">
+          <AlertDialogCancel onClick={onLogout} className="bg-muted hover:bg-muted">
             Sign Out Now
           </AlertDialogCancel>
           <AlertDialogAction onClick={onStayActive} className="bg-primary hover:bg-primary/90" data-testid="button-stay-active">

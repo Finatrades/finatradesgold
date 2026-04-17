@@ -72,7 +72,7 @@ export default function FinaPayCard() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white hover:text-white border-zinc-600">
+        <Button variant="outline" className="border-white/10 hover:bg-card/5 text-white hover:text-white border-zinc-600">
           Freeze Card
         </Button>
         <Button className="bg-primary text-white hover:bg-primary/90 font-semibold">

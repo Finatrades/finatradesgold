@@ -169,8 +169,8 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   const strengthScore = Object.values(passwordStrength).filter(Boolean).length;
 
   const getStrengthColor = (index: number) => {
-    if (strengthScore === 0) return 'bg-gray-200';
-    if (index >= strengthScore) return 'bg-gray-200';
+    if (strengthScore === 0) return 'bg-muted';
+    if (index >= strengthScore) return 'bg-muted';
     if (strengthScore <= 1) return 'bg-red-500';
     if (strengthScore === 2) return 'bg-orange-400';
     if (strengthScore === 3) return 'bg-yellow-400';
@@ -355,17 +355,17 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               style={{ filter: 'brightness(0) saturate(100%) invert(21%) sepia(85%) saturate(4429%) hue-rotate(265deg) brightness(93%) contrast(99%)' }}
               data-testid="img-logo"
             />
-            <h1 className="text-2xl font-bold text-gray-900 mb-1">Join Finatrades today</h1>
-            <p className="text-gray-500 text-sm">Create your account to get started</p>
+            <h1 className="text-2xl font-bold text-foreground mb-1">Join Finatrades today</h1>
+            <p className="text-muted-foreground text-sm">Create your account to get started</p>
         </motion.div>
 
-        <div className="bg-white rounded-3xl shadow-xl shadow-purple-100/50 p-5 border border-purple-100/50">
+        <div className="bg-card rounded-3xl shadow-xl shadow-purple-100/50 p-5 border border-purple-100/50">
           <form onSubmit={handleSubmit} className="space-y-5">
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="flex rounded-xl border border-gray-200 overflow-hidden bg-gray-50 p-1"
+            className="flex rounded-xl border border-border overflow-hidden bg-muted/40 p-1"
             data-testid="account-type-toggle"
           >
             <button
@@ -374,7 +374,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-lg transition-all text-sm font-medium ${
                 accountType === 'personal' 
                   ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md' 
-                  : 'text-gray-600'
+                  : 'text-muted-foreground'
               }`}
               data-testid="toggle-personal"
             >
@@ -387,7 +387,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               className={`flex-1 flex items-center justify-center gap-2 py-3 px-3 rounded-lg transition-all text-sm font-medium ${
                 accountType === 'business' 
                   ? 'bg-gradient-to-r from-purple-600 to-purple-700 text-white shadow-md' 
-                  : 'text-gray-600'
+                  : 'text-muted-foreground'
               }`}
               data-testid="toggle-business"
             >
@@ -403,13 +403,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             className="space-y-4"
           >
             <div>
-              <Label htmlFor="firstName" className="text-gray-700 text-sm font-medium">First Name *</Label>
+              <Label htmlFor="firstName" className="text-foreground/85 text-sm font-medium">First Name *</Label>
               <Input
                 id="firstName"
                 value={formData.firstName}
                 onChange={(e) => handleFieldChange('firstName', e.target.value)}
                 onBlur={(e) => handleFieldBlur('firstName', e.target.value)}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.firstName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
+                className={`mt-1.5 h-12 rounded-xl border-border bg-card ${fieldErrors.firstName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
                 placeholder="Enter your first name"
                 data-testid="input-firstname"
               />
@@ -417,13 +417,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             </div>
 
             <div>
-              <Label htmlFor="lastName" className="text-gray-700 text-sm font-medium">Last Name *</Label>
+              <Label htmlFor="lastName" className="text-foreground/85 text-sm font-medium">Last Name *</Label>
               <Input
                 id="lastName"
                 value={formData.lastName}
                 onChange={(e) => handleFieldChange('lastName', e.target.value)}
                 onBlur={(e) => handleFieldBlur('lastName', e.target.value)}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.lastName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
+                className={`mt-1.5 h-12 rounded-xl border-border bg-card ${fieldErrors.lastName ? 'border-red-400 focus:border-red-500' : 'focus:border-purple-500'}`}
                 placeholder="Enter your last name"
                 data-testid="input-lastname"
               />
@@ -431,14 +431,14 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             </div>
 
             <div>
-              <Label htmlFor="email" className="text-gray-700 text-sm font-medium">Email Address *</Label>
+              <Label htmlFor="email" className="text-foreground/85 text-sm font-medium">Email Address *</Label>
               <Input
                 id="email"
                 type="email"
                 value={formData.email}
                 onChange={(e) => handleFieldChange('email', e.target.value)}
                 onBlur={(e) => handleFieldBlur('email', e.target.value)}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.email ? 'border-red-400 focus:border-red-500' : touched.email && !fieldErrors.email ? 'border-green-400' : 'focus:border-purple-500'}`}
+                className={`mt-1.5 h-12 rounded-xl border-border bg-card ${fieldErrors.email ? 'border-red-400 focus:border-red-500' : touched.email && !fieldErrors.email ? 'border-green-400' : 'focus:border-purple-500'}`}
                 placeholder="you@example.com"
                 data-testid="input-email"
               />
@@ -446,13 +446,13 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             </div>
 
             <div>
-              <Label htmlFor="phone" className="text-gray-700 text-sm font-medium">Phone Number</Label>
+              <Label htmlFor="phone" className="text-foreground/85 text-sm font-medium">Phone Number</Label>
               <Input
                 id="phone"
                 type="tel"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                className="mt-1.5 h-12 rounded-xl border-gray-200 bg-white focus:border-purple-500"
+                className="mt-1.5 h-12 rounded-xl border-border bg-card focus:border-purple-500"
                 placeholder="+1 (555) 000-0000"
                 data-testid="input-phone"
               />
@@ -466,25 +466,25 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                 className="space-y-4"
               >
                 <div>
-                  <Label htmlFor="companyName" className="text-gray-700 text-sm font-medium">Company Name *</Label>
+                  <Label htmlFor="companyName" className="text-foreground/85 text-sm font-medium">Company Name *</Label>
                   <Input
                     id="companyName"
                     value={formData.companyName}
                     onChange={(e) => handleFieldChange('companyName', e.target.value)}
                     onBlur={(e) => handleFieldBlur('companyName', e.target.value)}
-                    className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${fieldErrors.companyName ? 'border-red-400' : 'focus:border-purple-500'}`}
+                    className={`mt-1.5 h-12 rounded-xl border-border bg-card ${fieldErrors.companyName ? 'border-red-400' : 'focus:border-purple-500'}`}
                     placeholder="Your company name"
                     data-testid="input-company"
                   />
                   {fieldErrors.companyName && <p className="text-red-500 text-xs mt-1" data-testid="error-company">{fieldErrors.companyName}</p>}
                 </div>
                 <div>
-                  <Label htmlFor="registrationNumber" className="text-gray-700 text-sm font-medium">Registration Number</Label>
+                  <Label htmlFor="registrationNumber" className="text-foreground/85 text-sm font-medium">Registration Number</Label>
                   <Input
                     id="registrationNumber"
                     value={formData.registrationNumber}
                     onChange={(e) => setFormData({ ...formData, registrationNumber: e.target.value })}
-                    className="mt-1.5 h-12 rounded-xl border-gray-200 bg-white focus:border-purple-500"
+                    className="mt-1.5 h-12 rounded-xl border-border bg-card focus:border-purple-500"
                     placeholder="Company registration number"
                     data-testid="input-registration"
                   />
@@ -493,7 +493,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             )}
 
             <div>
-              <Label htmlFor="password" className="text-gray-700 text-sm font-medium">Password *</Label>
+              <Label htmlFor="password" className="text-foreground/85 text-sm font-medium">Password *</Label>
               <div className="relative mt-1.5">
                 <Input
                   id="password"
@@ -501,14 +501,14 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   value={formData.password}
                   onChange={(e) => handleFieldChange('password', e.target.value)}
                   onBlur={(e) => handleFieldBlur('password', e.target.value)}
-                  className={`h-12 rounded-xl border-gray-200 bg-white pr-12 ${fieldErrors.password ? 'border-red-400' : 'focus:border-purple-500'}`}
+                  className={`h-12 rounded-xl border-border bg-card pr-12 ${fieldErrors.password ? 'border-red-400' : 'focus:border-purple-500'}`}
                   placeholder="Create a strong password"
                   data-testid="input-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 p-1"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground/70 p-1"
                 >
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
@@ -529,16 +529,16 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.length ? 'opacity-100' : 'opacity-40'}`} /> 8+ characters
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.uppercase ? 'opacity-100' : 'opacity-40'}`} /> Uppercase
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.number ? 'opacity-100' : 'opacity-40'}`} /> Number
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600' : 'text-gray-400'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.special ? 'opacity-100' : 'opacity-40'}`} /> Special char
                     </span>
                   </div>
@@ -547,14 +547,14 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             </div>
 
             <div>
-              <Label htmlFor="confirmPassword" className="text-gray-700 text-sm font-medium">Confirm Password *</Label>
+              <Label htmlFor="confirmPassword" className="text-foreground/85 text-sm font-medium">Confirm Password *</Label>
               <Input
                 id="confirmPassword"
                 type="password"
                 value={formData.confirmPassword}
                 onChange={(e) => handleFieldChange('confirmPassword', e.target.value)}
                 onBlur={(e) => handleFieldBlur('confirmPassword', e.target.value)}
-                className={`mt-1.5 h-12 rounded-xl border-gray-200 bg-white ${
+                className={`mt-1.5 h-12 rounded-xl border-border bg-card ${
                   fieldErrors.confirmPassword
                     ? 'border-red-400'
                     : formData.confirmPassword && formData.confirmPassword === formData.password
@@ -575,9 +575,9 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="bg-gray-50 rounded-xl p-4 border border-gray-100"
+            className="bg-muted/40 rounded-xl p-4 border border-border/60"
           >
-            <Label className="text-gray-700 text-sm font-medium mb-3 block">Profile Selfie</Label>
+            <Label className="text-foreground/85 text-sm font-medium mb-3 block">Profile Selfie</Label>
             
             {!profilePhoto && !cameraStream && (
               <div className="text-center py-4">
@@ -585,7 +585,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   type="button"
                   onClick={startCamera}
                   variant="outline"
-                  className="gap-2 h-12 rounded-xl border-gray-300 hover:bg-gray-100"
+                  className="gap-2 h-12 rounded-xl border-border hover:bg-muted"
                   data-testid="button-start-camera"
                 >
                   <Camera className="w-5 h-5" />
@@ -634,7 +634,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                     type="button"
                     onClick={stopCamera}
                     variant="secondary"
-                    className="h-10 rounded-full px-4 bg-white/90"
+                    className="h-10 rounded-full px-4 bg-card/90"
                   >
                     Cancel
                   </Button>
@@ -663,7 +663,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                   onClick={retakePhoto}
                   variant="secondary"
                   size="sm"
-                  className="absolute bottom-3 right-3 gap-1 h-9 rounded-full bg-white/90"
+                  className="absolute bottom-3 right-3 gap-1 h-9 rounded-full bg-card/90"
                 >
                   <RefreshCw className="w-4 h-4" />
                   Retake
@@ -677,12 +677,12 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
           >
-            <Label htmlFor="referralCode" className="text-gray-700 text-sm font-medium">Referral Code (optional)</Label>
+            <Label htmlFor="referralCode" className="text-foreground/85 text-sm font-medium">Referral Code (optional)</Label>
             <Input
               id="referralCode"
               value={referralCode}
               onChange={(e) => setReferralCode(e.target.value)}
-              className="mt-1.5 h-12 rounded-xl border-gray-200 bg-white focus:border-purple-500"
+              className="mt-1.5 h-12 rounded-xl border-border bg-card focus:border-purple-500"
               placeholder="Enter referral code if you have one"
               data-testid="input-referral"
             />
@@ -701,7 +701,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               className="mt-0.5 data-[state=checked]:bg-purple-600 data-[state=checked]:border-purple-600"
               data-testid="checkbox-terms"
             />
-            <Label htmlFor="terms" className="text-sm text-gray-600 leading-relaxed">
+            <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
               I agree to the{' '}
               <Link href="/finagold/terms" className="text-purple-600 font-medium">Terms of Service</Link>
               {' '}and{' '}
@@ -734,7 +734,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               )}
             </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
               <Link href="/sign-in" className="text-purple-600 font-medium">Sign In</Link>
             </p>
@@ -743,7 +743,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
         </div>
         
         <div className="mt-6 text-center">
-          <p className="flex justify-center items-center gap-2 text-xs text-gray-400">
+          <p className="flex justify-center items-center gap-2 text-xs text-muted-foreground/70">
             <Lock className="w-3 h-3" />
             Secured by FinaTrades Switzerland
           </p>

@@ -428,7 +428,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                       <span className="font-medium text-sm flex-1">{item.label}</span>
                       {badgeCount > 0 && (
                         <span className={`min-w-[20px] h-[20px] px-1.5 text-[10px] font-bold rounded-full flex items-center justify-center ${
-                          isActive(item.href) ? 'bg-white/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
+                          isActive(item.href) ? 'bg-card/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
                         }`}>
                           {badgeCount > 99 ? '99+' : badgeCount}
                         </span>
@@ -496,7 +496,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                     {section.title}
                     {sectionBadgeCount > 0 && (
                       <span className={`min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center ${
-                        isSectionActive ? 'bg-white/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
+                        isSectionActive ? 'bg-card/90 text-purple-700' : 'bg-destructive text-destructive-foreground'
                       }`}>
                         {sectionBadgeCount > 99 ? '99+' : sectionBadgeCount}
                       </span>

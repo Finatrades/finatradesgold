@@ -62,7 +62,7 @@ export default function BNSLFinalCTA() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-8"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/10 backdrop-blur-sm border border-white/20 mb-8"
           >
             <Sparkles className="w-4 h-4 text-fuchsia-400" />
             <span className="text-sm font-medium text-purple-200">
@@ -88,7 +88,7 @@ export default function BNSLFinalCTA() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ delay: 0.1 }}
-            className="text-xl text-gray-300 max-w-2xl mx-auto mb-12"
+            className="text-xl text-muted-foreground/50 max-w-2xl mx-auto mb-12"
           >
             Join thousands of investors who are securing their wealth with gold-backed returns. 
             Start with as little as $100 today.
@@ -109,7 +109,7 @@ export default function BNSLFinalCTA() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.2 + index * 0.05 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-gray-300"
+                className="flex items-center gap-2 px-4 py-2 rounded-full bg-card/5 border border-white/10 text-muted-foreground/50"
               >
                 <feature.icon className="w-4 h-4 text-fuchsia-400" />
                 <span className="text-sm font-medium">{feature.label}</span>
@@ -146,7 +146,7 @@ export default function BNSLFinalCTA() {
                   calculatorSection.scrollIntoView({ behavior: 'smooth' });
                 }
               }}
-              className="px-10 py-5 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold text-lg hover:bg-white/20 transition-colors flex items-center gap-2"
+              className="px-10 py-5 rounded-2xl bg-card/10 backdrop-blur-sm border border-white/20 text-white font-semibold text-lg hover:bg-card/20 transition-colors flex items-center gap-2"
               data-testid="button-calculate-returns-final"
             >
               <Gift className="w-5 h-5 text-fuchsia-400" />
@@ -160,7 +160,7 @@ export default function BNSLFinalCTA() {
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ delay: 0.4 }}
-            className="flex flex-wrap items-center justify-center gap-6 text-gray-400 text-sm"
+            className="flex flex-wrap items-center justify-center gap-6 text-muted-foreground/70 text-sm"
           >
             <div className="flex items-center gap-2">
               <Star className="w-4 h-4 text-fuchsia-400 fill-fuchsia-400" />

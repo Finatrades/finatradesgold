@@ -53,7 +53,7 @@ function getStatusIcon(status: string) {
     case 'rejected':
       return <XCircle className="w-4 h-4 text-red-500" />;
     default:
-      return <AlertCircle className="w-4 h-4 text-gray-400" />;
+      return <AlertCircle className="w-4 h-4 text-muted-foreground/70" />;
   }
 }
 
@@ -70,9 +70,9 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
   
   if (displayTx.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-100 p-4">
+      <div className="bg-card rounded-xl border border-border/60 p-4">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-900 text-sm">Recent Activity</h3>
+          <h3 className="font-semibold text-foreground text-sm">Recent Activity</h3>
           <Link href="/activity">
             <span className="text-purple-600 text-xs font-medium flex items-center">
               View All <ChevronRight className="w-3 h-3 ml-0.5" />
@@ -80,11 +80,11 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
           </Link>
         </div>
         <div className="flex flex-col items-center justify-center py-8 text-center">
-          <div className="w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center mb-3">
-            <Clock className="w-6 h-6 text-gray-400" />
+          <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+            <Clock className="w-6 h-6 text-muted-foreground/70" />
           </div>
-          <p className="text-gray-500 text-sm">No transactions yet</p>
-          <p className="text-gray-400 text-xs mt-1">Your activity will appear here</p>
+          <p className="text-muted-foreground text-sm">No transactions yet</p>
+          <p className="text-muted-foreground/70 text-xs mt-1">Your activity will appear here</p>
         </div>
       </div>
     );
@@ -94,10 +94,10 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm"
+      className="bg-card rounded-2xl border border-border/60 overflow-hidden shadow-sm"
     >
       <div className="flex items-center justify-between p-4 border-b border-gray-50">
-        <h3 className="font-bold text-gray-900 text-base">Recent Activity</h3>
+        <h3 className="font-bold text-foreground text-base">Recent Activity</h3>
         <Link href="/activity">
           <span className="text-purple-600 text-sm font-semibold flex items-center touch-target px-2 py-1 rounded-lg active:bg-purple-50">
             View All <ChevronRight className="w-4 h-4 ml-0.5" />
@@ -114,30 +114,30 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: index * 0.05 }}
               whileTap={{ scale: 0.98, backgroundColor: 'rgba(0,0,0,0.02)' }}
-              className="flex items-center gap-3 p-4 mobile-list-item active:bg-gray-50 transition-colors cursor-pointer"
+              className="flex items-center gap-3 p-4 mobile-list-item active:bg-muted/40 transition-colors cursor-pointer"
             >
-              <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-muted flex items-center justify-center">
                 {getTransactionIcon(tx.type)}
               </div>
               
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <p className="text-base font-semibold text-gray-900 truncate">{tx.type}</p>
+                  <p className="text-base font-semibold text-foreground truncate">{tx.type}</p>
                   {getStatusIcon(tx.status)}
                 </div>
-                <p className="text-sm text-gray-500 truncate">
+                <p className="text-sm text-muted-foreground truncate">
                   {tx.description || formatTimeAgo(tx.createdAt)}
                 </p>
               </div>
               
               <div className="text-right">
                 {tx.amountGold !== undefined && tx.amountGold !== null && (
-                  <p className="text-base font-bold text-gray-900">
+                  <p className="text-base font-bold text-foreground">
                     {tx.amountGold > 0 ? '+' : ''}{formatNumber(tx.amountGold, 4)}g
                   </p>
                 )}
                 {tx.amountUsd !== undefined && tx.amountUsd !== null && (
-                  <p className="text-xs text-gray-500">
+                  <p className="text-xs text-muted-foreground">
                     ${formatNumber(tx.amountUsd)}
                   </p>
                 )}

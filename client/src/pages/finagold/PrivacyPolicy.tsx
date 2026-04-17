@@ -30,7 +30,7 @@ function PrivacyContent() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-4 text-[#0D0D0D]">1. Data Controller & Contact Information</h2>
               <p className="text-[#0D0D0D]/80 leading-relaxed mb-4">The data controller responsible for your personal data is:</p>
-              <div className="bg-white rounded-xl p-6 border border-gray-200 mb-4">
+              <div className="bg-card rounded-xl p-6 border border-border mb-4">
                 <p className="font-semibold text-[#0D0D0D]">Finatrades Finance SA</p>
                 <p className="text-[#0D0D0D]/70">Rue Robert Céard 6</p>
                 <p className="text-[#0D0D0D]/70">1204 Geneva</p>
@@ -56,31 +56,31 @@ function PrivacyContent() {
               <h2 className="text-2xl font-bold mb-4 text-[#0D0D0D]">3. Purposes & Legal Basis for Processing</h2>
               <p className="text-[#0D0D0D]/80 leading-relaxed mb-4">We process your personal data for the following purposes and based on the corresponding legal grounds:</p>
               <div className="overflow-x-auto">
-                <table className="w-full border-collapse bg-white rounded-xl overflow-hidden border border-gray-200">
+                <table className="w-full border-collapse bg-card rounded-xl overflow-hidden border border-border">
                   <thead>
                     <tr className="bg-[#8A2BE2]/10">
-                      <th className="text-left p-4 font-semibold text-[#0D0D0D] border-b border-gray-200">Purpose</th>
-                      <th className="text-left p-4 font-semibold text-[#0D0D0D] border-b border-gray-200">Legal Basis (under FADP/GDPR)</th>
+                      <th className="text-left p-4 font-semibold text-[#0D0D0D] border-b border-border">Purpose</th>
+                      <th className="text-left p-4 font-semibold text-[#0D0D0D] border-b border-border">Legal Basis (under FADP/GDPR)</th>
                     </tr>
                   </thead>
                   <tbody className="text-[#0D0D0D]/80">
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border/60">
                       <td className="p-4">To onboard you as a customer and perform KYC/AML checks</td>
                       <td className="p-4">Legal Obligation by Law & Legitimate Interest</td>
                     </tr>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border/60">
                       <td className="p-4">To provide Platform services (issuing/managing Gold Certificates, facilitating payments through 3rd party)</td>
                       <td className="p-4">Performance as stated on Platform</td>
                     </tr>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border/60">
                       <td className="p-4">To prevent, detect, and investigate fraud, money laundering, and other financial crimes</td>
                       <td className="p-4">Legitimate Interest & Legal Obligation by Law</td>
                     </tr>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border/60">
                       <td className="p-4">To communicate with you and provide customer support</td>
                       <td className="p-4">Performance as stated on Platform & Legitimate Interest</td>
                     </tr>
-                    <tr className="border-b border-gray-100">
+                    <tr className="border-b border-border/60">
                       <td className="p-4">To ensure the security and integrity of our IT systems and the Platform</td>
                       <td className="p-4">Legitimate Interest</td>
                     </tr>

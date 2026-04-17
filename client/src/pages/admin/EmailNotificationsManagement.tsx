@@ -472,7 +472,7 @@ export default function EmailNotificationsManagement() {
                               </Badge>
                             </TableCell>
                             <TableCell>
-                              <Badge className={template.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}>
+                              <Badge className={template.isActive ? 'bg-green-100 text-green-800' : 'bg-muted text-foreground'}>
                                 {template.isActive ? 'Active' : 'Inactive'}
                               </Badge>
                             </TableCell>

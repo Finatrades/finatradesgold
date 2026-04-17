@@ -202,8 +202,8 @@ export default function UnifiedGoldTally() {
       <div className="p-6 space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Unified Gold Tally</h1>
-            <p className="text-gray-500">Track all gold deposits from payment to physical allocation</p>
+            <h1 className="text-2xl font-bold text-foreground">Unified Gold Tally</h1>
+            <p className="text-muted-foreground">Track all gold deposits from payment to physical allocation</p>
           </div>
           <Button onClick={() => refetch()} variant="outline" size="sm">
             <RefreshCw className="w-4 h-4 mr-2" />
@@ -216,7 +216,7 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending Payment</p>
+                  <p className="text-sm text-muted-foreground">Pending Payment</p>
                   <p className="text-2xl font-bold">{stats?.pendingPayment || 0}</p>
                 </div>
                 <Clock className="w-8 h-8 text-yellow-500" />
@@ -227,7 +227,7 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Pending Allocation</p>
+                  <p className="text-sm text-muted-foreground">Pending Allocation</p>
                   <p className="text-2xl font-bold">{(stats?.pendingAllocation || 0) + (stats?.pendingCert || 0)}</p>
                 </div>
                 <Package className="w-8 h-8 text-blue-500" />
@@ -238,7 +238,7 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-sm text-muted-foreground">Completed</p>
                   <p className="text-2xl font-bold">{stats?.completed || 0}</p>
                 </div>
                 <CheckCircle className="w-8 h-8 text-green-500" />
@@ -249,7 +249,7 @@ export default function UnifiedGoldTally() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Volume</p>
+                  <p className="text-sm text-muted-foreground">Total Volume</p>
                   <p className="text-2xl font-bold">${Number(stats?.totalVolumeUsd || 0).toLocaleString()}</p>
                 </div>
                 <Coins className="w-8 h-8 text-amber-500" />
@@ -264,7 +264,7 @@ export default function UnifiedGoldTally() {
               <CardTitle>Transactions</CardTitle>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                   <Input
                     placeholder="Search by ID, user..."
                     value={search}
@@ -300,7 +300,7 @@ export default function UnifiedGoldTally() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
               </div>
             ) : (
               <>
@@ -322,20 +322,20 @@ export default function UnifiedGoldTally() {
                     <TableBody>
                       {(transactions?.items?.length === 0 || !transactions?.items) ? (
                         <TableRow>
-                          <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                          <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">
                             No transactions found
                           </TableCell>
                         </TableRow>
                       ) : (
                         transactions?.items?.map((txn: any) => (
-                          <TableRow key={txn.id} className="cursor-pointer hover:bg-gray-50" onClick={() => openTransactionDrawer(txn)}>
+                          <TableRow key={txn.id} className="cursor-pointer hover:bg-muted/40" onClick={() => openTransactionDrawer(txn)}>
                             <TableCell className="font-mono text-xs">{txn.txn_id || txn.id?.slice(0, 8)}...</TableCell>
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <User className="w-4 h-4 text-blue-500" />
                                 <div>
                                   <p className="text-sm font-medium">{txn.user_name}</p>
-                                  <p className="text-xs text-gray-500">{txn.user_email}</p>
+                                  <p className="text-xs text-muted-foreground">{txn.user_email}</p>
                                 </div>
                               </div>
                             </TableCell>
@@ -353,7 +353,7 @@ export default function UnifiedGoldTally() {
                                 {STATUS_CONFIG[txn.status as TallyStatus]?.label || txn.status}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-sm text-gray-500">
+                            <TableCell className="text-sm text-muted-foreground">
                               {format(new Date(txn.created_at), 'MMM d, yyyy')}
                             </TableCell>
                             <TableCell className="text-right">
@@ -369,7 +369,7 @@ export default function UnifiedGoldTally() {
                 </div>
 
                 <div className="flex items-center justify-between mt-4">
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-muted-foreground">
                     Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, transactions?.total || 0)} of {transactions?.total || 0}
                   </p>
                   <div className="flex items-center gap-2">
@@ -835,35 +835,35 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Status</span>
+                    <span className="text-sm text-muted-foreground">Status</span>
                     <Badge variant={STATUS_CONFIG[transaction.status].variant}>
                       {STATUS_CONFIG[transaction.status].label}
                     </Badge>
                   </div>
                   <Separator />
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Wallet</span>
+                    <span className="text-sm text-muted-foreground">Wallet</span>
                     <span className="text-sm font-medium">{transaction.walletType}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Method</span>
+                    <span className="text-sm text-muted-foreground">Method</span>
                     <span className="text-sm font-medium">{DEPOSIT_METHOD_LABELS[transaction.depositMethod]}</span>
                   </div>
                   <Separator />
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Deposit Amount</span>
+                    <span className="text-sm text-muted-foreground">Deposit Amount</span>
                     <span className="text-sm font-medium">{formatCurrency(transaction.depositAmount, transaction.depositCurrency)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Net Amount</span>
+                    <span className="text-sm text-muted-foreground">Net Amount</span>
                     <span className="text-sm font-medium">{formatCurrency(transaction.netAmount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Gold Rate</span>
+                    <span className="text-sm text-muted-foreground">Gold Rate</span>
                     <span className="text-sm font-medium">{transaction.goldRateValue ? `$${Number(transaction.goldRateValue).toFixed(2)}/g` : '-'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Gold Equivalent</span>
+                    <span className="text-sm text-muted-foreground">Gold Equivalent</span>
                     <span className="text-sm font-mono font-medium">{formatGold(transaction.goldEquivalentG)}</span>
                   </div>
                 </CardContent>
@@ -875,15 +875,15 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardHeader>
                 <CardContent className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Name</span>
+                    <span className="text-sm text-muted-foreground">Name</span>
                     <span className="text-sm font-medium">{transaction.user?.firstName} {transaction.user?.lastName}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Email</span>
+                    <span className="text-sm text-muted-foreground">Email</span>
                     <span className="text-sm">{transaction.user?.email}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Account Type</span>
+                    <span className="text-sm text-muted-foreground">Account Type</span>
                     <Badge variant="outline">{transaction.user?.accountType || 'personal'}</Badge>
                   </div>
                 </CardContent>
@@ -910,7 +910,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    <div className="text-sm text-gray-600">
+                    <div className="text-sm text-muted-foreground">
                       <div className="flex justify-between py-1">
                         <span>Physical Gold Allocated:</span>
                         <span className="font-mono font-semibold text-amber-700">{formatGold(transaction.physicalGoldAllocatedG)}</span>
@@ -938,7 +938,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="text-sm text-gray-600 space-y-1">
+                    <div className="text-sm text-muted-foreground space-y-1">
                       <div className="flex justify-between">
                         <span>Gold Credited:</span>
                         <span className="font-mono font-semibold text-purple-700">{formatGold(transaction.goldCreditedG)}</span>
@@ -976,7 +976,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="WG-2026-001234"
                         value={wingoldForm.wingoldOrderId}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldOrderId: e.target.value }))}
-                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}
                         disabled={isWingoldDataLocked}
                       />
                     </div>
@@ -986,7 +986,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="INV-2026-5678"
                         value={wingoldForm.wingoldSupplierInvoiceId}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldSupplierInvoiceId: e.target.value }))}
-                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}
                         disabled={isWingoldDataLocked}
                       />
                     </div>
@@ -1000,7 +1000,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="95.50"
                         value={wingoldForm.wingoldBuyRate}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldBuyRate: e.target.value }))}
-                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}
                         disabled={isWingoldDataLocked}
                       />
                     </div>
@@ -1012,7 +1012,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                         placeholder="28500.00"
                         value={wingoldForm.wingoldCostUsd}
                         onChange={(e) => setWingoldForm(prev => ({ ...prev, wingoldCostUsd: e.target.value }))}
-                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                        className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}
                         disabled={isWingoldDataLocked}
                       />
                     </div>
@@ -1024,7 +1024,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       onValueChange={(value) => setWingoldForm(prev => ({ ...prev, vaultLocation: value }))}
                       disabled={isWingoldDataLocked}
                     >
-                      <SelectTrigger className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}>
+                      <SelectTrigger className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}>
                         <SelectValue placeholder="Select vault location" />
                       </SelectTrigger>
                       <SelectContent>
@@ -1076,11 +1076,11 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   </div>
 
                   {wingoldForm.bars.length === 0 ? (
-                    <p className="text-xs text-gray-400 text-center py-2">No bars added yet</p>
+                    <p className="text-xs text-muted-foreground/70 text-center py-2">No bars added yet</p>
                   ) : (
                     <div className="space-y-2">
                       {wingoldForm.bars.map((bar, index) => (
-                        <div key={index} className="p-2 bg-gray-50 rounded-md space-y-2">
+                        <div key={index} className="p-2 bg-muted/40 rounded-md space-y-2">
                           <div className="flex items-center justify-between">
                             <span className="text-xs font-medium">Bar #{index + 1}</span>
                             <Button variant="ghost" size="sm" onClick={() => removeBar(index)} className="h-6 w-6 p-0">
@@ -1112,7 +1112,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                           </div>
                         </div>
                       ))}
-                      <div className="text-xs text-gray-500 text-right">
+                      <div className="text-xs text-muted-foreground text-right">
                         Total: {wingoldForm.bars.reduce((sum, b) => sum + b.weightG, 0).toFixed(2)}g
                       </div>
                     </div>
@@ -1134,7 +1134,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       placeholder="CERT-ZH-2026-001234"
                       value={wingoldForm.storageCertificateId}
                       onChange={(e) => setWingoldForm(prev => ({ ...prev, storageCertificateId: e.target.value }))}
-                      className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-gray-100' : ''}`}
+                      className={`h-8 text-sm ${isWingoldDataLocked ? 'bg-muted' : ''}`}
                       disabled={isWingoldDataLocked}
                     />
                   </div>
@@ -1202,27 +1202,27 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     <p className="text-xs font-semibold text-purple-800 uppercase tracking-wide">Credit Summary</p>
                     <div className="grid grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-gray-500">User:</span>
+                        <span className="text-muted-foreground">User:</span>
                         <p className="font-medium truncate">{transaction.user ? `${transaction.user.firstName} ${transaction.user.lastName}` : 'N/A'}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Wallet:</span>
+                        <span className="text-muted-foreground">Wallet:</span>
                         <p className="font-medium">{transaction.walletType === 'LGPW' ? '🏆 LGPW (Physical)' : '💰 FGPW (Cash-Backed)'}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Gold to Credit:</span>
+                        <span className="text-muted-foreground">Gold to Credit:</span>
                         <p className="font-bold text-green-700">{formatGold(wingoldForm.physicalGoldAllocatedG || '0')}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500">Deposit Amount:</span>
+                        <span className="text-muted-foreground">Deposit Amount:</span>
                         <p className="font-medium">{formatCurrency(transaction.depositAmount)} → {formatCurrency(transaction.netAmount)}</p>
                       </div>
                     </div>
                     <div className="pt-1 border-t border-purple-200">
-                      <span className="text-xs text-gray-500">Wingold Order:</span>
+                      <span className="text-xs text-muted-foreground">Wingold Order:</span>
                       <span className="ml-1 text-xs font-mono">{wingoldForm.wingoldOrderId || 'Not set'}</span>
-                      <span className="mx-2 text-gray-300">|</span>
-                      <span className="text-xs text-gray-500">Certificate:</span>
+                      <span className="mx-2 text-muted-foreground/50">|</span>
+                      <span className="text-xs text-muted-foreground">Certificate:</span>
                       <span className="ml-1 text-xs font-mono">{wingoldForm.storageCertificateId || 'Not set'}</span>
                     </div>
                   </div>
@@ -1261,7 +1261,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   <Separator />
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-medium">Operating Costs</Label>
-                    <span className="text-xs text-gray-500">
+                    <span className="text-xs text-muted-foreground">
                       Payment: {DEPOSIT_METHOD_LABELS[transaction.depositMethod]} ({getPaymentMethodFeeInfo(transaction.depositMethod)})
                     </span>
                   </div>
@@ -1331,13 +1331,13 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </div>
                   </div>
 
-                  <div className="p-3 bg-gray-50 rounded-md space-y-2">
+                  <div className="p-3 bg-muted/40 rounded-md space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Total Costs:</span>
+                      <span className="text-muted-foreground">Total Costs:</span>
                       <span className="font-medium">${calculateTotalCosts().toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Wingold Cost:</span>
+                      <span className="text-muted-foreground">Wingold Cost:</span>
                       <span className="font-medium">${Number(wingoldForm.wingoldCostUsd || 0).toFixed(2)}</span>
                     </div>
                     <Separator />
@@ -1386,11 +1386,11 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Deposit Amount</span>
+                    <span className="text-sm text-muted-foreground">Deposit Amount</span>
                     <span className="text-sm font-medium">{formatCurrency(transaction.depositAmount)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Platform Fee</span>
+                    <span className="text-sm text-muted-foreground">Platform Fee</span>
                     <span className="text-sm font-medium text-orange-600">-{formatCurrency(transaction.feeAmount)}</span>
                   </div>
                   <Separator />
@@ -1410,23 +1410,23 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Wingold Cost</span>
+                    <span className="text-sm text-muted-foreground">Wingold Cost</span>
                     <span className="text-sm">{formatCurrency(transaction.wingoldCostUsd)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Payment Gateway</span>
+                    <span className="text-sm text-muted-foreground">Payment Gateway</span>
                     <span className="text-sm">{formatCurrency(transaction.gatewayCostUsd)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Bank Fees</span>
+                    <span className="text-sm text-muted-foreground">Bank Fees</span>
                     <span className="text-sm">{formatCurrency(transaction.bankCostUsd)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Network Fees</span>
+                    <span className="text-sm text-muted-foreground">Network Fees</span>
                     <span className="text-sm">{formatCurrency(transaction.networkCostUsd)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-gray-500">Operations</span>
+                    <span className="text-sm text-muted-foreground">Operations</span>
                     <span className="text-sm">{formatCurrency(transaction.opsCostUsd)}</span>
                   </div>
                   <Separator />
@@ -1446,12 +1446,12 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                 </CardHeader>
                 <CardContent>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm text-gray-600">Platform Profit</span>
+                    <span className="text-sm text-muted-foreground">Platform Profit</span>
                     <span className={`text-xl font-bold ${Number(transaction.netProfitUsd || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                       {formatCurrency(transaction.netProfitUsd)}
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-2">
+                  <p className="text-xs text-muted-foreground mt-2">
                     Calculated as: Fee Amount - Total Costs
                   </p>
                 </CardContent>
@@ -1470,16 +1470,16 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Wallet Type</span>
+                        <span className="text-sm text-muted-foreground">Wallet Type</span>
                         <Badge variant="secondary">{projection.transaction?.walletType}</Badge>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Gold to Credit</span>
+                        <span className="text-sm text-muted-foreground">Gold to Credit</span>
                         <span className="text-sm font-mono font-bold text-green-600">+{formatGold(projection.transaction?.goldToCredit)}</span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">USD Equivalent</span>
-                        <span className="text-sm text-gray-500">≈ {formatCurrency(projection.transaction?.usdEquivalent)}</span>
+                        <span className="text-sm text-muted-foreground">USD Equivalent</span>
+                        <span className="text-sm text-muted-foreground">≈ {formatCurrency(projection.transaction?.usdEquivalent)}</span>
                       </div>
                     </CardContent>
                   </Card>
@@ -1491,10 +1491,10 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     <CardContent className="space-y-3">
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">LGPW Balance</span>
+                          <span className="text-muted-foreground">LGPW Balance</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{formatGold(projection.current?.finapay?.mpgw?.balanceG)}</span>
-                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <ArrowRight className="w-3 h-3 text-muted-foreground/70" />
                             <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finapay?.mpgw?.balanceG)}</span>
                             {projection.delta?.mpgwDeltaG > 0 && (
                               <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta.mpgwDeltaG)}</Badge>
@@ -1505,10 +1505,10 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       <Separator />
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-500">FGPW Balance</span>
+                          <span className="text-muted-foreground">FGPW Balance</span>
                           <div className="flex items-center gap-2">
                             <span className="font-mono">{formatGold(projection.current?.finapay?.fpgw?.balanceG)}</span>
-                            <ArrowRight className="w-3 h-3 text-gray-400" />
+                            <ArrowRight className="w-3 h-3 text-muted-foreground/70" />
                             <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finapay?.fpgw?.balanceG)}</span>
                             {projection.delta?.fpgwDeltaG > 0 && (
                               <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta.fpgwDeltaG)}</Badge>
@@ -1525,19 +1525,19 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Total Gold</span>
+                        <span className="text-muted-foreground">Total Gold</span>
                         <div className="flex items-center gap-2">
                           <span className="font-mono">{formatGold(projection.current?.finavault?.totalG)}</span>
-                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <ArrowRight className="w-3 h-3 text-muted-foreground/70" />
                           <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.finavault?.totalG)}</span>
                           <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta?.vaultDeltaG)}</Badge>
                         </div>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Bars Count</span>
+                        <span className="text-muted-foreground">Bars Count</span>
                         <div className="flex items-center gap-2">
                           <span>{projection.current?.finavault?.barsCount || 0}</span>
-                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <ArrowRight className="w-3 h-3 text-muted-foreground/70" />
                           <span className="font-medium">{projection.after?.finavault?.barsCount || 0}</span>
                         </div>
                       </div>
@@ -1550,16 +1550,16 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Allocated Total</span>
+                        <span className="text-muted-foreground">Allocated Total</span>
                         <div className="flex items-center gap-2">
                           <span className="font-mono">{formatGold(projection.current?.wingold?.allocatedTotalGForUser)}</span>
-                          <ArrowRight className="w-3 h-3 text-gray-400" />
+                          <ArrowRight className="w-3 h-3 text-muted-foreground/70" />
                           <span className="font-mono font-medium text-green-600">{formatGold(projection.after?.wingold?.allocatedTotalGForUser)}</span>
                           <Badge variant="outline" className="text-xs text-green-600">+{formatGold(projection.delta?.wingoldDeltaG)}</Badge>
                         </div>
                       </div>
                       <div className="flex justify-between text-sm">
-                        <span className="text-gray-500">Certificate</span>
+                        <span className="text-muted-foreground">Certificate</span>
                         <span className="font-mono text-xs">{projection.after?.wingold?.latestCertificateId || '-'}</span>
                       </div>
                     </CardContent>
@@ -1575,7 +1575,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                   )}
                 </>
               ) : (
-                <div className="flex items-center justify-center py-8 text-gray-500">
+                <div className="flex items-center justify-center py-8 text-muted-foreground">
                   <RefreshCw className="w-5 h-5 animate-spin mr-2" />
                   Loading holdings...
                 </div>
@@ -1599,15 +1599,15 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                           <div key={event.id} className="flex gap-3">
                             <div className="flex flex-col items-center">
                               <div className={`w-3 h-3 rounded-full ${index === 0 ? 'bg-purple-500' : 'bg-gray-300'}`} />
-                              {index < events.length - 1 && <div className="w-0.5 h-full bg-gray-200 mt-1" />}
+                              {index < events.length - 1 && <div className="w-0.5 h-full bg-muted mt-1" />}
                             </div>
                             <div className="flex-1 pb-4">
                               <p className="text-sm font-medium">{eventType?.replace(/_/g, ' ')}</p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {triggeredByName} • {createdAt ? format(new Date(createdAt), 'MMM d, yyyy HH:mm') : '-'}
                               </p>
                               {details && Object.keys(details).length > 0 && (
-                                <div className="mt-1 text-xs text-gray-600 bg-gray-50 p-2 rounded">
+                                <div className="mt-1 text-xs text-muted-foreground bg-muted/40 p-2 rounded">
                                   {Object.entries(details).map(([key, value]) => (
                                     <div key={key}>{key}: {String(value)}</div>
                                   ))}
@@ -1619,7 +1619,7 @@ function TransactionDrawer({ transaction, open, onClose, onRefresh }: Transactio
                       })}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-500 text-center py-4">No events yet</p>
+                    <p className="text-sm text-muted-foreground text-center py-4">No events yet</p>
                   )}
                 </CardContent>
               </Card>

@@ -67,7 +67,7 @@ const getStatusColor = (status: string) => {
     case 'cancelled':
       return 'bg-red-100 text-red-700';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-muted text-foreground/85';
   }
 };
 
@@ -150,13 +150,13 @@ export default function MobileFinaBridge() {
         animate={{ opacity: 1, y: 0 }}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-purple-600 to-violet-700 p-6 text-white shadow-xl"
       >
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-        <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
+        <div className="absolute top-0 right-0 w-32 h-32 bg-card/10 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+        <div className="absolute bottom-0 left-0 w-24 h-24 bg-card/5 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
         
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <div className="p-2 bg-white/20 rounded-xl backdrop-blur-sm">
+              <div className="p-2 bg-card/20 rounded-xl backdrop-blur-sm">
                 <Briefcase className="w-5 h-5" />
               </div>
               <span className="font-medium text-white/90">FinaBridge</span>
@@ -165,14 +165,14 @@ export default function MobileFinaBridge() {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowBalance(!showBalance)}
-                className="p-2 bg-white/10 rounded-full backdrop-blur-sm"
+                className="p-2 bg-card/10 rounded-full backdrop-blur-sm"
               >
                 {showBalance ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={handleRefresh}
-                className="p-2 bg-white/10 rounded-full backdrop-blur-sm"
+                className="p-2 bg-card/10 rounded-full backdrop-blur-sm"
                 disabled={isRefreshing}
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -188,11 +188,11 @@ export default function MobileFinaBridge() {
           </div>
           
           <div className="flex items-center gap-3 mt-3">
-            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
+            <div className="flex items-center gap-1 bg-card/10 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
               <Unlock className="w-3.5 h-3.5 text-green-300" />
               <span>{showBalance ? `${availableGold.toFixed(2)}g` : '••••'}</span>
             </div>
-            <div className="flex items-center gap-1 bg-white/10 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
+            <div className="flex items-center gap-1 bg-card/10 px-3 py-1.5 rounded-full text-sm backdrop-blur-sm">
               <Lock className="w-3.5 h-3.5 text-amber-300" />
               <span>{showBalance ? `${lockedGold.toFixed(2)}g` : '••••'}</span>
             </div>
@@ -287,7 +287,7 @@ export default function MobileFinaBridge() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-2xl border border-border shadow-sm"
+        className="bg-card rounded-2xl border border-border shadow-sm"
       >
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h3 className="font-semibold text-foreground">Active Trades</h3>
@@ -350,7 +350,7 @@ export default function MobileFinaBridge() {
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl border border-border shadow-sm"
+          className="bg-card rounded-2xl border border-border shadow-sm"
         >
           <div className="flex items-center justify-between p-4 border-b border-border">
             <h3 className="font-semibold text-foreground">My Proposals</h3>

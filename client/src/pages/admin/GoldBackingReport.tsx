@@ -207,7 +207,7 @@ export default function GoldBackingReport() {
       case 'Rejected': return 'bg-red-100 text-red-700';
       case 'In Progress': return 'bg-yellow-100 text-yellow-700';
       case 'Pending Review': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-muted text-foreground/85';
     }
   };
 
@@ -303,10 +303,10 @@ export default function GoldBackingReport() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Gold Backing Report
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Compare vault holdings against customer liabilities to ensure full gold backing
             </p>
           </div>
@@ -354,10 +354,10 @@ export default function GoldBackingReport() {
                 {[1, 2, 3, 4].map((i) => (
                   <Card key={i} className="animate-pulse">
                     <CardHeader className="pb-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 bg-muted rounded w-1/2" />
                     </CardHeader>
                     <CardContent>
-                      <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
+                      <div className="h-8 bg-muted rounded w-3/4 mt-2" />
                     </CardContent>
                   </Card>
                 ))}
@@ -381,7 +381,7 @@ export default function GoldBackingReport() {
                         }`} />
                         <div>
                           <h2 className="text-2xl font-bold" data-testid="text-backing-status">{backingStatus?.label}</h2>
-                          <p className="text-gray-600" data-testid="text-backing-ratio">
+                          <p className="text-muted-foreground" data-testid="text-backing-ratio">
                             {data.backing.overallRatio.toFixed(2)}% of customer gold is backed by physical holdings
                           </p>
                         </div>
@@ -400,7 +400,7 @@ export default function GoldBackingReport() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {data.backing.overallSurplus >= 0 ? 'Surplus' : 'Deficit'}
                         </p>
                       </div>
@@ -428,7 +428,7 @@ export default function GoldBackingReport() {
                       <div className="text-3xl font-bold text-purple-600" data-testid="text-physical-gold">
                         {formatGrams(data.physicalGold.totalGrams)}g
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Total physical gold stored</p>
+                      <p className="text-sm text-muted-foreground mt-1">Total physical gold stored</p>
                       
                       {data.physicalGold.holdings.length > 0 && (
                         <div className="mt-4 space-y-2 max-h-48 overflow-y-auto">
@@ -439,13 +439,13 @@ export default function GoldBackingReport() {
                               className="w-full flex justify-between items-center text-sm border-b pb-2 hover:bg-purple-50 p-2 rounded transition-colors cursor-pointer"
                               data-testid={`button-vault-${holding.id}`}
                             >
-                              <span className="text-gray-600 flex items-center gap-2">
+                              <span className="text-muted-foreground flex items-center gap-2">
                                 <Building className="h-4 w-4" />
                                 {holding.vaultLocation}
                               </span>
                               <span className="font-medium flex items-center gap-2">
                                 {formatGrams(holding.goldGrams)}g
-                                <ChevronRight className="h-4 w-4 text-gray-400" />
+                                <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
                               </span>
                             </button>
                           ))}
@@ -468,7 +468,7 @@ export default function GoldBackingReport() {
                       <div className="text-3xl font-bold text-blue-600" data-testid="text-liabilities">
                         {formatGrams(data.customerLiabilities.totalGrams)}g
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Total gold owed to customers</p>
+                      <p className="text-sm text-muted-foreground mt-1">Total gold owed to customers</p>
                       
                       <div className="mt-4 space-y-2">
                         {/* LGPW - Live Gold Price Wallet */}
@@ -483,10 +483,10 @@ export default function GoldBackingReport() {
                             </div>
                             <div className="text-left">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">LGPW</span>
+                                <span className="text-sm font-medium text-foreground">LGPW</span>
                                 <Badge className="bg-blue-100 text-blue-700 border-blue-200 text-xs">Market Price</Badge>
                               </div>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {data.customerLiabilities.mpgw?.count || 0} accounts
                               </p>
                             </div>
@@ -495,7 +495,7 @@ export default function GoldBackingReport() {
                             <span className="font-bold text-blue-600">
                               {formatGrams(data.customerLiabilities.mpgw?.totalGrams || 0)}g
                             </span>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
                           </div>
                         </button>
 
@@ -511,10 +511,10 @@ export default function GoldBackingReport() {
                             </div>
                             <div className="text-left">
                               <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium text-gray-900">FGPW</span>
+                                <span className="text-sm font-medium text-foreground">FGPW</span>
                                 <Badge className="bg-amber-100 text-amber-700 border-amber-200 text-xs">Fixed Price</Badge>
                               </div>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-muted-foreground">
                                 {enhancedData?.customerLiabilities?.fpgw?.count || 0} accounts
                               </p>
                             </div>
@@ -525,12 +525,12 @@ export default function GoldBackingReport() {
                                 {formatGrams(enhancedData?.customerLiabilities?.fpgw?.totalGrams || 0)}g
                               </span>
                               {enhancedData?.customerLiabilities?.fpgw?.weightedAvgPriceUsd ? (
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground/70">
                                   @ ${enhancedData.customerLiabilities.fpgw.weightedAvgPriceUsd.toFixed(2)}/g avg
                                 </p>
                               ) : null}
                             </div>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
                           </div>
                         </button>
 
@@ -545,8 +545,8 @@ export default function GoldBackingReport() {
                               <Clock className="h-4 w-4 text-green-600" />
                             </div>
                             <div className="text-left">
-                              <span className="text-sm font-medium text-gray-900">BNSL Accounts</span>
-                              <p className="text-xs text-gray-500">{data.customerLiabilities.bnsl?.count || 0} accounts</p>
+                              <span className="text-sm font-medium text-foreground">BNSL Accounts</span>
+                              <p className="text-xs text-muted-foreground">{data.customerLiabilities.bnsl?.count || 0} accounts</p>
                             </div>
                           </div>
                           <div className="flex items-center gap-2 text-right">
@@ -554,11 +554,11 @@ export default function GoldBackingReport() {
                               <span className="font-bold text-green-600">
                                 {formatGrams((data.customerLiabilities.bnsl?.availableGrams || 0) + (data.customerLiabilities.bnsl?.lockedGrams || 0))}g
                               </span>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-muted-foreground/70">
                                 {formatGrams(data.customerLiabilities.bnsl?.lockedGrams || 0)}g locked
                               </p>
                             </div>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                            <ChevronRight className="h-4 w-4 text-muted-foreground/70" />
                           </div>
                         </button>
                       </div>
@@ -579,7 +579,7 @@ export default function GoldBackingReport() {
                   <CardContent>
                     <div className="flex items-center gap-4">
                       <div className="text-2xl font-bold" data-testid="text-total-certificates">{data.certificates.total}</div>
-                      <span className="text-gray-500">Total Certificates</span>
+                      <span className="text-muted-foreground">Total Certificates</span>
                     </div>
                     {Object.keys(data.certificates.byStatus).length > 0 && (
                       <div className="mt-4 flex flex-wrap gap-2">
@@ -597,7 +597,7 @@ export default function GoldBackingReport() {
                   </CardContent>
                 </Card>
 
-                <div className="text-xs text-gray-400 text-center mt-4">
+                <div className="text-xs text-muted-foreground/70 text-center mt-4">
                   Report generated at {format(new Date(), 'PPpp')}
                 </div>
               </>
@@ -606,7 +606,7 @@ export default function GoldBackingReport() {
                 <CardContent className="pt-6 text-center">
                   <div className="flex flex-col items-center gap-4">
                     <AlertTriangle className="h-12 w-12 text-yellow-500" />
-                    <p className="text-gray-500">Unable to load gold backing report. Please try again.</p>
+                    <p className="text-muted-foreground">Unable to load gold backing report. Please try again.</p>
                     <Button variant="outline" onClick={handleRefresh} data-testid="button-retry-report">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Retry
@@ -623,10 +623,10 @@ export default function GoldBackingReport() {
                 {[1, 2, 3, 4].map((i) => (
                   <Card key={i} className="animate-pulse">
                     <CardHeader className="pb-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 bg-muted rounded w-1/2" />
                     </CardHeader>
                     <CardContent>
-                      <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
+                      <div className="h-8 bg-muted rounded w-3/4 mt-2" />
                     </CardContent>
                   </Card>
                 ))}
@@ -650,7 +650,7 @@ export default function GoldBackingReport() {
                         }`} />
                         <div>
                           <h2 className="text-2xl font-bold" data-testid="text-enhanced-backing-status">{enhancedBackingStatus?.label}</h2>
-                          <p className="text-gray-600" data-testid="text-enhanced-backing-ratio">
+                          <p className="text-muted-foreground" data-testid="text-enhanced-backing-ratio">
                             {enhancedData.backing.overallRatio.toFixed(2)}% of customer gold is backed by physical holdings
                           </p>
                         </div>
@@ -669,7 +669,7 @@ export default function GoldBackingReport() {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">
+                        <p className="text-sm text-muted-foreground">
                           {enhancedData.backing.overallSurplus >= 0 ? 'Surplus' : 'Deficit'}
                         </p>
                       </div>
@@ -697,23 +697,23 @@ export default function GoldBackingReport() {
                       <div className="text-3xl font-bold text-amber-600" data-testid="text-mpgw-total">
                         {formatGrams(enhancedData.customerLiabilities.mpgw.totalGrams)}g
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Gold valued at live market price</p>
+                      <p className="text-sm text-muted-foreground mt-1">Gold valued at live market price</p>
                       
                       <div className="mt-4 space-y-2 text-sm">
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Available</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Available</span>
                           <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.mpgw.available)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Pending</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Pending</span>
                           <span className="font-medium text-yellow-600">{formatGrams(enhancedData.customerLiabilities.mpgw.pending)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Locked (BNSL)</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Locked (BNSL)</span>
                           <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.mpgw.lockedBnsl)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Reserved (Trade)</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Reserved (Trade)</span>
                           <span className="font-medium text-blue-600">{formatGrams(enhancedData.customerLiabilities.mpgw.reservedTrade)}g</span>
                         </div>
                       </div>
@@ -721,7 +721,7 @@ export default function GoldBackingReport() {
                       <Separator className="my-4" />
                       
                       <div className="flex justify-between items-center">
-                        <span className="text-sm text-gray-600">Backing Ratio</span>
+                        <span className="text-sm text-muted-foreground">Backing Ratio</span>
                         <div className="flex items-center gap-2">
                           <Badge className={enhancedData.backing.mpgwRatio >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
                             {enhancedData.backing.mpgwRatio.toFixed(2)}%
@@ -750,23 +750,23 @@ export default function GoldBackingReport() {
                       <div className="text-3xl font-bold text-blue-600" data-testid="text-fpgw-total">
                         {formatGrams(enhancedData.customerLiabilities.fpgw.totalGrams)}g
                       </div>
-                      <p className="text-sm text-gray-500 mt-1">Gold value locked at purchase price</p>
+                      <p className="text-sm text-muted-foreground mt-1">Gold value locked at purchase price</p>
                       
                       <div className="mt-4 space-y-2 text-sm">
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Available</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Available</span>
                           <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.fpgw.available)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Pending</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Pending</span>
                           <span className="font-medium text-yellow-600">{formatGrams(enhancedData.customerLiabilities.fpgw.pending)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Locked (BNSL)</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Locked (BNSL)</span>
                           <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.fpgw.lockedBnsl)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-white rounded">
-                          <span className="text-gray-600">Reserved (Trade)</span>
+                        <div className="flex justify-between p-2 bg-card rounded">
+                          <span className="text-muted-foreground">Reserved (Trade)</span>
                           <span className="font-medium text-blue-600">{formatGrams(enhancedData.customerLiabilities.fpgw.reservedTrade)}g</span>
                         </div>
                       </div>
@@ -775,11 +775,11 @@ export default function GoldBackingReport() {
                       
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Weighted Avg Price</span>
+                          <span className="text-sm text-muted-foreground">Weighted Avg Price</span>
                           <span className="font-medium">${enhancedData.customerLiabilities.fpgw.weightedAvgPriceUsd.toFixed(2)}/g</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-sm text-gray-600">Backing Ratio</span>
+                          <span className="text-sm text-muted-foreground">Backing Ratio</span>
                           <div className="flex items-center gap-2">
                             <Badge className={enhancedData.backing.fpgwRatio >= 100 ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}>
                               {enhancedData.backing.fpgwRatio.toFixed(2)}%
@@ -810,13 +810,13 @@ export default function GoldBackingReport() {
                       </div>
                       <div className="space-y-2">
                         {Object.entries(enhancedData.physicalGold.byLocation).map(([location, grams]) => (
-                          <div key={location} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                            <span className="text-gray-600">{location}</span>
+                          <div key={location} className="flex justify-between items-center p-2 bg-muted/40 rounded text-sm">
+                            <span className="text-muted-foreground">{location}</span>
                             <span className="font-medium">{formatGrams(grams)}g</span>
                           </div>
                         ))}
                         {Object.keys(enhancedData.physicalGold.byLocation).length === 0 && (
-                          <p className="text-gray-400 text-sm">No vault holdings</p>
+                          <p className="text-muted-foreground/70 text-sm">No vault holdings</p>
                         )}
                       </div>
                     </CardContent>
@@ -834,16 +834,16 @@ export default function GoldBackingReport() {
                         {formatGrams(safeNumber(enhancedData.customerLiabilities.bnsl.availableGrams) + safeNumber(enhancedData.customerLiabilities.bnsl.lockedGrams))}g
                       </div>
                       <div className="space-y-2 text-sm">
-                        <div className="flex justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-gray-600">Available</span>
+                        <div className="flex justify-between p-2 bg-muted/40 rounded">
+                          <span className="text-muted-foreground">Available</span>
                           <span className="font-medium text-green-600">{formatGrams(enhancedData.customerLiabilities.bnsl.availableGrams)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-gray-600">Locked</span>
+                        <div className="flex justify-between p-2 bg-muted/40 rounded">
+                          <span className="text-muted-foreground">Locked</span>
                           <span className="font-medium text-orange-600">{formatGrams(enhancedData.customerLiabilities.bnsl.lockedGrams)}g</span>
                         </div>
-                        <div className="flex justify-between p-2 bg-gray-50 rounded">
-                          <span className="text-gray-600">Accounts</span>
+                        <div className="flex justify-between p-2 bg-muted/40 rounded">
+                          <span className="text-muted-foreground">Accounts</span>
                           <Badge variant="outline">{enhancedData.customerLiabilities.bnsl.count}</Badge>
                         </div>
                       </div>
@@ -860,7 +860,7 @@ export default function GoldBackingReport() {
                     <CardContent>
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Last Reconciliation</span>
+                          <span className="text-muted-foreground">Last Reconciliation</span>
                           <span className="font-medium">
                             {enhancedData.compliance.lastReconciliationDate 
                               ? format(new Date(enhancedData.compliance.lastReconciliationDate), 'PP')
@@ -868,22 +868,22 @@ export default function GoldBackingReport() {
                           </span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Total Reconciliations</span>
+                          <span className="text-muted-foreground">Total Reconciliations</span>
                           <Badge variant="outline">{enhancedData.compliance.totalReconciliations}</Badge>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Pending Reviews</span>
+                          <span className="text-muted-foreground">Pending Reviews</span>
                           <Badge variant={enhancedData.compliance.pendingReviews > 0 ? 'destructive' : 'outline'}>
                             {enhancedData.compliance.pendingReviews}
                           </Badge>
                         </div>
                         <Separator />
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Digital Certificates</span>
+                          <span className="text-muted-foreground">Digital Certificates</span>
                           <span className="font-medium">{enhancedData.compliance.digitalCertificates}</span>
                         </div>
                         <div className="flex justify-between items-center">
-                          <span className="text-gray-600">Physical Certificates</span>
+                          <span className="text-muted-foreground">Physical Certificates</span>
                           <span className="font-medium">{enhancedData.compliance.physicalCertificates}</span>
                         </div>
                       </div>
@@ -904,7 +904,7 @@ export default function GoldBackingReport() {
                   <CardContent>
                     <div className="grid md:grid-cols-2 gap-6">
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">By Status</h4>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">By Status</h4>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(enhancedData.certificates.byStatus).map(([status, count]) => (
                             <Badge key={status} variant="outline" className="capitalize">
@@ -912,12 +912,12 @@ export default function GoldBackingReport() {
                             </Badge>
                           ))}
                           {Object.keys(enhancedData.certificates.byStatus).length === 0 && (
-                            <span className="text-gray-400 text-sm">No certificates</span>
+                            <span className="text-muted-foreground/70 text-sm">No certificates</span>
                           )}
                         </div>
                       </div>
                       <div>
-                        <h4 className="text-sm font-medium text-gray-500 mb-2">By Type</h4>
+                        <h4 className="text-sm font-medium text-muted-foreground mb-2">By Type</h4>
                         <div className="flex flex-wrap gap-2">
                           {Object.entries(enhancedData.certificates.byType).map(([type, count]) => (
                             <Badge key={type} variant="secondary" className="capitalize">
@@ -925,7 +925,7 @@ export default function GoldBackingReport() {
                             </Badge>
                           ))}
                           {Object.keys(enhancedData.certificates.byType).length === 0 && (
-                            <span className="text-gray-400 text-sm">No certificates</span>
+                            <span className="text-muted-foreground/70 text-sm">No certificates</span>
                           )}
                         </div>
                       </div>
@@ -933,7 +933,7 @@ export default function GoldBackingReport() {
                   </CardContent>
                 </Card>
 
-                <div className="text-xs text-gray-400 text-center">
+                <div className="text-xs text-muted-foreground/70 text-center">
                   Enhanced report generated at {enhancedData.generatedAt ? format(new Date(enhancedData.generatedAt), 'PPpp') : format(new Date(), 'PPpp')}
                 </div>
               </>
@@ -942,7 +942,7 @@ export default function GoldBackingReport() {
                 <CardContent className="pt-6 text-center">
                   <div className="flex flex-col items-center gap-4">
                     <AlertTriangle className="h-12 w-12 text-yellow-500" />
-                    <p className="text-gray-500">Unable to load enhanced gold backing report. Please try again.</p>
+                    <p className="text-muted-foreground">Unable to load enhanced gold backing report. Please try again.</p>
                     <Button variant="outline" onClick={handleRefresh} data-testid="button-retry-enhanced-report">
                       <RefreshCw className="h-4 w-4 mr-2" />
                       Retry
@@ -986,17 +986,17 @@ export default function GoldBackingReport() {
             {selectedUserId ? (
               loadingProfile ? (
                 <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                  <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
                 </div>
               ) : userProfile ? (
                 <UserProfileView profile={userProfile} formatGrams={formatGrams} getKycBadgeColor={getKycBadgeColor} />
               ) : (
-                <p className="text-center text-gray-500 py-8">User not found</p>
+                <p className="text-center text-muted-foreground py-8">User not found</p>
               )
             ) : (
               isLoadingUsers ? (
                 <div className="flex items-center justify-center py-12">
-                  <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                  <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
                 </div>
               ) : currentUsers && currentUsers.length > 0 ? (
                 <div className="space-y-2">
@@ -1013,7 +1013,7 @@ export default function GoldBackingReport() {
                   ))}
                 </div>
               ) : (
-                <p className="text-center text-gray-500 py-8">No users found</p>
+                <p className="text-center text-muted-foreground py-8">No users found</p>
               )
             )}
           </ScrollArea>
@@ -1045,7 +1045,7 @@ function UserListItem({
   return (
     <button
       onClick={() => onSelect(user.userId)}
-      className="w-full flex items-center justify-between p-4 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
+      className="w-full flex items-center justify-between p-4 rounded-lg border hover:bg-muted/40 transition-colors cursor-pointer"
       data-testid={`button-user-${user.userId}`}
     >
       <div className="flex items-center gap-4">
@@ -1053,10 +1053,10 @@ function UserListItem({
           {user.firstName?.charAt(0)}{user.lastName?.charAt(0)}
         </div>
         <div className="text-left">
-          <div className="font-medium text-gray-900">
+          <div className="font-medium text-foreground">
             {user.firstName} {user.lastName}
           </div>
-          <div className="text-sm text-gray-500 flex items-center gap-2">
+          <div className="text-sm text-muted-foreground flex items-center gap-2">
             <span>{user.email}</span>
             {user.finatradesId && (
               <Badge variant="outline" className="text-xs">{user.finatradesId}</Badge>
@@ -1071,13 +1071,13 @@ function UserListItem({
         <div className="text-right">
           <div className="font-bold text-lg">{formatGrams(holdingAmount || 0)}g</div>
           {modalType === 'bnsl' && user.lockedGoldGrams !== undefined && user.lockedGoldGrams > 0 && (
-            <div className="text-xs text-gray-500">{formatGrams(user.lockedGoldGrams)}g locked</div>
+            <div className="text-xs text-muted-foreground">{formatGrams(user.lockedGoldGrams)}g locked</div>
           )}
           {modalType === 'vault' && user.certificateNumber && (
-            <div className="text-xs text-gray-500">{user.certificateNumber}</div>
+            <div className="text-xs text-muted-foreground">{user.certificateNumber}</div>
           )}
         </div>
-        <ChevronRight className="h-5 w-5 text-gray-400" />
+        <ChevronRight className="h-5 w-5 text-muted-foreground/70" />
       </div>
     </button>
   );
@@ -1111,12 +1111,12 @@ function UserProfileView({
                 <h3 className="text-xl font-bold" data-testid="text-user-name">
                   {user.firstName} {user.lastName}
                 </h3>
-                <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   <Mail className="h-4 w-4" />
                   {user.email}
                 </div>
                 {user.phoneNumber && (
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Phone className="h-4 w-4" />
                     {user.phoneNumber}
                   </div>
@@ -1134,19 +1134,19 @@ function UserProfileView({
         <CardContent>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-500">Account Type</span>
+              <span className="text-muted-foreground">Account Type</span>
               <p className="font-medium capitalize">{user.accountType}</p>
             </div>
             <div>
-              <span className="text-gray-500">Country</span>
+              <span className="text-muted-foreground">Country</span>
               <p className="font-medium">{user.country || 'Not specified'}</p>
             </div>
             <div>
-              <span className="text-gray-500">Member Since</span>
+              <span className="text-muted-foreground">Member Since</span>
               <p className="font-medium">{format(new Date(user.createdAt), 'PP')}</p>
             </div>
             <div>
-              <span className="text-gray-500">Total Gold Holdings</span>
+              <span className="text-muted-foreground">Total Gold Holdings</span>
               <p className="font-bold text-purple-600">{formatGrams(totalGold)}g</p>
             </div>
           </div>
@@ -1174,18 +1174,18 @@ function UserProfileView({
                 {finapayWallet ? (
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Gold Balance</span>
+                      <span className="text-muted-foreground">Gold Balance</span>
                       <span className="font-bold text-blue-600" data-testid="text-finapay-gold">
                         {formatGrams(finapayWallet.goldGrams)}g
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">USD Balance</span>
+                      <span className="text-muted-foreground">USD Balance</span>
                       <span className="font-medium">${finapayWallet.usdBalance.toFixed(2)}</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No LGPW wallet</p>
+                  <p className="text-muted-foreground/70 text-sm">No LGPW wallet</p>
                 )}
               </CardContent>
             </Card>
@@ -1201,18 +1201,18 @@ function UserProfileView({
                 {bnslWallet ? (
                   <div className="space-y-2">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Available</span>
+                      <span className="text-muted-foreground">Available</span>
                       <span className="font-bold text-green-600" data-testid="text-bnsl-available">
                         {formatGrams(bnslWallet.availableGoldGrams)}g
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Locked</span>
+                      <span className="text-muted-foreground">Locked</span>
                       <span className="font-medium text-orange-600">{formatGrams(bnslWallet.lockedGoldGrams)}g</span>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-gray-400 text-sm">No BNSL wallet</p>
+                  <p className="text-muted-foreground/70 text-sm">No BNSL wallet</p>
                 )}
               </CardContent>
             </Card>
@@ -1229,7 +1229,7 @@ function UserProfileView({
               <CardContent>
                 <div className="space-y-2">
                   {vaultHoldings.map((holding: any) => (
-                    <div key={holding.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                    <div key={holding.id} className="flex justify-between items-center p-2 bg-muted/40 rounded">
                       <span className="text-sm">{holding.vaultLocation}</span>
                       <span className="font-medium">{formatGrams(holding.goldGrams)}g</span>
                     </div>
@@ -1257,19 +1257,19 @@ function UserProfileView({
                             {tx.status}
                           </Badge>
                         </div>
-                        <p className="text-xs text-gray-500 mt-1">
+                        <p className="text-xs text-muted-foreground mt-1">
                           {format(new Date(tx.createdAt), 'PPp')}
                         </p>
                       </div>
                       <div className="text-right">
                         {tx.amountGold > 0 && <div className="font-medium">{formatGrams(tx.amountGold)}g</div>}
-                        {tx.amountUsd > 0 && <div className="text-sm text-gray-500">${tx.amountUsd.toFixed(2)}</div>}
+                        {tx.amountUsd > 0 && <div className="text-sm text-muted-foreground">${tx.amountUsd.toFixed(2)}</div>}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm text-center py-4">No transactions found</p>
+                <p className="text-muted-foreground/70 text-sm text-center py-4">No transactions found</p>
               )}
             </CardContent>
           </Card>
@@ -1287,7 +1287,7 @@ function UserProfileView({
                     <div key={cert.id} className="flex justify-between items-center p-3 border rounded">
                       <div>
                         <div className="font-medium">{cert.certificateNumber}</div>
-                        <div className="text-xs text-gray-500">{cert.vaultLocation}</div>
+                        <div className="text-xs text-muted-foreground">{cert.vaultLocation}</div>
                       </div>
                       <div className="text-right">
                         <div className="font-medium">{formatGrams(cert.goldGrams)}g</div>
@@ -1297,7 +1297,7 @@ function UserProfileView({
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm text-center py-4">No certificates found</p>
+                <p className="text-muted-foreground/70 text-sm text-center py-4">No certificates found</p>
               )}
             </CardContent>
           </Card>
@@ -1316,25 +1316,25 @@ function UserProfileView({
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <span className="text-gray-500">Status</span>
+                      <span className="text-muted-foreground">Status</span>
                       <p className="font-medium">{kycSubmission.status}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Tier</span>
+                      <span className="text-muted-foreground">Tier</span>
                       <p className="font-medium capitalize">{kycSubmission.tier?.replace(/_/g, ' ')}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Full Name</span>
+                      <span className="text-muted-foreground">Full Name</span>
                       <p className="font-medium">{kycSubmission.fullName || 'Not provided'}</p>
                     </div>
                     <div>
-                      <span className="text-gray-500">Nationality</span>
+                      <span className="text-muted-foreground">Nationality</span>
                       <p className="font-medium">{kycSubmission.nationality || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="text-gray-400 text-sm text-center py-4">No KYC submission found</p>
+                <p className="text-muted-foreground/70 text-sm text-center py-4">No KYC submission found</p>
               )}
             </CardContent>
           </Card>

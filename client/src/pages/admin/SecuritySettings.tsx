@@ -117,7 +117,7 @@ export default function SecuritySettings() {
       <AdminLayout>
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-gray-600">Failed to load security settings</p>
+          <p className="text-muted-foreground">Failed to load security settings</p>
           <Button onClick={fetchSettings} className="mt-4">Retry</Button>
         </div>
       </AdminLayout>
@@ -129,8 +129,8 @@ export default function SecuritySettings() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">Security Settings</h1>
-            <p className="text-gray-500">Configure Email OTP and Passkey verification for sensitive actions.</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">Security Settings</h1>
+            <p className="text-muted-foreground">Configure Email OTP and Passkey verification for sensitive actions.</p>
           </div>
           <Button onClick={handleSave} disabled={saving} data-testid="button-save-settings">
             <Save className="w-4 h-4 mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
@@ -158,10 +158,10 @@ export default function SecuritySettings() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                    <div className="flex items-center justify-between p-4 bg-muted/40 rounded-lg">
                       <div>
                         <Label className="text-base font-semibold">Enable Email OTP</Label>
-                        <p className="text-sm text-gray-500">Master switch for email OTP verification</p>
+                        <p className="text-sm text-muted-foreground">Master switch for email OTP verification</p>
                       </div>
                       <Switch
                         checked={settings.emailOtpEnabled}
@@ -298,7 +298,7 @@ export default function SecuritySettings() {
                     <div className="flex items-center justify-between p-4 bg-purple-50 rounded-lg border border-purple-200">
                       <div>
                         <Label className="text-base font-semibold">Enable Admin OTP Verification</Label>
-                        <p className="text-sm text-gray-500">Master switch for admin multi-approval OTP</p>
+                        <p className="text-sm text-muted-foreground">Master switch for admin multi-approval OTP</p>
                       </div>
                       <Switch
                         checked={settings.adminOtpEnabled}
@@ -399,10 +399,10 @@ export default function SecuritySettings() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center justify-between p-4 bg-muted/40 rounded-lg">
                     <div>
                       <Label className="text-base font-semibold">Enable Passkeys</Label>
-                      <p className="text-sm text-gray-500">Master switch for passkey authentication</p>
+                      <p className="text-sm text-muted-foreground">Master switch for passkey authentication</p>
                     </div>
                     <Switch
                       checked={settings.passkeyEnabled}
@@ -457,7 +457,7 @@ export default function SecuritySettings() {
                             onChange={(e) => updateSetting('passkeyHighValueThresholdUsd', e.target.value)}
                             data-testid="input-passkey-threshold"
                           />
-                          <p className="text-xs text-gray-500">
+                          <p className="text-xs text-muted-foreground">
                             Transactions above this amount will require passkey verification.
                           </p>
                         </div>
@@ -490,7 +490,7 @@ export default function SecuritySettings() {
                         onChange={(e) => updateSetting('otpExpiryMinutes', parseInt(e.target.value) || 10)}
                         data-testid="input-otp-expiry"
                       />
-                      <p className="text-xs text-gray-500">How long before a code expires.</p>
+                      <p className="text-xs text-muted-foreground">How long before a code expires.</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Max Attempts</Label>
@@ -502,7 +502,7 @@ export default function SecuritySettings() {
                         onChange={(e) => updateSetting('otpMaxAttempts', parseInt(e.target.value) || 3)}
                         data-testid="input-otp-attempts"
                       />
-                      <p className="text-xs text-gray-500">Failed attempts before lockout.</p>
+                      <p className="text-xs text-muted-foreground">Failed attempts before lockout.</p>
                     </div>
                     <div className="space-y-2">
                       <Label>Cooldown (minutes)</Label>
@@ -514,7 +514,7 @@ export default function SecuritySettings() {
                         onChange={(e) => updateSetting('otpCooldownMinutes', parseInt(e.target.value) || 1)}
                         data-testid="input-otp-cooldown"
                       />
-                      <p className="text-xs text-gray-500">Wait time between code requests.</p>
+                      <p className="text-xs text-muted-foreground">Wait time between code requests.</p>
                     </div>
                   </div>
                 </CardContent>

@@ -342,7 +342,7 @@ const [otpLoading, setOtpLoading] = useState(false);
               <p className="text-muted-foreground">Enter the 6-digit code from your authenticator app.</p>
             </div>
 
-            <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+            <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
               <form onSubmit={handleMfaVerify} className="space-y-6">
                 
                 <div className="flex flex-col items-center space-y-4">
@@ -421,7 +421,7 @@ const [otpLoading, setOtpLoading] = useState(false);
               <p className="text-muted-foreground">Sign in to access your FinaTrades dashboard.</p>
             </div>
 
-          <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+          <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
             {/* Login Method Toggle */}
             <div className="flex gap-2 mb-6">
               <Button
@@ -591,7 +591,7 @@ const [otpLoading, setOtpLoading] = useState(false);
                       <span className="w-full border-t" />
                     </div>
                     <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-white px-2 text-muted-foreground">Or continue with</span>
+                      <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                     </div>
                   </div>
 

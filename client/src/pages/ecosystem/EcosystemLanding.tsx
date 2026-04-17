@@ -75,7 +75,7 @@ function EcosystemNavbar() {
               <a
                 key={link.href}
                 href={link.href}
-                className="px-3 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                className="px-3 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-card/10 transition-all duration-200"
                 data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 {link.label}
@@ -86,7 +86,7 @@ function EcosystemNavbar() {
           <div className="hidden lg:flex items-center gap-3">
             <Link 
               href="/sign-in"
-              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-white/10"
+              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-card/10"
               data-testid="btn-sign-in"
             >
               Sign In
@@ -103,7 +103,7 @@ function EcosystemNavbar() {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-white/10 transition-colors"
+            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-card/10 transition-colors"
             data-testid="mobile-menu-toggle"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
@@ -124,7 +124,7 @@ function EcosystemNavbar() {
                   <a
                     key={link.href}
                     href={link.href}
-                    className="px-4 py-3 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-white/10 transition-all flex items-center"
+                    className="px-4 py-3 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-card/10 transition-all flex items-center"
                     onClick={() => setMobileOpen(false)}
                     data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                   >
@@ -133,7 +133,7 @@ function EcosystemNavbar() {
                 ))}
                 <Link 
                   href="/sign-in"
-                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-white/10 transition-all flex items-center justify-center"
+                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-card/10 transition-all flex items-center justify-center"
                 >
                   Sign In
                 </Link>
@@ -201,7 +201,7 @@ function HeroSection() {
           <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12">
             <a 
               href="#raminvest"
-              className="group flex items-center justify-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto"
+              className="group flex items-center justify-center gap-2 border border-border text-[#0D0D0D] bg-card px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-muted/40 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto"
               data-testid="btn-discover"
             >
               Discover Our Ecosystem
@@ -252,13 +252,13 @@ function RaminvestSection() {
                 <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" loading="lazy" />
               </div>
             </div>
-            <p className="text-gray-400 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
+            <p className="text-muted-foreground/70 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
             <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
           </motion.div>
 
           <motion.div variants={fadeIn} className="max-w-3xl mx-auto mb-16">
-            <div className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50">
-              <p className="text-gray-600 text-base leading-relaxed mb-4">
+            <div className="bg-card rounded-2xl p-8 shadow-sm border border-purple-100/50">
+              <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
                 delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
                 each focused on solving real-world trade and financial challenges.
@@ -286,14 +286,14 @@ function RaminvestSection() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="bg-white rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
+                className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
                 data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
                   <item.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-gray-500 text-sm leading-relaxed">{item.desc}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
               </div>
             ))}
           </motion.div>
@@ -329,7 +329,7 @@ function FinatradesSection() {
                 <span className="text-white/70 text-xs">○</span>
               </div>
               <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
-              <p className="text-gray-600 text-base leading-relaxed mb-4">
+              <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 A next-generation digital platform designed to streamline international trade, payments, and financial operations 
                 with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
               </p>
@@ -350,12 +350,12 @@ function FinatradesSection() {
                 { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
                 { icon: Lock, label: 'SO-FIT - FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-purple-600" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -390,12 +390,12 @@ function WingoldSection() {
                 { icon: Shield, label: 'Secure Trading', desc: 'Certified storage and transparent management' },
                 { icon: Award, label: 'Institutional Grade', desc: 'Solutions for governments and institutions' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-amber-600" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -407,7 +407,7 @@ function WingoldSection() {
                 </div>
               </div>
               <p className="text-amber-600 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
-              <p className="text-gray-600 text-base leading-relaxed mb-4">
+              <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 Wingold & Metals specializes in the trading and management of precious metals, providing strategic financial solutions 
                 for governments, institutions, and corporate clients. Through proprietary financial instruments and innovative structured solutions, 
                 we unlock liquidity and optimize asset value.
@@ -452,13 +452,13 @@ function WinCommoditiesSection() {
                 <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" loading="lazy" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
-              <p className="text-gray-600 text-base leading-relaxed mb-6">
+              <p className="text-muted-foreground text-base leading-relaxed mb-6">
                 As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
                 economies of scale on the sourcing, logistics and financial optimization. We focus on global transactions related to:
               </p>
               <div className="grid grid-cols-2 gap-3 mb-6 w-full">
                 {['Oil & Fuels', 'Metals', 'Green Energy', 'Soft Commodities'].map((item) => (
-                  <div key={item} className="px-4 py-3 rounded-xl bg-white border border-red-100 text-gray-700 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
+                  <div key={item} className="px-4 py-3 rounded-xl bg-card border border-red-100 text-foreground/85 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
                     {item}
                   </div>
                 ))}
@@ -482,12 +482,12 @@ function WinCommoditiesSection() {
                 { icon: Lock, label: 'Trade Security', desc: 'Fully compliant and transparent transactions' },
                 { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -522,12 +522,12 @@ function WinLogisticsSection() {
                 { icon: Building2, label: 'Warehousing', desc: 'Strategic warehouse partnerships in key trade zones' },
                 { icon: Globe, label: 'Trade Infrastructure', desc: 'Structured documentation and process handling' },
               ].map((item) => (
-                <div key={item.label} className="bg-white rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-gray-400 text-xs leading-relaxed">{item.desc}</p>
+                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
                 </div>
               ))}
             </motion.div>
@@ -537,8 +537,8 @@ function WinLogisticsSection() {
                 <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" loading="lazy" />
               </div>
               <p className="text-[#DC2626] font-semibold text-lg mb-2">Comprehensive Logistics Solutions Built for Global Trade</p>
-              <p className="text-gray-400 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
-              <p className="text-gray-600 text-base leading-relaxed mb-4">
+              <p className="text-muted-foreground/70 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
+              <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
                 and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
                 processes and expert professional handling at every stage of the supply chain.
@@ -577,7 +577,7 @@ function CTASection() {
             Powering Efficient Trade,{' '}
             <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">One Transaction at a Time</span>
           </motion.h2>
-          <motion.p variants={fadeIn} className="text-gray-500 text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
+          <motion.p variants={fadeIn} className="text-muted-foreground text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
             Whether supporting large-scale international trade operations or ongoing financial activities, 
             Finatrades empowers its partners to operate confidently in global markets.
           </motion.p>

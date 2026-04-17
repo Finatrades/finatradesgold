@@ -217,7 +217,7 @@ export default function DCAPage() {
     <Card 
       key={plan.id} 
       data-testid={`card-dca-plan-${plan.id}`}
-      className="bg-white border border-border hover:border-primary/50 transition-all"
+      className="bg-card border border-border hover:border-primary/50 transition-all"
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
@@ -362,7 +362,7 @@ export default function DCAPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -373,7 +373,7 @@ export default function DCAPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -384,7 +384,7 @@ export default function DCAPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -412,7 +412,7 @@ export default function DCAPage() {
             </CardContent>
           </Card>
         ) : plans.length === 0 ? (
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-12 text-center">
               <CalendarClock className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No Auto-Buy Plans Yet</h3>
@@ -445,7 +445,7 @@ export default function DCAPage() {
 
             <TabsContent value="active">
               {activePlans.length === 0 ? (
-                <Card className="bg-white border border-border">
+                <Card className="bg-card border border-border">
                   <CardContent className="p-8 text-center text-muted-foreground">
                     No active plans
                   </CardContent>
@@ -459,7 +459,7 @@ export default function DCAPage() {
 
             <TabsContent value="paused">
               {pausedPlans.length === 0 ? (
-                <Card className="bg-white border border-border">
+                <Card className="bg-card border border-border">
                   <CardContent className="p-8 text-center text-muted-foreground">
                     No paused plans
                   </CardContent>
@@ -473,7 +473,7 @@ export default function DCAPage() {
 
             <TabsContent value="cancelled">
               {cancelledPlans.length === 0 ? (
-                <Card className="bg-white border border-border">
+                <Card className="bg-card border border-border">
                   <CardContent className="p-8 text-center text-muted-foreground">
                     No cancelled plans
                   </CardContent>

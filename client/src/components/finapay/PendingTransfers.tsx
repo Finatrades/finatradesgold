@@ -578,7 +578,7 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={transfer.id}
-                  className="p-4 bg-white rounded-lg border border-amber-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-amber-200 shadow-sm"
                   data-testid={`pending-transfer-incoming-${transfer.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -657,10 +657,10 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={transfer.id}
-                  className={`p-4 bg-white rounded-lg shadow-sm ${
+                  className={`p-4 bg-card rounded-lg shadow-sm ${
                     isInvitation
                       ? "border-2 border-purple-300"
-                      : "border border-gray-200 opacity-80"
+                      : "border border-border opacity-80"
                   }`}
                   data-testid={`pending-transfer-outgoing-${transfer.id}`}
                 >
@@ -755,7 +755,7 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={deposit.id}
-                  className="p-4 bg-white rounded-lg border border-emerald-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-emerald-200 shadow-sm"
                   data-testid={`pending-deposit-${deposit.id}`}
                 >
                   <div className="flex items-start gap-3">
@@ -821,7 +821,7 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={request.id}
-                  className="p-4 bg-white rounded-lg border border-purple-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-purple-200 shadow-sm"
                   data-testid={`payment-request-${request.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -935,7 +935,7 @@ export default function PendingTransfers() {
           setDeclineReason("");
         }}
       >
-        <DialogContent className="bg-white">
+        <DialogContent className="bg-card">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               {actionType === "accept" && (
@@ -977,7 +977,7 @@ export default function PendingTransfers() {
 
           {selectedTransfer && (
             <div className="py-4">
-              <div className="bg-gray-50 p-4 rounded-lg space-y-2">
+              <div className="bg-muted/40 p-4 rounded-lg space-y-2">
                 <p className="font-semibold text-lg">
                   {formatAmount(selectedTransfer).primary}
                 </p>

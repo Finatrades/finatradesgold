@@ -250,7 +250,7 @@ export default function PhysicalDepositsAdmin() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-purple-800">Physical Gold Deposits</h1>
-            <p className="text-gray-500">Manage physical gold deposit requests</p>
+            <p className="text-muted-foreground">Manage physical gold deposit requests</p>
           </div>
         </div>
 
@@ -271,7 +271,7 @@ export default function PhysicalDepositsAdmin() {
                 <Icon className={`w-5 h-5 ${color}`} />
                 <span className="text-2xl font-bold">{stats?.[key] || 0}</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">{label}</p>
+              <p className="text-xs text-muted-foreground mt-1">{label}</p>
             </CardContent>
           </Card>
         ))}
@@ -302,13 +302,13 @@ export default function PhysicalDepositsAdmin() {
         </CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="text-center py-8 text-gray-500">Loading...</div>
+            <div className="text-center py-8 text-muted-foreground">Loading...</div>
           ) : deposits?.deposits?.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">No deposits found</div>
+            <div className="text-center py-8 text-muted-foreground">No deposits found</div>
           ) : (
             <div className="space-y-4">
               {deposits?.deposits?.map((deposit: Deposit) => (
-                <Card key={deposit.id} className="bg-gray-50">
+                <Card key={deposit.id} className="bg-muted/40">
                   <CardContent className="pt-4">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
@@ -323,7 +323,7 @@ export default function PhysicalDepositsAdmin() {
                             </Badge>
                           )}
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <User className="w-4 h-4" />
                             {deposit.user?.firstName} {deposit.user?.lastName}
@@ -332,7 +332,7 @@ export default function PhysicalDepositsAdmin() {
                           <span>{deposit.itemCount} item(s)</span>
                           <span className="font-medium">{parseFloat(deposit.totalDeclaredWeightGrams).toFixed(4)} g</span>
                         </div>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-muted-foreground/70">
                           Submitted {formatDistanceToNow(new Date(deposit.createdAt))} ago
                         </p>
                       </div>
@@ -397,19 +397,19 @@ export default function PhysicalDepositsAdmin() {
               {/* Basic Info */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
-                  <Label className="text-gray-500 text-xs">Status</Label>
+                  <Label className="text-muted-foreground text-xs">Status</Label>
                   <Badge variant={STATUS_BADGES[selectedDeposit.status]?.variant}>{STATUS_BADGES[selectedDeposit.status]?.label}</Badge>
                 </div>
                 <div>
-                  <Label className="text-gray-500 text-xs">Type</Label>
+                  <Label className="text-muted-foreground text-xs">Type</Label>
                   <p className="font-medium text-sm">{selectedDeposit.depositType.replace('_', ' ')}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-500 text-xs">Total Weight</Label>
+                  <Label className="text-muted-foreground text-xs">Total Weight</Label>
                   <p className="font-medium text-sm">{parseFloat(selectedDeposit.totalDeclaredWeightGrams).toFixed(4)} g</p>
                 </div>
                 <div>
-                  <Label className="text-gray-500 text-xs">Delivery Method</Label>
+                  <Label className="text-muted-foreground text-xs">Delivery Method</Label>
                   <p className="font-medium text-sm">{selectedDeposit.deliveryMethod.replace(/_/g, ' ')}</p>
                 </div>
               </div>
@@ -421,7 +421,7 @@ export default function PhysicalDepositsAdmin() {
                     <User className="w-8 h-8 text-blue-600" />
                     <div>
                       <p className="font-medium">{selectedDeposit.user?.firstName} {selectedDeposit.user?.lastName}</p>
-                      <p className="text-sm text-gray-600">{selectedDeposit.user?.email}</p>
+                      <p className="text-sm text-muted-foreground">{selectedDeposit.user?.email}</p>
                     </div>
                   </div>
                 </CardContent>
@@ -430,12 +430,12 @@ export default function PhysicalDepositsAdmin() {
               {/* Submission Date & Ownership */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-500 text-xs">Submitted</Label>
+                  <Label className="text-muted-foreground text-xs">Submitted</Label>
                   <p className="font-medium text-sm">{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
-                  <p className="text-xs text-gray-500">{formatDistanceToNow(new Date(selectedDeposit.createdAt), { addSuffix: true })}</p>
+                  <p className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(selectedDeposit.createdAt), { addSuffix: true })}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-500 text-xs">Beneficial Owner</Label>
+                  <Label className="text-muted-foreground text-xs">Beneficial Owner</Label>
                   <p className="font-medium text-sm">{(selectedDeposit as any).isBeneficialOwner ? 'Yes' : 'No'}</p>
                 </div>
               </div>
@@ -445,14 +445,14 @@ export default function PhysicalDepositsAdmin() {
                 <div className="grid grid-cols-2 gap-4">
                   {(selectedDeposit as any).sourceOfMetal && (
                     <div>
-                      <Label className="text-gray-500 text-xs">Source of Metal</Label>
+                      <Label className="text-muted-foreground text-xs">Source of Metal</Label>
                       <p className="font-medium text-sm">{(selectedDeposit as any).sourceOfMetal}</p>
                     </div>
                   )}
                   {(selectedDeposit as any).sourceDetails && (
                     <div>
-                      <Label className="text-gray-500 text-xs">Source Details</Label>
-                      <p className="text-sm text-gray-700">{(selectedDeposit as any).sourceDetails}</p>
+                      <Label className="text-muted-foreground text-xs">Source Details</Label>
+                      <p className="text-sm text-foreground/85">{(selectedDeposit as any).sourceDetails}</p>
                     </div>
                   )}
                 </div>
@@ -460,24 +460,24 @@ export default function PhysicalDepositsAdmin() {
 
               {/* Delivery/Pickup Details */}
               {selectedDeposit.deliveryMethod !== 'PERSONAL_DROPOFF' && (
-                <Card className="bg-gray-50">
+                <Card className="bg-muted/40">
                   <CardContent className="py-3">
-                    <Label className="text-gray-500 text-xs block mb-2">Pickup/Courier Details</Label>
+                    <Label className="text-muted-foreground text-xs block mb-2">Pickup/Courier Details</Label>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       {(selectedDeposit as any).pickupContactName && (
-                        <div><span className="text-gray-500">Contact:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactName}</span></div>
+                        <div><span className="text-muted-foreground">Contact:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactName}</span></div>
                       )}
                       {(selectedDeposit as any).pickupContactPhone && (
-                        <div><span className="text-gray-500">Phone:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactPhone}</span></div>
+                        <div><span className="text-muted-foreground">Phone:</span> <span className="font-medium">{(selectedDeposit as any).pickupContactPhone}</span></div>
                       )}
                       {(selectedDeposit as any).pickupAddress && (
-                        <div className="col-span-2"><span className="text-gray-500">Address:</span> <span className="font-medium">{(selectedDeposit as any).pickupAddress}</span></div>
+                        <div className="col-span-2"><span className="text-muted-foreground">Address:</span> <span className="font-medium">{(selectedDeposit as any).pickupAddress}</span></div>
                       )}
                       {(selectedDeposit as any).preferredDatetime && (
-                        <div><span className="text-gray-500">Preferred:</span> <span className="font-medium">{new Date((selectedDeposit as any).preferredDatetime).toLocaleString()}</span></div>
+                        <div><span className="text-muted-foreground">Preferred:</span> <span className="font-medium">{new Date((selectedDeposit as any).preferredDatetime).toLocaleString()}</span></div>
                       )}
                       {(selectedDeposit as any).scheduledDatetime && (
-                        <div><span className="text-gray-500">Scheduled:</span> <span className="font-medium text-green-600">{new Date((selectedDeposit as any).scheduledDatetime).toLocaleString()}</span></div>
+                        <div><span className="text-muted-foreground">Scheduled:</span> <span className="font-medium text-green-600">{new Date((selectedDeposit as any).scheduledDatetime).toLocaleString()}</span></div>
                       )}
                     </div>
                   </CardContent>
@@ -487,7 +487,7 @@ export default function PhysicalDepositsAdmin() {
               {/* Documents */}
               {((selectedDeposit as any).invoiceUrl || (selectedDeposit as any).assayCertificateUrl || (selectedDeposit as any).additionalDocuments?.length > 0) && (
                 <div>
-                  <Label className="text-gray-500 text-xs block mb-2">Documents</Label>
+                  <Label className="text-muted-foreground text-xs block mb-2">Documents</Label>
                   <div className="flex flex-wrap gap-2">
                     {(selectedDeposit as any).invoiceUrl && (
                       <a href={toProxyUrl((selectedDeposit as any).invoiceUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
@@ -500,7 +500,7 @@ export default function PhysicalDepositsAdmin() {
                       </a>
                     )}
                     {(selectedDeposit as any).additionalDocuments?.map((doc: any, idx: number) => (
-                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-muted text-foreground/85 rounded-md text-sm hover:bg-muted">
                         <FileCheck className="w-4 h-4" /> {doc.name}
                       </a>
                     ))}
@@ -510,22 +510,22 @@ export default function PhysicalDepositsAdmin() {
 
               {/* Items */}
               <div>
-                <Label className="text-gray-500 text-xs mb-2 block">Items ({selectedDeposit.items?.length})</Label>
+                <Label className="text-muted-foreground text-xs mb-2 block">Items ({selectedDeposit.items?.length})</Label>
                 <div className="space-y-2">
                   {selectedDeposit.items?.map((item, i) => (
-                    <Card key={item.id} className="bg-gray-50">
+                    <Card key={item.id} className="bg-muted/40">
                       <CardContent className="py-3">
                         <div className="flex justify-between items-start">
                           <div className="space-y-1">
                             <p className="font-medium">Item #{i + 1}: {item.itemType.replace('_', ' ')}</p>
-                            <p className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                               {item.quantity}x @ {item.weightPerUnitGrams}g = {parseFloat(item.totalDeclaredWeightGrams).toFixed(4)}g
                             </p>
-                            <p className="text-sm text-gray-500">Purity: {item.purity}</p>
-                            {item.brand && <p className="text-sm text-gray-500">Brand: {item.brand}</p>}
-                            {item.mint && <p className="text-sm text-gray-500">Mint: {item.mint}</p>}
-                            {item.serialNumber && <p className="text-sm text-gray-500">Serial: <span className="font-mono">{item.serialNumber}</span></p>}
-                            {item.customDescription && <p className="text-sm text-gray-500 italic">{item.customDescription}</p>}
+                            <p className="text-sm text-muted-foreground">Purity: {item.purity}</p>
+                            {item.brand && <p className="text-sm text-muted-foreground">Brand: {item.brand}</p>}
+                            {item.mint && <p className="text-sm text-muted-foreground">Mint: {item.mint}</p>}
+                            {item.serialNumber && <p className="text-sm text-muted-foreground">Serial: <span className="font-mono">{item.serialNumber}</span></p>}
+                            {item.customDescription && <p className="text-sm text-muted-foreground italic">{item.customDescription}</p>}
                           </div>
                           {item.verifiedWeightGrams && (
                             <Badge variant="outline" className="text-green-600">
@@ -535,14 +535,14 @@ export default function PhysicalDepositsAdmin() {
                         </div>
                         {(item.photoFrontUrl || item.photoBackUrl || (item.additionalPhotos && item.additionalPhotos.length > 0)) && (
                           <div className="mt-3 pt-3 border-t">
-                            <p className="text-xs text-gray-500 mb-2">Photos</p>
+                            <p className="text-xs text-muted-foreground mb-2">Photos</p>
                             <div className="flex flex-wrap gap-2">
                               {item.photoFrontUrl && (
                                 <a href={toProxyUrl(item.photoFrontUrl) || '#'} target="_blank" rel="noopener noreferrer" className="block">
                                   <img 
                                     src={toProxyUrl(item.photoFrontUrl) || ''} 
                                     alt="Front view" 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -552,7 +552,7 @@ export default function PhysicalDepositsAdmin() {
                                   <img 
                                     src={toProxyUrl(item.photoBackUrl) || ''} 
                                     alt="Back view" 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -562,7 +562,7 @@ export default function PhysicalDepositsAdmin() {
                                   <img 
                                     src={toProxyUrl(photoUrl) || ''} 
                                     alt={`Photo ${photoIdx + 1}`} 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -583,36 +583,36 @@ export default function PhysicalDepositsAdmin() {
                     <Label className="text-green-700 text-xs font-semibold block mb-2">Inspection Results</Label>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm">
                       {selectedDeposit.inspection.grossWeightGrams && (
-                        <div><span className="text-gray-500">Gross Weight:</span> <span className="font-medium">{selectedDeposit.inspection.grossWeightGrams}g</span></div>
+                        <div><span className="text-muted-foreground">Gross Weight:</span> <span className="font-medium">{selectedDeposit.inspection.grossWeightGrams}g</span></div>
                       )}
                       {selectedDeposit.inspection.netWeightGrams && (
-                        <div><span className="text-gray-500">Net Weight:</span> <span className="font-medium">{selectedDeposit.inspection.netWeightGrams}g</span></div>
+                        <div><span className="text-muted-foreground">Net Weight:</span> <span className="font-medium">{selectedDeposit.inspection.netWeightGrams}g</span></div>
                       )}
                       {selectedDeposit.inspection.creditedGrams && (
-                        <div><span className="text-gray-500">Credited:</span> <span className="font-bold text-green-600">{selectedDeposit.inspection.creditedGrams}g</span></div>
+                        <div><span className="text-muted-foreground">Credited:</span> <span className="font-bold text-green-600">{selectedDeposit.inspection.creditedGrams}g</span></div>
                       )}
                       {selectedDeposit.inspection.purityResult && (
-                        <div><span className="text-gray-500">Purity:</span> <span className="font-medium">{selectedDeposit.inspection.purityResult}</span></div>
+                        <div><span className="text-muted-foreground">Purity:</span> <span className="font-medium">{selectedDeposit.inspection.purityResult}</span></div>
                       )}
                       {selectedDeposit.inspection.assayMethod && (
-                        <div><span className="text-gray-500">Assay Method:</span> <span className="font-medium">{selectedDeposit.inspection.assayMethod}</span></div>
+                        <div><span className="text-muted-foreground">Assay Method:</span> <span className="font-medium">{selectedDeposit.inspection.assayMethod}</span></div>
                       )}
                     </div>
                     {(selectedDeposit.inspection.assayFeeUsd || selectedDeposit.inspection.refiningFeeUsd || selectedDeposit.inspection.handlingFeeUsd) && (
                       <div className="mt-3 pt-2 border-t border-green-200 grid grid-cols-3 gap-3 text-sm">
                         {selectedDeposit.inspection.assayFeeUsd && (
-                          <div><span className="text-gray-500">Assay Fee:</span> <span className="font-medium">${selectedDeposit.inspection.assayFeeUsd}</span></div>
+                          <div><span className="text-muted-foreground">Assay Fee:</span> <span className="font-medium">${selectedDeposit.inspection.assayFeeUsd}</span></div>
                         )}
                         {selectedDeposit.inspection.refiningFeeUsd && (
-                          <div><span className="text-gray-500">Refining Fee:</span> <span className="font-medium">${selectedDeposit.inspection.refiningFeeUsd}</span></div>
+                          <div><span className="text-muted-foreground">Refining Fee:</span> <span className="font-medium">${selectedDeposit.inspection.refiningFeeUsd}</span></div>
                         )}
                         {selectedDeposit.inspection.handlingFeeUsd && (
-                          <div><span className="text-gray-500">Handling Fee:</span> <span className="font-medium">${selectedDeposit.inspection.handlingFeeUsd}</span></div>
+                          <div><span className="text-muted-foreground">Handling Fee:</span> <span className="font-medium">${selectedDeposit.inspection.handlingFeeUsd}</span></div>
                         )}
                       </div>
                     )}
                     {selectedDeposit.inspection.notes && (
-                      <div className="mt-2 p-2 bg-white rounded text-sm"><span className="text-gray-500">Notes:</span> {selectedDeposit.inspection.notes}</div>
+                      <div className="mt-2 p-2 bg-card rounded text-sm"><span className="text-muted-foreground">Notes:</span> {selectedDeposit.inspection.notes}</div>
                     )}
                   </CardContent>
                 </Card>
@@ -621,8 +621,8 @@ export default function PhysicalDepositsAdmin() {
               {/* Offer Status - Simplified */}
               {selectedDeposit.requiresNegotiation && (
                 <div>
-                  <Label className="text-gray-500 text-xs mb-2 block">Offer Status</Label>
-                  <Card className="bg-gray-50 border-gray-200">
+                  <Label className="text-muted-foreground text-xs mb-2 block">Offer Status</Label>
+                  <Card className="bg-muted/40 border-border">
                     <CardContent className="py-3 space-y-3">
                       {/* User's target values */}
                       {((selectedDeposit as any).goldEstimateFromUser || (selectedDeposit as any).usdEstimateFromUser) && (
@@ -684,7 +684,7 @@ export default function PhysicalDepositsAdmin() {
               {(selectedDeposit as any).adminNotes && (
                 <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg">
                   <Label className="text-purple-700 text-xs font-semibold block mb-1">Admin Notes</Label>
-                  <p className="text-sm text-gray-700">{(selectedDeposit as any).adminNotes}</p>
+                  <p className="text-sm text-foreground/85">{(selectedDeposit as any).adminNotes}</p>
                 </div>
               )}
             </div>
@@ -743,7 +743,7 @@ export default function PhysicalDepositsAdmin() {
           <div className="grid grid-cols-2 gap-6">
             {/* LEFT PANEL - Input Fields */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Inspection Data</h3>
+              <h3 className="text-sm font-semibold text-foreground/85 border-b pb-2">Inspection Data</h3>
               <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label>Gross Weight (g)</Label>
@@ -781,7 +781,7 @@ export default function PhysicalDepositsAdmin() {
                 {inspectForm.purityResult && parseFloat(inspectForm.purityResult) > 999.9 && (
                   <p className="text-xs text-red-500">Purity must be between 0-999.9</p>
                 )}
-                <p className="text-xs text-gray-400">Fineness scale: 999.9 = 99.99% pure (24K), 916.7 = 91.67% (22K)</p>
+                <p className="text-xs text-muted-foreground/70">Fineness scale: 999.9 = 99.99% pure (24K), 916.7 = 91.67% (22K)</p>
               </div>
               <div className="space-y-2">
                 <Label>Assay Method</Label>
@@ -832,22 +832,22 @@ export default function PhysicalDepositsAdmin() {
             </div>
             
             {/* Gold Price Selection */}
-            <div className="p-3 bg-gray-50 rounded-lg border space-y-3">
+            <div className="p-3 bg-muted/40 rounded-lg border space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Gold Price for Calculation</Label>
                 <div className="flex items-center gap-2">
-                  <span className={`text-xs ${!inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-gray-400'}`}>Live</span>
+                  <span className={`text-xs ${!inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-muted-foreground/70'}`}>Live</span>
                   <Switch
                     checked={inspectForm.useManualPrice}
                     onCheckedChange={(checked) => setInspectForm({ ...inspectForm, useManualPrice: checked })}
                     data-testid="switch-manual-price"
                   />
-                  <span className={`text-xs ${inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-gray-400'}`}>Manual</span>
+                  <span className={`text-xs ${inspectForm.useManualPrice ? 'font-medium text-purple-600' : 'text-muted-foreground/70'}`}>Manual</span>
                 </div>
               </div>
               {inspectForm.useManualPrice ? (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500">$</span>
+                  <span className="text-sm text-muted-foreground">$</span>
                   <Input
                     type="number"
                     step="0.01"
@@ -857,10 +857,10 @@ export default function PhysicalDepositsAdmin() {
                     className="w-40"
                     data-testid="input-manual-price"
                   />
-                  <span className="text-sm text-gray-500">/ gram</span>
+                  <span className="text-sm text-muted-foreground">/ gram</span>
                 </div>
               ) : (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-muted-foreground">
                   Live Price: <span className="font-medium text-purple-600">${goldPrice?.pricePerGram?.toFixed(2) || '---'}/g</span>
                 </p>
               )}
@@ -915,7 +915,7 @@ export default function PhysicalDepositsAdmin() {
             
             {/* RIGHT PANEL - Valuation Summary */}
             <div className="space-y-4">
-              <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Valuation Summary</h3>
+              <h3 className="text-sm font-semibold text-foreground/85 border-b pb-2">Valuation Summary</h3>
             
             {/* Summary Card - Shows weight valuations, credited gold, fees, and USD equivalent */}
             {(inspectForm.grossWeightGrams || inspectForm.netWeightGrams || inspectForm.creditedGrams) && (
@@ -957,24 +957,24 @@ export default function PhysicalDepositsAdmin() {
                     <CardContent className="pt-4 space-y-3">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-semibold text-purple-700">Valuation Summary</span>
-                        <span className={`text-xs px-2 py-1 rounded ${inspectForm.useManualPrice ? 'bg-amber-100 text-amber-700' : 'bg-white text-gray-500'}`}>
+                        <span className={`text-xs px-2 py-1 rounded ${inspectForm.useManualPrice ? 'bg-amber-100 text-amber-700' : 'bg-card text-muted-foreground'}`}>
                           {priceSource}: {hasPriceData ? `$${pricePerGram.toFixed(2)}/g` : '---'}
                         </span>
                       </div>
                       
                       {/* Weight Valuations */}
-                      <div className="bg-white rounded-lg border border-gray-200 p-3">
-                        <p className="text-xs font-medium text-gray-600 mb-2">Weight Valuations:</p>
+                      <div className="bg-card rounded-lg border border-border p-3">
+                        <p className="text-xs font-medium text-muted-foreground mb-2">Weight Valuations:</p>
                         <div className="space-y-2">
                           {grossWeight > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-500">Gross Weight ({grossWeight.toFixed(2)}g):</span>
-                              <span className="font-medium text-gray-700">{formatUsd(grossWeightUsd)}</span>
+                              <span className="text-muted-foreground">Gross Weight ({grossWeight.toFixed(2)}g):</span>
+                              <span className="font-medium text-foreground/85">{formatUsd(grossWeightUsd)}</span>
                             </div>
                           )}
                           {netWeight > 0 && (
                             <div className="flex justify-between text-sm">
-                              <span className="text-gray-500">Net Weight ({netWeight.toFixed(2)}g):</span>
+                              <span className="text-muted-foreground">Net Weight ({netWeight.toFixed(2)}g):</span>
                               <span className="font-medium text-purple-600">{formatUsd(netWeightUsd)}</span>
                             </div>
                           )}
@@ -986,34 +986,34 @@ export default function PhysicalDepositsAdmin() {
                         <div className="text-center p-4 bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg border-2 border-amber-300">
                           <p className="text-xs text-amber-700 font-medium mb-1">Final Gold to Credit</p>
                           <p className="text-2xl font-bold text-amber-600">{creditedGrams.toFixed(4)} g</p>
-                          <p className="text-sm text-gray-500 mt-1">≈ {formatUsd(creditedUsd)} equivalent</p>
+                          <p className="text-sm text-muted-foreground mt-1">≈ {formatUsd(creditedUsd)} equivalent</p>
                         </div>
                       )}
 
                       {/* Fee Deductions */}
                       {totalFees > 0 && creditedGrams > 0 && (
-                        <div className="bg-white rounded-lg border border-gray-200 p-3 space-y-1">
-                          <p className="text-xs font-medium text-gray-600 mb-2">Fee Deductions:</p>
+                        <div className="bg-card rounded-lg border border-border p-3 space-y-1">
+                          <p className="text-xs font-medium text-muted-foreground mb-2">Fee Deductions:</p>
                           {assayFee > 0 && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Assay Fee:</span>
+                              <span className="text-muted-foreground">Assay Fee:</span>
                               <span className="text-red-500">-${assayFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
                           {refiningFee > 0 && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Refining Fee:</span>
+                              <span className="text-muted-foreground">Refining Fee:</span>
                               <span className="text-red-500">-${refiningFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
                           {handlingFee > 0 && (
                             <div className="flex justify-between text-xs">
-                              <span className="text-gray-500">Handling Fee:</span>
+                              <span className="text-muted-foreground">Handling Fee:</span>
                               <span className="text-red-500">-${handlingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                             </div>
                           )}
                           <div className="flex justify-between text-xs font-medium pt-1 border-t">
-                            <span className="text-gray-600">Total Fees:</span>
+                            <span className="text-muted-foreground">Total Fees:</span>
                             <span className="text-red-600">-${totalFees.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                           </div>
                         </div>
@@ -1021,11 +1021,11 @@ export default function PhysicalDepositsAdmin() {
 
                       {/* Fee Summary - Shows deduction in equivalent terms */}
                       {totalFees > 0 && creditedGrams > 0 && hasPriceData && (
-                        <div className="text-center p-3 bg-gray-50 rounded-lg border border-gray-200">
-                          <p className="text-xs text-gray-500 mb-1">Fees Equivalent</p>
-                          <p className="text-sm text-gray-600">
+                        <div className="text-center p-3 bg-muted/40 rounded-lg border border-border">
+                          <p className="text-xs text-muted-foreground mb-1">Fees Equivalent</p>
+                          <p className="text-sm text-muted-foreground">
                             Total Fees: <span className="font-medium text-red-500">-{formatUsd(totalFees)}</span>
-                            <span className="text-gray-400 mx-1">≈</span>
+                            <span className="text-muted-foreground/70 mx-1">≈</span>
                             <span className="text-red-500">-{(totalFees / pricePerGram).toFixed(4)}g</span>
                           </p>
                         </div>
@@ -1034,7 +1034,7 @@ export default function PhysicalDepositsAdmin() {
                       {hasNegativeFees && (
                         <p className="text-xs text-red-500 text-center">⚠️ Fees cannot be negative</p>
                       )}
-                      <p className="text-xs text-gray-400 text-center">* USD values are approximate based on current gold rate</p>
+                      <p className="text-xs text-muted-foreground/70 text-center">* USD values are approximate based on current gold rate</p>
                     </CardContent>
                   </Card>
                 );
@@ -1043,8 +1043,8 @@ export default function PhysicalDepositsAdmin() {
 
             {/* Show placeholder when no data entered */}
             {!inspectForm.grossWeightGrams && !inspectForm.netWeightGrams && !inspectForm.creditedGrams && (
-              <div className="text-center p-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-200">
-                <p className="text-gray-400 text-sm">Enter inspection data to see valuation summary</p>
+              <div className="text-center p-8 bg-muted/40 rounded-lg border-2 border-dashed border-border">
+                <p className="text-muted-foreground/70 text-sm">Enter inspection data to see valuation summary</p>
               </div>
             )}
             </div>
@@ -1149,7 +1149,7 @@ export default function PhysicalDepositsAdmin() {
             <div className="space-y-2">
               <Label>USD Valuation Offer</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -1161,7 +1161,7 @@ export default function PhysicalDepositsAdmin() {
                   data-testid="input-usd-offer"
                 />
               </div>
-              <p className="text-xs text-gray-500">This is the total USD value you're offering for the deposited gold</p>
+              <p className="text-xs text-muted-foreground">This is the total USD value you're offering for the deposited gold</p>
             </div>
             <div className="space-y-2">
               <Label>Message to User</Label>

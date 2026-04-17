@@ -247,10 +247,10 @@ export default function FinancialReports() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-financial-reports-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-financial-reports-title">
               Financial Reports
             </h1>
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               Comprehensive view of platform earnings, liabilities, and product performance
             </p>
           </div>
@@ -439,7 +439,7 @@ function OverviewSection({ overview, isLoading, metrics }: { overview?: Financia
           <CardContent className="space-y-4">
             <div className="flex justify-between items-center p-4 bg-purple-50 rounded-lg">
               <div>
-                <p className="text-sm text-gray-600">Total Gold Stored</p>
+                <p className="text-sm text-muted-foreground">Total Gold Stored</p>
                 <p className="text-2xl font-bold text-fuchsia-700">
                   {isLoading ? '...' : formatGrams(overview?.goldHoldingsGrams || 0)}
                 </p>
@@ -448,11 +448,11 @@ function OverviewSection({ overview, isLoading, metrics }: { overview?: Financia
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="p-4 border rounded-lg">
-                <p className="text-sm text-gray-500">Gold Value (USD)</p>
+                <p className="text-sm text-muted-foreground">Gold Value (USD)</p>
                 <p className="text-xl font-semibold">{formatCurrency(overview?.goldValueUsd || 0)}</p>
               </div>
               <div className="p-4 border rounded-lg">
-                <p className="text-sm text-gray-500">Fiat Balances</p>
+                <p className="text-sm text-muted-foreground">Fiat Balances</p>
                 <p className="text-xl font-semibold">{formatCurrency(overview?.fiatBalancesUsd || 0)}</p>
               </div>
             </div>
@@ -570,7 +570,7 @@ function RevenueSection({ overview, metrics, isLoading }: { overview?: Financial
                     <span className="font-medium">{item.source}</span>
                     <span className="font-semibold">{formatCurrency(item.amount)}</span>
                   </div>
-                  <div className="w-full bg-gray-100 rounded-full h-2">
+                  <div className="w-full bg-muted rounded-full h-2">
                     <div 
                       className={`h-2 rounded-full ${item.color}`} 
                       style={{ width: `${item.percentage}%` }}
@@ -626,9 +626,9 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
           <CardDescription>Users with highest wallet balances</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
             <table className="w-full">
-              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+              <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                 <tr>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">Account Type</th>
@@ -639,11 +639,11 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {userFinancials?.slice(0, 10).map((user, index) => (
-                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`row-user-${user.id}`}>
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`row-user-${user.id}`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -657,7 +657,7 @@ function FinaPaySection({ metrics, isLoading, userFinancials }: { metrics?: Prod
                     <td className="py-3 px-4 text-right">
                       {user.totalTransactions}
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
+                    <td className="py-3 px-4 text-sm text-muted-foreground">
                       {user.lastActivity ? format(new Date(user.lastActivity), 'MMM d, yyyy') : 'N/A'}
                     </td>
                   </tr>
@@ -711,9 +711,9 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
           <CardDescription>Gold stored per user in the vault</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
             <table className="w-full">
-              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+              <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                 <tr>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">Account Type</th>
@@ -724,11 +724,11 @@ function FinaVaultSection({ metrics, isLoading, userFinancials }: { metrics?: Pr
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {userFinancials?.filter(u => u.goldHoldingsGrams > 0).slice(0, 10).map((user, index) => (
-                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
+                  <tr key={user.id} className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
                     <td className="py-3 px-4">
                       <div>
                         <p className="font-medium">{user.name}</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </td>
                     <td className="py-3 px-4">
@@ -877,7 +877,7 @@ function GoldHoldingsSection({ data, isLoading }: { data?: GoldHoldingsSummary; 
                 </div>
                 <span className="font-bold text-blue-600">{formatGrams(data?.walletGoldGrams || 0)}</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div className="h-2 rounded-full bg-blue-500" style={{ width: `${((data?.walletGoldGrams || 0) / (data?.totalGoldGrams || 1)) * 100}%` }} />
               </div>
             </div>
@@ -889,7 +889,7 @@ function GoldHoldingsSection({ data, isLoading }: { data?: GoldHoldingsSummary; 
                 </div>
                 <span className="font-bold text-fuchsia-600">{formatGrams(data?.vaultGoldGrams || 0)}</span>
               </div>
-              <div className="w-full bg-gray-100 rounded-full h-2">
+              <div className="w-full bg-muted rounded-full h-2">
                 <div className="h-2 rounded-full bg-purple-500" style={{ width: `${((data?.vaultGoldGrams || 0) / (data?.totalGoldGrams || 1)) * 100}%` }} />
               </div>
             </div>
@@ -923,7 +923,7 @@ function GoldHoldingsSection({ data, isLoading }: { data?: GoldHoldingsSummary; 
                 <span className="font-bold text-blue-600">{formatGrams(data?.finabridgeLockedGrams || 0)}</span>
               </div>
             </div>
-            <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="p-4 border rounded-lg bg-muted/40">
               <div className="flex justify-between items-center">
                 <span className="font-bold">Total Locked</span>
                 <span className="font-bold">{formatGrams(data?.lockedGoldGrams || 0)}</span>
@@ -976,9 +976,9 @@ function CertificatesSection({ data, isLoading }: { data?: CertificateSummary; i
           <CardDescription>Latest issued certificates across all users</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+          <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
             <table className="w-full">
-              <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+              <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                 <tr>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">Certificate ID</th>
                   <th className="text-left py-4 px-4 font-semibold tracking-wide">User</th>
@@ -990,7 +990,7 @@ function CertificatesSection({ data, isLoading }: { data?: CertificateSummary; i
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {data?.certificates?.slice(0, 15).map((cert, index) => (
-                  <tr key={cert.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
+                  <tr key={cert.id} className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
                     <td className="py-3 px-4 font-mono text-sm">{cert.certificateNumber}</td>
                     <td className="py-3 px-4">{cert.userName}</td>
                     <td className="py-3 px-4">
@@ -1006,7 +1006,7 @@ function CertificatesSection({ data, isLoading }: { data?: CertificateSummary; i
                         {cert.status}
                       </Badge>
                     </td>
-                    <td className="py-3 px-4 text-sm text-gray-500">
+                    <td className="py-3 px-4 text-sm text-muted-foreground">
                       {cert.issuedAt ? format(new Date(cert.issuedAt), 'MMM d, yyyy') : 'N/A'}
                     </td>
                   </tr>
@@ -1061,9 +1061,9 @@ function FinaBridgeSection({ data, isLoading }: { data?: FinaBridgeSummary; isLo
         </CardHeader>
         <CardContent>
           {data?.cases && data.cases.length > 0 ? (
-            <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+            <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
               <table className="w-full">
-                <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                   <tr>
                     <th className="text-left py-4 px-4 font-semibold tracking-wide">Case ID</th>
                     <th className="text-left py-4 px-4 font-semibold tracking-wide">Company</th>
@@ -1075,7 +1075,7 @@ function FinaBridgeSection({ data, isLoading }: { data?: FinaBridgeSummary; isLo
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {data.cases.slice(0, 10).map((c, index) => (
-                    <tr key={c.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
+                    <tr key={c.id} className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150`}>
                       <td className="py-3 px-4 font-mono text-sm">{c.caseNumber}</td>
                       <td className="py-3 px-4">{c.companyName}</td>
                       <td className="py-3 px-4">{c.counterparty}</td>
@@ -1087,7 +1087,7 @@ function FinaBridgeSection({ data, isLoading }: { data?: FinaBridgeSummary; isLo
                           {c.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-sm text-gray-500">
+                      <td className="py-3 px-4 text-sm text-muted-foreground">
                         {c.settlementDate ? format(new Date(c.settlementDate), 'MMM d, yyyy') : 'TBD'}
                       </td>
                     </tr>
@@ -1097,9 +1097,9 @@ function FinaBridgeSection({ data, isLoading }: { data?: FinaBridgeSummary; isLo
             </div>
           ) : (
             <div className="text-center py-12">
-              <Ship className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">No trade finance cases yet</p>
-              <p className="text-sm text-gray-400">Corporate trade cases will appear here</p>
+              <Ship className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+              <p className="text-muted-foreground">No trade finance cases yet</p>
+              <p className="text-sm text-muted-foreground/70">Corporate trade cases will appear here</p>
             </div>
           )}
         </CardContent>
@@ -1159,10 +1159,10 @@ function FeesSection({ data, isLoading }: { data?: FeesSummary; isLoading: boole
                   </div>
                   <span className="font-bold text-green-600">{formatCurrency(fee.amount)}</span>
                 </div>
-                <div className="w-full bg-gray-100 rounded-full h-2">
+                <div className="w-full bg-muted rounded-full h-2">
                   <div className="h-2 rounded-full bg-purple-500" style={{ width: `${fee.percentage}%` }} />
                 </div>
-                <p className="text-xs text-gray-500 mt-1">{fee.percentage.toFixed(1)}% of total fees</p>
+                <p className="text-xs text-muted-foreground mt-1">{fee.percentage.toFixed(1)}% of total fees</p>
               </div>
             ))}
           </div>
@@ -1178,7 +1178,7 @@ function FeesSection({ data, isLoading }: { data?: FeesSummary; isLoading: boole
           <CardContent>
             <div className="text-center py-6">
               <p className="text-4xl font-bold text-purple-600">{formatCurrency(data?.bnslInterest || 0)}</p>
-              <p className="text-sm text-gray-500 mt-2">Interest earned from active BNSL plans</p>
+              <p className="text-sm text-muted-foreground mt-2">Interest earned from active BNSL plans</p>
             </div>
           </CardContent>
         </Card>
@@ -1191,7 +1191,7 @@ function FeesSection({ data, isLoading }: { data?: FeesSummary; isLoading: boole
           <CardContent>
             <div className="text-center py-6">
               <p className="text-4xl font-bold text-blue-600">{formatCurrency(data?.withdrawalFees || 0)}</p>
-              <p className="text-sm text-gray-500 mt-2">Total withdrawal processing fees</p>
+              <p className="text-sm text-muted-foreground mt-2">Total withdrawal processing fees</p>
             </div>
           </CardContent>
         </Card>
@@ -1249,12 +1249,12 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
                   </div>
                   <div>
                     <h4 className="font-semibold">Gold Liability</h4>
-                    <p className="text-sm text-gray-500">Gold held on behalf of users</p>
+                    <p className="text-sm text-muted-foreground">Gold held on behalf of users</p>
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="text-xl font-bold text-fuchsia-600">{formatGrams(overview?.goldLiabilityGrams || 0)}</p>
-                  <p className="text-sm text-gray-500">{formatCurrency((overview?.goldLiabilityGrams || 0) * 93.5)}</p>
+                  <p className="text-sm text-muted-foreground">{formatCurrency((overview?.goldLiabilityGrams || 0) * 93.5)}</p>
                 </div>
               </div>
             </div>
@@ -1267,7 +1267,7 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
                   </div>
                   <div>
                     <h4 className="font-semibold">Fiat Balances Owed</h4>
-                    <p className="text-sm text-gray-500">User wallet balances (USD/EUR)</p>
+                    <p className="text-sm text-muted-foreground">User wallet balances (USD/EUR)</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -1284,7 +1284,7 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
                   </div>
                   <div>
                     <h4 className="font-semibold">BNSL Future Payouts</h4>
-                    <p className="text-sm text-gray-500">Scheduled payouts for active plans</p>
+                    <p className="text-sm text-muted-foreground">Scheduled payouts for active plans</p>
                   </div>
                 </div>
                 <div className="text-right">
@@ -1293,11 +1293,11 @@ function LiabilitiesSection({ overview, metrics, isLoading }: { overview?: Finan
               </div>
             </div>
 
-            <div className="p-4 border rounded-lg bg-gray-50">
+            <div className="p-4 border rounded-lg bg-muted/40">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-200 rounded-lg">
-                    <AlertTriangle className="w-5 h-5 text-gray-600" />
+                  <div className="p-2 bg-muted rounded-lg">
+                    <AlertTriangle className="w-5 h-5 text-muted-foreground" />
                   </div>
                   <div>
                     <h4 className="font-bold text-lg">Total Liabilities</h4>
@@ -1331,12 +1331,12 @@ function MetricCard({ title, value, icon, bg, trend, change, loading }: {
           <div className={`p-3 rounded-xl ${bg}`}>
             {icon}
           </div>
-          {loading && <Loader2 className="w-4 h-4 animate-spin text-gray-400" />}
+          {loading && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground/70" />}
         </div>
         <div>
-          <p className="text-sm text-gray-500 mb-1">{title}</p>
+          <p className="text-sm text-muted-foreground mb-1">{title}</p>
           <div className="flex items-end gap-2">
-            <h3 className="text-2xl font-bold text-gray-900" data-testid={`text-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+            <h3 className="text-2xl font-bold text-foreground" data-testid={`text-metric-${title.toLowerCase().replace(/\s+/g, '-')}`}>
               {loading ? '...' : value}
             </h3>
             {change && (
@@ -1370,7 +1370,7 @@ function ProductPerformanceRow({ name, volume, fees, color }: { name: string; vo
         <span className={`font-semibold ${textColors[color]}`}>{name}</span>
         <div className="text-right">
           <p className="font-bold">{volume}</p>
-          <p className="text-sm text-gray-600">Fees: {fees}</p>
+          <p className="text-sm text-muted-foreground">Fees: {fees}</p>
         </div>
       </div>
     </div>
@@ -1383,9 +1383,9 @@ function StatusBar({ label, count, total, color }: { label: string; count: numbe
     <div>
       <div className="flex justify-between mb-1">
         <span className="text-sm font-medium">{label}</span>
-        <span className="text-sm text-gray-500">{count}</span>
+        <span className="text-sm text-muted-foreground">{count}</span>
       </div>
-      <div className="w-full bg-gray-100 rounded-full h-2">
+      <div className="w-full bg-muted rounded-full h-2">
         <div className={`h-2 rounded-full ${color}`} style={{ width: `${percentage}%` }} />
       </div>
     </div>

@@ -303,7 +303,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </DialogHeader>
             <div className="space-y-4">
               <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-                <p className="text-gray-700 leading-relaxed text-sm">
+                <p className="text-foreground/85 leading-relaxed text-sm">
                   Raminvest Holding Ltd (DIFC Registration No. 7030), as the governing entity of the Group ecosystem that includes Wingold & Metals DMCC, provides a limited settlement assurance mechanism supported by verified geological gold reserves held through Boudadiya Services SARL under Mining Permit No. 2265 B2-WOMPOU.
                 </p>
               </div>
@@ -321,15 +321,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </p>
               </div>
               
-              <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <p className="text-gray-700 leading-relaxed text-sm">
+              <div className="p-4 bg-muted/40 rounded-lg border border-border">
+                <p className="text-foreground/85 leading-relaxed text-sm">
                   This assurance, formally recognized under DIFC procedures (SR Reference No. SR-646772), serves solely as an internal group mechanism under which, in the unlikely event Wingold & Metals DMCC cannot meet a specific settlement obligation under this Plan, Raminvest may authorize monetization of corresponding reserves exclusively to discharge that single obligation.
                 </p>
               </div>
               
               <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
                 <p className="text-amber-800 font-medium text-sm mb-2">Important Notice:</p>
-                <p className="text-gray-700 leading-relaxed text-sm">
+                <p className="text-foreground/85 leading-relaxed text-sm">
                   It is not a banking guarantee, financial insurance, or customer protection product, and no continuing or residual liability remains with Raminvest thereafter. By participating, you acknowledge this mechanism as a risk-mitigation feature of the ecosystem, while your sole contractual counterparty for all Plan obligations remains Wingold & Metals DMCC.
                 </p>
               </div>

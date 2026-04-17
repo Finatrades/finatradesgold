@@ -84,7 +84,7 @@ export default function TestimonialCarousel() {
               animate="center"
               exit="exit"
               transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
-              className="bg-white rounded-3xl p-8 md:p-12 shadow-xl shadow-purple-500/5 border border-purple-100"
+              className="bg-card rounded-3xl p-8 md:p-12 shadow-xl shadow-purple-500/5 border border-purple-100"
             >
               <div className="flex gap-1 mb-6">
                 {Array.from({ length: testimonials[current].rating }).map((_, i) => (
@@ -92,7 +92,7 @@ export default function TestimonialCarousel() {
                 ))}
               </div>
 
-              <p className="text-gray-700 text-lg md:text-xl leading-relaxed mb-8 italic">
+              <p className="text-foreground/85 text-lg md:text-xl leading-relaxed mb-8 italic">
                 "{testimonials[current].content}"
               </p>
 
@@ -102,7 +102,7 @@ export default function TestimonialCarousel() {
                 </div>
                 <div>
                   <p className="font-semibold text-[#0D0D0D]">{testimonials[current].name}</p>
-                  <p className="text-gray-500 text-sm">{testimonials[current].role}</p>
+                  <p className="text-muted-foreground text-sm">{testimonials[current].role}</p>
                 </div>
               </div>
             </motion.div>
@@ -111,7 +111,7 @@ export default function TestimonialCarousel() {
           <div className="flex items-center justify-center gap-4 mt-8">
             <button
               onClick={prev}
-              className="w-10 h-10 rounded-full bg-white border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
+              className="w-10 h-10 rounded-full bg-card border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
               data-testid="testimonial-prev"
             >
               <ChevronLeft className="w-5 h-5 text-purple-600" />
@@ -133,7 +133,7 @@ export default function TestimonialCarousel() {
             </div>
             <button
               onClick={next}
-              className="w-10 h-10 rounded-full bg-white border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
+              className="w-10 h-10 rounded-full bg-card border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
               data-testid="testimonial-next"
             >
               <ChevronRight className="w-5 h-5 text-purple-600" />

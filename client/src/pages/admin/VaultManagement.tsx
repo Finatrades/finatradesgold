@@ -51,8 +51,8 @@ export default function VaultManagement() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Vault Management</h1>
-            <p className="text-gray-500">Manage physical gold inventory and audit reconciliation.</p>
+            <h1 className="text-3xl font-bold text-foreground">Vault Management</h1>
+            <p className="text-muted-foreground">Manage physical gold inventory and audit reconciliation.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => { setStockAction('remove'); setIsStockModalOpen(true); }}>
@@ -86,7 +86,7 @@ export default function VaultManagement() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Physical Inventory</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Physical Inventory</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
@@ -94,8 +94,8 @@ export default function VaultManagement() {
                   <Package className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{(settings.vaultInventoryGrams / 1000).toFixed(2)} kg</p>
-                  <p className="text-xs text-gray-500">Total Weight in Vault</p>
+                  <p className="text-2xl font-bold text-foreground">{(settings.vaultInventoryGrams / 1000).toFixed(2)} kg</p>
+                  <p className="text-xs text-muted-foreground">Total Weight in Vault</p>
                 </div>
               </div>
             </CardContent>
@@ -103,7 +103,7 @@ export default function VaultManagement() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-gray-500">Available Liquidity</CardTitle>
+              <CardTitle className="text-sm font-medium text-muted-foreground">Available Liquidity</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4">
@@ -111,8 +111,8 @@ export default function VaultManagement() {
                   <Scale className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900">{(availableLiquidity / 1000).toFixed(2)} kg</p>
-                  <p className="text-xs text-gray-500">Unallocated Gold for Sale</p>
+                  <p className="text-2xl font-bold text-foreground">{(availableLiquidity / 1000).toFixed(2)} kg</p>
+                  <p className="text-xs text-muted-foreground">Unallocated Gold for Sale</p>
                 </div>
               </div>
             </CardContent>
@@ -129,20 +129,20 @@ export default function VaultManagement() {
             <CardContent>
               <div className="space-y-4">
                 {inventory.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50">
+                  <div key={i} className="flex items-center justify-between p-4 border border-border/60 rounded-lg hover:bg-muted/40">
                     <div className="flex items-center gap-4">
                       <div className="w-10 h-10 bg-yellow-50 rounded flex items-center justify-center border border-yellow-100">
                         <Scale className="w-5 h-5 text-yellow-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{item.id}</p>
-                        <p className="text-xs text-gray-500">{item.ref} • {item.purity}</p>
+                        <p className="font-medium text-foreground">{item.id}</p>
+                        <p className="text-xs text-muted-foreground">{item.ref} • {item.purity}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-6">
                       <div className="text-right">
-                        <p className="font-medium text-gray-900">{item.weight}</p>
-                        <p className="text-xs text-gray-500">{item.location}</p>
+                        <p className="font-medium text-foreground">{item.weight}</p>
+                        <p className="text-xs text-muted-foreground">{item.location}</p>
                       </div>
                       <Badge variant="outline" className={
                         item.status === 'Allocated' ? 'bg-blue-50 text-blue-700 border-blue-200' : 
@@ -155,8 +155,8 @@ export default function VaultManagement() {
                   </div>
                 ))}
               </div>
-              <div className="mt-4 pt-4 border-t border-gray-100 text-center">
-                <Button variant="ghost" className="text-sm text-gray-500">View All Inventory <ArrowRight className="w-4 h-4 ml-1" /></Button>
+              <div className="mt-4 pt-4 border-t border-border/60 text-center">
+                <Button variant="ghost" className="text-sm text-muted-foreground">View All Inventory <ArrowRight className="w-4 h-4 ml-1" /></Button>
               </div>
             </CardContent>
           </Card>
@@ -183,15 +183,15 @@ export default function VaultManagement() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between text-sm">
-                   <span className="text-gray-500">Access Control</span>
+                   <span className="text-muted-foreground">Access Control</span>
                    <Badge variant="outline" className="bg-green-50 text-green-700">Active</Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                   <span className="text-gray-500">CCTV Monitoring</span>
+                   <span className="text-muted-foreground">CCTV Monitoring</span>
                    <Badge variant="outline" className="bg-green-50 text-green-700">Online</Badge>
                 </div>
                 <div className="flex items-center justify-between text-sm">
-                   <span className="text-gray-500">Motion Sensors</span>
+                   <span className="text-muted-foreground">Motion Sensors</span>
                    <Badge variant="outline" className="bg-green-50 text-green-700">Armed</Badge>
                 </div>
                 <Button variant="outline" className="w-full mt-2">

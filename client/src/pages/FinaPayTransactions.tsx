@@ -73,7 +73,7 @@ export default function FinaPayTransactions() {
       case 'Sell': return 'bg-red-500/10 text-red-500';
       case 'Send': return 'bg-purple-500/10 text-purple-500';
       case 'Receive': return 'bg-blue-500/10 text-blue-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 
@@ -82,8 +82,8 @@ export default function FinaPayTransactions() {
       case 'Completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
       case 'Pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
       case 'Failed': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'Declined': return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
-      default: return 'bg-white/5 text-white/60';
+      case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
+      default: return 'bg-card/5 text-white/60';
     }
   };
 

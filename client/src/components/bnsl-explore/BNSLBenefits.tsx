@@ -154,13 +154,13 @@ export default function BNSLBenefits() {
             <span className="text-sm font-medium text-emerald-800">Why Choose BNSL</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Unmatched{' '}
             <span className="bg-gradient-to-r from-emerald-500 to-teal-500 bg-clip-text text-transparent">
               Benefits
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Experience the gold standard of digital gold investment
           </p>
         </motion.div>
@@ -179,10 +179,10 @@ export default function BNSLBenefits() {
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="text-center p-6 rounded-2xl bg-white border border-gray-100 shadow-sm"
+              className="text-center p-6 rounded-2xl bg-card border border-border/60 shadow-sm"
             >
-              <div className="text-3xl font-bold text-gray-900 mb-1">{stat.value}</div>
-              <div className="text-sm text-gray-500">{stat.label}</div>
+              <div className="text-3xl font-bold text-foreground mb-1">{stat.value}</div>
+              <div className="text-sm text-muted-foreground">{stat.label}</div>
             </motion.div>
           ))}
         </motion.div>
@@ -207,8 +207,8 @@ export default function BNSLBenefits() {
                     onClick={() => setActiveBenefit(benefit.id)}
                     className={`w-full text-left p-4 rounded-xl transition-all duration-300 flex items-center gap-4 ${
                       isActive
-                        ? 'bg-white shadow-lg border-2 border-gray-200'
-                        : 'bg-white/60 hover:bg-white border-2 border-transparent hover:border-gray-100'
+                        ? 'bg-card shadow-lg border-2 border-border'
+                        : 'bg-card/60 hover:bg-card border-2 border-transparent hover:border-border/60'
                     }`}
                     data-testid={`button-benefit-${benefit.id}`}
                   >
@@ -219,14 +219,14 @@ export default function BNSLBenefits() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <h4
-                        className={`font-semibold truncate ${isActive ? 'text-gray-900' : 'text-gray-700'}`}
+                        className={`font-semibold truncate ${isActive ? 'text-foreground' : 'text-foreground/85'}`}
                       >
                         {benefit.title}
                       </h4>
                     </div>
                     <ChevronRight
                       className={`w-5 h-5 transition-colors ${
-                        isActive ? 'text-gray-900' : 'text-gray-300'
+                        isActive ? 'text-foreground' : 'text-muted-foreground/50'
                       }`}
                     />
                   </motion.button>
@@ -264,7 +264,7 @@ export default function BNSLBenefits() {
                       <motion.div
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
-                        className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center mb-6"
+                        className="w-16 h-16 rounded-2xl bg-card/20 backdrop-blur-sm flex items-center justify-center mb-6"
                       >
                         {React.createElement(activeBenefitData.icon, {
                           className: 'w-8 h-8 text-white',
@@ -285,9 +285,9 @@ export default function BNSLBenefits() {
                             initial={{ opacity: 0, x: -10 }}
                             animate={{ opacity: 1, x: 0 }}
                             transition={{ delay: idx * 0.1 }}
-                            className="flex items-center gap-3 bg-white/10 rounded-lg p-3"
+                            className="flex items-center gap-3 bg-card/10 rounded-lg p-3"
                           >
-                            <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-card/20 flex items-center justify-center">
                               <BadgeCheck className="w-4 h-4 text-white" />
                             </div>
                             <span className="text-white/95">{detail}</span>
@@ -297,7 +297,7 @@ export default function BNSLBenefits() {
                     </div>
 
                     {/* Decorative Elements */}
-                    <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-white/5 blur-3xl -translate-y-1/2 translate-x-1/2" />
+                    <div className="absolute bottom-0 right-0 w-64 h-64 rounded-full bg-card/5 blur-3xl -translate-y-1/2 translate-x-1/2" />
                   </div>
                 </motion.div>
               </AnimatePresence>

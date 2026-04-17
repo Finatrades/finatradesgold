@@ -53,7 +53,7 @@ export default function PendingItemsStrip() {
             >
               <Clock className="w-3.5 h-3.5 text-amber-700" />
             </div>
-            <span className="text-[13px] font-bold text-gray-800">Pending Actions</span>
+            <span className="text-[13px] font-bold text-foreground">Pending Actions</span>
             <span
               className="fin-badge ml-1 text-white"
               style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', minWidth: '20px', height: '20px', padding: '0 6px', fontSize: '11px' }}
@@ -79,7 +79,7 @@ export default function PendingItemsStrip() {
                     >
                       {CATEGORY_ICONS[item.key] ?? <Clock className="w-3.5 h-3.5 text-amber-700" />}
                     </div>
-                    <span className="text-[12px] font-medium text-gray-700 truncate">{item.label}</span>
+                    <span className="text-[12px] font-medium text-foreground/85 truncate">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <span

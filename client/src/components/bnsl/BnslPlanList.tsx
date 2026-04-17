@@ -14,7 +14,7 @@ interface BnslPlanListProps {
 export default function BnslPlanList({ plans, onViewPlan, onJoinPlan }: BnslPlanListProps) {
   if (plans.length === 0) {
     return (
-      <Card className="bg-white shadow-sm border border-border p-12 text-center">
+      <Card className="bg-card shadow-sm border border-border p-12 text-center">
         <div className="flex flex-col items-center justify-center space-y-4">
           <div className="p-4 bg-muted rounded-full">
             <Clock className="w-12 h-12 text-muted-foreground" />
@@ -51,7 +51,7 @@ export default function BnslPlanList({ plans, onViewPlan, onJoinPlan }: BnslPlan
     <div className="space-y-6">
       <div className="grid gap-4">
         {plans.map((plan) => (
-          <Card key={plan.id} className="bg-white shadow-sm border border-border hover:border-secondary/50 transition-colors">
+          <Card key={plan.id} className="bg-card shadow-sm border border-border hover:border-secondary/50 transition-colors">
             <CardContent className="p-6">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                 

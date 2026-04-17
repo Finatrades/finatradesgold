@@ -53,20 +53,20 @@ export default function MobileFullScreenPage({
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: '100%' }}
           transition={{ type: 'spring', damping: 30, stiffness: 400 }}
-          className="fixed inset-0 z-[55] bg-gray-50 flex flex-col"
+          className="fixed inset-0 z-[55] bg-muted/40 flex flex-col"
           style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}
         >
           <header
             className={`${headerColors[headerColor]} text-white px-4 py-5 flex items-center gap-3 shadow-xl relative overflow-hidden`}
             style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 1.25rem)' }}
           >
-            <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full blur-3xl -mr-20 -mt-20" />
-            <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full blur-2xl -ml-16 -mb-16" />
+            <div className="absolute top-0 right-0 w-40 h-40 bg-card/10 rounded-full blur-3xl -mr-20 -mt-20" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-card/5 rounded-full blur-2xl -ml-16 -mb-16" />
             
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={onClose}
-              className="relative z-10 w-11 h-11 rounded-xl bg-white/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg active:bg-white/25 transition-colors"
+              className="relative z-10 w-11 h-11 rounded-xl bg-card/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg active:bg-card/25 transition-colors"
               aria-label="Go back"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -93,7 +93,7 @@ export default function MobileFullScreenPage({
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={onClose}
-              className="relative z-10 w-11 h-11 rounded-xl bg-white/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg active:bg-white/25 transition-colors"
+              className="relative z-10 w-11 h-11 rounded-xl bg-card/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg active:bg-card/25 transition-colors"
               aria-label="Close"
             >
               <X className="w-5 h-5" />
@@ -118,7 +118,7 @@ export default function MobileFullScreenPage({
               initial={{ y: 20, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2 }}
-              className="fixed bottom-0 left-0 right-0 z-[60] bg-white/95 backdrop-blur-xl border-t border-gray-200/50 px-4 py-4 shadow-2xl"
+              className="fixed bottom-0 left-0 right-0 z-[60] bg-card/95 backdrop-blur-xl border-t border-border/50 px-4 py-4 shadow-2xl"
               style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
             >
               {footer}

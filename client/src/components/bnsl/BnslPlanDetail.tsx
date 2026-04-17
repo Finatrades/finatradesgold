@@ -134,7 +134,7 @@ export default function BnslPlanDetail({
       </div>
 
       {/* Overview Card */}
-      <Card className="bg-white shadow-sm border border-border">
+      <Card className="bg-card shadow-sm border border-border">
         <CardHeader className="border-b border-border pb-4">
           <div className="flex justify-between items-center">
             <div>
@@ -202,7 +202,7 @@ export default function BnslPlanDetail({
       </Card>
 
       {/* Payout Schedule */}
-      <Card className="bg-white shadow-sm border border-border">
+      <Card className="bg-card shadow-sm border border-border">
         <CardHeader className="border-b border-border pb-4">
            <div className="flex justify-between items-center">
              <CardTitle className="text-lg font-bold text-foreground">Payout Schedule</CardTitle>

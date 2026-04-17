@@ -3095,7 +3095,7 @@ function StepItem({ title, description, icon, isActive, isCompleted }: { title: 
   return (
     <div className={`flex items-center gap-4 p-4 rounded-xl border transition-all duration-200 ${
       isActive 
-        ? 'bg-white border-primary shadow-sm ring-1 ring-primary/20' 
+        ? 'bg-card border-primary shadow-sm ring-1 ring-primary/20' 
         : isCompleted 
           ? 'bg-muted/50 border-transparent opacity-80' 
           : 'bg-transparent border-transparent opacity-50'

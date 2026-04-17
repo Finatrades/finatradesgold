@@ -440,9 +440,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <Label className="text-xs">Amount <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
-                <div className="flex bg-gray-100 rounded-md p-0.5">
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                <div className="flex bg-muted rounded-md p-0.5">
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
                 </div>
               </div>
             </div>
@@ -612,9 +612,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <Label>Amount <span className="text-red-500">*</span></Label>
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
-                <div className="flex bg-gray-100 rounded-md p-0.5">
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                <div className="flex bg-muted rounded-md p-0.5">
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
                 </div>
               </div>
             </div>
@@ -715,7 +715,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </div>
             </div>
 
-            <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+            <div className="text-xs text-muted-foreground bg-card/50 p-2 rounded-md">
               Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
             </div>
           </div>
@@ -737,7 +737,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                   </label>
                   <details className="mt-2">
                     <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                    <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                    <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded border max-h-32 overflow-y-auto">
                       {termsContent.terms}
                     </div>
                   </details>
@@ -951,7 +951,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={`bg-white border-border text-foreground w-[95vw] max-h-[85vh] overflow-y-auto ${foundUser && step === 'search' ? 'max-w-2xl' : 'max-w-md'}`}>
+      <DialogContent className={`bg-card border-border text-foreground w-[95vw] max-h-[85vh] overflow-y-auto ${foundUser && step === 'search' ? 'max-w-2xl' : 'max-w-md'}`}>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <Send className="w-5 h-5 text-primary" />
@@ -1078,9 +1078,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <Label className="text-xs">Amount <span className="text-red-500">*</span></Label>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
-                        <div className="flex bg-gray-100 rounded-md p-0.5">
-                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
-                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                        <div className="flex bg-muted rounded-md p-0.5">
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
                         </div>
                       </div>
                     </div>
@@ -1331,9 +1331,9 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <Label>Amount <span className="text-red-500">*</span></Label>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
-                        <div className="flex bg-gray-100 rounded-md p-0.5">
-                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
-                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                        <div className="flex bg-muted rounded-md p-0.5">
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
                         </div>
                       </div>
                     </div>
@@ -1440,7 +1440,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+                    <div className="text-xs text-muted-foreground bg-card/50 p-2 rounded-md">
                       Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
                     </div>
                   </div>
@@ -1496,7 +1496,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                           </label>
                           <details className="mt-2">
                             <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded border max-h-32 overflow-y-auto">
                               {termsContent.terms}
                             </div>
                           </details>

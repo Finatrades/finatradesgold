@@ -30,11 +30,11 @@ export default function WalletTypeSelector({
   return (
     <div className={`space-y-3 ${className}`} data-testid="wallet-type-selector">
       <div className="flex items-center gap-2">
-        <Label className="text-sm font-medium text-gray-700">{label}</Label>
+        <Label className="text-sm font-medium text-foreground/85">{label}</Label>
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <HelpCircle className="h-4 w-4 text-gray-400 cursor-help" />
+              <HelpCircle className="h-4 w-4 text-muted-foreground/70 cursor-help" />
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p className="text-sm">
@@ -46,7 +46,7 @@ export default function WalletTypeSelector({
         </TooltipProvider>
       </div>
       
-      <div className="bg-gray-100 p-1 rounded-xl flex gap-1">
+      <div className="bg-muted p-1 rounded-xl flex gap-1">
         <button
           type="button"
           onClick={() => !disabled && onChange('LGPW')}
@@ -55,8 +55,8 @@ export default function WalletTypeSelector({
             flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
             transition-all duration-200 touch-target
             ${value === 'LGPW' 
-              ? 'bg-white text-purple-600 shadow-sm' 
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'bg-card text-purple-600 shadow-sm' 
+              : 'text-muted-foreground hover:text-foreground/85'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
           `}
@@ -74,8 +74,8 @@ export default function WalletTypeSelector({
             flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
             transition-all duration-200 touch-target
             ${value === 'FGPW' 
-              ? 'bg-white text-amber-600 shadow-sm' 
-              : 'text-gray-500 hover:text-gray-700'
+              ? 'bg-card text-amber-600 shadow-sm' 
+              : 'text-muted-foreground hover:text-foreground/85'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
           `}
@@ -87,7 +87,7 @@ export default function WalletTypeSelector({
       </div>
       
       {showDescription && (
-        <p className="text-xs text-gray-500 text-center">
+        <p className="text-xs text-muted-foreground text-center">
           {value === 'LGPW' 
             ? 'Market Price - Value follows live market' 
             : 'Fixed Price - Value locked at purchase'

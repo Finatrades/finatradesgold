@@ -127,10 +127,10 @@ export default function ReferralManagement() {
       'Pending': 'bg-yellow-100 text-yellow-800',
       'Active': 'bg-blue-100 text-blue-800',
       'Completed': 'bg-green-100 text-green-800',
-      'Expired': 'bg-gray-100 text-gray-800',
+      'Expired': 'bg-muted text-foreground',
       'Cancelled': 'bg-red-100 text-red-800',
     };
-    return <Badge className={styles[status] || 'bg-gray-100'}>{status}</Badge>;
+    return <Badge className={styles[status] || 'bg-muted'}>{status}</Badge>;
   };
 
   const filteredReferrals = referrals.filter(referral => {
@@ -158,10 +158,10 @@ export default function ReferralManagement() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="page-title">
               Referral Management
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Track and manage user referrals and rewards
             </p>
           </div>
@@ -179,7 +179,7 @@ export default function ReferralManagement() {
                   <Users className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Referrals</p>
+                  <p className="text-sm text-muted-foreground">Total Referrals</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -193,7 +193,7 @@ export default function ReferralManagement() {
                   <Clock className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Active</p>
+                  <p className="text-sm text-muted-foreground">Active</p>
                   <p className="text-2xl font-bold">{stats.active}</p>
                 </div>
               </div>
@@ -207,7 +207,7 @@ export default function ReferralManagement() {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Completed</p>
+                  <p className="text-sm text-muted-foreground">Completed</p>
                   <p className="text-2xl font-bold">{stats.completed}</p>
                 </div>
               </div>
@@ -221,7 +221,7 @@ export default function ReferralManagement() {
                   <DollarSign className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Rewards Paid</p>
+                  <p className="text-sm text-muted-foreground">Rewards Paid</p>
                   <p className="text-2xl font-bold">${stats.totalRewards.toFixed(2)}</p>
                 </div>
               </div>
@@ -235,7 +235,7 @@ export default function ReferralManagement() {
               <CardTitle>All Referrals</CardTitle>
               <div className="flex gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                   <Input
                     placeholder="Search by code or email..."
                     value={searchQuery}
@@ -263,10 +263,10 @@ export default function ReferralManagement() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
               </div>
             ) : filteredReferrals.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <Gift className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No referrals found</p>
               </div>
@@ -275,13 +275,13 @@ export default function ReferralManagement() {
                 <table className="w-full" data-testid="referrals-table">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Referral Code</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Referrer</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Referred</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Reward</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Created</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Referral Code</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Referrer</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Referred</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reward</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Created</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -290,10 +290,10 @@ export default function ReferralManagement() {
                       const referred = referral.referredId ? users[referral.referredId] : null;
                       
                       return (
-                        <tr key={referral.id} className="border-b hover:bg-gray-50" data-testid={`row-referral-${referral.id}`}>
+                        <tr key={referral.id} className="border-b hover:bg-muted/40" data-testid={`row-referral-${referral.id}`}>
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
-                              <code className="bg-gray-100 px-2 py-1 rounded text-sm font-mono">
+                              <code className="bg-muted px-2 py-1 rounded text-sm font-mono">
                                 {referral.referralCode}
                               </code>
                               <Button
@@ -310,22 +310,22 @@ export default function ReferralManagement() {
                             {referrer ? (
                               <div>
                                 <p className="font-medium">{referrer.firstName} {referrer.lastName}</p>
-                                <p className="text-sm text-gray-500">{referrer.email}</p>
+                                <p className="text-sm text-muted-foreground">{referrer.email}</p>
                               </div>
                             ) : (
-                              <span className="text-gray-400">Unknown</span>
+                              <span className="text-muted-foreground/70">Unknown</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
                             {referred ? (
                               <div>
                                 <p className="font-medium">{referred.firstName} {referred.lastName}</p>
-                                <p className="text-sm text-gray-500">{referred.email}</p>
+                                <p className="text-sm text-muted-foreground">{referred.email}</p>
                               </div>
                             ) : referral.referredEmail ? (
-                              <span className="text-gray-500">{referral.referredEmail}</span>
+                              <span className="text-muted-foreground">{referral.referredEmail}</span>
                             ) : (
-                              <span className="text-gray-400">Not used yet</span>
+                              <span className="text-muted-foreground/70">Not used yet</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
@@ -340,10 +340,10 @@ export default function ReferralManagement() {
                                 )}
                               </div>
                             ) : (
-                              <span className="text-gray-400">-</span>
+                              <span className="text-muted-foreground/70">-</span>
                             )}
                           </td>
-                          <td className="py-3 px-4 text-gray-500">
+                          <td className="py-3 px-4 text-muted-foreground">
                             {format(new Date(referral.createdAt), 'MMM d, yyyy')}
                           </td>
                           <td className="py-3 px-4">

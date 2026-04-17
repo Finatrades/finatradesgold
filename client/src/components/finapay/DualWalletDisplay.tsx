@@ -60,7 +60,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
 
   if (isLoading) {
     return (
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm flex items-center justify-center min-h-[200px]">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm flex items-center justify-center min-h-[200px]">
         <Loader2 className="w-8 h-8 animate-spin text-purple-500" />
       </div>
     );
@@ -68,7 +68,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
 
   if (error || !balance) {
     return (
-      <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+      <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
         <div className="flex items-center gap-2 text-amber-600">
           <AlertTriangle className="w-5 h-5" />
           <span>Unable to load wallet balance</span>
@@ -146,7 +146,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
   return (
     <TooltipProvider>
     <div className="space-y-4">
-    <div className="bg-white rounded-2xl border border-border shadow-sm overflow-hidden" data-testid="dual-wallet-card">
+    <div className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden" data-testid="dual-wallet-card">
 
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-border/60">
@@ -270,7 +270,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
 
       {/* Explainer & Disclosure */}
       <div className="px-6 pb-6">
-        <div className="p-4 rounded-xl bg-gray-50 border border-border text-xs text-muted-foreground leading-relaxed">
+        <div className="p-4 rounded-xl bg-muted/40 border border-border text-xs text-muted-foreground leading-relaxed">
           <p className="font-semibold text-foreground mb-1 flex items-center gap-1.5">
             <Info className="w-3.5 h-3.5 text-amber-500" /> How Price Protection Works
           </p>

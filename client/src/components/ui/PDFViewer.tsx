@@ -62,10 +62,10 @@ export function PDFViewer({
 
   if (error) {
     return (
-      <div className={`flex flex-col items-center justify-center p-8 bg-gray-50 rounded-lg ${className}`}>
+      <div className={`flex flex-col items-center justify-center p-8 bg-muted/40 rounded-lg ${className}`}>
         <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-        <p className="text-gray-700 font-medium">{error}</p>
-        <p className="text-gray-500 text-sm mt-2">The PDF could not be displayed</p>
+        <p className="text-foreground/85 font-medium">{error}</p>
+        <p className="text-muted-foreground text-sm mt-2">The PDF could not be displayed</p>
       </div>
     );
   }
@@ -73,7 +73,7 @@ export function PDFViewer({
   return (
     <div className={`flex flex-col ${className}`}>
       {showControls && !loading && numPages > 0 && (
-        <div className="flex items-center justify-between gap-2 p-3 bg-gray-100 border-b rounded-t-lg">
+        <div className="flex items-center justify-between gap-2 p-3 bg-muted border-b rounded-t-lg">
           <div className="flex items-center gap-2">
             <Button
               variant="outline"
@@ -84,7 +84,7 @@ export function PDFViewer({
             >
               <ChevronLeft className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-gray-600 min-w-[80px] text-center">
+            <span className="text-sm text-muted-foreground min-w-[80px] text-center">
               Page {pageNumber} of {numPages}
             </span>
             <Button
@@ -107,7 +107,7 @@ export function PDFViewer({
             >
               <ZoomOut className="w-4 h-4" />
             </Button>
-            <span className="text-sm text-gray-600 min-w-[50px] text-center">
+            <span className="text-sm text-muted-foreground min-w-[50px] text-center">
               {Math.round(scale * 100)}%
             </span>
             <Button
@@ -123,11 +123,11 @@ export function PDFViewer({
         </div>
       )}
       
-      <div className="flex-1 overflow-auto bg-gray-200 rounded-b-lg p-4 flex justify-center">
+      <div className="flex-1 overflow-auto bg-muted rounded-b-lg p-4 flex justify-center">
         {loading && (
           <div className="flex flex-col items-center justify-center py-16">
             <Loader2 className="w-8 h-8 text-primary animate-spin mb-4" />
-            <p className="text-gray-600">Loading PDF...</p>
+            <p className="text-muted-foreground">Loading PDF...</p>
           </div>
         )}
         

@@ -60,7 +60,7 @@ export default function Footer() {
               {socialIcons.map((social) => (
                 <button
                   key={social.label}
-                  className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors group"
+                  className="w-10 h-10 rounded-full bg-card/10 flex items-center justify-center hover:bg-card/20 transition-colors group"
                   data-testid={`social-${social.label.toLowerCase()}`}
                 >
                   <social.icon className="w-4 h-4 text-white/70 group-hover:text-white transition-colors" />

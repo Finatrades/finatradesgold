@@ -27,11 +27,11 @@ export default function SwissStandards() {
           
           <h2 className="text-4xl lg:text-6xl font-bold mb-8 flex items-center justify-center gap-4 flex-wrap">
             <Plus className="w-12 h-12 text-red-500" strokeWidth={3} />
-            <span className="text-gray-900">Swiss Financial </span>
+            <span className="text-foreground">Swiss Financial </span>
             <span className="text-purple-600">Standards</span>
           </h2>
           
-          <p className="text-gray-600 text-xl mb-10 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground text-xl mb-10 max-w-3xl mx-auto leading-relaxed">
             Operating under strict Swiss regulations, Finatrades ensures security, compliance, and reliability for businesses worldwide.
           </p>
           

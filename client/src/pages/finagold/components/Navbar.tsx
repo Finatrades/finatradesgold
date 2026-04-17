@@ -88,7 +88,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-4 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-white/10 transition-all duration-200"
+                  className="px-4 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-card/10 transition-all duration-200"
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
                   {link.label}
@@ -100,7 +100,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 ${
                     isActive(link.href)
                       ? 'bg-purple-600 text-white'
-                      : 'text-white/80 hover:text-white hover:bg-white/10'
+                      : 'text-white/80 hover:text-white hover:bg-card/10'
                   }`}
                   data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
                 >
@@ -112,7 +112,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
           <div className="hidden lg:flex items-center gap-3">
             {/* Personal/Business Toggle */}
-            <div className="flex bg-white/10 rounded-full p-0.5 border border-white/20">
+            <div className="flex bg-card/10 rounded-full p-0.5 border border-white/20">
               <button
                 onClick={() => setMode('personal')}
                 className={`px-4 py-1.5 rounded-full text-sm font-medium transition-all duration-300 flex items-center gap-2 ${
@@ -139,7 +139,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
             <Link 
               href="/sign-in"
-              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-white/10"
+              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-card/10"
               data-testid="btn-sign-in"
             >
               Sign In
@@ -155,7 +155,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
 
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-white/10 transition-colors"
+            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-card/10 transition-colors"
             data-testid="mobile-menu-toggle"
             aria-label={mobileOpen ? "Close menu" : "Open menu"}
           >
@@ -177,7 +177,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     <a
                       key={link.href}
                       href={link.href}
-                      className="px-4 py-4 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-white/10 transition-all flex items-center"
+                      className="px-4 py-4 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-card/10 transition-all flex items-center"
                       onClick={() => setMobileOpen(false)}
                     >
                       {link.label}
@@ -189,7 +189,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                       className={`px-4 py-4 min-h-[48px] rounded-lg text-base font-medium transition-all flex items-center ${
                         isActive(link.href)
                           ? 'bg-purple-600 text-white'
-                          : 'text-white/80 hover:text-white active:bg-white/10'
+                          : 'text-white/80 hover:text-white active:bg-card/10'
                       }`}
                       onClick={() => setMobileOpen(false)}
                     >
@@ -203,7 +203,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     className={`flex-1 px-4 py-3 min-h-[48px] rounded-full text-sm font-medium transition-all active:scale-95 ${
                       isPersonal
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-white/10 text-white/70 border border-white/20'
+                        : 'bg-card/10 text-white/70 border border-white/20'
                     }`}
                   >
                     Personal
@@ -213,7 +213,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                     className={`flex-1 px-4 py-3 min-h-[48px] rounded-full text-sm font-medium transition-all active:scale-95 ${
                       !isPersonal
                         ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white'
-                        : 'bg-white/10 text-white/70 border border-white/20'
+                        : 'bg-card/10 text-white/70 border border-white/20'
                     }`}
                   >
                     Business
@@ -221,7 +221,7 @@ export default function Navbar({ variant = 'universal' }: NavbarProps) {
                 </div>
                 <Link 
                   href="/sign-in"
-                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-white/10 transition-all flex items-center justify-center"
+                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-card/10 transition-all flex items-center justify-center"
                 >
                   Sign In
                 </Link>

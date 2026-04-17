@@ -27,7 +27,7 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
       whileHover={{ scale: 1.03, y: -4 }}
       whileTap={{ scale: 0.98 }}
     >
-      <Card className="h-full p-5 bg-white/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 hover:border-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/10 transition-all duration-300 group relative overflow-hidden rounded-2xl">
+      <Card className="h-full p-5 bg-card/70 backdrop-blur-xl shadow-lg shadow-black/5 border border-white/50 hover:border-[#D4AF37]/40 hover:shadow-xl hover:shadow-[#D4AF37]/10 transition-all duration-300 group relative overflow-hidden rounded-2xl">
         <div className="absolute inset-0 bg-gradient-to-br from-[#D4AF37]/5 via-transparent to-[#F4E4BC]/10 pointer-events-none" />
         
         <div className="relative z-10">
@@ -57,7 +57,7 @@ export default function KpiCard({ title, value, definition, subValue, icon, dela
           <div className="space-y-1">
             <p className="text-2xl font-bold text-foreground tracking-tight">{value}</p>
             {subValue && (
-              <p className="text-xs text-gray-600 font-medium">{subValue}</p>
+              <p className="text-xs text-muted-foreground font-medium">{subValue}</p>
             )}
           </div>
         </div>

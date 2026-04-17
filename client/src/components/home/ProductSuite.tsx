@@ -94,7 +94,7 @@ export default function ProductSuite() {
           <span className="text-sm font-semibold tracking-widest text-purple-600 uppercase mb-4 block">
             {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'PERSONAL ECOSYSTEM'}
           </span>
-          <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-gray-900">
+          <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">
             {accountType === 'business' 
               ? 'A Structured Ecosystem for High-Trust Business Transactions'
               : 'Your Complete Gold Management Platform'}
@@ -111,17 +111,17 @@ export default function ProductSuite() {
               transition={{ delay: index * 0.1 }}
               className="group"
             >
-              <div className="h-full p-8 rounded-3xl bg-white border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300" data-testid={`card-product-${product.id}`}>
+              <div className="h-full p-8 rounded-3xl bg-card border border-border/60 shadow-sm hover:shadow-xl transition-all duration-300" data-testid={`card-product-${product.id}`}>
                 <div className="mb-6 relative">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/10 to-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
                     <product.icon className="w-8 h-8 text-purple-600" strokeWidth={1.5} />
                   </div>
                 </div>
                 
-                <h3 className="text-lg font-bold mb-3 text-gray-900">
+                <h3 className="text-lg font-bold mb-3 text-foreground">
                   {product.name}
                 </h3>
-                <p className="text-gray-500 leading-relaxed mb-6 text-sm min-h-[80px]">
+                <p className="text-muted-foreground leading-relaxed mb-6 text-sm min-h-[80px]">
                   {product.description}
                 </p>
                 

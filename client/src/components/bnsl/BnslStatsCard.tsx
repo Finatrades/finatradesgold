@@ -14,7 +14,7 @@ interface BnslStatsCardProps {
 
 export default function BnslStatsCard({ label, value, subValue, icon: Icon, tooltip, trend, accentColor = "text-secondary" }: BnslStatsCardProps) {
   return (
-    <Card className="bg-white shadow-sm border border-border relative overflow-hidden group hover:border-secondary/50 transition-colors">
+    <Card className="bg-card shadow-sm border border-border relative overflow-hidden group hover:border-secondary/50 transition-colors">
       <div className={`absolute top-0 right-0 p-3 opacity-5 ${accentColor}`}>
         <Icon className="w-16 h-16" />
       </div>

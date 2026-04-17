@@ -74,10 +74,10 @@ export default function VaultLocations() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Vault Locations & Routing
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Manage third-party vault locations and country routing rules
             </p>
           </div>
@@ -105,10 +105,10 @@ export default function VaultLocations() {
                 {[1, 2, 3].map((i) => (
                   <Card key={i} className="animate-pulse">
                     <CardHeader className="pb-2">
-                      <div className="h-4 bg-gray-200 rounded w-1/2" />
+                      <div className="h-4 bg-muted rounded w-1/2" />
                     </CardHeader>
                     <CardContent>
-                      <div className="h-20 bg-gray-200 rounded mt-2" />
+                      <div className="h-20 bg-muted rounded mt-2" />
                     </CardContent>
                   </Card>
                 ))}
@@ -116,9 +116,9 @@ export default function VaultLocations() {
             ) : (locationsData?.locations?.length || 0) === 0 ? (
               <Card>
                 <CardContent className="pt-6 text-center">
-                  <Building2 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-900">No Vault Locations</h3>
-                  <p className="text-gray-500 mt-1">Add your first third-party vault location to start tracking physical custody.</p>
+                  <Building2 className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground">No Vault Locations</h3>
+                  <p className="text-muted-foreground mt-1">Add your first third-party vault location to start tracking physical custody.</p>
                   <Button className="mt-4 bg-purple-600 hover:bg-purple-700">
                     <Plus className="h-4 w-4 mr-2" />
                     Add First Location
@@ -147,42 +147,42 @@ export default function VaultLocations() {
                             {loc.is_active ? (
                               <Badge className="bg-green-100 text-green-700 border-green-200">Active</Badge>
                             ) : (
-                              <Badge className="bg-gray-100 text-gray-700 border-gray-200">Inactive</Badge>
+                              <Badge className="bg-muted text-foreground/85 border-border">Inactive</Badge>
                             )}
                           </div>
                         </div>
                       </CardHeader>
                       <CardContent className="space-y-3">
-                        <div className="text-sm text-gray-600">
+                        <div className="text-sm text-muted-foreground">
                           <p>{loc.address}</p>
                           <p>{loc.city}, {loc.country}</p>
                         </div>
 
                         <div className="space-y-1">
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Capacity</span>
+                            <span className="text-muted-foreground">Capacity</span>
                             <span className="font-medium">{formatWeight(loc.capacity_kg)}</span>
                           </div>
                           <div className="flex justify-between text-sm">
-                            <span className="text-gray-500">Current Holdings</span>
+                            <span className="text-muted-foreground">Current Holdings</span>
                             <span className="font-medium">{formatWeight(loc.current_holdings_kg)}</span>
                           </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                          <div className="w-full bg-muted rounded-full h-2 mt-2">
                             <div
                               className={`h-2 rounded-full ${utilization > 90 ? 'bg-red-500' : utilization > 70 ? 'bg-yellow-500' : 'bg-green-500'}`}
                               style={{ width: `${Math.min(utilization, 100)}%` }}
                             />
                           </div>
-                          <p className="text-xs text-gray-500 text-right">{utilization.toFixed(1)}% utilized</p>
+                          <p className="text-xs text-muted-foreground text-right">{utilization.toFixed(1)}% utilized</p>
                         </div>
 
                         <div className="pt-2 border-t">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Shield className="h-4 w-4" />
                             <span>{loc.security_level}</span>
                           </div>
                           {loc.insurance_provider && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                               Insured by {loc.insurance_provider}
                             </p>
                           )}
@@ -218,12 +218,12 @@ export default function VaultLocations() {
               </CardHeader>
               <CardContent>
                 {loadingRouting ? (
-                  <div className="text-center py-8 text-gray-500">Loading...</div>
+                  <div className="text-center py-8 text-muted-foreground">Loading...</div>
                 ) : (routingData?.rules?.length || 0) === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Globe className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-gray-900">No Routing Rules</h3>
-                    <p className="text-gray-500 mt-1">Configure country-to-vault routing rules to automate deposit allocation.</p>
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Globe className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+                    <h3 className="text-lg font-medium text-foreground">No Routing Rules</h3>
+                    <p className="text-muted-foreground mt-1">Configure country-to-vault routing rules to automate deposit allocation.</p>
                     <Button className="mt-4" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Add Routing Rule
@@ -239,14 +239,14 @@ export default function VaultLocations() {
                           </div>
                           <div>
                             <p className="font-medium">{rule.country_name}</p>
-                            <p className="text-sm text-gray-500">Priority: {rule.priority}</p>
+                            <p className="text-sm text-muted-foreground">Priority: {rule.priority}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-3">
                           {rule.is_active ? (
                             <Badge className="bg-green-100 text-green-700">Active</Badge>
                           ) : (
-                            <Badge className="bg-gray-100 text-gray-600">Inactive</Badge>
+                            <Badge className="bg-muted text-muted-foreground">Inactive</Badge>
                           )}
                           <Button variant="outline" size="sm">
                             <Edit className="h-4 w-4" />

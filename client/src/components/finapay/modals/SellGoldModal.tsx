@@ -116,12 +116,12 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         </div>
         
         <div className="relative">
-          <Label className="mb-2 block text-gray-700 font-medium">Amount to Sell (Gold Grams)</Label>
+          <Label className="mb-2 block text-foreground/85 font-medium">Amount to Sell (Gold Grams)</Label>
           <div className="relative">
             <Input 
               type="number" 
               placeholder="0.000" 
-              className="h-14 text-lg font-bold bg-white border-gray-200 rounded-xl pr-16"
+              className="h-14 text-lg font-bold bg-card border-border rounded-xl pr-16"
               value={grams}
               onChange={(e) => handleGramsChange(e.target.value)}
             />
@@ -132,22 +132,22 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         </div>
 
         <div className="flex justify-center -my-2 relative z-10">
-           <div className="bg-white border border-gray-200 p-2 rounded-full text-gray-400 shadow-sm">
+           <div className="bg-card border border-border p-2 rounded-full text-muted-foreground/70 shadow-sm">
               <ArrowRightLeft className="w-5 h-5 rotate-90" />
            </div>
         </div>
 
         <div className="relative">
-          <Label className="mb-2 block text-gray-700 font-medium">Value (USD)</Label>
+          <Label className="mb-2 block text-foreground/85 font-medium">Value (USD)</Label>
           <div className="relative">
             <Input 
               type="number" 
               placeholder="0.00" 
-              className="h-14 text-lg font-bold bg-white border-gray-200 rounded-xl pr-16"
+              className="h-14 text-lg font-bold bg-card border-border rounded-xl pr-16"
               value={usd}
               onChange={(e) => handleUsdChange(e.target.value)}
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
               USD
             </div>
           </div>
@@ -169,41 +169,41 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
       </div>
 
       <div className="space-y-3">
-        <Label className="text-gray-700 font-medium">Payout Method</Label>
+        <Label className="text-foreground/85 font-medium">Payout Method</Label>
         <RadioGroup value={method} onValueChange={setMethod} className="space-y-3">
-          <div className="flex items-center space-x-3 bg-white shadow-sm p-4 rounded-xl border border-gray-200 mobile-list-item">
+          <div className="flex items-center space-x-3 bg-card shadow-sm p-4 rounded-xl border border-border mobile-list-item">
             <RadioGroupItem value="bank" id="bank" className="border-purple-300 text-purple-600" />
             <Label htmlFor="bank" className="flex-1 flex items-center cursor-pointer">
-              <Building className="w-5 h-5 mr-3 text-gray-500" />
+              <Building className="w-5 h-5 mr-3 text-muted-foreground" />
               <span className="flex-1 font-medium">Bank Transfer</span>
-              <span className="text-sm text-gray-500">2-3 days</span>
+              <span className="text-sm text-muted-foreground">2-3 days</span>
             </Label>
           </div>
-          <div className="flex items-center space-x-3 bg-white shadow-sm p-4 rounded-xl border border-gray-200 mobile-list-item">
+          <div className="flex items-center space-x-3 bg-card shadow-sm p-4 rounded-xl border border-border mobile-list-item">
             <RadioGroupItem value="crypto" id="crypto" className="border-purple-300 text-purple-600" />
             <Label htmlFor="crypto" className="flex-1 flex items-center cursor-pointer">
-              <Wallet className="w-5 h-5 mr-3 text-gray-500" />
+              <Wallet className="w-5 h-5 mr-3 text-muted-foreground" />
               <span className="flex-1 font-medium">Crypto Payout</span>
-              <span className="text-sm text-gray-500">Instant</span>
+              <span className="text-sm text-muted-foreground">Instant</span>
             </Label>
           </div>
         </RadioGroup>
       </div>
 
       {numericGrams > 0 && (
-         <div className="bg-gray-50 rounded-2xl border border-gray-200 p-4 space-y-3 text-sm">
+         <div className="bg-muted/40 rounded-2xl border border-border p-4 space-y-3 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-500">Rate</span>
-              <span className="text-gray-900 font-semibold">${goldPrice.toFixed(2)} / g</span>
+              <span className="text-muted-foreground">Rate</span>
+              <span className="text-foreground font-semibold">${goldPrice.toFixed(2)} / g</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-500">Fee ({spreadPercent}%)</span>
+              <span className="text-muted-foreground">Fee ({spreadPercent}%)</span>
               <span className="text-red-500 font-medium">-${fee.toFixed(2)}</span>
             </div>
-            <Separator className="bg-gray-200" />
+            <Separator className="bg-muted" />
             <div className="flex justify-between items-center">
-              <span className="text-gray-900 font-semibold">Net Payout</span>
-              <span className="text-2xl font-bold text-gray-900">${netPayout.toFixed(2)}</span>
+              <span className="text-foreground font-semibold">Net Payout</span>
+              <span className="text-2xl font-bold text-foreground">${netPayout.toFixed(2)}</span>
             </div>
          </div>
       )}
@@ -244,7 +244,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
   return (
     <>
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <span className="text-red-500">Sell Gold</span>

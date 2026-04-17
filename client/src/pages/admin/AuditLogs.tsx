@@ -86,10 +86,10 @@ export default function AuditLogs() {
       'approve': 'bg-emerald-100 text-emerald-800',
       'reject': 'bg-purple-100 text-purple-800',
       'login': 'bg-purple-100 text-purple-800',
-      'logout': 'bg-gray-100 text-gray-800',
+      'logout': 'bg-muted text-foreground',
     };
     const actionKey = action.toLowerCase().split('_')[0];
-    return <Badge className={styles[actionKey] || 'bg-gray-100'}>{action}</Badge>;
+    return <Badge className={styles[actionKey] || 'bg-muted'}>{action}</Badge>;
   };
 
   const getEntityIcon = (entityType: string) => {
@@ -133,10 +133,10 @@ export default function AuditLogs() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="page-title">
               Audit Logs
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Track all system activities and changes
             </p>
           </div>
@@ -154,7 +154,7 @@ export default function AuditLogs() {
                   <FileText className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Total Logs</p>
+                  <p className="text-sm text-muted-foreground">Total Logs</p>
                   <p className="text-2xl font-bold">{stats.total}</p>
                 </div>
               </div>
@@ -168,7 +168,7 @@ export default function AuditLogs() {
                   <Calendar className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Today</p>
+                  <p className="text-sm text-muted-foreground">Today</p>
                   <p className="text-2xl font-bold">{stats.today}</p>
                 </div>
               </div>
@@ -182,7 +182,7 @@ export default function AuditLogs() {
                   <User className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Unique Users</p>
+                  <p className="text-sm text-muted-foreground">Unique Users</p>
                   <p className="text-2xl font-bold">{stats.uniqueUsers}</p>
                 </div>
               </div>
@@ -196,7 +196,7 @@ export default function AuditLogs() {
                   <Activity className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Entity Types</p>
+                  <p className="text-sm text-muted-foreground">Entity Types</p>
                   <p className="text-2xl font-bold">{stats.entityTypes}</p>
                 </div>
               </div>
@@ -210,7 +210,7 @@ export default function AuditLogs() {
               <CardTitle>Activity Log</CardTitle>
               <div className="flex flex-wrap gap-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                   <Input
                     placeholder="Search logs..."
                     value={searchQuery}
@@ -247,10 +247,10 @@ export default function AuditLogs() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
               </div>
             ) : filteredLogs.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
                 <p>No audit logs found</p>
               </div>
@@ -259,12 +259,12 @@ export default function AuditLogs() {
                 <table className="w-full" data-testid="audit-logs-table">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Timestamp</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Entity</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Action</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Performed By</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Entity ID</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-500">Actions</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Timestamp</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Entity</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Action</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Performed By</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Entity ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -272,8 +272,8 @@ export default function AuditLogs() {
                       const performer = log.performedBy ? users[log.performedBy] : null;
                       
                       return (
-                        <tr key={log.id} className="border-b hover:bg-gray-50" data-testid={`row-log-${log.id}`}>
-                          <td className="py-3 px-4 text-sm text-gray-500">
+                        <tr key={log.id} className="border-b hover:bg-muted/40" data-testid={`row-log-${log.id}`}>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">
                             {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm:ss')}
                           </td>
                           <td className="py-3 px-4">
@@ -289,14 +289,14 @@ export default function AuditLogs() {
                             {performer ? (
                               <div>
                                 <p className="font-medium text-sm">{performer.firstName} {performer.lastName}</p>
-                                <p className="text-xs text-gray-500">{performer.email}</p>
+                                <p className="text-xs text-muted-foreground">{performer.email}</p>
                               </div>
                             ) : (
-                              <span className="text-gray-400">System</span>
+                              <span className="text-muted-foreground/70">System</span>
                             )}
                           </td>
                           <td className="py-3 px-4">
-                            <code className="bg-gray-100 px-2 py-1 rounded text-xs font-mono">
+                            <code className="bg-muted px-2 py-1 rounded text-xs font-mono">
                               {log.entityId.substring(0, 12)}...
                             </code>
                           </td>
@@ -329,31 +329,31 @@ export default function AuditLogs() {
               <div className="space-y-4 py-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Timestamp</p>
+                    <p className="text-sm text-muted-foreground">Timestamp</p>
                     <p className="font-medium">{format(new Date(selectedLog.createdAt), 'MMM d, yyyy HH:mm:ss')}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Action</p>
+                    <p className="text-sm text-muted-foreground">Action</p>
                     {getActionBadge(selectedLog.action)}
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Entity Type</p>
+                    <p className="text-sm text-muted-foreground">Entity Type</p>
                     <p className="font-medium">{selectedLog.entityType}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Entity ID</p>
-                    <code className="text-sm bg-gray-100 px-2 py-1 rounded">{selectedLog.entityId}</code>
+                    <p className="text-sm text-muted-foreground">Entity ID</p>
+                    <code className="text-sm bg-muted px-2 py-1 rounded">{selectedLog.entityId}</code>
                   </div>
                   {selectedLog.performedBy && users[selectedLog.performedBy] && (
                     <div>
-                      <p className="text-sm text-gray-500">Performed By</p>
+                      <p className="text-sm text-muted-foreground">Performed By</p>
                       <p className="font-medium">{users[selectedLog.performedBy].firstName} {users[selectedLog.performedBy].lastName}</p>
-                      <p className="text-sm text-gray-500">{users[selectedLog.performedBy].email}</p>
+                      <p className="text-sm text-muted-foreground">{users[selectedLog.performedBy].email}</p>
                     </div>
                   )}
                   {selectedLog.ipAddress && (
                     <div>
-                      <p className="text-sm text-gray-500">IP Address</p>
+                      <p className="text-sm text-muted-foreground">IP Address</p>
                       <p className="font-medium">{selectedLog.ipAddress}</p>
                     </div>
                   )}
@@ -361,8 +361,8 @@ export default function AuditLogs() {
                 
                 {selectedLog.previousData && Object.keys(selectedLog.previousData).length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">Previous Data</p>
-                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-40">
+                    <p className="text-sm text-muted-foreground mb-2">Previous Data</p>
+                    <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-40">
                       {JSON.stringify(selectedLog.previousData, null, 2)}
                     </pre>
                   </div>
@@ -370,8 +370,8 @@ export default function AuditLogs() {
                 
                 {selectedLog.newData && Object.keys(selectedLog.newData).length > 0 && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">New Data</p>
-                    <pre className="bg-gray-100 p-4 rounded text-xs overflow-auto max-h-40">
+                    <p className="text-sm text-muted-foreground mb-2">New Data</p>
+                    <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-40">
                       {JSON.stringify(selectedLog.newData, null, 2)}
                     </pre>
                   </div>
@@ -379,8 +379,8 @@ export default function AuditLogs() {
                 
                 {selectedLog.userAgent && (
                   <div>
-                    <p className="text-sm text-gray-500 mb-2">User Agent</p>
-                    <p className="text-xs text-gray-600 break-all">{selectedLog.userAgent}</p>
+                    <p className="text-sm text-muted-foreground mb-2">User Agent</p>
+                    <p className="text-xs text-muted-foreground break-all">{selectedLog.userAgent}</p>
                   </div>
                 )}
               </div>

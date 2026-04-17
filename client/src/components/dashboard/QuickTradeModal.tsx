@@ -242,7 +242,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)' }} />
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+              <div className="w-9 h-9 rounded-xl bg-card/15 flex items-center justify-center border border-white/20">
                 <ArrowLeftRight className="w-4 h-4 text-blue-200" />
               </div>
               <div>
@@ -262,7 +262,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
               {[1, 2, 3, 4].map(s => (
                 <div
                   key={s}
-                  className={`h-1 flex-1 rounded-full transition-all ${s <= step ? 'bg-blue-300' : 'bg-white/20'}`}
+                  className={`h-1 flex-1 rounded-full transition-all ${s <= step ? 'bg-blue-300' : 'bg-card/20'}`}
                 />
               ))}
             </div>
@@ -270,7 +270,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
         </div>
 
         {/* ── Body ── */}
-        <div className="p-5 bg-white max-h-[70vh] overflow-y-auto">
+        <div className="p-5 bg-card max-h-[70vh] overflow-y-auto">
 
           {/* DONE */}
           {isDone && (

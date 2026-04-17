@@ -136,7 +136,7 @@ export default function DigitalIdentity() {
 
         {!credentialData?.hasCredential ? (
           /* No Credential State */
-          <div className="bg-white rounded-2xl border border-gray-100 p-8 text-center shadow-sm">
+          <div className="bg-card rounded-2xl border border-border/60 p-8 text-center shadow-sm">
             <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
               <Fingerprint className="w-8 h-8 text-purple-600" />
             </div>
@@ -160,7 +160,7 @@ export default function DigitalIdentity() {
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                   activeTab === 'credential' 
                     ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border border-border text-foreground/85 hover:bg-muted/40'
                 }`}
                 data-testid="tab-credential"
               >
@@ -172,7 +172,7 @@ export default function DigitalIdentity() {
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                   activeTab === 'details' 
                     ? 'bg-gradient-to-r from-purple-500 to-violet-500 text-white shadow-md' 
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border border-border text-foreground/85 hover:bg-muted/40'
                 }`}
                 data-testid="tab-details"
               >
@@ -184,7 +184,7 @@ export default function DigitalIdentity() {
                 className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                   activeTab === 'history' 
                     ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                    : 'bg-card border border-border text-foreground/85 hover:bg-muted/40'
                 }`}
                 data-testid="tab-history"
               >
@@ -196,7 +196,7 @@ export default function DigitalIdentity() {
             {/* Stat Cards */}
             <div className="grid grid-cols-2 gap-3">
               {/* Status Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
                     credentialData.status === 'active' ? 'bg-green-100' : 'bg-red-100'
@@ -215,7 +215,7 @@ export default function DigitalIdentity() {
               </div>
 
               {/* Shares Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
                     <Share2 className="w-4 h-4 text-purple-600" />
@@ -228,7 +228,7 @@ export default function DigitalIdentity() {
               </div>
 
               {/* Issued Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
                     <Calendar className="w-4 h-4 text-blue-600" />
@@ -241,7 +241,7 @@ export default function DigitalIdentity() {
               </div>
 
               {/* Expires Card */}
-              <div className="bg-white rounded-2xl border border-gray-100 p-4 shadow-sm">
+              <div className="bg-card rounded-2xl border border-border/60 p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
                     <Clock className="w-4 h-4 text-orange-600" />
@@ -256,8 +256,8 @@ export default function DigitalIdentity() {
 
             {/* Tab Content */}
             {activeTab === 'credential' && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/60">
                   <h3 className="font-semibold flex items-center gap-2">
                     <Award className="w-4 h-4 text-purple-600" />
                     Verification Badges
@@ -303,14 +303,14 @@ export default function DigitalIdentity() {
             )}
 
             {activeTab === 'details' && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-100">
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/60">
                   <h3 className="font-semibold flex items-center gap-2">
                     <FileText className="w-4 h-4 text-purple-600" />
                     Credential Details
                   </h3>
                 </div>
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-border/60">
                   <div className="flex justify-between items-center p-4">
                     <span className="text-sm text-muted-foreground">Full Name</span>
                     <span className="font-medium">{userName}</span>
@@ -338,7 +338,7 @@ export default function DigitalIdentity() {
                   <div className="p-4">
                     <span className="text-sm text-muted-foreground block mb-2">Credential ID</span>
                     <div className="flex items-center gap-2">
-                      <code className="text-xs bg-gray-100 px-2 py-1 rounded flex-1 truncate">
+                      <code className="text-xs bg-muted px-2 py-1 rounded flex-1 truncate">
                         {credentialData.credentialId}
                       </code>
                       <Button size="sm" variant="ghost" onClick={handleCopyCredentialId} data-testid="copy-id-button">
@@ -351,8 +351,8 @@ export default function DigitalIdentity() {
             )}
 
             {activeTab === 'history' && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+              <div className="bg-card rounded-2xl border border-border/60 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-border/60 flex justify-between items-center">
                   <h3 className="font-semibold flex items-center gap-2">
                     <History className="w-4 h-4 text-blue-600" />
                     Presentation History
@@ -361,10 +361,10 @@ export default function DigitalIdentity() {
                     <RefreshCw className="w-4 h-4" />
                   </Button>
                 </div>
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-border/60">
                   {!presentationsData?.presentations?.length ? (
                     <div className="p-8 text-center">
-                      <Eye className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                      <Eye className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
                       <p className="text-muted-foreground">No presentations yet</p>
                       <p className="text-xs text-muted-foreground">Your credential hasn't been shared</p>
                     </div>

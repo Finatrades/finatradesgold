@@ -58,7 +58,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
         colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
         break;
       default:
-        colorClass = 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+        colorClass = 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
     }
 
     return (
@@ -69,7 +69,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
   };
 
   return (
-    <Card className="bg-white shadow-sm border border-border overflow-hidden">
+    <Card className="bg-card shadow-sm border border-border overflow-hidden">
       <DigitalCertificateModal 
         request={selectedCertificate} 
         open={!!selectedCertificate} 

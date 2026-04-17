@@ -49,7 +49,7 @@ interface GoalProgress {
 const statusColors: Record<string, string> = {
   active: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
   completed: 'bg-green-500/10 text-green-600 border-green-500/30',
-  cancelled: 'bg-gray-500/10 text-gray-500 border-gray-500/30'
+  cancelled: 'bg-gray-500/10 text-muted-foreground border-gray-500/30'
 };
 
 export default function SavingsGoalsPage() {
@@ -226,7 +226,7 @@ export default function SavingsGoalsPage() {
       <Card 
         key={goal.id} 
         data-testid={`card-goal-${goal.id}`}
-        className="bg-white border border-border hover:border-primary/50 transition-all"
+        className="bg-card border border-border hover:border-primary/50 transition-all"
       >
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
@@ -299,7 +299,7 @@ export default function SavingsGoalsPage() {
                 data-testid={`button-cancel-${goal.id}`}
                 onClick={() => updateMutation.mutate({ id: goal.id, data: { status: 'cancelled' } })}
                 disabled={updateMutation.isPending}
-                className="text-gray-500 hover:text-gray-600 hover:bg-gray-50"
+                className="text-muted-foreground hover:text-muted-foreground hover:bg-muted/40"
               >
                 <XCircle className="w-4 h-4 mr-1" />
                 Cancel
@@ -364,7 +364,7 @@ export default function SavingsGoalsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -375,7 +375,7 @@ export default function SavingsGoalsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -403,7 +403,7 @@ export default function SavingsGoalsPage() {
             </CardContent>
           </Card>
         ) : goals.length === 0 ? (
-          <Card className="bg-white border border-border">
+          <Card className="bg-card border border-border">
             <CardContent className="p-12 text-center">
               <Target className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No Savings Goals Yet</h3>

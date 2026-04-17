@@ -31,7 +31,7 @@ export function PriceProtectionBatches({
   if (activeLocks.length === 0) return null;
 
   return (
-    <div className="bg-white rounded-2xl border border-indigo-100 shadow-sm overflow-hidden" data-testid="price-protection-section">
+    <div className="bg-card rounded-2xl border border-indigo-100 shadow-sm overflow-hidden" data-testid="price-protection-section">
       <div className="px-6 pt-5 pb-4 border-b border-indigo-50">
         <div className="flex items-center gap-2">
           <ShieldCheck className="w-5 h-5 text-indigo-600" />

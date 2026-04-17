@@ -457,7 +457,7 @@ export default function VaultActivityList() {
       case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
       case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
       case 'Bank Deposit': return 'bg-blue-100 text-blue-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-muted text-foreground/85';
     }
   };
   
@@ -1025,7 +1025,7 @@ export default function VaultActivityList() {
   );
 
   return (
-    <Card className="bg-white shadow-sm border border-border overflow-hidden">
+    <Card className="bg-card shadow-sm border border-border overflow-hidden">
       <CardHeader className="border-b border-border bg-muted/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <CardTitle className="text-lg font-semibold">Vault Activity History</CardTitle>
@@ -1373,7 +1373,7 @@ export default function VaultActivityList() {
               
               return (
                 <Tabs value={certTab} onValueChange={setCertTab} className="w-full max-w-lg">
-                  <TabsList className={`grid w-full bg-white/5 ${tabCount === 3 ? 'grid-cols-3' : tabCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+                  <TabsList className={`grid w-full bg-card/5 ${tabCount === 3 ? 'grid-cols-3' : tabCount === 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
                     {hasTransfer && (
                       <TabsTrigger value="transfer" className="data-[state=active]:bg-[#22c55e] data-[state=active]:text-black text-xs">
                         <Send className="w-3 h-3 mr-1" />
@@ -1557,7 +1557,7 @@ export default function VaultActivityList() {
 
                   {/* STORAGE CERTIFICATE (WinGold Style) */}
                   {certTab === 'storage' && storageCert && (
-                    <div className="certificate-container relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-white text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
+                    <div className="certificate-container relative p-8 md:p-12 border-[1px] border-white/20 m-2 bg-card text-black shadow-2xl animate-in fade-in zoom-in-95 duration-300">
                       
                       {/* Watermark Background */}
                       <div className="absolute inset-0 flex items-center justify-center opacity-[0.05] pointer-events-none select-none">

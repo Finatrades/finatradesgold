@@ -11,8 +11,8 @@ export default function CardManagement() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Card Management</h1>
-            <p className="text-gray-500">Issue, monitor, and control FinaCards.</p>
+            <h1 className="text-3xl font-bold text-foreground">Card Management</h1>
+            <p className="text-muted-foreground">Issue, monitor, and control FinaCards.</p>
           </div>
           <Button disabled>
             <Plus className="w-4 h-4 mr-2" /> Issue New Card
@@ -21,8 +21,8 @@ export default function CardManagement() {
 
         <div className="flex gap-4">
           <div className="relative flex-1 max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <Input placeholder="Search by card number or user..." className="pl-10 bg-white" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
+            <Input placeholder="Search by card number or user..." className="pl-10 bg-card" />
           </div>
         </div>
 
@@ -36,8 +36,8 @@ export default function CardManagement() {
               <div className="w-16 h-10 rounded bg-gradient-to-r from-purple-400 to-purple-600 flex items-center justify-center text-white shadow-sm mb-4">
                 <CreditCard className="w-8 h-8" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Cards Issued Yet</h3>
-              <p className="text-gray-500 max-w-sm">
+              <h3 className="text-lg font-semibold text-foreground mb-2">No Cards Issued Yet</h3>
+              <p className="text-muted-foreground max-w-sm">
                 FinaCard issuance is coming soon. Once enabled, you'll be able to issue and manage gold-backed debit cards for your users here.
               </p>
             </div>

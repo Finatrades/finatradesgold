@@ -354,7 +354,7 @@ export default function EmployeeManagement() {
       case 'active':
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
       case 'inactive':
-        return <Badge className="bg-gray-100 text-gray-800">Inactive</Badge>;
+        return <Badge className="bg-muted text-foreground">Inactive</Badge>;
       case 'suspended':
         return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
       default:
@@ -367,8 +367,8 @@ export default function EmployeeManagement() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Employee Management</h1>
-            <p className="text-gray-600 mt-1">Manage team members and their access permissions</p>
+            <h1 className="text-3xl font-bold text-foreground">Employee Management</h1>
+            <p className="text-muted-foreground mt-1">Manage team members and their access permissions</p>
           </div>
           <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
             <DialogTrigger asChild>
@@ -486,7 +486,7 @@ export default function EmployeeManagement() {
           <CardHeader>
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
               <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                 <Input
                   data-testid="input-search-employees"
                   placeholder="Search employees..."
@@ -530,31 +530,31 @@ export default function EmployeeManagement() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-12">
-                <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+                <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground/70" />
               </div>
             ) : filteredEmployees.length === 0 ? (
               <div className="text-center py-12">
-                <Users className="w-12 h-12 mx-auto text-gray-300 mb-4" />
-                <h3 className="text-lg font-medium text-gray-900">No employees found</h3>
-                <p className="text-gray-500">Add your first employee to get started.</p>
+                <Users className="w-12 h-12 mx-auto text-muted-foreground/50 mb-4" />
+                <h3 className="text-lg font-medium text-foreground">No employees found</h3>
+                <p className="text-muted-foreground">Add your first employee to get started.</p>
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Employee</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">ID</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Role</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Department</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-                      <th className="text-left py-3 px-4 font-medium text-gray-600">Hired</th>
-                      <th className="text-right py-3 px-4 font-medium text-gray-600">Actions</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Employee</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Role</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Department</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Hired</th>
+                      <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredEmployees.map((employee) => (
-                      <tr key={employee.id} className="border-b hover:bg-gray-50" data-testid={`row-employee-${employee.id}`}>
+                      <tr key={employee.id} className="border-b hover:bg-muted/40" data-testid={`row-employee-${employee.id}`}>
                         <td className="py-3 px-4">
                           <div className="flex items-center gap-3">
                             <Avatar className="h-10 w-10">
@@ -567,17 +567,17 @@ export default function EmployeeManagement() {
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="font-medium text-gray-900">
+                              <p className="font-medium text-foreground">
                                 {employee.user ? `${employee.user.firstName} ${employee.user.lastName}` : 'Unlinked'}
                               </p>
-                              <p className="text-sm text-gray-500">
+                              <p className="text-sm text-muted-foreground">
                                 {employee.user?.email || employee.jobTitle || '-'}
                               </p>
                             </div>
                           </div>
                         </td>
                         <td className="py-3 px-4">
-                          <code className="text-sm bg-gray-100 px-2 py-1 rounded">{employee.employeeId}</code>
+                          <code className="text-sm bg-muted px-2 py-1 rounded">{employee.employeeId}</code>
                         </td>
                         <td className="py-3 px-4">
                           {employee.rbacRole ? (
@@ -588,15 +588,15 @@ export default function EmployeeManagement() {
                               </Badge>
                             </div>
                           ) : (
-                            <Badge variant="outline" className="text-gray-500">
+                            <Badge variant="outline" className="text-muted-foreground">
                               {LEGACY_EMPLOYEE_ROLES[employee.role]?.label || employee.role}
                               <span className="ml-1 text-xs">(Legacy)</span>
                             </Badge>
                           )}
                         </td>
-                        <td className="py-3 px-4 text-gray-600">{employee.department || '-'}</td>
+                        <td className="py-3 px-4 text-muted-foreground">{employee.department || '-'}</td>
                         <td className="py-3 px-4">{getStatusBadge(employee.status)}</td>
-                        <td className="py-3 px-4 text-gray-600 text-sm">
+                        <td className="py-3 px-4 text-muted-foreground text-sm">
                           {new Date(employee.hiredAt).toLocaleDateString()}
                         </td>
                         <td className="py-3 px-4 text-right">

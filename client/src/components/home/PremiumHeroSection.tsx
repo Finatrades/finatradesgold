@@ -28,19 +28,19 @@ export default function PremiumHeroSection() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 shadow-sm mb-6">
               <Sparkles className="w-4 h-4 text-white" />
               <span className="text-sm font-medium text-white">{t('hero.swissRegulated')}</span>
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+              <div className="w-2 h-2 rounded-full bg-card animate-pulse" />
             </div>
 
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-gray-200 shadow-sm mb-8">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border shadow-sm mb-8">
               {accountType === 'personal' ? (
                 <>
                   <User className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-800">Personal Account</span>
+                  <span className="text-sm font-medium text-foreground">Personal Account</span>
                 </>
               ) : (
                 <>
                   <Building2 className="w-4 h-4 text-purple-600" />
-                  <span className="text-sm font-medium text-gray-800">Business Account</span>
+                  <span className="text-sm font-medium text-foreground">Business Account</span>
                 </>
               )}
             </div>
@@ -50,20 +50,20 @@ export default function PremiumHeroSection() {
                 FinaGold
               </span>
               <br />
-              <span className="text-gray-900">
+              <span className="text-foreground">
                 {accountType === 'personal' 
                   ? 'Your Digital Gold for Financial Transactions'
                   : 'Regulated Gold-Backed Financial Infrastructure'}
               </span>
             </h1>
 
-            <p className="text-lg text-gray-600 mb-8 max-w-xl leading-relaxed">
+            <p className="text-lg text-muted-foreground mb-8 max-w-xl leading-relaxed">
               {accountType === 'personal' 
                 ? 'Save, store, and use real gold value through a secure, modern online account. Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL plans.'
                 : 'Designed for corporates, importers, exporters, trading houses, and institutional partners.'}
             </p>
             
-            <p className="text-sm text-gray-500 mb-8 max-w-lg">
+            <p className="text-sm text-muted-foreground mb-8 max-w-lg">
               Thanks to a strategic partnership with Wingold and Metals DMCC, Finatrades transforms physical gold into a settlement-ready financial instruments.
             </p>
 
@@ -72,7 +72,7 @@ export default function PremiumHeroSection() {
                 <Button 
                   variant="outline"
                   size="lg" 
-                  className="h-12 px-8 rounded-full border-gray-300 text-gray-700 hover:bg-gray-50"
+                  className="h-12 px-8 rounded-full border-border text-foreground/85 hover:bg-muted/40"
                   data-testid="button-hero-signin"
                 >
                   Sign In
@@ -99,7 +99,7 @@ export default function PremiumHeroSection() {
             className="relative hidden lg:block"
           >
             <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 shadow-sm z-10">
-              <div className="w-2 h-2 rounded-full bg-white" />
+              <div className="w-2 h-2 rounded-full bg-card" />
               <span className="text-xs font-medium text-white">Swiss-Regulated Platform</span>
             </div>
             
@@ -119,28 +119,28 @@ export default function PremiumHeroSection() {
               
               <div className="mb-4">
                 <span className="text-purple-300 text-xs uppercase tracking-wide">Enterprise Gold</span>
-                <p className="text-gray-400 text-xs">Gold-Backed Digital</p>
+                <p className="text-muted-foreground/70 text-xs">Gold-Backed Digital</p>
               </div>
               
               <div className="flex gap-4 mb-6">
-                <div className="flex-1 bg-white/10 rounded-xl p-4">
+                <div className="flex-1 bg-card/10 rounded-xl p-4">
                   <span className="text-3xl font-bold text-white">5892</span>
                 </div>
-                <div className="flex-1 bg-white/10 rounded-xl p-4">
+                <div className="flex-1 bg-card/10 rounded-xl p-4">
                   <span className="text-3xl font-bold text-white">7821</span>
                 </div>
               </div>
               
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-gray-400 text-xs uppercase">Card Holder</p>
+                  <p className="text-muted-foreground/70 text-xs uppercase">Card Holder</p>
                   <p className="text-white font-medium">FINATRADES CORPORATE</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-gray-400 text-xs uppercase">Valid Thru</p>
+                  <p className="text-muted-foreground/70 text-xs uppercase">Valid Thru</p>
                   <p className="text-white font-medium">12/28</p>
                 </div>
-                <div className="flex items-center gap-1 px-3 py-1.5 bg-white/10 rounded-full">
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-card/10 rounded-full">
                   <Shield className="w-3 h-3 text-green-400" />
                   <span className="text-green-400 text-xs">SECURED</span>
                 </div>

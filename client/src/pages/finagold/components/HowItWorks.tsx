@@ -139,11 +139,11 @@ function StepNode({
         className={`relative z-10 w-12 h-12 md:w-20 md:h-20 rounded-full flex items-center justify-center shrink-0 transition-all duration-500 ${
           isActive || isCompleted
             ? 'bg-gradient-to-br from-[#8A2BE2]/20 to-[#FF2FBF]/10 border-2 border-[#8A2BE2]'
-            : 'bg-white border border-[#8A2BE2]/10'
+            : 'bg-card border border-[#8A2BE2]/10'
         }`}
       >
         <step.icon className={`w-6 h-6 md:w-8 md:h-8 transition-colors duration-500 ${
-          isActive || isCompleted ? 'text-[#8A2BE2]' : 'text-gray-400'
+          isActive || isCompleted ? 'text-[#8A2BE2]' : 'text-muted-foreground/70'
         }`} />
         
         <motion.div
@@ -164,15 +164,15 @@ function StepNode({
         transition={{ duration: 0.5, delay: index * 0.15 + 0.2 }}
         className={`flex-1 p-4 md:p-6 rounded-xl md:rounded-2xl backdrop-blur-sm transition-all duration-500 ${
           isActive
-            ? 'bg-white border-2 border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/10'
+            ? 'bg-card border-2 border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/10'
             : isCompleted
-            ? 'bg-white border border-[#8A2BE2]/20'
-            : 'bg-white/70 border border-[#8A2BE2]/10'
+            ? 'bg-card border border-[#8A2BE2]/20'
+            : 'bg-card/70 border border-[#8A2BE2]/10'
         }`}
       >
         <div className="flex items-center gap-2 md:gap-3 mb-2">
           <span className={`text-xs md:text-sm font-bold transition-colors duration-500 ${
-            isActive ? 'text-[#8A2BE2]' : 'text-gray-500'
+            isActive ? 'text-[#8A2BE2]' : 'text-muted-foreground'
           }`}>
             Step {step.number}
           </span>
@@ -187,12 +187,12 @@ function StepNode({
           )}
         </div>
         <h3 className={`text-base md:text-lg font-semibold mb-1 md:mb-2 transition-colors duration-500 ${
-          isActive || isCompleted ? 'text-[#0D0D0D]' : 'text-gray-500'
+          isActive || isCompleted ? 'text-[#0D0D0D]' : 'text-muted-foreground'
         }`}>
           {step.title}
         </h3>
         <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-500 ${
-          isActive ? 'text-gray-600' : 'text-gray-500'
+          isActive ? 'text-muted-foreground' : 'text-muted-foreground'
         }`}>
           {step.description}
         </p>
@@ -245,7 +245,7 @@ export default function HowItWorks() {
             initial={{ scale: 0 }}
             whileInView={{ scale: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#8A2BE2]/20 mb-6 shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-[#8A2BE2]/20 mb-6 shadow-sm"
           >
             <div className="w-2 h-2 rounded-full bg-[#8A2BE2] animate-pulse" />
             <span className="text-[#8A2BE2] text-sm font-medium">Step-by-Step Guide</span>
@@ -259,7 +259,7 @@ export default function HowItWorks() {
           >
             {c.title}
           </motion.h2>
-          <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
             {c.subtitle}
           </p>
         </motion.div>

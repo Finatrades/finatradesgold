@@ -31,7 +31,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
   if (!balance) {
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md">
+        <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md">
           <div className="flex items-center justify-center py-10">
             {isLoading ? <Loader2 className="w-8 h-8 animate-spin text-purple-500" /> : <p className="text-muted-foreground">Unable to load wallet data</p>}
           </div>
@@ -60,7 +60,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && handleClose()}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Lock className="w-5 h-5 text-amber-600" />

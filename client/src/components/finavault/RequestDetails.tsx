@@ -89,7 +89,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
       case 'Stored in Vault': return 'bg-green-500/10 text-green-500 border-green-500/20';
       case 'Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
       case 'Cancelled': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      default: return 'bg-gray-500/10 text-gray-500 border-gray-500/20';
+      default: return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
     }
   };
 
@@ -121,7 +121,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
       </div>
 
       {/* Status Timeline */}
-      <Card className="bg-white shadow-sm border border-border">
+      <Card className="bg-card shadow-sm border border-border">
         <CardContent className="pt-6">
           {['Rejected', 'Cancelled'].includes(request.status) ? (
             <div className="flex items-center gap-3 text-red-600 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
@@ -144,19 +144,19 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
                         ? 'bg-gradient-to-br from-purple-600 to-purple-800 border-purple-500 text-white shadow-purple-200' 
                         : current
                         ? 'bg-gradient-to-br from-purple-500 to-purple-700 border-purple-400 text-white shadow-purple-200 ring-4 ring-purple-100'
-                        : 'bg-gray-100 border-gray-300 text-gray-400'
+                        : 'bg-muted border-border text-muted-foreground/70'
                     }`}>
                       {completed ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
                     </div>
                     <span className={`text-xs mt-3 text-center max-w-[100px] font-semibold transition-colors duration-300 ${
-                      current ? 'text-purple-700' : completed ? 'text-purple-600' : 'text-gray-400'
+                      current ? 'text-purple-700' : completed ? 'text-purple-600' : 'text-muted-foreground/70'
                     }`}>
                       {step}
                     </span>
                     
                     {/* Progress Bar Line */}
                     {index < STATUS_STEPS.length - 1 && (
-                      <div className="absolute top-5 left-1/2 w-full h-1 -z-10 bg-gray-200 rounded-full">
+                      <div className="absolute top-5 left-1/2 w-full h-1 -z-10 bg-muted rounded-full">
                         <div 
                           className="h-full bg-gradient-to-r from-purple-600 to-purple-500 rounded-full transition-all duration-500"
                           style={{ width: isStepComplete(STATUS_STEPS[index + 1]) ? '100%' : '0%' }}
@@ -176,7 +176,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
         <div className="md:col-span-2 space-y-6">
           
           {/* Gold Summary */}
-          <Card className="bg-white shadow-sm border border-border">
+          <Card className="bg-card shadow-sm border border-border">
             <CardHeader>
               <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
                 <Package className="w-5 h-5 text-secondary" />
@@ -236,7 +236,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
           </Card>
 
           {/* Documents */}
-          <Card className="bg-white shadow-sm border border-border">
+          <Card className="bg-card shadow-sm border border-border">
             <CardHeader>
               <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
                 <FileText className="w-5 h-5 text-secondary" />
@@ -277,7 +277,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
         <div className="space-y-6">
           
           {/* Delivery Info */}
-          <Card className="bg-white shadow-sm border border-border">
+          <Card className="bg-card shadow-sm border border-border">
             <CardHeader>
               <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
                 <Truck className="w-5 h-5 text-secondary" />
@@ -330,7 +330,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
 
           {/* Actions */}
           {request.status === 'Submitted' && (
-            <Card className="bg-white shadow-sm border border-border">
+            <Card className="bg-card shadow-sm border border-border">
               <CardContent className="pt-6">
                  <Button 
                    variant="destructive" 

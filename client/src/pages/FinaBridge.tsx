@@ -181,7 +181,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
 
   if (isLoading) {
     return (
-      <Card className="bg-white shadow-sm border border-border">
+      <Card className="bg-card shadow-sm border border-border">
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </CardContent>
@@ -190,7 +190,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
   }
 
   return (
-    <Card className="bg-white shadow-sm border border-border">
+    <Card className="bg-card shadow-sm border border-border">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -877,7 +877,7 @@ export default function FinaBridge() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Draft': return 'bg-gray-100 text-gray-700';
+      case 'Draft': return 'bg-muted text-foreground/85';
       case 'Open': return 'bg-blue-100 text-blue-700';
       case 'Proposal Review': return 'bg-purple-100 text-fuchsia-700';
       case 'Awaiting Importer': return 'bg-indigo-100 text-indigo-700';
@@ -889,8 +889,8 @@ export default function FinaBridge() {
       case 'Forwarded': return 'bg-indigo-100 text-indigo-700';
       case 'Accepted': return 'bg-green-100 text-green-700';
       case 'Rejected': return 'bg-red-100 text-red-700';
-      case 'Declined': return 'bg-gray-100 text-gray-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'Declined': return 'bg-muted text-foreground/85';
+      default: return 'bg-muted text-foreground/85';
     }
   };
 
@@ -932,19 +932,19 @@ export default function FinaBridge() {
                       ? 'bg-green-500 border-green-500 text-white'
                       : isActive
                       ? 'bg-primary border-primary text-white ring-2 ring-primary/20'
-                      : 'bg-white border-gray-200 text-gray-300'
+                      : 'bg-card border-border text-muted-foreground/50'
                   }`}>
                     {isCompleted ? <Check className="w-3 h-3" /> : <span>{idx + 1}</span>}
                   </div>
                   <span className={`text-[9px] mt-1 font-medium leading-tight text-center max-w-[56px] ${
-                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-gray-300'
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground/50'
                   }`}>
                     {stage.label}
                   </span>
                 </div>
                 {idx < LIFECYCLE_STAGES.length - 1 && (
                   <div className={`flex-1 h-0.5 min-w-[8px] mx-0.5 mb-4 transition-colors ${
-                    idx < current ? 'bg-green-400' : 'bg-gray-200'
+                    idx < current ? 'bg-green-400' : 'bg-muted'
                   }`} />
                 )}
               </React.Fragment>
@@ -1057,7 +1057,7 @@ export default function FinaBridge() {
         </div>
 
         {/* FinaBridge Wallet Card */}
-        <div className="bg-white rounded-2xl border border-border p-6 shadow-sm">
+        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -1199,14 +1199,14 @@ export default function FinaBridge() {
 
             <TabsContent value="requests" className="mt-0">
               {loading ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">Loading trade requests...</p>
                   </CardContent>
                 </Card>
               ) : myRequests.length === 0 ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Briefcase className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
                     <h3 className="text-lg font-bold mb-2">No Trade Requests Yet</h3>
@@ -1219,7 +1219,7 @@ export default function FinaBridge() {
               ) : (
                 <div className="space-y-4">
                   {myRequests.map((request) => (
-                    <Card key={request.id} className={`bg-white border transition-colors ${request.status === 'Awaiting Importer' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'hover:border-secondary/50'}`} data-testid={`card-request-${request.id}`}>
+                    <Card key={request.id} className={`bg-card border transition-colors ${request.status === 'Awaiting Importer' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'hover:border-secondary/50'}`} data-testid={`card-request-${request.id}`}>
                       <CardContent className="p-4">
                         {request.status === 'Awaiting Importer' && (
                           <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-indigo-50 border border-indigo-200 rounded-lg" data-testid={`banner-awaiting-${request.id}`}>
@@ -1276,7 +1276,7 @@ export default function FinaBridge() {
             </TabsContent>
 
             <TabsContent value="create">
-              <Card className="bg-white border">
+              <Card className="bg-card border">
                 <CardContent className="p-4">
                   <form onSubmit={handleCreateRequest} className="space-y-3">
                     <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-lg border">
@@ -1401,7 +1401,7 @@ export default function FinaBridge() {
                                     ...requestForm,
                                     requiredDocs: { ...requestForm.requiredDocs, [key]: e.target.checked }
                                   })}
-                                  className="rounded border-gray-300 w-3 h-3"
+                                  className="rounded border-border w-3 h-3"
                                   data-testid={`checkbox-doc-${key}`}
                                 />
                                 <span className="text-[11px]">{label}</span>
@@ -1423,7 +1423,7 @@ export default function FinaBridge() {
                             </div>
                           )}
 
-                          <div className="mt-3 border-2 border-dashed border-gray-300 rounded-lg p-3 text-center">
+                          <div className="mt-3 border-2 border-dashed border-border rounded-lg p-3 text-center">
                             <label className="cursor-pointer">
                               <span className="text-primary text-sm font-medium">Click to upload</span>
                               <input
@@ -1443,7 +1443,7 @@ export default function FinaBridge() {
                             {uploadedFiles.length > 0 && (
                               <div className="mt-1 flex flex-wrap gap-1 justify-center">
                                 {uploadedFiles.map((file, idx) => (
-                                  <span key={idx} className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded flex items-center gap-1">
+                                  <span key={idx} className="text-[10px] bg-muted px-1.5 py-0.5 rounded flex items-center gap-1">
                                     {file.name}
                                     <button
                                       type="button"
@@ -1476,7 +1476,7 @@ export default function FinaBridge() {
                               setSupportingDocument(null);
                               setDocumentUploadError(null);
                             }}
-                            className="w-full p-2 text-sm border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-card"
                             data-testid="select-payment-instrument-type"
                           >
                             <option value="">— Select —</option>
@@ -1491,7 +1491,7 @@ export default function FinaBridge() {
                           <select
                             value={requestForm.currency}
                             onChange={(e) => setRequestForm({ ...requestForm, currency: e.target.value })}
-                            className="w-full p-2 text-sm border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-card"
                             data-testid="select-currency"
                           >
                             <option value="USD">USD - US Dollar</option>
@@ -1618,7 +1618,7 @@ export default function FinaBridge() {
                             <select
                               value={requestForm.quantityUnit}
                               onChange={(e) => setRequestForm({ ...requestForm, quantityUnit: e.target.value })}
-                              className="w-24 p-2 text-sm border rounded-lg bg-white"
+                              className="w-24 p-2 text-sm border rounded-lg bg-card"
                               data-testid="select-quantity-unit"
                             >
                               <option value="units">Units</option>
@@ -1676,7 +1676,7 @@ export default function FinaBridge() {
                             step="0.001"
                             value={requestForm.settlementGoldGrams}
                             readOnly
-                            className={`w-full p-2 text-sm border rounded-lg bg-gray-50 cursor-not-allowed ${
+                            className={`w-full p-2 text-sm border rounded-lg bg-muted/40 cursor-not-allowed ${
                               requestForm.settlementGoldGrams && 
                               parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
                                 ? 'border-red-400 bg-red-50/50'
@@ -1818,7 +1818,7 @@ export default function FinaBridge() {
                           <select
                             value={requestForm.modeOfTransport}
                             onChange={(e) => setRequestForm({ ...requestForm, modeOfTransport: e.target.value })}
-                            className="w-full p-2 text-sm border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-card"
                             data-testid="select-transport-mode"
                           >
                             <option value="Sea">Sea Freight</option>
@@ -1833,7 +1833,7 @@ export default function FinaBridge() {
                           <select
                             value={requestForm.incoterms}
                             onChange={(e) => setRequestForm({ ...requestForm, incoterms: e.target.value })}
-                            className="w-full p-2 text-sm border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-card"
                             data-testid="select-incoterms"
                           >
                             <option value="FOB">FOB - Free on Board</option>
@@ -1894,7 +1894,7 @@ export default function FinaBridge() {
                               type="checkbox"
                               checked={requestForm.partialShipment}
                               onChange={(e) => setRequestForm({ ...requestForm, partialShipment: e.target.checked })}
-                              className="rounded border-gray-300 w-3.5 h-3.5"
+                              className="rounded border-border w-3.5 h-3.5"
                               data-testid="checkbox-partial-shipment"
                             />
                             <span className="text-xs">Partial Shipment Allowed</span>
@@ -1904,7 +1904,7 @@ export default function FinaBridge() {
                               type="checkbox"
                               checked={requestForm.transshipment}
                               onChange={(e) => setRequestForm({ ...requestForm, transshipment: e.target.checked })}
-                              className="rounded border-gray-300 w-3.5 h-3.5"
+                              className="rounded border-border w-3.5 h-3.5"
                               data-testid="checkbox-transshipment"
                             />
                             <span className="text-xs">Transshipment Allowed</span>
@@ -1924,7 +1924,7 @@ export default function FinaBridge() {
                           <select
                             value={requestForm.insuranceCoverage}
                             onChange={(e) => setRequestForm({ ...requestForm, insuranceCoverage: e.target.value })}
-                            className="w-full p-2 text-sm border rounded-lg bg-white"
+                            className="w-full p-2 text-sm border rounded-lg bg-card"
                             data-testid="select-insurance-coverage"
                           >
                             <option value="">Select coverage type...</option>
@@ -1964,7 +1964,7 @@ export default function FinaBridge() {
             </TabsContent>
 
             <TabsContent value="proposals">
-              <Card className="bg-white border">
+              <Card className="bg-card border">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
                     <Eye className="w-5 h-5" />
@@ -2069,7 +2069,7 @@ export default function FinaBridge() {
                   onClose={() => setSelectedDealRoom(null)}
                 />
               ) : (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <MessageCircle className="w-5 h-5" />
@@ -2117,7 +2117,7 @@ export default function FinaBridge() {
                         value={filterSearch}
                         onChange={(e) => setFilterSearch(e.target.value)}
                         placeholder="Search by commodity name or description..."
-                        className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
+                        className="w-full pl-9 pr-4 py-2 text-sm border rounded-lg bg-card focus:outline-none focus:ring-2 focus:ring-primary/20"
                         data-testid="input-filter-search"
                       />
                     </div>
@@ -2146,7 +2146,7 @@ export default function FinaBridge() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 bg-muted/30 border rounded-lg" data-testid="panel-filters">
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Transport Mode</label>
-                        <select value={filterTransport} onChange={(e) => setFilterTransport(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="select-filter-transport">
+                        <select value={filterTransport} onChange={(e) => setFilterTransport(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-card" data-testid="select-filter-transport">
                           <option value="All">All Modes</option>
                           <option value="Sea">Sea</option>
                           <option value="Air">Air</option>
@@ -2157,7 +2157,7 @@ export default function FinaBridge() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Incoterms</label>
-                        <select value={filterIncoterms} onChange={(e) => setFilterIncoterms(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="select-filter-incoterms">
+                        <select value={filterIncoterms} onChange={(e) => setFilterIncoterms(e.target.value)} className="w-full p-2 text-sm border rounded-lg bg-card" data-testid="select-filter-incoterms">
                           <option value="All">All Incoterms</option>
                           <option value="FOB">FOB</option>
                           <option value="CIF">CIF</option>
@@ -2169,25 +2169,25 @@ export default function FinaBridge() {
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Min Value (USD)</label>
-                        <input type="number" value={filterValueMin} onChange={(e) => setFilterValueMin(e.target.value)} placeholder="e.g. 10000" className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="input-filter-min" />
+                        <input type="number" value={filterValueMin} onChange={(e) => setFilterValueMin(e.target.value)} placeholder="e.g. 10000" className="w-full p-2 text-sm border rounded-lg bg-card" data-testid="input-filter-min" />
                       </div>
                       <div className="space-y-1">
                         <label className="text-xs font-medium text-muted-foreground">Max Value (USD)</label>
-                        <input type="number" value={filterValueMax} onChange={(e) => setFilterValueMax(e.target.value)} placeholder="e.g. 500000" className="w-full p-2 text-sm border rounded-lg bg-white" data-testid="input-filter-max" />
+                        <input type="number" value={filterValueMax} onChange={(e) => setFilterValueMax(e.target.value)} placeholder="e.g. 500000" className="w-full p-2 text-sm border rounded-lg bg-card" data-testid="input-filter-max" />
                       </div>
                     </div>
                   )}
                 </div>
               )}
               {loading ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">Loading open trade requests...</p>
                   </CardContent>
                 </Card>
               ) : filteredRequests.length === 0 ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Package className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
                     <h3 className="text-lg font-bold mb-2">{openRequests.length === 0 ? 'No Open Trade Requests' : 'No Results'}</h3>
@@ -2199,7 +2199,7 @@ export default function FinaBridge() {
                 <div className="space-y-4">
                   <p className="text-xs text-muted-foreground" data-testid="text-results-count">Showing {filteredRequests.length} of {openRequests.length} open request{openRequests.length !== 1 ? 's' : ''}</p>
                   {filteredRequests.map((request) => (
-                    <Card key={request.id} className="bg-white border hover:border-secondary/50 transition-colors">
+                    <Card key={request.id} className="bg-card border hover:border-secondary/50 transition-colors">
                       <CardContent className="p-6">
                         <div className="flex items-start justify-between mb-4">
                           <div className="flex items-center gap-4">
@@ -2266,13 +2266,13 @@ export default function FinaBridge() {
                           </div>
                           <div className="flex gap-6 mt-3 pt-3 border-t border-blue-100">
                             <div className="flex items-center gap-2">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.partialShipment ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.partialShipment ? 'bg-green-500 text-white' : 'bg-muted'}`}>
                                 {request.partialShipment ? '✓' : '✗'}
                               </span>
                               <span className="text-sm">Partial Shipment</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.transshipment ? 'bg-green-500 text-white' : 'bg-gray-200'}`}>
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.transshipment ? 'bg-green-500 text-white' : 'bg-muted'}`}>
                                 {request.transshipment ? '✓' : '✗'}
                               </span>
                               <span className="text-sm">Transshipment</span>
@@ -2299,7 +2299,7 @@ export default function FinaBridge() {
                         )}
                         
                         {request.description && (
-                          <div className="p-3 bg-gray-50 rounded-lg border">
+                          <div className="p-3 bg-muted/40 rounded-lg border">
                             <p className="text-xs text-muted-foreground mb-1">Description</p>
                             <p className="text-sm">{request.description}</p>
                           </div>
@@ -2329,14 +2329,14 @@ export default function FinaBridge() {
 
             <TabsContent value="proposals" className="mt-0">
               {loading ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Loader2 className="w-8 h-8 animate-spin mx-auto text-muted-foreground" />
                     <p className="mt-4 text-muted-foreground">Loading your proposals...</p>
                   </CardContent>
                 </Card>
               ) : myProposals.length === 0 ? (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardContent className="p-12 text-center">
                     <Send className="w-16 h-16 mx-auto mb-4 text-muted-foreground/30" />
                     <h3 className="text-lg font-bold mb-2">No Proposals Yet</h3>
@@ -2349,7 +2349,7 @@ export default function FinaBridge() {
               ) : (
                 <div className="space-y-4">
                   {myProposals.map((proposal) => (
-                    <Card key={proposal.id} className={`bg-white border ${proposal.status === 'Modification Requested' ? 'border-purple-300 ring-2 ring-purple-100' : ''}`}>
+                    <Card key={proposal.id} className={`bg-card border ${proposal.status === 'Modification Requested' ? 'border-purple-300 ring-2 ring-purple-100' : ''}`}>
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
@@ -2459,7 +2459,7 @@ export default function FinaBridge() {
                   onClose={() => setSelectedDealRoom(null)}
                 />
               ) : (
-                <Card className="bg-white border">
+                <Card className="bg-card border">
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <MessageCircle className="w-5 h-5" />
@@ -2575,7 +2575,7 @@ export default function FinaBridge() {
                     <select
                       value={proposalForm.incoterms}
                       onChange={(e) => setProposalForm({ ...proposalForm, incoterms: e.target.value })}
-                      className="w-full p-2 border rounded-lg text-sm bg-white"
+                      className="w-full p-2 border rounded-lg text-sm bg-card"
                       data-testid="select-incoterms"
                     >
                       <option value="FOB">FOB (Free On Board)</option>
@@ -2632,7 +2632,7 @@ export default function FinaBridge() {
                     <select
                       value={proposalForm.shippingMethod}
                       onChange={(e) => setProposalForm({ ...proposalForm, shippingMethod: e.target.value })}
-                      className="w-full p-2 border rounded-lg text-sm bg-white"
+                      className="w-full p-2 border rounded-lg text-sm bg-card"
                       data-testid="select-shipping-method"
                     >
                       <option value="Sea">Sea Freight</option>
@@ -2691,16 +2691,16 @@ export default function FinaBridge() {
                 />
               </div>
 
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-800 mb-3 flex items-center gap-2">
+              <div className="p-4 bg-muted/40 border border-border rounded-lg">
+                <h4 className="font-medium text-foreground mb-3 flex items-center gap-2">
                   <FileText className="w-4 h-4" /> Supporting Documents
                 </h4>
                 <p className="text-xs text-muted-foreground mb-3">
                   Upload certificates, product specs, company profiles, or other supporting documents
                 </p>
-                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-gray-300 rounded-lg hover:border-secondary transition-colors cursor-pointer bg-white">
+                <div className="flex flex-col items-center justify-center p-4 border-2 border-dashed border-border rounded-lg hover:border-secondary transition-colors cursor-pointer bg-card">
                   <label className="cursor-pointer text-center">
-                    <FileText className="w-8 h-8 mx-auto text-gray-400 mb-2" />
+                    <FileText className="w-8 h-8 mx-auto text-muted-foreground/70 mb-2" />
                     <span className="text-sm text-primary font-medium">Click to upload documents</span>
                     <p className="text-xs text-muted-foreground mt-1">PDF, JPG, PNG, DOC (Max 10MB each)</p>
                     <input
@@ -2719,11 +2719,11 @@ export default function FinaBridge() {
                 </div>
                 {proposalFiles.length > 0 && (
                   <div className="mt-3 space-y-2">
-                    <p className="text-xs font-medium text-gray-600">{proposalFiles.length} file(s) selected:</p>
+                    <p className="text-xs font-medium text-muted-foreground">{proposalFiles.length} file(s) selected:</p>
                     <div className="flex flex-wrap gap-2">
                       {proposalFiles.map((file, idx) => (
-                        <span key={idx} className="text-xs bg-white border px-2 py-1 rounded flex items-center gap-1">
-                          <FileText className="w-3 h-3 text-gray-400" />
+                        <span key={idx} className="text-xs bg-card border px-2 py-1 rounded flex items-center gap-1">
+                          <FileText className="w-3 h-3 text-muted-foreground/70" />
                           {file.name}
                           <button
                             type="button"

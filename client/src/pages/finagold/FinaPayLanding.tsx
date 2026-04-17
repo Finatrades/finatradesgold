@@ -85,7 +85,7 @@ function AnimatedWalletCard() {
                 <span className="text-pink-200 text-sm">≈ 5.23g</span>
               </motion.div>
             </div>
-            <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-full bg-card/20 flex items-center justify-center">
               <Wallet className="w-5 h-5 text-white" />
             </div>
           </div>
@@ -154,7 +154,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                 Fina<span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">Pay</span>
               </h1>
             </motion.div>
@@ -163,7 +163,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-xl md:text-2xl text-gray-900"
+              className="text-xl md:text-2xl text-foreground"
             >
               Your Digital Gold Wallet for{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
@@ -175,7 +175,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-gray-600 leading-relaxed max-w-lg"
+              className="text-muted-foreground leading-relaxed max-w-lg"
             >
               Send, receive, store, and manage gold value instantly. 
               Every wallet balance is backed by your physical gold stored 
@@ -210,13 +210,13 @@ function HeroSection() {
             transition={{ delay: 0.4, duration: 0.6 }}
             className="hidden lg:block"
           >
-            <div className="relative p-6 rounded-3xl bg-white/80 backdrop-blur-sm border border-gray-200 shadow-xl">
+            <div className="relative p-6 rounded-3xl bg-card/80 backdrop-blur-sm border border-border shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
                     <Wallet className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-gray-900 font-semibold">FinaPay</span>
+                  <span className="text-foreground font-semibold">FinaPay</span>
                 </div>
                 <motion.div
                   animate={{ rotate: [0, 360] }}
@@ -228,14 +228,14 @@ function HeroSection() {
               </div>
               
               <div className="text-center py-6">
-                <p className="text-gray-500 text-sm mb-2">Gold Balance</p>
+                <p className="text-muted-foreground text-sm mb-2">Gold Balance</p>
                 <motion.div
                   initial={{ scale: 0.9, opacity: 0 }}
                   animate={{ scale: 1, opacity: 1 }}
                   transition={{ delay: 0.6 }}
-                  className="text-4xl font-bold text-gray-900"
+                  className="text-4xl font-bold text-foreground"
                 >
-                  $24,750.85 <span className="text-lg font-normal text-gray-500">USD</span>
+                  $24,750.85 <span className="text-lg font-normal text-muted-foreground">USD</span>
                 </motion.div>
                 <p className="text-purple-600 text-sm mt-1">≈ 12.45 oz Gold</p>
               </div>
@@ -246,7 +246,7 @@ function HeroSection() {
                     key={action}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 rounded-lg border border-gray-200 text-gray-600 text-sm font-medium hover:border-purple-300 hover:text-purple-600 transition-all"
+                    className="px-4 py-2 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:border-purple-300 hover:text-purple-600 transition-all"
                   >
                     {action}
                   </motion.button>
@@ -279,13 +279,13 @@ function WalletFeaturesSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Wallet{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Features
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">A complete digital wallet experience powered by real gold</p>
+          <p className="text-muted-foreground text-lg">A complete digital wallet experience powered by real gold</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -297,13 +297,13 @@ function WalletFeaturesSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -5 }}
-              className="relative p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all"
+              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center mb-4">
                 <feature.icon className="w-6 h-6 text-purple-600" />
               </div>
-              <h3 className="text-lg font-bold text-gray-900 mb-2">{feature.title}</h3>
-              <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+              <h3 className="text-lg font-bold text-foreground mb-2">{feature.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
             </motion.div>
           ))}
         </div>
@@ -324,13 +324,13 @@ function WalletPhoneMockupSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             A Wallet Built on{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Real Gold
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">Intuitive interface designed for seamless gold transactions</p>
+          <p className="text-muted-foreground text-lg">Intuitive interface designed for seamless gold transactions</p>
         </motion.div>
 
         <motion.div
@@ -340,7 +340,7 @@ function WalletPhoneMockupSection() {
           className="flex justify-center"
         >
           {/* Phone Mockup */}
-          <div className="relative w-80 rounded-[3rem] bg-white border-8 border-gray-800 shadow-2xl overflow-hidden">
+          <div className="relative w-80 rounded-[3rem] bg-card border-8 border-gray-800 shadow-2xl overflow-hidden">
             {/* Phone notch */}
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-24 h-6 bg-gray-800 rounded-b-2xl z-10" />
             
@@ -352,7 +352,7 @@ function WalletPhoneMockupSection() {
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center">
                     <Wallet className="w-5 h-5 text-white" />
                   </div>
-                  <span className="text-gray-900 font-bold">FinaPay</span>
+                  <span className="text-foreground font-bold">FinaPay</span>
                 </div>
                 <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
                   <RefreshCw className="w-4 h-4 text-purple-600" />
@@ -361,7 +361,7 @@ function WalletPhoneMockupSection() {
               
               {/* Balance */}
               <div className="text-center py-4 mb-4">
-                <p className="text-gray-500 text-sm mb-1">Gold Balance</p>
+                <p className="text-muted-foreground text-sm mb-1">Gold Balance</p>
                 <motion.p
                   animate={{ scale: [1, 1.02, 1] }}
                   transition={{ duration: 3, repeat: Infinity }}
@@ -378,7 +378,7 @@ function WalletPhoneMockupSection() {
                       className={`px-4 py-1.5 rounded-full text-xs font-medium transition-all ${
                         i === 0 
                           ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white' 
-                          : 'bg-gray-100 text-gray-600'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {unit}
@@ -398,15 +398,15 @@ function WalletPhoneMockupSection() {
                     <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                       <action.icon className="w-5 h-5 text-purple-600" />
                     </div>
-                    <span className="text-xs text-gray-600">{action.label}</span>
+                    <span className="text-xs text-muted-foreground">{action.label}</span>
                   </div>
                 ))}
               </div>
               
               {/* Recent Activity */}
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-border/60 pt-4">
                 <div className="flex justify-between items-center mb-3">
-                  <span className="text-gray-900 font-semibold text-sm">Recent Activity</span>
+                  <span className="text-foreground font-semibold text-sm">Recent Activity</span>
                   <span className="text-purple-600 text-xs font-medium">View All</span>
                 </div>
                 
@@ -426,8 +426,8 @@ function WalletPhoneMockupSection() {
                          <Building2 className="w-4 h-4 text-purple-600" />}
                       </div>
                       <div>
-                        <p className="text-gray-900 text-sm font-medium">{tx.name}</p>
-                        <p className="text-gray-400 text-xs">{tx.time}</p>
+                        <p className="text-foreground text-sm font-medium">{tx.name}</p>
+                        <p className="text-muted-foreground/70 text-xs">{tx.time}</p>
                       </div>
                     </div>
                     <span className={`text-sm font-semibold ${
@@ -467,14 +467,14 @@ function GoldCardSection() {
               <span className="text-sm font-medium text-purple-700">Coming Soon</span>
             </motion.div>
 
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
               A Premium Gold Card{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Experience
               </span>
             </h2>
 
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               Spend your gold value anywhere with the FinaPay premium debit card. 
               Seamlessly convert gold to fiat at the point of sale.
             </p>
@@ -525,7 +525,7 @@ function GoldCardSection() {
               <div className="flex items-center gap-3 mb-6">
                 <div className="w-12 h-8 rounded bg-gradient-to-r from-amber-400 to-yellow-500" />
                 <div>
-                  <span className="text-gray-400 text-xs">DEBIT</span>
+                  <span className="text-muted-foreground/70 text-xs">DEBIT</span>
                   <span className="text-amber-400 text-xs ml-2">GOLD-BACKED</span>
                 </div>
               </div>
@@ -536,14 +536,14 @@ function GoldCardSection() {
 
               <div className="flex justify-between items-end">
                 <div>
-                  <div className="text-gray-500 text-xs mb-1">CARD HOLDER</div>
+                  <div className="text-muted-foreground text-xs mb-1">CARD HOLDER</div>
                   <div className="text-white text-sm font-medium">GOLD MEMBER</div>
                 </div>
                 <div>
-                  <div className="text-gray-500 text-xs mb-1">EXPIRES</div>
+                  <div className="text-muted-foreground text-xs mb-1">EXPIRES</div>
                   <div className="text-white text-sm font-medium">12/28</div>
                 </div>
-                <div className="px-3 py-1 rounded-full bg-white/10 border border-white/20">
+                <div className="px-3 py-1 rounded-full bg-card/10 border border-white/20">
                   <span className="text-white/70 text-xs">◎ Secured</span>
                 </div>
               </div>
@@ -567,13 +567,13 @@ function WalletUIDemoSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             A Wallet Built on{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Real Gold
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">Experience seamless gold transactions</p>
+          <p className="text-muted-foreground text-lg">Experience seamless gold transactions</p>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -583,9 +583,9 @@ function WalletUIDemoSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <div className="p-6 rounded-2xl bg-white border border-gray-100 shadow-lg">
+            <div className="p-6 rounded-2xl bg-card border border-border/60 shadow-lg">
               <div className="flex justify-between items-center mb-6">
-                <span className="text-gray-600">Total Balance</span>
+                <span className="text-muted-foreground">Total Balance</span>
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -597,7 +597,7 @@ function WalletUIDemoSection() {
               <motion.div
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
-                className="text-4xl font-bold text-gray-900 mb-2"
+                className="text-4xl font-bold text-foreground mb-2"
               >
                 $24,580.00
               </motion.div>
@@ -614,10 +614,10 @@ function WalletUIDemoSection() {
                   key={action.label}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-4 rounded-xl bg-white border border-gray-100 shadow-md hover:border-purple-200 transition-all flex flex-col items-center gap-2"
+                  className="p-4 rounded-xl bg-card border border-border/60 shadow-md hover:border-purple-200 transition-all flex flex-col items-center gap-2"
                 >
                   <action.icon className={`w-6 h-6 ${action.color}`} />
-                  <span className="text-sm text-gray-600">{action.label}</span>
+                  <span className="text-sm text-muted-foreground">{action.label}</span>
                 </motion.button>
               ))}
             </div>
@@ -639,7 +639,7 @@ function WalletUIDemoSection() {
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-xl bg-white border border-gray-100 shadow-md flex items-center justify-between"
+                className="p-4 rounded-xl bg-card border border-border/60 shadow-md flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
@@ -652,8 +652,8 @@ function WalletUIDemoSection() {
                     }`} />
                   </div>
                   <div>
-                    <p className="text-gray-900 font-medium">{tx.type}</p>
-                    <p className="text-gray-500 text-sm">{tx.time}</p>
+                    <p className="text-foreground font-medium">{tx.type}</p>
+                    <p className="text-muted-foreground text-sm">{tx.time}</p>
                   </div>
                 </div>
                 <span className={`font-semibold ${
@@ -680,20 +680,20 @@ function GoldTransferSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Instant Gold{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Transfers
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">Move your gold value instantly between accounts or to other users</p>
+          <p className="text-muted-foreground text-lg">Move your gold value instantly between accounts or to other users</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="relative p-8 rounded-2xl bg-white border border-gray-100 shadow-lg"
+          className="relative p-8 rounded-2xl bg-card border border-border/60 shadow-lg"
         >
           <div className="flex flex-col md:flex-row items-center justify-center gap-8">
             <motion.div
@@ -702,7 +702,7 @@ function GoldTransferSection() {
               className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 flex flex-col items-center justify-center gap-2"
             >
               <Building2 className="w-10 h-10 text-purple-600" />
-              <span className="text-gray-900 font-medium">FinaVault</span>
+              <span className="text-foreground font-medium">FinaVault</span>
             </motion.div>
 
             <div className="relative w-48 h-16">
@@ -725,7 +725,7 @@ function GoldTransferSection() {
               className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 flex flex-col items-center justify-center gap-2"
             >
               <Wallet className="w-10 h-10 text-purple-600" />
-              <span className="text-gray-900 font-medium">FinaPay</span>
+              <span className="text-foreground font-medium">FinaPay</span>
             </motion.div>
           </div>
 
@@ -763,16 +763,16 @@ function GlobalPaymentSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Instant Cross-Border{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Gold Payments
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">Send gold value anywhere in the world</p>
+          <p className="text-muted-foreground text-lg">Send gold value anywhere in the world</p>
         </motion.div>
 
-        <div className="relative aspect-[2/1] rounded-2xl bg-white border border-gray-100 shadow-lg overflow-hidden">
+        <div className="relative aspect-[2/1] rounded-2xl bg-card border border-border/60 shadow-lg overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute inset-0" style={{
               backgroundImage: `radial-gradient(circle at 1px 1px, rgb(147, 51, 234, 0.3) 1px, transparent 0)`,
@@ -810,7 +810,7 @@ function GlobalPaymentSection() {
               />
               <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg shadow-purple-500/50" />
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/90 border border-purple-200 text-purple-700 shadow-sm">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 text-purple-700 shadow-sm">
                   {hub.name}
                 </span>
               </div>
@@ -840,7 +840,7 @@ function TransactionHistorySection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Transparent, Real-Time{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Transaction Records
@@ -857,7 +857,7 @@ function TransactionHistorySection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
               whileHover={{ y: -8, rotateY: 5 }}
-              className="p-6 rounded-2xl bg-white border border-gray-100 shadow-lg backdrop-blur-sm hover:border-purple-200 transition-all"
+              className="p-6 rounded-2xl bg-card border border-border/60 shadow-lg backdrop-blur-sm hover:border-purple-200 transition-all"
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
@@ -872,10 +872,10 @@ function TransactionHistorySection() {
                   tx.color === 'blue' ? 'text-blue-500' : 'text-purple-600'
                 }`} />
               </motion.div>
-              <h3 className="text-gray-900 font-semibold mb-1">{tx.title}</h3>
-              <p className="text-gray-500 text-sm mb-3">{tx.desc}</p>
+              <h3 className="text-foreground font-semibold mb-1">{tx.title}</h3>
+              <p className="text-muted-foreground text-sm mb-3">{tx.desc}</p>
               <p className={`text-xl font-bold ${
-                tx.amount.startsWith('+') ? 'text-green-500' : 'text-gray-900'
+                tx.amount.startsWith('+') ? 'text-green-500' : 'text-foreground'
               }`}>
                 {tx.amount}
               </p>
@@ -946,7 +946,7 @@ function SecuritySection() {
             viewport={{ once: true }}
             className="space-y-8 order-1 lg:order-2"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
               High-Tech{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Gold Security
@@ -961,12 +961,12 @@ function SecuritySection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white border border-gray-100 shadow-md"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-md"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
                     <Shield className="w-5 h-5 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-medium">{feature}</span>
+                  <span className="text-foreground font-medium">{feature}</span>
                 </motion.div>
               ))}
             </div>
@@ -991,7 +991,7 @@ function FinaPayCardSection() {
             Coming Soon
           </span>
           
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground">
             A Premium{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Gold Card
@@ -1067,14 +1067,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-gray-900">
+          <h2 className="text-4xl md:text-6xl font-bold text-foreground">
             Your Gold. Your Wallet.{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Instantly Accessible.
             </span>
           </h2>
           
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Empowering global payments backed by your own gold.
           </p>
 
@@ -1105,7 +1105,7 @@ export default function FinaPayLanding() {
         description="Send and receive gold-backed payments with FinaPay. Instant transfers, QR-code payments, multi-currency support, and zero hidden fees for individuals and businesses."
         canonical="/finagold/finapay"
       />
-      <div className="finapay-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finapay-landing">
+      <div className="finapay-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-foreground" data-testid="finapay-landing">
         <style>{`
           .finapay-landing {
             --purple-deep: #8A2BE2;

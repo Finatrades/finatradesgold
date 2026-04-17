@@ -273,7 +273,7 @@ export default function PlatformConfiguration() {
           {/* Selected countries */}
           <div className="flex flex-wrap gap-2">
             {blockedList.length === 0 ? (
-              <span className="text-sm text-gray-500">No countries blocked</span>
+              <span className="text-sm text-muted-foreground">No countries blocked</span>
             ) : (
               blockedList.map(code => {
                 const country = COUNTRIES.find(c => c.code === code);
@@ -308,7 +308,7 @@ export default function PlatformConfiguration() {
             <PopoverContent className="w-80 p-0" align="start">
               <div className="p-3 border-b">
                 <div className="flex items-center gap-2">
-                  <Globe className="h-4 w-4 text-gray-500" />
+                  <Globe className="h-4 w-4 text-muted-foreground" />
                   <span className="font-medium text-sm">Select Countries to Block</span>
                 </div>
               </div>
@@ -319,7 +319,7 @@ export default function PlatformConfiguration() {
                     return (
                       <div
                         key={country.code}
-                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-gray-100 ${
+                        className={`flex items-center gap-3 p-2 rounded-md cursor-pointer hover:bg-muted ${
                           isBlocked ? 'bg-red-50' : ''
                         }`}
                         onClick={() => toggleCountry(country.code)}
@@ -329,7 +329,7 @@ export default function PlatformConfiguration() {
                           onCheckedChange={() => toggleCountry(country.code)}
                         />
                         <span className="text-sm">{country.name}</span>
-                        <span className="text-xs text-gray-400 ml-auto">{country.code}</span>
+                        <span className="text-xs text-muted-foreground/70 ml-auto">{country.code}</span>
                       </div>
                     );
                   })}
@@ -398,11 +398,11 @@ export default function PlatformConfiguration() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
               <Settings className="h-6 w-6 text-purple-500" />
               Platform Configuration
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Centralized control for all platform fees, limits, and settings
             </p>
           </div>
@@ -441,9 +441,9 @@ export default function PlatformConfiguration() {
         {configs.length === 0 ? (
           <Card>
             <CardContent className="flex flex-col items-center justify-center py-12">
-              <Database className="h-12 w-12 text-gray-400 mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">No Configuration Found</h3>
-              <p className="text-gray-500 mb-4 text-center max-w-md">
+              <Database className="h-12 w-12 text-muted-foreground/70 mb-4" />
+              <h3 className="text-lg font-medium text-foreground mb-2">No Configuration Found</h3>
+              <p className="text-muted-foreground mb-4 text-center max-w-md">
                 The platform configuration has not been initialized yet. Click below to set up default values.
               </p>
               <Button onClick={seedDefaults} className="bg-purple-500 hover:bg-purple-600" data-testid="button-seed-defaults-empty">
@@ -473,7 +473,7 @@ export default function PlatformConfiguration() {
                           className={`flex items-center justify-between px-4 py-3 text-left border-l-2 transition-colors ${
                             isActive 
                               ? 'border-purple-500 bg-purple-50 text-purple-700' 
-                              : 'border-transparent hover:bg-gray-50 text-gray-600'
+                              : 'border-transparent hover:bg-muted/40 text-muted-foreground'
                           }`}
                           data-testid={`tab-${category}`}
                         >
@@ -507,13 +507,13 @@ export default function PlatformConfiguration() {
                 <CardContent>
                   <div className="space-y-6">
                     {getCategoryConfigs(activeTab).map((config) => (
-                      <div key={config.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start py-4 border-b border-gray-100 last:border-0">
+                      <div key={config.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start py-4 border-b border-border/60 last:border-0">
                         <div>
                           <Label htmlFor={config.id} className="font-medium">
                             {config.displayName}
                           </Label>
                           {config.description && (
-                            <p className="text-sm text-gray-500 mt-1">
+                            <p className="text-sm text-muted-foreground mt-1">
                               {config.description}
                             </p>
                           )}
@@ -528,7 +528,7 @@ export default function PlatformConfiguration() {
                     ))}
 
                     {getCategoryConfigs(activeTab).length === 0 && (
-                      <div className="text-center py-8 text-gray-500">
+                      <div className="text-center py-8 text-muted-foreground">
                         No configuration items in this category
                       </div>
                     )}

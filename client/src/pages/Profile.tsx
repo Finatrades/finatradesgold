@@ -235,7 +235,7 @@ export default function Profile() {
 
   const getKycStatusBadge = () => {
     if (!kycData) {
-      return <Badge variant="outline" className="bg-gray-100">Not Submitted</Badge>;
+      return <Badge variant="outline" className="bg-muted">Not Submitted</Badge>;
     }
     switch (kycData.status) {
       case 'Approved':

@@ -161,13 +161,13 @@ export default function BNSLFAQ() {
             <span className="text-sm font-medium text-purple-800">Got Questions?</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Frequently Asked{' '}
             <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
               Questions
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Everything you need to know about BNSL gold investment
           </p>
         </motion.div>
@@ -180,13 +180,13 @@ export default function BNSLFAQ() {
           className="max-w-2xl mx-auto mb-8"
         >
           <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground/70" />
             <input
               type="text"
               placeholder="Search questions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 rounded-xl bg-white border border-gray-200 focus:border-purple-300 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-gray-900"
+              className="w-full pl-12 pr-4 py-4 rounded-xl bg-card border border-border focus:border-purple-300 focus:ring-4 focus:ring-purple-100 outline-none transition-all text-foreground"
               data-testid="input-faq-search"
             />
           </div>
@@ -212,7 +212,7 @@ export default function BNSLFAQ() {
                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-purple-600 text-white shadow-md'
-                    : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    : 'bg-card text-muted-foreground hover:bg-muted/40 border border-border'
                 }`}
                 data-testid={`button-category-${category.id}`}
               >
@@ -231,8 +231,8 @@ export default function BNSLFAQ() {
               animate={{ opacity: 1 }}
               className="text-center py-12"
             >
-              <HelpCircle className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500">No questions found matching your search.</p>
+              <HelpCircle className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+              <p className="text-muted-foreground">No questions found matching your search.</p>
             </motion.div>
           ) : (
             filteredFAQs.map((item, index) => {
@@ -245,19 +245,19 @@ export default function BNSLFAQ() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.05 }}
-                  className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
+                  className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden"
                 >
                   <button
                     onClick={() => toggleItem(item.id)}
-                    className="w-full flex items-center justify-between p-6 text-left hover:bg-gray-50 transition-colors"
+                    className="w-full flex items-center justify-between p-6 text-left hover:bg-muted/40 transition-colors"
                     data-testid={`button-faq-${item.id}`}
                   >
-                    <span className="font-semibold text-gray-900 pr-4">{item.question}</span>
+                    <span className="font-semibold text-foreground pr-4">{item.question}</span>
                     <motion.div
                       animate={{ rotate: isOpen ? 180 : 0 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />
+                      <ChevronDown className="w-5 h-5 text-muted-foreground/70 shrink-0" />
                     </motion.div>
                   </button>
 
@@ -270,8 +270,8 @@ export default function BNSLFAQ() {
                         transition={{ duration: 0.2 }}
                       >
                         <div className="px-6 pb-6">
-                          <div className="pt-2 border-t border-gray-100">
-                            <p className="text-gray-600 leading-relaxed pt-4">{item.answer}</p>
+                          <div className="pt-2 border-t border-border/60">
+                            <p className="text-muted-foreground leading-relaxed pt-4">{item.answer}</p>
                           </div>
                         </div>
                       </motion.div>
@@ -293,8 +293,8 @@ export default function BNSLFAQ() {
           <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-100">
             <MessageCircle className="w-10 h-10 text-purple-600" />
             <div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Still have questions?</h3>
-              <p className="text-gray-600 mb-4">Our team is here to help you 24/7</p>
+              <h3 className="text-xl font-bold text-foreground mb-2">Still have questions?</h3>
+              <p className="text-muted-foreground mb-4">Our team is here to help you 24/7</p>
             </div>
             <motion.button
               whileHover={{ scale: 1.02 }}

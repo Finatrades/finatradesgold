@@ -239,7 +239,7 @@ export default function QuickBnslModal({
                         ? 'bg-teal-400 border-teal-400 text-white'
                         : i === step
                         ? 'bg-amber-400 border-amber-400 text-white'
-                        : 'bg-white/10 border-white/20 text-white/40'
+                        : 'bg-card/10 border-white/20 text-white/40'
                     }`}
                   >
                     {i < step ? <CheckCircle2 className="w-3.5 h-3.5" /> : i + 1}
@@ -255,7 +255,7 @@ export default function QuickBnslModal({
                 {i < STEPS.length - 1 && (
                   <div
                     className={`flex-1 h-px mx-1 mb-4 transition-all ${
-                      i < step ? 'bg-teal-400' : 'bg-white/15'
+                      i < step ? 'bg-teal-400' : 'bg-card/15'
                     }`}
                   />
                 )}
@@ -302,7 +302,7 @@ export default function QuickBnslModal({
                             className={`relative rounded-xl p-3.5 text-left border transition-all ${
                               selected
                                 ? 'border-amber-400/80 bg-amber-400/10'
-                                : 'border-white/10 bg-white/5 hover:bg-white/10'
+                                : 'border-white/10 bg-card/5 hover:bg-card/10'
                             }`}
                           >
                             {selected && (
@@ -335,7 +335,7 @@ export default function QuickBnslModal({
               )}
 
               {currentTemplate && (
-                <div className="rounded-xl bg-white/5 border border-white/10 p-3 text-[10px] text-white/50 space-y-0.5">
+                <div className="rounded-xl bg-card/5 border border-white/10 p-3 text-[10px] text-white/50 space-y-0.5">
                   <p>Min: {currentTemplate.minGoldGrams}g &nbsp;·&nbsp; Max: {currentTemplate.maxGoldGrams}g</p>
                   <p>Early exit fee: {currentTemplate.earlyTerminationFeePercent}% &nbsp;·&nbsp; Admin fee: {currentTemplate.adminFeePercent}%</p>
                 </div>
@@ -347,7 +347,7 @@ export default function QuickBnslModal({
           {step === 1 && (
             <div className="space-y-4">
               {/* BNSL wallet balance */}
-              <div className="rounded-xl bg-white/5 border border-white/10 p-3.5 flex items-center justify-between">
+              <div className="rounded-xl bg-card/5 border border-white/10 p-3.5 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Wallet className="w-4 h-4 text-teal-300" />
                   <span className="text-[12px] text-white/70">BNSL Wallet Balance</span>
@@ -389,7 +389,7 @@ export default function QuickBnslModal({
                     onChange={e => setGoldGramsInput(e.target.value)}
                     placeholder={`Min ${currentTemplate?.minGoldGrams || 10}g`}
                     data-testid="input-gold-grams"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30 pr-10 text-[14px] font-bold"
+                    className="bg-card/10 border-white/20 text-white placeholder:text-white/30 pr-10 text-[14px] font-bold"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-white/40 font-semibold">
                     g
@@ -411,7 +411,7 @@ export default function QuickBnslModal({
 
               {/* Live calculations */}
               {goldGrams > 0 && enrollmentPrice > 0 && (
-                <div className="rounded-xl bg-white/5 border border-white/10 p-4 space-y-2.5">
+                <div className="rounded-xl bg-card/5 border border-white/10 p-4 space-y-2.5">
                   <p className="text-[10px] font-bold text-white/40 uppercase tracking-wider">
                     Plan Projections
                   </p>
@@ -427,7 +427,7 @@ export default function QuickBnslModal({
                     <span className="text-white/60">Quarterly margin disbursement</span>
                     <span className="text-teal-300 font-bold">{fmtUsd(quarterlyMarginUsd)}</span>
                   </div>
-                  <div className="h-px bg-white/10" />
+                  <div className="h-px bg-card/10" />
                   <div className="flex justify-between text-[13px]">
                     <span className="text-white/80 font-semibold">Total proceeds</span>
                     <span className="text-amber-300 font-extrabold">{fmtUsd(totalProceedsUsd)}</span>
@@ -471,7 +471,7 @@ export default function QuickBnslModal({
                 <div
                   ref={termsRef}
                   onScroll={handleTermsScroll}
-                  className="h-36 overflow-y-auto rounded-xl bg-white/5 border border-white/10 p-3 text-[9.5px] text-white/50 leading-relaxed whitespace-pre-line"
+                  className="h-36 overflow-y-auto rounded-xl bg-card/5 border border-white/10 p-3 text-[9.5px] text-white/50 leading-relaxed whitespace-pre-line"
                   data-testid="terms-scroll-area"
                 >
                   {FULL_TERMS_AND_CONDITIONS}
@@ -510,7 +510,7 @@ export default function QuickBnslModal({
                   onClick={handleDownloadDraft}
                   disabled={goldGrams <= 0}
                   data-testid="button-download-draft"
-                  className="w-full border-white/20 text-white/80 hover:bg-white/10 hover:text-white bg-transparent text-[11px]"
+                  className="w-full border-white/20 text-white/80 hover:bg-card/10 hover:text-white bg-transparent text-[11px]"
                 >
                   <Download className="w-3.5 h-3.5 mr-1.5" />
                   {hasDownloadedDraft ? 'Draft Downloaded ✓' : 'Download Draft Agreement'}
@@ -532,7 +532,7 @@ export default function QuickBnslModal({
                     onChange={e => setSignatureName(e.target.value)}
                     placeholder="Your full legal name"
                     data-testid="input-signature"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-white/30"
+                    className="bg-card/10 border-white/20 text-white placeholder:text-white/30"
                     autoFocus
                   />
                   {signatureName.trim().length > 0 && !isValidSignature && (
@@ -542,7 +542,7 @@ export default function QuickBnslModal({
               )}
 
               {/* Security note */}
-              <div className="rounded-xl bg-white/5 border border-white/10 p-3 flex items-center gap-2">
+              <div className="rounded-xl bg-card/5 border border-white/10 p-3 flex items-center gap-2">
                 <Shield className="w-4 h-4 text-teal-300 flex-shrink-0" />
                 <p className="text-[9.5px] text-white/40 leading-snug">
                   By confirming, you irrevocably sell your gold. Title transfers to Wingold & Metals DMCC immediately. Your contractual entitlement to proceeds is protected.
@@ -561,7 +561,7 @@ export default function QuickBnslModal({
               onClick={() => setStep(s => s - 1)}
               disabled={submitting}
               data-testid="button-back"
-              className="text-white/60 hover:text-white hover:bg-white/10"
+              className="text-white/60 hover:text-white hover:bg-card/10"
             >
               <ChevronLeft className="w-4 h-4 mr-1" />
               Back

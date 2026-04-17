@@ -200,7 +200,7 @@ export default function MobileCreateBnslPlan({
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50/30 flex flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-purple-100 px-4 py-3">
+      <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-lg border-b border-purple-100 px-4 py-3">
         <div className="flex items-center gap-3">
           <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-purple-100 transition-colors">
             <ArrowLeft className="w-5 h-5 text-purple-700" />
@@ -244,9 +244,9 @@ export default function MobileCreateBnslPlan({
               </div>
 
               {/* Amount Input */}
-              <div className="bg-white rounded-2xl p-5 shadow-sm border border-purple-100">
+              <div className="bg-card rounded-2xl p-5 shadow-sm border border-purple-100">
                 <div className="flex items-center justify-between mb-4">
-                  <span className="font-semibold text-gray-800">Gold to Sell</span>
+                  <span className="font-semibold text-foreground">Gold to Sell</span>
                   <div className="flex bg-purple-100 rounded-lg p-1">
                     <button 
                       onClick={() => { setInputMode('grams'); setInputValue(''); }}
@@ -335,7 +335,7 @@ export default function MobileCreateBnslPlan({
               className="p-4 space-y-4"
             >
               <div className="text-center mb-6">
-                <h2 className="text-xl font-bold text-gray-900">Choose Your Plan</h2>
+                <h2 className="text-xl font-bold text-foreground">Choose Your Plan</h2>
                 <p className="text-muted-foreground text-sm mt-1">Select duration for your gold sale</p>
               </div>
 
@@ -357,7 +357,7 @@ export default function MobileCreateBnslPlan({
                       className={`relative rounded-2xl overflow-hidden transition-all duration-200 ${
                         isSelected 
                           ? 'ring-2 ring-purple-600 shadow-lg shadow-purple-200' 
-                          : 'border-2 border-gray-200'
+                          : 'border-2 border-border'
                       }`}
                     >
                       {isRecommended && (
@@ -366,16 +366,16 @@ export default function MobileCreateBnslPlan({
                         </div>
                       )}
                       
-                      <div className={`p-4 ${isSelected ? 'bg-purple-50' : 'bg-white'}`}>
+                      <div className={`p-4 ${isSelected ? 'bg-purple-50' : 'bg-card'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                              isSelected ? 'bg-purple-600 text-white' : 'bg-gray-100 text-gray-600'
+                              isSelected ? 'bg-purple-600 text-white' : 'bg-muted text-muted-foreground'
                             }`}>
                               <Clock className="w-6 h-6" />
                             </div>
                             <div>
-                              <p className="text-2xl font-bold text-gray-900">{variant.tenorMonths} <span className="text-base font-normal text-gray-500">months</span></p>
+                              <p className="text-2xl font-bold text-foreground">{variant.tenorMonths} <span className="text-base font-normal text-muted-foreground">months</span></p>
                               <div className="flex items-center gap-1 mt-0.5">
                                 <TrendingUp className={`w-4 h-4 ${isSelected ? 'text-purple-600' : 'text-green-600'}`} />
                                 <span className={`font-bold ${isSelected ? 'text-purple-600' : 'text-green-600'}`}>
@@ -386,25 +386,25 @@ export default function MobileCreateBnslPlan({
                           </div>
                           
                           <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
-                            isSelected ? 'border-purple-600 bg-purple-600' : 'border-gray-300'
+                            isSelected ? 'border-purple-600 bg-purple-600' : 'border-border'
                           }`}>
                             {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
                           </div>
                         </div>
 
                         {goldAmount > 0 && (
-                          <div className="mt-4 pt-3 border-t border-gray-200 grid grid-cols-3 gap-2">
+                          <div className="mt-4 pt-3 border-t border-border grid grid-cols-3 gap-2">
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Total Margin</p>
                               <p className="font-bold text-green-600">${variantTotalMargin.toFixed(0)}</p>
                             </div>
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Quarterly</p>
-                              <p className="font-bold text-gray-800">${variantQuarterly.toFixed(0)}</p>
+                              <p className="font-bold text-foreground">${variantQuarterly.toFixed(0)}</p>
                             </div>
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Payouts</p>
-                              <p className="font-bold text-gray-800">{variant.tenorMonths / 3}x</p>
+                              <p className="font-bold text-foreground">{variant.tenorMonths / 3}x</p>
                             </div>
                           </div>
                         )}
@@ -454,61 +454,61 @@ export default function MobileCreateBnslPlan({
               className="p-4 space-y-4"
             >
               <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Key Terms</h2>
+                <h2 className="text-xl font-bold text-foreground">Key Terms</h2>
                 <p className="text-muted-foreground text-sm mt-1">Review important information</p>
               </div>
 
               {/* Key Terms Cards */}
               <div className="space-y-3">
-                <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-start gap-3">
+                <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
                     <Coins className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Quarterly Payouts</p>
+                    <p className="font-semibold text-foreground">Quarterly Payouts</p>
                     <p className="text-sm text-muted-foreground">Receive margin payments every 3 months in gold grams</p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-start gap-3">
+                <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
                     <Calendar className="w-5 h-5 text-amber-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Base Price at Maturity</p>
+                    <p className="font-semibold text-foreground">Base Price at Maturity</p>
                     <p className="text-sm text-muted-foreground">Your base value is returned in gold at end of term</p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-start gap-3">
+                <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
                     <AlertTriangle className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Early Termination: 2% Fee</p>
+                    <p className="font-semibold text-foreground">Early Termination: 2% Fee</p>
                     <p className="text-sm text-muted-foreground">Exiting early incurs penalties and margin reimbursement</p>
                   </div>
                 </div>
 
-                <div className="bg-white rounded-xl p-4 border border-gray-200 flex items-start gap-3">
+                <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
                   <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
                     <FileText className="w-5 h-5 text-purple-600" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Admin Fee: 0.5%</p>
+                    <p className="font-semibold text-foreground">Admin Fee: 0.5%</p>
                     <p className="text-sm text-muted-foreground">One-time administrative fee on total proceeds</p>
                   </div>
                 </div>
               </div>
 
               {/* Full Terms */}
-              <div className="bg-gray-50 rounded-xl border border-gray-200 overflow-hidden">
+              <div className="bg-muted/40 rounded-xl border border-border overflow-hidden">
                 <button 
                   onClick={() => setShowFullTerms(!showFullTerms)}
                   className="w-full p-4 flex items-center justify-between"
                 >
-                  <span className="font-semibold text-gray-900">Full Terms & Conditions</span>
-                  <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform ${showFullTerms ? 'rotate-180' : ''}`} />
+                  <span className="font-semibold text-foreground">Full Terms & Conditions</span>
+                  <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform ${showFullTerms ? 'rotate-180' : ''}`} />
                 </button>
                 
                 {showFullTerms && (
@@ -522,7 +522,7 @@ export default function MobileCreateBnslPlan({
                       <p><strong>3. EARLY TERMINATION:</strong> Exiting before maturity results in 2% penalty, 0.5% admin fee, and reimbursement of all margin received.</p>
                       <p><strong>4. RISKS:</strong> You accept counterparty risk, market price variability, and liquidity constraints.</p>
                       <p><strong>5. TITLE TRANSFER:</strong> Gold ownership transfers immediately to Wingold upon enrollment.</p>
-                      <p className="pt-2 font-medium text-gray-700">Scroll to bottom to accept terms ↓</p>
+                      <p className="pt-2 font-medium text-foreground/85">Scroll to bottom to accept terms ↓</p>
                     </div>
                   </ScrollArea>
                 )}
@@ -539,7 +539,7 @@ export default function MobileCreateBnslPlan({
                     checked={agreedToTerms}
                     onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
                   />
-                  <label htmlFor="terms" className="text-sm text-gray-700 leading-tight">
+                  <label htmlFor="terms" className="text-sm text-foreground/85 leading-tight">
                     I have read, understood, and agree to the Terms & Conditions
                   </label>
                 </motion.div>
@@ -562,7 +562,7 @@ export default function MobileCreateBnslPlan({
               className="p-4 space-y-4"
             >
               <div className="text-center mb-4">
-                <h2 className="text-xl font-bold text-gray-900">Confirm & Sign</h2>
+                <h2 className="text-xl font-bold text-foreground">Confirm & Sign</h2>
                 <p className="text-muted-foreground text-sm mt-1">Review your plan and sign digitally</p>
               </div>
 
@@ -612,7 +612,7 @@ export default function MobileCreateBnslPlan({
               </Button>
 
               {/* Signature */}
-              <div className="bg-white rounded-xl p-4 border-2 border-purple-200">
+              <div className="bg-card rounded-xl p-4 border-2 border-purple-200">
                 <div className="flex items-center gap-2 mb-3">
                   <PenLine className="w-5 h-5 text-purple-600" />
                   <span className="font-semibold">Digital Signature</span>
@@ -639,14 +639,14 @@ export default function MobileCreateBnslPlan({
       </div>
 
       {/* Fixed Bottom CTA */}
-      <div className="bg-white border-t border-gray-200 p-4 pb-6 mt-auto">
+      <div className="bg-card border-t border-border p-4 pb-6 mt-auto">
         <Button 
           onClick={handleNext}
           disabled={!canProceed}
           className={`w-full h-14 rounded-xl text-lg font-semibold transition-all ${
             canProceed 
               ? 'bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white shadow-lg shadow-purple-300' 
-              : 'bg-gray-200 text-gray-500'
+              : 'bg-muted text-muted-foreground'
           }`}
         >
           {currentStep === 3 ? (

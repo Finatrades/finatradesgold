@@ -365,7 +365,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
     <div className="max-w-4xl mx-auto space-y-8">
       
       {/* Step 1: Configure Sale */}
-      <Card className="bg-white shadow-sm border border-border" data-testid="card-configure-sale">
+      <Card className="bg-card shadow-sm border border-border" data-testid="card-configure-sale">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8A2BE2] text-white text-sm font-bold">1</span>
@@ -400,9 +400,9 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
                 >
                   Max: {inputMode === 'grams' ? `${bnslWalletBalance.toFixed(3)}g` : `$${(bnslWalletBalance * currentGoldPrice).toFixed(2)}`}
                 </span>
-                <div className="flex bg-gray-100 rounded-lg p-1">
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+                <div className="flex bg-muted rounded-lg p-1">
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
                 </div>
               </div>
             </div>
@@ -460,7 +460,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       </Card>
 
       {/* Step 2: Select Plan */}
-      <Card className="bg-white shadow-sm border border-border" data-testid="card-select-plan">
+      <Card className="bg-card shadow-sm border border-border" data-testid="card-select-plan">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8A2BE2] text-white text-sm font-bold">2</span>
@@ -616,7 +616,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       </Card>
 
       {/* Step 3: Terms & Conditions */}
-      <Card className="bg-white shadow-sm border border-border" data-testid="card-terms">
+      <Card className="bg-card shadow-sm border border-border" data-testid="card-terms">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8A2BE2] text-white text-sm font-bold">3</span>
@@ -666,7 +666,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
       </Card>
 
       {/* Step 4: Digital Signature */}
-      <Card className="bg-white shadow-sm border border-border" data-testid="card-signature">
+      <Card className="bg-card shadow-sm border border-border" data-testid="card-signature">
         <CardHeader className="border-b border-border pb-4">
           <CardTitle className="text-lg font-bold text-foreground flex items-center gap-2">
             <span className="flex items-center justify-center w-7 h-7 rounded-full bg-[#8A2BE2] text-white text-sm font-bold">4</span>

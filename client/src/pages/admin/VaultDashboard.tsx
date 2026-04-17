@@ -70,10 +70,10 @@ export default function VaultDashboard() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Vault Management Dashboard
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Overview of digital liabilities vs physical custody across all wallets
             </p>
           </div>
@@ -93,10 +93,10 @@ export default function VaultDashboard() {
             {[1, 2, 3, 4].map((i) => (
               <Card key={i} className="animate-pulse">
                 <CardHeader className="pb-2">
-                  <div className="h-4 bg-gray-200 rounded w-1/2" />
+                  <div className="h-4 bg-muted rounded w-1/2" />
                 </CardHeader>
                 <CardContent>
-                  <div className="h-8 bg-gray-200 rounded w-3/4 mt-2" />
+                  <div className="h-8 bg-muted rounded w-3/4 mt-2" />
                 </CardContent>
               </Card>
             ))}
@@ -116,7 +116,7 @@ export default function VaultDashboard() {
                       <h2 className="text-2xl font-bold" data-testid="text-coverage-status">
                         {isFullyBacked ? 'Fully Backed' : 'Under-Backed'}
                       </h2>
-                      <p className="text-gray-600" data-testid="text-coverage-ratio">
+                      <p className="text-muted-foreground" data-testid="text-coverage-ratio">
                         {coverageRatio.toFixed(2)}% physical gold coverage
                       </p>
                     </div>
@@ -135,7 +135,7 @@ export default function VaultDashboard() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                       {difference >= 0 ? 'Surplus' : 'Deficit'}
                     </p>
                   </div>
@@ -150,7 +150,7 @@ export default function VaultDashboard() {
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Scale className="h-4 w-4" />
                     Digital Liability
                   </CardTitle>
@@ -159,13 +159,13 @@ export default function VaultDashboard() {
                   <div className="text-2xl font-bold text-blue-600" data-testid="text-digital-liability">
                     {formatGrams(totalDigital)}g
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Total gold owed to users</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total gold owed to users</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Vault className="h-4 w-4" />
                     Physical Custody
                   </CardTitle>
@@ -174,13 +174,13 @@ export default function VaultDashboard() {
                   <div className="text-2xl font-bold text-purple-600" data-testid="text-physical-custody">
                     {formatGrams(totalPhysical)}g
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">Total physical gold held</p>
+                  <p className="text-xs text-muted-foreground mt-1">Total physical gold held</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <TrendingUp className="h-4 w-4 text-blue-600" />
                     LGPW (Market Price)
                   </CardTitle>
@@ -189,13 +189,13 @@ export default function VaultDashboard() {
                   <div className="text-2xl font-bold text-blue-600" data-testid="text-mpgw-total">
                     {formatGrams(data?.mpgw?.totalGrams)}g
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">{data?.mpgw?.count || 0} accounts</p>
+                  <p className="text-xs text-muted-foreground mt-1">{data?.mpgw?.count || 0} accounts</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium text-gray-500 flex items-center gap-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                     <Package className="h-4 w-4 text-amber-600" />
                     FGPW (Fixed Price)
                   </CardTitle>
@@ -204,7 +204,7 @@ export default function VaultDashboard() {
                   <div className="text-2xl font-bold text-amber-600" data-testid="text-fpgw-total">
                     {formatGrams(data?.fpgw?.totalGrams)}g
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-xs text-muted-foreground mt-1">
                     {data?.fpgw?.count || 0} accounts @ ${data?.fpgw?.weightedAvgPrice?.toFixed(2) || '0.00'}/g avg
                   </p>
                 </CardContent>
@@ -251,16 +251,16 @@ export default function VaultDashboard() {
                 <CardContent className="space-y-3">
                   {data?.byVaultLocation && Object.entries(data.byVaultLocation).length > 0 ? (
                     Object.entries(data.byVaultLocation).map(([location, grams]) => (
-                      <div key={location} className="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                      <div key={location} className="flex justify-between items-center p-3 bg-muted/40 rounded-lg">
                         <span className="font-medium flex items-center gap-2">
-                          <MapPin className="h-4 w-4 text-gray-500" />
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
                           {location}
                         </span>
                         <span className="font-bold">{formatGrams(grams)}g</span>
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-gray-500 py-4">
+                    <div className="text-center text-muted-foreground py-4">
                       No vault locations configured
                     </div>
                   )}

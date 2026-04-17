@@ -827,7 +827,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           </div>
           
           {/* Amount Input */}
-          <div className={`border-2 rounded-xl bg-white transition-colors ${
+          <div className={`border-2 rounded-xl bg-card transition-colors ${
             inputMode === 'usd' ? 'border-emerald-200 focus-within:border-emerald-500' : 'border-purple-200 focus-within:border-purple-500'
           }`}>
             <div className="flex items-center justify-center py-6 px-4">
@@ -1200,7 +1200,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
         <div className="space-y-4">
           <div className="bg-purple-50 rounded-xl p-4 border border-purple-200">
             <p className="text-sm font-semibold text-purple-800 mb-3">Send {selectedCryptoWallet.currency} to:</p>
-            <div className="bg-white rounded-lg p-3 border border-purple-200">
+            <div className="bg-card rounded-lg p-3 border border-purple-200">
               <p className="text-xs font-mono break-all text-center">{selectedCryptoWallet.walletAddress}</p>
             </div>
             <button
@@ -1406,7 +1406,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className={`bg-white border-border text-foreground overflow-x-hidden ${
+      <DialogContent className={`bg-card border-border text-foreground overflow-x-hidden ${
         isCardPayment 
           ? 'w-[95vw] max-w-xl overflow-hidden' 
           : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
@@ -1514,7 +1514,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               
               {/* Single Large Input */}
               <div className="relative">
-                <div className={`border-2 rounded-2xl bg-white transition-colors ${
+                <div className={`border-2 rounded-2xl bg-card transition-colors ${
                   inputMode === 'usd' ? 'border-primary/30 focus-within:border-primary' : 'border-purple-300 focus-within:border-purple-500'
                 }`}>
                   <div className="flex items-center justify-center py-6 px-4">
@@ -1671,7 +1671,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 {/* Conversion Result */}
                 {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
                   (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
-                  <div className="bg-white rounded-lg p-4 border border-slate-200">
+                  <div className="bg-card rounded-lg p-4 border border-slate-200">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         {inputMode === 'gold' ? (
@@ -1759,7 +1759,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {/* Bank Transfer */}
               <button
                 onClick={() => handleSelectMethod('bank')}
-                className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-blue-400 hover:bg-blue-50/30 transition-all duration-200 text-left relative overflow-hidden"
                 data-testid="button-select-bank-transfer"
               >
                 <div className="flex items-center gap-4">
@@ -1791,7 +1791,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {ngeniusEnabled && (
                 <button
                   onClick={() => handleSelectMethod('card')}
-                  className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-emerald-400 hover:bg-emerald-50/30 transition-all duration-200 text-left relative overflow-hidden"
                   data-testid="button-select-card-payment"
                 >
                   <div className="flex items-center gap-4">
@@ -1827,7 +1827,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
               {cryptoWallets.length > 0 && (
                 <button
                   onClick={() => handleSelectMethod('crypto')}
-                  className="w-full group border-2 border-border rounded-xl p-5 bg-white hover:border-purple-400 hover:bg-purple-50/30 transition-all duration-200 text-left relative overflow-hidden"
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-purple-400 hover:bg-purple-50/30 transition-all duration-200 text-left relative overflow-hidden"
                   data-testid="button-select-crypto-payment"
                 >
                   <div className="flex items-center gap-4">
@@ -1866,7 +1866,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
             {bankAccounts.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <Building className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <Building className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p>No bank accounts available for deposit at this time.</p>
                 <p className="text-sm">Please try again later or contact support.</p>
               </div>
@@ -1920,7 +1920,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {/* Beneficiary - Full Width */}
                   <div className="group">
                     <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">BENEFICIARY NAME</span>
-                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
+                    <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
                       <span className="font-semibold text-lg text-white leading-tight">{selectedAccount.accountName}</span>
                       <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
                         <Copy className="w-4 h-4" />
@@ -1931,7 +1931,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {/* Account Number - Full Width */}
                   <div className="group">
                     <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">ACCOUNT NUMBER</span>
-                    <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
+                    <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
                       <span className="font-mono text-xl font-bold text-purple-200 tracking-wide">{selectedAccount.accountNumber}</span>
                       <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
                         <Copy className="w-4 h-4" />
@@ -1943,7 +1943,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {selectedAccount.swiftCode && (
                     <div className="group">
                       <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">SWIFT CODE</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
                         <span className="font-mono text-xl font-bold text-white tracking-widest">{selectedAccount.swiftCode}</span>
                         <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
                           <Copy className="w-4 h-4" />
@@ -1956,7 +1956,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {selectedAccount.iban && (
                     <div className="group">
                       <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">IBAN</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
                         <span className="font-mono text-xl font-bold text-purple-200 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
                         <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg ml-2" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
                           <Copy className="w-4 h-4" />
@@ -1969,7 +1969,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   {selectedAccount.routingNumber && (
                     <div className="group">
                       <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">ROUTING NUMBER</span>
-                      <div className="flex items-center justify-between bg-white/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-white/15 transition-colors">
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
                         <span className="font-mono text-xl font-bold text-white tracking-wide">{selectedAccount.routingNumber}</span>
                         <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-500/20 text-purple-300 hover:text-white hover:bg-purple-500/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
                           <Copy className="w-4 h-4" />
@@ -2034,7 +2034,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 {/* Fee Breakdown */}
-                <div className="border border-purple-300 rounded-lg p-3 bg-white space-y-2 text-sm">
+                <div className="border border-purple-300 rounded-lg p-3 bg-card space-y-2 text-sm">
                   {/* Deposit Amount (gross) */}
                   <div className="flex justify-between text-muted-foreground">
                     <span>Deposit Amount:</span>
@@ -2198,7 +2198,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         </label>
                         <details className="mt-2">
                           <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                          <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                          <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded border max-h-32 overflow-y-auto">
                             {termsContent.terms}
                           </div>
                         </details>
@@ -2257,7 +2257,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       value={goldAmount}
                       onChange={(e) => setGoldAmount(e.target.value)}
                       placeholder="0.000"
-                      className="pl-9 bg-white border-purple-300 focus:border-purple-500"
+                      className="pl-9 bg-card border-purple-300 focus:border-purple-500"
                       step="0.001"
                       min="0.001"
                       data-testid="input-card-gold-amount"
@@ -2277,7 +2277,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       placeholder="0.00"
-                      className="pl-9 bg-white"
+                      className="pl-9 bg-card"
                       min={platformSettings.minDeposit || 50}
                       max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
                       data-testid="input-card-amount"
@@ -2397,7 +2397,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </Label>
                 <div className="relative group">
                   <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-400 to-purple-600 rounded-xl transition-opacity ${inputMode === 'gold' ? 'opacity-30' : 'opacity-10'}`}></div>
-                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-purple-400' : 'border-purple-200'}`}>
+                  <div className={`relative bg-card rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-purple-400' : 'border-purple-200'}`}>
                     <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
                     <Input
                       type="number"
@@ -2431,7 +2431,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </Label>
                 <div className="relative group">
                   <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl transition-opacity ${inputMode === 'usd' ? 'opacity-30' : 'opacity-10'}`}></div>
-                  <div className={`relative bg-white rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200'}`}>
+                  <div className={`relative bg-card rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200'}`}>
                     <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
                     <Input
                       type="number"
@@ -2470,7 +2470,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 </div>
                 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between bg-white/80 rounded-lg p-3 border border-purple-200">
+                  <div className="flex items-center justify-between bg-card/80 rounded-lg p-3 border border-purple-200">
                     <span className="flex items-center gap-2 text-purple-700 font-medium">
                       <Coins className="w-4 h-4" />
                       Gold You'll Receive:
@@ -2590,7 +2590,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
 
             {cryptoWallets.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground">
-                <Bitcoin className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <Bitcoin className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                 <p>No crypto wallets available at this time.</p>
               </div>
             ) : (
@@ -2655,10 +2655,10 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     }
                     return { 
                       bg: 'from-gray-500 to-gray-600', 
-                      border: 'border-gray-300 hover:border-gray-400',
-                      hoverBg: 'hover:bg-gray-50',
+                      border: 'border-border hover:border-gray-400',
+                      hoverBg: 'hover:bg-muted/40',
                       icon: '◇',
-                      color: 'text-gray-600'
+                      color: 'text-muted-foreground'
                     };
                   };
                   
@@ -2669,7 +2669,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       key={wallet.id}
                       onClick={() => setSelectedCryptoWallet(wallet)}
                       disabled={submitting}
-                      className={`group relative border-2 rounded-xl p-4 transition-all duration-200 text-left bg-white ${style.border} ${style.hoverBg} ${
+                      className={`group relative border-2 rounded-xl p-4 transition-all duration-200 text-left bg-card ${style.border} ${style.hoverBg} ${
                         selectedCryptoWallet?.id === wallet.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''
                       }`}
                       data-testid={`button-select-crypto-${wallet.id}`}
@@ -2711,7 +2711,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 {/* QR Code Display */}
                 {selectedCryptoWallet.qrCodeImage && (
                   <div className="flex justify-center">
-                    <div className="p-3 bg-white rounded-lg border">
+                    <div className="p-3 bg-card rounded-lg border">
                       <img 
                         src={selectedCryptoWallet.qrCodeImage} 
                         alt="Scan to pay" 
@@ -2725,7 +2725,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 
                 <div>
                   <Label className="text-xs text-muted-foreground">Send to this address:</Label>
-                  <div className="mt-1 p-3 bg-white rounded-lg border flex items-center gap-2">
+                  <div className="mt-1 p-3 bg-card rounded-lg border flex items-center gap-2">
                     <code className="text-sm font-mono flex-1 break-all">{selectedCryptoWallet.walletAddress}</code>
                     <Button 
                       variant="ghost" 
@@ -2744,7 +2744,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 {selectedCryptoWallet.memo && (
                   <div>
                     <Label className="text-xs text-muted-foreground">Memo/Tag (required):</Label>
-                    <div className="mt-1 p-2 bg-white rounded-lg border text-sm font-mono">
+                    <div className="mt-1 p-2 bg-card rounded-lg border text-sm font-mono">
                       {selectedCryptoWallet.memo}
                     </div>
                   </div>

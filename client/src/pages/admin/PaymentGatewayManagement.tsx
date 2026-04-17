@@ -464,7 +464,7 @@ export default function PaymentGatewayManagement() {
               ) : (
                 <div className="space-y-4">
                   {settings.bankAccounts.map((account, index) => (
-                    <Card key={account.id} className={`${account.isActive ? 'border-green-200' : 'border-gray-200 opacity-60'}`}>
+                    <Card key={account.id} className={`${account.isActive ? 'border-green-200' : 'border-border opacity-60'}`}>
                       <CardHeader className="pb-3">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
@@ -650,9 +650,9 @@ export default function PaymentGatewayManagement() {
                   <Loader2 className="w-6 h-6 animate-spin mx-auto text-muted-foreground" />
                 </div>
               ) : cryptoWallets.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
-                  <Wallet className="w-12 h-12 mx-auto text-gray-400 mb-3" />
-                  <p className="text-gray-500 mb-3">No crypto wallets configured</p>
+                <div className="text-center py-8 border-2 border-dashed border-border rounded-lg">
+                  <Wallet className="w-12 h-12 mx-auto text-muted-foreground/70 mb-3" />
+                  <p className="text-muted-foreground mb-3">No crypto wallets configured</p>
                   <Button onClick={handleAddWallet} variant="outline">
                     <Plus className="w-4 h-4 mr-2" /> Add Your First Wallet
                   </Button>
@@ -662,13 +662,13 @@ export default function PaymentGatewayManagement() {
                   {cryptoWallets.map((wallet) => (
                     <div 
                       key={wallet.id} 
-                      className={`space-y-3 border rounded-lg p-4 ${wallet.isActive ? 'border-gray-200' : 'border-red-200 bg-red-50/50'}`}
+                      className={`space-y-3 border rounded-lg p-4 ${wallet.isActive ? 'border-border' : 'border-red-200 bg-red-50/50'}`}
                       data-testid={`crypto-wallet-${wallet.id}`}
                     >
                       <div className="flex justify-between items-start">
                         <div className="flex items-center gap-2">
                           <Bitcoin className="w-5 h-5 text-purple-500" />
-                          <h4 className="font-medium text-gray-900">{wallet.networkLabel}</h4>
+                          <h4 className="font-medium text-foreground">{wallet.networkLabel}</h4>
                           {wallet.qrCodeImage && (
                             <span className="text-xs px-2 py-0.5 bg-green-100 text-green-600 rounded-full flex items-center gap-1">
                               <QrCode className="w-3 h-3" /> QR
@@ -691,8 +691,8 @@ export default function PaymentGatewayManagement() {
                           </Button>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 bg-gray-50 p-3 rounded-lg">
-                        <code className="text-sm font-mono flex-1 break-all text-gray-700">{wallet.walletAddress}</code>
+                      <div className="flex items-center gap-2 bg-muted/40 p-3 rounded-lg">
+                        <code className="text-sm font-mono flex-1 break-all text-foreground/85">{wallet.walletAddress}</code>
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -706,10 +706,10 @@ export default function PaymentGatewayManagement() {
                         </Button>
                       </div>
                       {wallet.memo && (
-                        <p className="text-sm text-gray-500"><strong>Memo/Tag:</strong> {wallet.memo}</p>
+                        <p className="text-sm text-muted-foreground"><strong>Memo/Tag:</strong> {wallet.memo}</p>
                       )}
                       {wallet.instructions && (
-                        <p className="text-sm text-gray-500">{wallet.instructions}</p>
+                        <p className="text-sm text-muted-foreground">{wallet.instructions}</p>
                       )}
                     </div>
                   ))}
@@ -1013,11 +1013,11 @@ export default function PaymentGatewayManagement() {
                   </Button>
                 </div>
               ) : (
-                <div className="border-2 border-dashed border-gray-200 rounded-lg p-4">
+                <div className="border-2 border-dashed border-border rounded-lg p-4">
                   <label className="cursor-pointer flex flex-col items-center gap-2">
-                    <Upload className="w-8 h-8 text-gray-400" />
-                    <span className="text-sm text-gray-500">Click to upload QR code</span>
-                    <span className="text-xs text-gray-400">Max 2MB, PNG/JPG</span>
+                    <Upload className="w-8 h-8 text-muted-foreground/70" />
+                    <span className="text-sm text-muted-foreground">Click to upload QR code</span>
+                    <span className="text-xs text-muted-foreground/70">Max 2MB, PNG/JPG</span>
                     <input
                       type="file"
                       accept="image/*"

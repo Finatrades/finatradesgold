@@ -395,7 +395,7 @@ export default function UnifiedPaymentManagement() {
         <div className="flex justify-between items-center">
           <div>
             <h1 className="text-2xl font-bold">Unified Payment Management</h1>
-            <p className="text-gray-500">Manage all incoming payments in one place</p>
+            <p className="text-muted-foreground">Manage all incoming payments in one place</p>
           </div>
           <Button variant="outline" onClick={() => refetch()} disabled={isLoading}>
             <RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
@@ -408,10 +408,10 @@ export default function UnifiedPaymentManagement() {
             <CardContent className="pt-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm text-gray-500">Total Pending</p>
+                  <p className="text-sm text-muted-foreground">Total Pending</p>
                   <p className="text-2xl font-bold">{counts.total}</p>
                 </div>
-                <Clock className="w-8 h-8 text-gray-400" />
+                <Clock className="w-8 h-8 text-muted-foreground/70" />
               </div>
             </CardContent>
           </Card>
@@ -475,10 +475,10 @@ export default function UnifiedPaymentManagement() {
               <CardContent className="pt-4">
                 {isLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : filteredPayments.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     No pending payments
                   </div>
                 ) : (
@@ -507,7 +507,7 @@ export default function UnifiedPaymentManagement() {
                             <TableCell>
                               <div>
                                 <p className="font-medium text-sm">{payment.userName}</p>
-                                <p className="text-xs text-gray-500">{payment.userEmail}</p>
+                                <p className="text-xs text-muted-foreground">{payment.userEmail}</p>
                               </div>
                             </TableCell>
                             <TableCell>
@@ -515,7 +515,7 @@ export default function UnifiedPaymentManagement() {
                                 {payment.sourceType === 'PHYSICAL' ? (
                                   <>
                                     <p className="font-medium text-amber-600">{formatGold(payment.goldGrams)}</p>
-                                    <p className="text-xs text-gray-500">{payment.depositType || 'Physical Gold'}</p>
+                                    <p className="text-xs text-muted-foreground">{payment.depositType || 'Physical Gold'}</p>
                                   </>
                                 ) : (
                                   <>
@@ -535,7 +535,7 @@ export default function UnifiedPaymentManagement() {
                             <TableCell>
                               <div className="text-sm">
                                 {format(new Date(payment.createdAt), 'MMM d, yyyy')}
-                                <p className="text-xs text-gray-500">
+                                <p className="text-xs text-muted-foreground">
                                   {formatDistanceToNow(new Date(payment.createdAt), { addSuffix: true })}
                                 </p>
                               </div>
@@ -591,9 +591,9 @@ export default function UnifiedPaymentManagement() {
               <div className="grid grid-cols-2 gap-6">
                 {/* LEFT PANEL - Input & Configuration */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Payment Details</h3>
+                  <h3 className="text-sm font-semibold text-foreground/85 border-b pb-2">Payment Details</h3>
                   
-                  <Card className="bg-gray-50">
+                  <Card className="bg-muted/40">
                     <CardHeader className="pb-2">
                       <CardTitle className="text-sm flex items-center gap-2">
                         <FileText className="w-4 h-4" />
@@ -603,17 +603,17 @@ export default function UnifiedPaymentManagement() {
                     <CardContent className="space-y-2 text-sm">
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <span className="text-gray-500">User:</span>
+                          <span className="text-muted-foreground">User:</span>
                           <span className="ml-2 font-medium">{selectedPayment.userName}</span>
                         </div>
                         <div>
-                          <span className="text-gray-500">Method:</span>
+                          <span className="text-muted-foreground">Method:</span>
                           <Badge variant="outline" className="ml-2">{selectedPayment.sourceType}</Badge>
                         </div>
                       </div>
                       <Separator />
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Deposit Amount:</span>
+                        <span className="text-muted-foreground">Deposit Amount:</span>
                         <span className="font-semibold">{formatCurrency(calculations.depositAmount)}</span>
                       </div>
                     </CardContent>
@@ -682,7 +682,7 @@ export default function UnifiedPaymentManagement() {
                           <RefreshCw className="w-4 h-4" />
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500">Pre-generated ID shown above. Edit or regenerate as needed.</p>
+                      <p className="text-xs text-muted-foreground">Pre-generated ID shown above. Edit or regenerate as needed.</p>
                     </div>
 
                     <div className="space-y-1">
@@ -726,7 +726,7 @@ export default function UnifiedPaymentManagement() {
 
                 {/* RIGHT PANEL - Calculations & Certificates */}
                 <div className="space-y-4">
-                  <h3 className="text-sm font-semibold text-gray-700 border-b pb-2">Gold Allocation & Verification</h3>
+                  <h3 className="text-sm font-semibold text-foreground/85 border-b pb-2">Gold Allocation & Verification</h3>
 
                 {/* Show Inspection Data for Physical Deposits, Cash Calculations for others */}
                 {selectedPayment.sourceType === 'PHYSICAL' && selectedPayment.inspectionData ? (
@@ -743,20 +743,20 @@ export default function UnifiedPaymentManagement() {
                     <CardContent className="space-y-2 text-sm">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Gross Weight:</span>
+                          <span className="text-muted-foreground">Gross Weight:</span>
                           <span className="font-medium">{parseFloat(selectedPayment.inspectionData.grossWeightGrams).toFixed(4)}g</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Net Weight:</span>
+                          <span className="text-muted-foreground">Net Weight:</span>
                           <span className="font-medium">{parseFloat(selectedPayment.inspectionData.netWeightGrams).toFixed(4)}g</span>
                         </div>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Purity (Fineness):</span>
+                        <span className="text-muted-foreground">Purity (Fineness):</span>
                         <span className="font-medium">{selectedPayment.inspectionData.purityResult}</span>
                       </div>
                       <Separator />
-                      <div className="text-xs text-gray-500 font-medium">Fees Deducted:</div>
+                      <div className="text-xs text-muted-foreground font-medium">Fees Deducted:</div>
                       <div className="grid grid-cols-3 gap-1 text-xs">
                         <div className="flex justify-between text-red-600">
                           <span>Assay:</span>
@@ -774,7 +774,7 @@ export default function UnifiedPaymentManagement() {
                       <Separator />
                       {selectedPayment.inspectionData.assayMethod && (
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Assay Method:</span>
+                          <span className="text-muted-foreground">Assay Method:</span>
                           <span className="font-medium">{selectedPayment.inspectionData.assayMethod}</span>
                         </div>
                       )}
@@ -782,7 +782,7 @@ export default function UnifiedPaymentManagement() {
                         <span className="font-semibold text-amber-800">Credited Gold:</span>
                         <span className="font-bold text-amber-900">{parseFloat(selectedPayment.inspectionData.creditedGrams).toFixed(4)}g</span>
                       </div>
-                      <div className="text-xs text-gray-400 text-center">
+                      <div className="text-xs text-muted-foreground/70 text-center">
                         ≈ ${(parseFloat(selectedPayment.inspectionData.creditedGrams) * calculations.goldRate).toFixed(2)} equivalent @ current rate
                       </div>
                     </CardContent>
@@ -797,7 +797,7 @@ export default function UnifiedPaymentManagement() {
                     </CardHeader>
                     <CardContent className="space-y-2 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Deposit Amount:</span>
+                        <span className="text-muted-foreground">Deposit Amount:</span>
                         <span className="font-medium">{formatCurrency(calculations.depositAmount)}</span>
                       </div>
                       <div className="flex justify-between text-red-600">
@@ -811,7 +811,7 @@ export default function UnifiedPaymentManagement() {
                       </div>
                       <Separator />
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Gold Rate Used:</span>
+                        <span className="text-muted-foreground">Gold Rate Used:</span>
                         <span className="font-medium">${calculations.goldRate.toFixed(2)}/gram</span>
                       </div>
                       <div className="flex justify-between bg-amber-100 p-2 rounded-md border border-amber-300">
@@ -833,7 +833,7 @@ export default function UnifiedPaymentManagement() {
                     <div className="space-y-1">
                       <Label className="text-xs">
                         Physical Gold Allocated (grams) *
-                        <span className="text-gray-500 ml-2">(Expected: {calculations.goldEquivalent.toFixed(4)}g)</span>
+                        <span className="text-muted-foreground ml-2">(Expected: {calculations.goldEquivalent.toFixed(4)}g)</span>
                       </Label>
                       <Input
                         type="number"
@@ -886,7 +886,7 @@ export default function UnifiedPaymentManagement() {
                           <RefreshCw className="w-4 h-4" />
                         </Button>
                       </div>
-                      <p className="text-xs text-gray-500">Pre-generated ID shown above. Edit or regenerate as needed.</p>
+                      <p className="text-xs text-muted-foreground">Pre-generated ID shown above. Edit or regenerate as needed.</p>
                     </div>
 
                     <div className="space-y-1">
@@ -913,20 +913,20 @@ export default function UnifiedPaymentManagement() {
                   </CardContent>
                 </Card>
 
-                <Card className="border-gray-200">
+                <Card className="border-border">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-gray-600" />
+                      <TrendingUp className="w-4 h-4 text-muted-foreground" />
                       Profit Summary
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">User Receives:</span>
+                      <span className="text-muted-foreground">User Receives:</span>
                       <span className="font-medium">{(parseFloat(physicalGoldAllocatedG) || calculations.goldEquivalent).toFixed(4)}g gold</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Wingold Cost:</span>
+                      <span className="text-muted-foreground">Wingold Cost:</span>
                       <span className="font-medium">{formatCurrency(calculations.wingoldCost)}</span>
                     </div>
                     <Separator />
@@ -985,7 +985,7 @@ export default function UnifiedPaymentManagement() {
                 Payment Proof
               </DialogTitle>
             </DialogHeader>
-            <div className="flex items-center justify-center p-4 bg-gray-50 rounded-lg min-h-[400px]">
+            <div className="flex items-center justify-center p-4 bg-muted/40 rounded-lg min-h-[400px]">
               {proofViewerUrl && proofViewerUrl.startsWith('data:application/pdf') ? (
                 <iframe 
                   src={proofViewerUrl}

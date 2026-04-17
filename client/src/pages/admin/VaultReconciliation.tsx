@@ -78,7 +78,7 @@ export default function VaultReconciliation() {
       case 'negative':
         return <TrendingDown className="h-4 w-4 text-red-500" />;
       default:
-        return <FileText className="h-4 w-4 text-gray-500" />;
+        return <FileText className="h-4 w-4 text-muted-foreground" />;
     }
   };
 
@@ -89,10 +89,10 @@ export default function VaultReconciliation() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Vault Reconciliation
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Compare digital liabilities with physical custody and identify discrepancies
             </p>
           </div>
@@ -122,8 +122,8 @@ export default function VaultReconciliation() {
             {[1, 2, 3, 4].map((i) => (
               <Card key={i} className="animate-pulse">
                 <CardContent className="pt-6">
-                  <div className="h-8 bg-gray-200 rounded w-3/4" />
-                  <div className="h-4 bg-gray-200 rounded w-1/2 mt-2" />
+                  <div className="h-8 bg-muted rounded w-3/4" />
+                  <div className="h-4 bg-muted rounded w-1/2 mt-2" />
                 </CardContent>
               </Card>
             ))}
@@ -151,7 +151,7 @@ export default function VaultReconciliation() {
                          data.status === 'warning' ? 'Issues Detected' :
                          'Reconciliation Failed'}
                       </h2>
-                      <p className="text-gray-600">
+                      <p className="text-muted-foreground">
                         Last run: {format(new Date(data.runDate), 'PPpp')}
                       </p>
                     </div>
@@ -175,7 +175,7 @@ export default function VaultReconciliation() {
                         </span>
                       )}
                     </div>
-                    <p className="text-sm text-gray-500">Discrepancy</p>
+                    <p className="text-sm text-muted-foreground">Discrepancy</p>
                   </div>
                 </div>
               </CardContent>
@@ -187,7 +187,7 @@ export default function VaultReconciliation() {
                   <div className="text-2xl font-bold text-blue-600">
                     {formatGrams(data.totalDigitalGrams)}g
                   </div>
-                  <p className="text-sm text-gray-500">Digital Liability</p>
+                  <p className="text-sm text-muted-foreground">Digital Liability</p>
                 </CardContent>
               </Card>
               <Card>
@@ -195,7 +195,7 @@ export default function VaultReconciliation() {
                   <div className="text-2xl font-bold text-purple-600">
                     {formatGrams(data.totalPhysicalGrams)}g
                   </div>
-                  <p className="text-sm text-gray-500">Physical Custody</p>
+                  <p className="text-sm text-muted-foreground">Physical Custody</p>
                 </CardContent>
               </Card>
               <Card>
@@ -203,7 +203,7 @@ export default function VaultReconciliation() {
                   <div className="text-2xl font-bold text-yellow-600">
                     {data.unlinkedDeposits}
                   </div>
-                  <p className="text-sm text-gray-500">Unlinked Deposits</p>
+                  <p className="text-sm text-muted-foreground">Unlinked Deposits</p>
                 </CardContent>
               </Card>
               <Card>
@@ -211,7 +211,7 @@ export default function VaultReconciliation() {
                   <div className="text-2xl font-bold text-red-600">
                     {data.issues?.filter(i => !i.resolved).length || 0}
                   </div>
-                  <p className="text-sm text-gray-500">Open Issues</p>
+                  <p className="text-sm text-muted-foreground">Open Issues</p>
                 </CardContent>
               </Card>
             </div>
@@ -234,14 +234,14 @@ export default function VaultReconciliation() {
                         <div
                           key={issue.id}
                           className={`flex items-start justify-between p-4 rounded-lg border ${
-                            issue.resolved ? 'bg-gray-50 opacity-60' : 'bg-white'
+                            issue.resolved ? 'bg-muted/40 opacity-60' : 'bg-card'
                           }`}
                         >
                           <div className="flex items-start gap-3">
                             {getTypeIcon(issue.type)}
                             <div>
-                              <p className="font-medium text-gray-900">{issue.description}</p>
-                              <p className="text-sm text-gray-500 mt-1">
+                              <p className="font-medium text-foreground">{issue.description}</p>
+                              <p className="text-sm text-muted-foreground mt-1">
                                 Affected: {issue.affectedEntity} ({issue.affectedEntityId})
                               </p>
                             </div>
@@ -260,7 +260,7 @@ export default function VaultReconciliation() {
                       ))}
                     </div>
                   ) : (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <CheckCircle className="h-12 w-12 text-green-400 mx-auto mb-4" />
                       <p>No issues detected in the latest reconciliation run.</p>
                     </div>
@@ -272,9 +272,9 @@ export default function VaultReconciliation() {
         ) : (
           <Card>
             <CardContent className="pt-6 text-center">
-              <Scale className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900">No Reconciliation Data</h3>
-              <p className="text-gray-500 mt-1">Run your first reconciliation to compare digital and physical holdings.</p>
+              <Scale className="h-12 w-12 text-muted-foreground/70 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-foreground">No Reconciliation Data</h3>
+              <p className="text-muted-foreground mt-1">Run your first reconciliation to compare digital and physical holdings.</p>
               <Button className="mt-4 bg-purple-600 hover:bg-purple-700" onClick={() => refetch()}>
                 <Play className="h-4 w-4 mr-2" />
                 Run First Reconciliation

@@ -118,7 +118,7 @@ export default function ValueProps() {
               key={`${mode}-${index}`}
               variants={cardVariants}
               whileHover={{ y: -8, transition: { duration: 0.3 } }}
-              className="group relative p-8 rounded-3xl bg-white border-2 border-[#8A2BE2]/10 hover:border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
+              className="group relative p-8 rounded-3xl bg-card border-2 border-[#8A2BE2]/10 hover:border-[#8A2BE2]/40 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-xl hover:shadow-[#8A2BE2]/10 transition-all duration-300"
               data-testid={`value-card-${index}`}
             >
               <div className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent pointer-events-none" />
@@ -130,7 +130,7 @@ export default function ValueProps() {
                 <h3 className="text-lg font-semibold text-[#0D0D0D] mb-3 group-hover:text-[#8A2BE2] transition-colors">
                   {card.title}
                 </h3>
-                <p className="text-gray-600 text-sm leading-relaxed">
+                <p className="text-muted-foreground text-sm leading-relaxed">
                   {card.description}
                 </p>
               </div>

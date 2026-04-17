@@ -45,7 +45,7 @@ export default function WhyFinatrades() {
           <h2 className="text-3xl lg:text-5xl font-bold mb-4">
             Why <span className="bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] bg-clip-text text-transparent">Finatrades</span>?
           </h2>
-          <p className="text-lg text-gray-400 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground/70 max-w-2xl mx-auto">
             {accountType === 'personal' 
               ? 'Built for individuals who want secure, accessible gold ownership'
               : 'Enterprise solutions for corporate gold management'}
@@ -60,7 +60,7 @@ export default function WhyFinatrades() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
-              className="group p-6 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-sm hover:bg-white/10 hover:border-[#D4AF37]/30 transition-all"
+              className="group p-6 rounded-2xl bg-card/5 border border-white/10 backdrop-blur-sm hover:bg-card/10 hover:border-[#D4AF37]/30 transition-all"
               data-testid={`card-differentiator-${index}`}
             >
               <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] w-fit group-hover:scale-110 transition-transform">
@@ -69,7 +69,7 @@ export default function WhyFinatrades() {
               <h3 className="text-lg font-bold mb-2 text-white group-hover:text-[#D4AF37] transition-colors" data-testid={`text-differentiator-title-${index}`}>
                 {item.title}
               </h3>
-              <p className="text-sm text-gray-400 leading-relaxed" data-testid={`text-differentiator-desc-${index}`}>
+              <p className="text-sm text-muted-foreground/70 leading-relaxed" data-testid={`text-differentiator-desc-${index}`}>
                 {item.description}
               </p>
             </motion.div>
@@ -88,11 +88,11 @@ export default function WhyFinatrades() {
             { value: '99.9%', label: 'Platform Uptime' },
             { value: '15+', label: 'Countries Served' }
           ].map((stat, i) => (
-            <div key={i} className="text-center p-6 rounded-2xl bg-white/5 border border-white/10" data-testid={`stat-about-${i}`}>
+            <div key={i} className="text-center p-6 rounded-2xl bg-card/5 border border-white/10" data-testid={`stat-about-${i}`}>
               <div className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-[#D4AF37] to-[#F4E4BC] bg-clip-text text-transparent mb-2" data-testid={`text-about-stat-value-${i}`}>
                 {stat.value}
               </div>
-              <div className="text-sm text-gray-400" data-testid={`text-about-stat-label-${i}`}>{stat.label}</div>
+              <div className="text-sm text-muted-foreground/70" data-testid={`text-about-stat-label-${i}`}>{stat.label}</div>
             </div>
           ))}
         </motion.div>

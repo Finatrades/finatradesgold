@@ -413,11 +413,11 @@ export default function ComplianceDashboard() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+            <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
               <Shield className="w-8 h-8 text-purple-500" />
               Compliance Dashboard
             </h1>
-            <p className="text-gray-500 mt-1">Monitor AML alerts, manage cases, and track user risk profiles.</p>
+            <p className="text-muted-foreground mt-1">Monitor AML alerts, manage cases, and track user risk profiles.</p>
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleRefreshAll} data-testid="button-refresh-compliance">
@@ -430,23 +430,23 @@ export default function ComplianceDashboard() {
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-gray-100 p-1 rounded-xl">
-            <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-overview">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 bg-muted p-1 rounded-xl">
+            <TabsTrigger value="overview" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-overview">
               <BarChart3 className="w-4 h-4 mr-2" /> Overview
             </TabsTrigger>
-            <TabsTrigger value="rules" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-rules">
+            <TabsTrigger value="rules" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-rules">
               <Gavel className="w-4 h-4 mr-2" /> AML Rules
             </TabsTrigger>
-            <TabsTrigger value="cases" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-cases">
+            <TabsTrigger value="cases" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-cases">
               <FileWarning className="w-4 h-4 mr-2" /> AML Cases
             </TabsTrigger>
-            <TabsTrigger value="risk" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-risk">
+            <TabsTrigger value="risk" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-risk">
               <UserCheck className="w-4 h-4 mr-2" /> Risk Profiles
             </TabsTrigger>
-            <TabsTrigger value="logs" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-logs">
+            <TabsTrigger value="logs" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-logs">
               <Activity className="w-4 h-4 mr-2" /> Screening
             </TabsTrigger>
-            <TabsTrigger value="audit" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm" data-testid="tab-audit">
+            <TabsTrigger value="audit" className="rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm" data-testid="tab-audit">
               <FileText className="w-4 h-4 mr-2" /> Audit Trail
             </TabsTrigger>
           </TabsList>
@@ -457,8 +457,8 @@ export default function ComplianceDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Open Cases</p>
-                      <p className="text-3xl font-bold text-gray-900" data-testid="stat-open-cases">{openCases.length}</p>
+                      <p className="text-sm text-muted-foreground">Open Cases</p>
+                      <p className="text-3xl font-bold text-foreground" data-testid="stat-open-cases">{openCases.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
                       <AlertCircle className="w-6 h-6 text-red-600" />
@@ -471,8 +471,8 @@ export default function ComplianceDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">High Priority</p>
-                      <p className="text-3xl font-bold text-gray-900" data-testid="stat-high-priority">{highPriorityCases.length}</p>
+                      <p className="text-sm text-muted-foreground">High Priority</p>
+                      <p className="text-3xl font-bold text-foreground" data-testid="stat-high-priority">{highPriorityCases.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                       <AlertTriangle className="w-6 h-6 text-purple-600" />
@@ -485,8 +485,8 @@ export default function ComplianceDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">High-Risk Users</p>
-                      <p className="text-3xl font-bold text-gray-900" data-testid="stat-high-risk">{highRiskProfiles.length}</p>
+                      <p className="text-sm text-muted-foreground">High-Risk Users</p>
+                      <p className="text-3xl font-bold text-foreground" data-testid="stat-high-risk">{highRiskProfiles.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                       <Users className="w-6 h-6 text-purple-600" />
@@ -499,8 +499,8 @@ export default function ComplianceDashboard() {
                 <CardContent className="p-4">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-gray-500">Reviews Due</p>
-                      <p className="text-3xl font-bold text-gray-900" data-testid="stat-reviews-due">{profilesRequiringReview.length}</p>
+                      <p className="text-sm text-muted-foreground">Reviews Due</p>
+                      <p className="text-3xl font-bold text-foreground" data-testid="stat-reviews-due">{profilesRequiringReview.length}</p>
                     </div>
                     <div className="w-12 h-12 rounded-full bg-yellow-100 flex items-center justify-center">
                       <Clock className="w-6 h-6 text-yellow-600" />
@@ -521,20 +521,20 @@ export default function ComplianceDashboard() {
                 <CardContent>
                   {alertsLoading ? (
                     <div className="flex justify-center py-8">
-                      <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                      <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                     </div>
                   ) : recentViolations.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-400" />
                       <p>No recent alerts</p>
                     </div>
                   ) : (
                     <div className="space-y-3 max-h-[300px] overflow-y-auto">
                       {recentViolations.slice(0, 10).map((v: any) => (
-                        <div key={v.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border" data-testid={`alert-${v.id}`}>
+                        <div key={v.id} className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border" data-testid={`alert-${v.id}`}>
                           <div className="flex-1">
                             <p className="font-medium text-sm">{v.screeningType}</p>
-                            <p className="text-xs text-gray-500">
+                            <p className="text-xs text-muted-foreground">
                               {v.matchDetails?.matchReason || 'Rule violation detected'}
                             </p>
                           </div>
@@ -558,10 +558,10 @@ export default function ComplianceDashboard() {
                 <CardContent>
                   {casesLoading ? (
                     <div className="flex justify-center py-8">
-                      <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                      <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                     </div>
                   ) : highPriorityCases.length === 0 ? (
-                    <div className="text-center py-8 text-gray-500">
+                    <div className="text-center py-8 text-muted-foreground">
                       <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-400" />
                       <p>No high priority cases</p>
                     </div>
@@ -570,17 +570,17 @@ export default function ComplianceDashboard() {
                       {highPriorityCases.slice(0, 5).map((c: any) => (
                         <div 
                           key={c.id} 
-                          className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border cursor-pointer hover:bg-gray-100 transition-colors"
+                          className="flex items-center justify-between p-3 bg-muted/40 rounded-lg border cursor-pointer hover:bg-muted transition-colors"
                           onClick={() => { setSelectedCase(c); setActiveTab('cases'); }}
                           data-testid={`priority-case-${c.id}`}
                         >
                           <div className="flex-1">
                             <p className="font-medium text-sm">{c.caseNumber}</p>
-                            <p className="text-xs text-gray-500">{c.caseType?.replace(/_/g, ' ')}</p>
+                            <p className="text-xs text-muted-foreground">{c.caseType?.replace(/_/g, ' ')}</p>
                           </div>
                           <div className="flex items-center gap-2">
                             {getPriorityBadge(c.priority)}
-                            <ChevronRight className="w-4 h-4 text-gray-400" />
+                            <ChevronRight className="w-4 h-4 text-muted-foreground/70" />
                           </div>
                         </div>
                       ))}
@@ -615,41 +615,41 @@ export default function ComplianceDashboard() {
               <CardContent>
                 {rulesLoading ? (
                   <div className="flex justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : amlRules.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Gavel className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Gavel className="w-12 h-12 mx-auto mb-4 text-muted-foreground/70" />
                     <p className="mb-4">No AML rules configured</p>
                     <Button variant="outline" onClick={() => seedRulesMutation.mutate()} disabled={seedRulesMutation.isPending}>
                       <Scale className="w-4 h-4 mr-2" /> Seed Default Rules
                     </Button>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-muted/40 border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Rule Name</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Code</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Priority</th>
-                          <th className="px-4 py-3 text-center text-xs font-semibold text-gray-600 uppercase">Active</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Rule Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Code</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Action</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Priority</th>
+                          <th className="px-4 py-3 text-center text-xs font-semibold text-muted-foreground uppercase">Active</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {amlRules.map((rule) => (
-                          <tr key={rule.id} className="hover:bg-gray-50 transition-colors" data-testid={`rule-row-${rule.id}`}>
+                          <tr key={rule.id} className="hover:bg-muted/40 transition-colors" data-testid={`rule-row-${rule.id}`}>
                             <td className="px-4 py-3">
                               <div>
                                 <p className="font-medium">{rule.ruleName}</p>
-                                <p className="text-xs text-gray-500 max-w-xs truncate">{rule.description}</p>
+                                <p className="text-xs text-muted-foreground max-w-xs truncate">{rule.description}</p>
                               </div>
                             </td>
                             <td className="px-4 py-3">
-                              <code className="text-xs bg-gray-100 px-2 py-1 rounded">{rule.ruleCode}</code>
+                              <code className="text-xs bg-muted px-2 py-1 rounded">{rule.ruleCode}</code>
                             </td>
                             <td className="px-4 py-3">
                               <Badge variant="outline" className="capitalize">{rule.ruleType}</Badge>
@@ -721,30 +721,30 @@ export default function ComplianceDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-500">Threshold Rules</p>
+                  <p className="text-sm text-muted-foreground">Threshold Rules</p>
                   <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'threshold').length}</p>
-                  <p className="text-xs text-gray-400 mt-1">Amount-based triggers</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Amount-based triggers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-500">Velocity Rules</p>
+                  <p className="text-sm text-muted-foreground">Velocity Rules</p>
                   <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'velocity').length}</p>
-                  <p className="text-xs text-gray-400 mt-1">Transaction count triggers</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Transaction count triggers</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-500">Pattern Rules</p>
+                  <p className="text-sm text-muted-foreground">Pattern Rules</p>
                   <p className="text-2xl font-bold">{amlRules.filter(r => r.ruleType === 'pattern').length}</p>
-                  <p className="text-xs text-gray-400 mt-1">Behavior detection</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Behavior detection</p>
                 </CardContent>
               </Card>
               <Card>
                 <CardContent className="p-4">
-                  <p className="text-sm text-gray-500">Active Rules</p>
+                  <p className="text-sm text-muted-foreground">Active Rules</p>
                   <p className="text-2xl font-bold text-green-600">{amlRules.filter(r => r.isActive).length}</p>
-                  <p className="text-xs text-gray-400 mt-1">Currently monitoring</p>
+                  <p className="text-xs text-muted-foreground/70 mt-1">Currently monitoring</p>
                 </CardContent>
               </Card>
             </div>
@@ -756,7 +756,7 @@ export default function ComplianceDashboard() {
                 <div className="flex items-center justify-between">
                   <CardTitle>AML Cases ({allCases.length})</CardTitle>
                   <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                     <Input 
                       placeholder="Search cases..." 
                       value={searchQuery}
@@ -770,34 +770,34 @@ export default function ComplianceDashboard() {
               <CardContent>
                 {casesLoading ? (
                   <div className="flex justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : filteredCases.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/70" />
                     <p>No AML cases found</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-muted/40 border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Case #</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Priority</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Created</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Case #</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Priority</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Created</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {filteredCases.map((c: any) => (
-                          <tr key={c.id} className="hover:bg-gray-50 transition-colors" data-testid={`case-row-${c.id}`}>
+                          <tr key={c.id} className="hover:bg-muted/40 transition-colors" data-testid={`case-row-${c.id}`}>
                             <td className="px-4 py-3 font-medium">{c.caseNumber}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600 capitalize">{c.caseType?.replace(/_/g, ' ')}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground capitalize">{c.caseType?.replace(/_/g, ' ')}</td>
                             <td className="px-4 py-3">{getPriorityBadge(c.priority)}</td>
                             <td className="px-4 py-3">{getCaseStatusBadge(c.status)}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {c.createdAt ? format(new Date(c.createdAt), 'MMM d, yyyy HH:mm') : '-'}
                             </td>
                             <td className="px-4 py-3 text-right">
@@ -829,34 +829,34 @@ export default function ComplianceDashboard() {
               <CardContent>
                 {profilesLoading ? (
                   <div className="flex justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : riskProfiles.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Users className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Users className="w-12 h-12 mx-auto mb-4 text-muted-foreground/70" />
                     <p>No risk profiles found</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-muted/40 border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">User ID</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Risk Level</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Score</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Flags</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Next Review</th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-gray-600 uppercase">Actions</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">User ID</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Risk Level</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Score</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Flags</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Next Review</th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground uppercase">Actions</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {riskProfiles.map((p: any) => (
-                          <tr key={p.id} className="hover:bg-gray-50 transition-colors" data-testid={`risk-row-${p.id}`}>
+                          <tr key={p.id} className="hover:bg-muted/40 transition-colors" data-testid={`risk-row-${p.id}`}>
                             <td className="px-4 py-3 font-mono text-sm">{p.userId?.slice(0, 8)}...</td>
                             <td className="px-4 py-3">{getRiskBadge(p.riskLevel)}</td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-2">
-                                <div className="w-16 h-2 bg-gray-200 rounded-full overflow-hidden">
+                                <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
                                   <div 
                                     className={`h-full rounded-full ${
                                       p.overallRiskScore >= 70 ? 'bg-red-500' :
@@ -878,7 +878,7 @@ export default function ComplianceDashboard() {
                                 {p.requiresEnhancedDueDiligence && <Badge variant="outline" className="text-xs bg-purple-50">EDD</Badge>}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {p.nextReviewDate ? (
                                 <span className={new Date(p.nextReviewDate) <= new Date() ? 'text-red-600 font-medium' : ''}>
                                   {format(new Date(p.nextReviewDate), 'MMM d, yyyy')}
@@ -925,31 +925,31 @@ export default function ComplianceDashboard() {
               <CardContent>
                 {logsLoading ? (
                   <div className="flex justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : screeningLogs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <Activity className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Activity className="w-12 h-12 mx-auto mb-4 text-muted-foreground/70" />
                     <p>No screening logs found</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-muted/40 border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Type</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Provider</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Status</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Match</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Score</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Created</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Type</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Provider</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Status</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Match</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Score</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Created</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {screeningLogs.map((log: any) => (
-                          <tr key={log.id} className="hover:bg-gray-50 transition-colors" data-testid={`log-row-${log.id}`}>
+                          <tr key={log.id} className="hover:bg-muted/40 transition-colors" data-testid={`log-row-${log.id}`}>
                             <td className="px-4 py-3 font-medium text-sm">{log.screeningType}</td>
-                            <td className="px-4 py-3 text-sm text-gray-600">{log.provider}</td>
+                            <td className="px-4 py-3 text-sm text-muted-foreground">{log.provider}</td>
                             <td className="px-4 py-3">
                               <Badge variant={log.status === 'Escalated' ? 'destructive' : log.status === 'Match Found' ? 'secondary' : 'outline'}>
                                 {log.status}
@@ -963,7 +963,7 @@ export default function ComplianceDashboard() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-sm">{log.matchScore || '-'}</td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {log.createdAt ? format(new Date(log.createdAt), 'MMM d, yyyy HH:mm') : '-'}
                             </td>
                           </tr>
@@ -985,28 +985,28 @@ export default function ComplianceDashboard() {
               <CardContent>
                 {auditLogsLoading ? (
                   <div className="flex justify-center py-8">
-                    <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                    <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                   </div>
                 ) : auditLogs.length === 0 ? (
-                  <div className="text-center py-8 text-gray-500">
-                    <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+                  <div className="text-center py-8 text-muted-foreground">
+                    <FileText className="w-12 h-12 mx-auto mb-4 text-muted-foreground/70" />
                     <p>No audit logs found</p>
                   </div>
                 ) : (
-                  <div className="overflow-x-auto rounded-lg border border-gray-200">
+                  <div className="overflow-x-auto rounded-lg border border-border">
                     <table className="w-full">
-                      <thead className="bg-gray-50 border-b">
+                      <thead className="bg-muted/40 border-b">
                         <tr>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Action</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Entity</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Performed By</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Details</th>
-                          <th className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase">Timestamp</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Action</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Entity</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Performed By</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Details</th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-muted-foreground uppercase">Timestamp</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-gray-100">
                         {auditLogs.map((log: any) => (
-                          <tr key={log.id} className="hover:bg-gray-50 transition-colors" data-testid={`audit-row-${log.id}`}>
+                          <tr key={log.id} className="hover:bg-muted/40 transition-colors" data-testid={`audit-row-${log.id}`}>
                             <td className="px-4 py-3">
                               <Badge variant={
                                 (log.actionType || log.action)?.includes('create') ? 'default' :
@@ -1018,17 +1018,17 @@ export default function ComplianceDashboard() {
                             </td>
                             <td className="px-4 py-3 text-sm">
                               <span className="font-medium">{log.entityType}</span>
-                              <span className="text-gray-500 text-xs block">{log.entityName || log.entityId?.slice(0, 8) + '...'}</span>
+                              <span className="text-muted-foreground text-xs block">{log.entityName || log.entityId?.slice(0, 8) + '...'}</span>
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-600">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {log.actorName || log.actor || log.performedBy || 'System'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500 max-w-xs truncate">
+                            <td className="px-4 py-3 text-sm text-muted-foreground max-w-xs truncate">
                               {typeof log.details === 'object' 
                                 ? JSON.stringify(log.details)?.slice(0, 50) + '...' 
                                 : log.details || '-'}
                             </td>
-                            <td className="px-4 py-3 text-sm text-gray-500">
+                            <td className="px-4 py-3 text-sm text-muted-foreground">
                               {(log.timestamp || log.createdAt) ? format(new Date(log.timestamp || log.createdAt), 'MMM d, yyyy HH:mm') : '-'}
                             </td>
                           </tr>
@@ -1055,33 +1055,33 @@ export default function ComplianceDashboard() {
               <div className="space-y-6">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Case Type:</span>
+                    <span className="text-muted-foreground">Case Type:</span>
                     <p className="font-medium capitalize">{selectedCase.caseType?.replace(/_/g, ' ')}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Priority:</span>
+                    <span className="text-muted-foreground">Priority:</span>
                     <p>{getPriorityBadge(selectedCase.priority)}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Status:</span>
+                    <span className="text-muted-foreground">Status:</span>
                     <p>{getCaseStatusBadge(selectedCase.status)}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Created:</span>
+                    <span className="text-muted-foreground">Created:</span>
                     <p className="font-medium">
                       {selectedCase.createdAt ? format(new Date(selectedCase.createdAt), 'MMM d, yyyy HH:mm') : '-'}
                     </p>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-gray-500">Trigger Details:</span>
-                    <p className="font-medium mt-1 p-2 bg-gray-50 rounded">
+                    <span className="text-muted-foreground">Trigger Details:</span>
+                    <p className="font-medium mt-1 p-2 bg-muted/40 rounded">
                       {selectedCase.triggerDetails?.reason || 'No details available'}
                     </p>
                   </div>
                 </div>
 
                 <div>
-                  <label className="text-sm text-gray-500 mb-2 block">Update Status:</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Update Status:</label>
                   <Select 
                     value={caseStatus || selectedCase.status} 
                     onValueChange={(value) => setCaseStatus(value)}
@@ -1100,7 +1100,7 @@ export default function ComplianceDashboard() {
                 </div>
 
                 <div>
-                  <label className="text-sm text-gray-500 mb-2 block">Notes:</label>
+                  <label className="text-sm text-muted-foreground mb-2 block">Notes:</label>
                   <Textarea 
                     placeholder="Add investigation notes..."
                     value={caseNotes}
@@ -1147,9 +1147,9 @@ export default function ComplianceDashboard() {
 
             {selectedRiskProfile && (
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                <div className="flex items-center justify-between p-4 bg-muted/40 rounded-lg">
                   <div>
-                    <p className="text-sm text-gray-500">Overall Risk</p>
+                    <p className="text-sm text-muted-foreground">Overall Risk</p>
                     <div className="flex items-center gap-3 mt-1">
                       {getRiskBadge(selectedRiskProfile.riskLevel)}
                       <span className="text-2xl font-bold">{selectedRiskProfile.overallRiskScore}/100</span>
@@ -1162,40 +1162,40 @@ export default function ComplianceDashboard() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="p-3 border rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase">Geography Risk</p>
+                    <p className="text-xs text-muted-foreground uppercase">Geography Risk</p>
                     <p className="text-xl font-bold">{selectedRiskProfile.geographyRisk}</p>
                   </div>
                   <div className="p-3 border rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase">Transaction Risk</p>
+                    <p className="text-xs text-muted-foreground uppercase">Transaction Risk</p>
                     <p className="text-xl font-bold">{selectedRiskProfile.transactionRisk}</p>
                   </div>
                   <div className="p-3 border rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase">Behavior Risk</p>
+                    <p className="text-xs text-muted-foreground uppercase">Behavior Risk</p>
                     <p className="text-xl font-bold">{selectedRiskProfile.behaviorRisk}</p>
                   </div>
                   <div className="p-3 border rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase">Screening Risk</p>
+                    <p className="text-xs text-muted-foreground uppercase">Screening Risk</p>
                     <p className="text-xl font-bold">{selectedRiskProfile.screeningRisk}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Daily Limit:</span>
+                    <span className="text-muted-foreground">Daily Limit:</span>
                     <p className="font-medium">${parseFloat(selectedRiskProfile.dailyTransactionLimit || '0').toLocaleString()}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Monthly Limit:</span>
+                    <span className="text-muted-foreground">Monthly Limit:</span>
                     <p className="font-medium">${parseFloat(selectedRiskProfile.monthlyTransactionLimit || '0').toLocaleString()}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Last Assessed:</span>
+                    <span className="text-muted-foreground">Last Assessed:</span>
                     <p className="font-medium">
                       {selectedRiskProfile.lastAssessedAt ? format(new Date(selectedRiskProfile.lastAssessedAt), 'MMM d, yyyy') : '-'}
                     </p>
                   </div>
                   <div>
-                    <span className="text-gray-500">Next Review:</span>
+                    <span className="text-muted-foreground">Next Review:</span>
                     <p className="font-medium">
                       {selectedRiskProfile.nextReviewDate ? format(new Date(selectedRiskProfile.nextReviewDate), 'MMM d, yyyy') : '-'}
                     </p>
@@ -1352,7 +1352,7 @@ export default function ComplianceDashboard() {
                   className="font-mono text-sm"
                   data-testid="input-conditions"
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-muted-foreground">
                   {ruleForm.ruleType === 'threshold' && 'Use: amountThreshold, currency, timeWindowHours (optional)'}
                   {ruleForm.ruleType === 'velocity' && 'Use: transactionCount, timeWindowHours'}
                   {ruleForm.ruleType === 'pattern' && 'Use: amountThreshold, transactionCount, timeWindowHours, maxAmount'}

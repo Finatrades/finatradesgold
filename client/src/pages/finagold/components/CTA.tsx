@@ -73,7 +73,7 @@ export default function CTA() {
               )}
             </motion.h2>
             
-            <p className="text-base sm:text-lg text-gray-400 mb-10 max-w-xl mx-auto px-2 sm:px-0">
+            <p className="text-base sm:text-lg text-muted-foreground/70 mb-10 max-w-xl mx-auto px-2 sm:px-0">
               {isPersonal 
                 ? 'Open your personal account and start saving in real, physical gold today.'
                 : 'Partner with Finatrades to strengthen your treasury and trade operations.'}
@@ -84,7 +84,7 @@ export default function CTA() {
                 {c.primaryCta}
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <a href="/finagold#contact" className="group flex items-center justify-center gap-2 border border-white/30 text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-white/10 hover:border-white/50 active:scale-[0.98] transition-all cursor-pointer w-full sm:w-auto" data-testid="cta-secondary">
+              <a href="/finagold#contact" className="group flex items-center justify-center gap-2 border border-white/30 text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-card/10 hover:border-white/50 active:scale-[0.98] transition-all cursor-pointer w-full sm:w-auto" data-testid="cta-secondary">
                 <c.secondaryIcon className="w-4 h-4" />
                 {c.secondaryCta}
               </a>

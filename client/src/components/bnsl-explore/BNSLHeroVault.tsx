@@ -119,7 +119,7 @@ export default function BNSLHeroVault() {
 
             {/* Main Heading */}
             <div className="space-y-4">
-              <h1 className="text-5xl lg:text-7xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-5xl lg:text-7xl font-bold text-foreground leading-tight">
                 <span className="block">
                   <AnimatePresence mode="wait">
                     <motion.span
@@ -135,7 +135,7 @@ export default function BNSLHeroVault() {
                 </span>
                 <span className="block mt-2">Gold Investment</span>
               </h1>
-              <p className="text-xl text-gray-600 max-w-lg leading-relaxed">
+              <p className="text-xl text-muted-foreground max-w-lg leading-relaxed">
                 Lock in today's gold price, collect monthly bonuses, and sell at your convenience. 
                 Your path to financial security starts here.
               </p>
@@ -149,14 +149,14 @@ export default function BNSLHeroVault() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.4 + index * 0.1 }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/80 backdrop-blur-sm border border-gray-100 shadow-sm"
+                  className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/60 shadow-sm"
                 >
                   <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-yellow-100">
                     <stat.icon className="w-5 h-5 text-fuchsia-600" />
                   </div>
                   <div>
-                    <p className="text-xl font-bold text-gray-900">{stat.value}</p>
-                    <p className="text-xs text-gray-500">{stat.label}</p>
+                    <p className="text-xl font-bold text-foreground">{stat.value}</p>
+                    <p className="text-xs text-muted-foreground">{stat.label}</p>
                   </div>
                 </motion.div>
               ))}
@@ -179,7 +179,7 @@ export default function BNSLHeroVault() {
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => scrollToSection('how-it-works')}
-                className="px-8 py-4 rounded-2xl bg-white border-2 border-gray-200 text-gray-700 font-semibold text-lg flex items-center gap-2 hover:border-purple-300 transition-colors"
+                className="px-8 py-4 rounded-2xl bg-card border-2 border-border text-foreground/85 font-semibold text-lg flex items-center gap-2 hover:border-purple-300 transition-colors"
                 data-testid="button-watch-demo"
               >
                 <Play className="w-5 h-5 text-fuchsia-600" />
@@ -310,10 +310,10 @@ export default function BNSLHeroVault() {
             onClick={() => scrollToSection('how-it-works')}
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="p-3 rounded-full bg-white/80 backdrop-blur-sm border border-gray-200 shadow-lg hover:shadow-xl transition-shadow"
+            className="p-3 rounded-full bg-card/80 backdrop-blur-sm border border-border shadow-lg hover:shadow-xl transition-shadow"
             data-testid="button-scroll-down"
           >
-            <ChevronDown className="w-6 h-6 text-gray-600" />
+            <ChevronDown className="w-6 h-6 text-muted-foreground" />
           </motion.button>
         </motion.div>
       </div>

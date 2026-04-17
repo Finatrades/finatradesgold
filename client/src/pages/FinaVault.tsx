@@ -34,7 +34,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
   READY_FOR_PAYMENT: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Ready' },
   APPROVED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
   REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
-  CANCELLED: { bg: 'bg-gray-100', text: 'text-gray-700', label: 'Cancelled' },
+  CANCELLED: { bg: 'bg-muted', text: 'text-foreground/85', label: 'Cancelled' },
 };
 
 const STATUS_FLOW = ['SUBMITTED', 'UNDER_REVIEW', 'RECEIVED', 'INSPECTION', 'NEGOTIATION', 'AGREED', 'READY_FOR_PAYMENT', 'APPROVED'];
@@ -64,11 +64,11 @@ function DepositStatusTimeline({ deposit }: { deposit: any }) {
     if (isCurrent) {
       return { icon: <Loader2 className="w-4 h-4 animate-spin" />, color: 'bg-purple-500 text-white', lineColor: 'bg-gray-300' };
     }
-    return { icon: <Clock className="w-4 h-4" />, color: 'bg-gray-200 text-gray-400', lineColor: 'bg-gray-200' };
+    return { icon: <Clock className="w-4 h-4" />, color: 'bg-muted text-muted-foreground/70', lineColor: 'bg-muted' };
   };
   
   return (
-    <div className="py-4 px-2 bg-gray-50 rounded-lg">
+    <div className="py-4 px-2 bg-muted/40 rounded-lg">
       <p className="text-xs font-medium text-muted-foreground mb-3 px-2">Progress Timeline</p>
       <div className="flex items-start justify-between relative">
         {timeline.map((step, index) => {
@@ -196,7 +196,7 @@ function MyPhysicalDeposits() {
 
   if (isLoading) {
     return (
-      <Card className="bg-white border">
+      <Card className="bg-card border">
         <CardContent className="p-8 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </CardContent>
@@ -206,7 +206,7 @@ function MyPhysicalDeposits() {
 
   if (deposits.length === 0) {
     return (
-      <Card className="bg-white border">
+      <Card className="bg-card border">
         <CardContent className="p-8 text-center">
           <Clock className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
           <h3 className="text-lg font-semibold mb-2">No Deposits Yet</h3>
@@ -223,7 +223,7 @@ function MyPhysicalDeposits() {
 
   return (
     <div className="space-y-4">
-      <Card className="bg-white border">
+      <Card className="bg-card border">
         <CardHeader className="border-b">
           <CardTitle className="text-lg flex items-center gap-2">
             <Clock className="w-5 h-5" />
@@ -237,7 +237,7 @@ function MyPhysicalDeposits() {
               return (
                 <div 
                   key={deposit.id} 
-                  className="p-4 hover:bg-gray-50 transition-colors cursor-pointer"
+                  className="p-4 hover:bg-muted/40 transition-colors cursor-pointer"
                   onClick={() => setSelectedDeposit(deposit)}
                   data-testid={`deposit-item-${deposit.id}`}
                 >
@@ -319,7 +319,7 @@ function MyPhysicalDeposits() {
             <DialogTitle className="flex items-center gap-2">
               Deposit Details
               {selectedDeposit && (
-                <Badge className={`${STATUS_COLORS[selectedDeposit.status]?.bg || 'bg-gray-100'} ${STATUS_COLORS[selectedDeposit.status]?.text || 'text-gray-700'} border-0`}>
+                <Badge className={`${STATUS_COLORS[selectedDeposit.status]?.bg || 'bg-muted'} ${STATUS_COLORS[selectedDeposit.status]?.text || 'text-foreground/85'} border-0`}>
                   {STATUS_COLORS[selectedDeposit.status]?.label || selectedDeposit.status}
                 </Badge>
               )}
@@ -376,7 +376,7 @@ function MyPhysicalDeposits() {
 
               {/* Source of Metal */}
               {(selectedDeposit.sourceOfMetal || selectedDeposit.sourceDetails) && (
-                <div className="bg-gray-50 p-3 rounded-lg">
+                <div className="bg-muted/40 p-3 rounded-lg">
                   <p className="text-xs text-muted-foreground mb-1">Source of Metal</p>
                   <p className="font-medium">{selectedDeposit.sourceOfMetal || 'Not specified'}</p>
                   {selectedDeposit.sourceDetails && (
@@ -425,7 +425,7 @@ function MyPhysicalDeposits() {
                       </a>
                     )}
                     {selectedDeposit.additionalDocuments?.map((doc: any, idx: number) => (
-                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm hover:bg-gray-200">
+                      <a key={idx} href={toProxyUrl(doc.url) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-muted text-foreground/85 rounded-md text-sm hover:bg-muted">
                         <FileText className="w-4 h-4" /> {doc.name}
                       </a>
                     ))}
@@ -437,7 +437,7 @@ function MyPhysicalDeposits() {
               {selectedDeposit.items && selectedDeposit.items.length > 0 && (
                 <div>
                   <p className="text-xs text-muted-foreground mb-2">Items ({selectedDeposit.items.length})</p>
-                  <div className="space-y-3 bg-gray-50 p-3 rounded-lg">
+                  <div className="space-y-3 bg-muted/40 p-3 rounded-lg">
                     {selectedDeposit.items.map((item: any, i: number) => (
                       <div key={i} className="py-3 border-b last:border-0">
                         <div className="flex justify-between items-center">
@@ -466,7 +466,7 @@ function MyPhysicalDeposits() {
                                   <img 
                                     src={toProxyUrl(item.photoFrontUrl) || ''} 
                                     alt="Front view" 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -476,7 +476,7 @@ function MyPhysicalDeposits() {
                                   <img 
                                     src={toProxyUrl(item.photoBackUrl) || ''} 
                                     alt="Back view" 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -486,7 +486,7 @@ function MyPhysicalDeposits() {
                                   <img 
                                     src={toProxyUrl(photoUrl) || ''} 
                                     alt={`Photo ${photoIdx + 1}`} 
-                                    className="w-16 h-16 object-cover rounded-md border border-gray-200 hover:border-purple-400 hover:shadow-md transition-all"
+                                    className="w-16 h-16 object-cover rounded-md border border-border hover:border-purple-400 hover:shadow-md transition-all"
                                     loading="lazy"
                                   />
                                 </a>
@@ -547,7 +547,7 @@ function MyPhysicalDeposits() {
                   </div>
                   
                   {/* Chat-like Negotiation History */}
-                  <div className="bg-white rounded-lg border border-orange-100 p-3 mb-4 max-h-48 overflow-y-auto">
+                  <div className="bg-card rounded-lg border border-orange-100 p-3 mb-4 max-h-48 overflow-y-auto">
                     <div className="space-y-3">
                       {selectedDeposit.usdEstimateFromUser && (
                         <div className="flex justify-end">
@@ -600,13 +600,13 @@ function MyPhysicalDeposits() {
                     );
                     return (
                       <div className="grid grid-cols-2 gap-3 mb-4">
-                        <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+                        <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Offered Gold</p>
                           <p className="text-lg font-bold text-purple-700">
                             {offeredGrams ? `${parseFloat(offeredGrams).toLocaleString()} g` : '--'}
                           </p>
                         </div>
-                        <div className="bg-white/80 p-3 rounded-lg border border-orange-100">
+                        <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Total Fees</p>
                           <p className="text-lg font-bold text-orange-700">
                             {offeredFees ? `$${parseFloat(offeredFees).toLocaleString()}` : '--'}
@@ -623,7 +623,7 @@ function MyPhysicalDeposits() {
                       const offeredGrams = latestAdminOffer?.proposedGrams || selectedDeposit.inspection?.creditedGrams;
                       return (
                         <div className="space-y-3">
-                          <p className="text-sm text-center text-gray-600">
+                          <p className="text-sm text-center text-muted-foreground">
                             Do you accept this offer?
                           </p>
                           <div className="flex gap-3">
@@ -647,7 +647,7 @@ function MyPhysicalDeposits() {
                               Reject
                             </Button>
                           </div>
-                          <p className="text-xs text-center text-gray-500">
+                          <p className="text-xs text-center text-muted-foreground">
                             Rejecting will allow admin to send a revised offer
                           </p>
                         </div>
@@ -669,7 +669,7 @@ function MyPhysicalDeposits() {
           )}
           
           {/* Fixed footer outside scrollable area */}
-          <div className="flex justify-end px-6 py-4 border-t bg-white">
+          <div className="flex justify-end px-6 py-4 border-t bg-card">
             <Button variant="outline" onClick={() => setSelectedDeposit(null)}>
               Close
             </Button>
@@ -1182,7 +1182,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'vault-activity' 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  : 'bg-card border border-border text-foreground/85 hover:bg-muted/40'
               } disabled:opacity-50`}
               data-testid="tab-vault-activity"
             >
@@ -1201,7 +1201,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'deposit-gold' 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                  : 'bg-white border border-green-200 text-green-700 hover:bg-green-50'
+                  : 'bg-card border border-green-200 text-green-700 hover:bg-green-50'
               } disabled:opacity-50`}
               data-testid="tab-deposit-gold"
             >
@@ -1220,7 +1220,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'my-deposits' 
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
-                  : 'bg-white border border-blue-200 text-blue-700 hover:bg-blue-50'
+                  : 'bg-card border border-blue-200 text-blue-700 hover:bg-blue-50'
               } disabled:opacity-50`}
               data-testid="tab-my-deposits"
             >
@@ -1236,7 +1236,7 @@ export default function FinaVault() {
                 setWithdrawGoldOpen(true);
               }}
               disabled={user?.kycStatus !== 'Approved'}
-              className="rounded-full px-4 py-2 text-sm font-medium transition-all bg-white border border-orange-200 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 disabled:opacity-50"
+              className="rounded-full px-4 py-2 text-sm font-medium transition-all bg-card border border-orange-200 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 disabled:opacity-50"
               data-testid="button-withdraw-gold-vault"
             >
               <Banknote className="w-4 h-4 mr-1.5" />
@@ -1261,8 +1261,8 @@ export default function FinaVault() {
             variant="ghost"
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               activeTab === 'ownership-ledger' 
-                ? 'bg-gray-200 text-gray-800' 
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-muted text-foreground' 
+                : 'text-muted-foreground hover:text-foreground/85'
             } disabled:opacity-50`}
             data-testid="tab-ownership-ledger"
           >
@@ -1281,8 +1281,8 @@ export default function FinaVault() {
             variant="ghost"
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               activeTab === 'certificates' 
-                ? 'bg-gray-200 text-gray-800' 
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-muted text-foreground' 
+                : 'text-muted-foreground hover:text-foreground/85'
             } disabled:opacity-50`}
             data-testid="tab-certificates"
           >
@@ -1294,8 +1294,8 @@ export default function FinaVault() {
             variant="ghost"
             className={`rounded-full px-3 py-1.5 text-xs font-medium transition-all ${
               activeTab === 'terms' 
-                ? 'bg-gray-200 text-gray-800' 
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-muted text-foreground' 
+                : 'text-muted-foreground hover:text-foreground/85'
             }`}
             data-testid="tab-terms"
           >
@@ -1387,25 +1387,25 @@ export default function FinaVault() {
                 <TabsContent value="ownership-ledger" className="mt-0">
                   <div className="space-y-6">
                     {/* Wallet Breakdown */}
-                    <Card className="bg-white border">
+                    <Card className="bg-card border">
                       <CardHeader className="border-b">
                         <CardTitle className="text-lg">Wallet Breakdown</CardTitle>
                       </CardHeader>
                       <CardContent className="p-6">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="p-4 rounded-lg bg-gray-50 border">
+                          <div className="p-4 rounded-lg bg-muted/40 border">
                             <p className="text-xs font-medium text-muted-foreground uppercase mb-1">FinaPay Wallet</p>
                             <p className="text-xl font-bold">{finaPayGrams.toFixed(4)} g</p>
                             <p className="text-sm text-muted-foreground">${(finaPayGrams * goldPricePerGram).toFixed(2)}</p>
                           </div>
-                          <div className="p-4 rounded-lg bg-gray-50 border">
+                          <div className="p-4 rounded-lg bg-muted/40 border">
                             <p className="text-xs font-medium text-muted-foreground uppercase mb-1">BNSL Wallet</p>
                             <p className="text-xl font-bold">{(bnslAvailableGrams + bnslLockedGrams).toFixed(4)} g</p>
                             <p className="text-sm text-muted-foreground">
                               {bnslAvailableGrams.toFixed(4)} g available, {bnslLockedGrams.toFixed(4)} g locked
                             </p>
                           </div>
-                          <div className="p-4 rounded-lg bg-gray-50 border">
+                          <div className="p-4 rounded-lg bg-muted/40 border">
                             <p className="text-xs font-medium text-muted-foreground uppercase mb-1">FinaBridge Wallet</p>
                             <p className="text-xl font-bold">{(finaBridgeAvailableGrams + finabridgeLockedGrams).toFixed(4)} g</p>
                             <p className="text-sm text-muted-foreground">
@@ -1417,7 +1417,7 @@ export default function FinaVault() {
                     </Card>
 
                     {/* Ledger History */}
-                    <Card className="bg-white border">
+                    <Card className="bg-card border">
                       <CardHeader className="border-b">
                         <CardTitle className="text-lg">Ownership Ledger History</CardTitle>
                       </CardHeader>
@@ -1433,7 +1433,7 @@ export default function FinaVault() {
                         ) : (
                           <div className="overflow-x-auto">
                             <table className="w-full text-sm">
-                              <thead className="bg-gray-50 border-b">
+                              <thead className="bg-muted/40 border-b">
                                 <tr>
                                   <th className="text-left p-4 font-medium w-8"></th>
                                   <th className="text-left p-4 font-medium">Date</th>
@@ -1473,7 +1473,7 @@ export default function FinaVault() {
                                     <React.Fragment key={entry.id}>
                                       {/* Parent Row */}
                                       <tr 
-                                        className="hover:bg-gray-50 cursor-pointer"
+                                        className="hover:bg-muted/40 cursor-pointer"
                                         onClick={() => hasChildren && toggleLedgerRow(entry.id)}
                                       >
                                         <td className="p-4 w-8">
@@ -1487,7 +1487,7 @@ export default function FinaVault() {
                                           {new Date(entry.createdAt).toLocaleDateString()}
                                         </td>
                                         <td className="p-4">
-                                          <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                                          <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                                             {group.transactionId 
                                               ? group.transactionId.substring(0, 8).toUpperCase()
                                               : entry.id.substring(0, 8).toUpperCase()}
@@ -1514,7 +1514,7 @@ export default function FinaVault() {
                                             : entry.status === 'Pending' ? 'bg-yellow-100 text-yellow-700'
                                             : entry.status === 'Processing' ? 'bg-blue-100 text-blue-700'
                                             : entry.status === 'Failed' || entry.status === 'Cancelled' ? 'bg-red-100 text-red-700'
-                                            : 'bg-gray-100 text-gray-700'
+                                            : 'bg-muted text-foreground/85'
                                           }`}>
                                             {entry.status || 'Recorded'}
                                           </span>
@@ -1566,7 +1566,7 @@ export default function FinaVault() {
                                               Step {childIndex + 1}
                                             </td>
                                             <td className="p-4">
-                                              <span className="font-mono text-xs text-muted-foreground bg-gray-100 px-2 py-1 rounded">
+                                              <span className="font-mono text-xs text-muted-foreground bg-muted px-2 py-1 rounded">
                                                 {child.id.substring(0, 8).toUpperCase()}
                                               </span>
                                             </td>
@@ -1614,7 +1614,7 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="terms" className="mt-0">
-                  <Card className="bg-white border border-border">
+                  <Card className="bg-card border border-border">
                     <CardHeader className="border-b border-border">
                       <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">

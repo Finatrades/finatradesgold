@@ -124,3 +124,35 @@ All deposit approvals (bank transfer, card, crypto, physical gold) must go throu
 - KYC pattern: indices 0,1,2,5,6,7,10,11,12... = Approved; 3,8,13... = Not Started; 4,9,14... = Rejected.
 
 **RBAC Setup**: Admin users require entries in both `employees` table (with `rbacRoleId`) and `user_role_assignments` table (linked to `admin_roles`). The seeder dynamically resolves the Super Admin role ID from `admin_roles`.
+## Design System (April 2026 — Hynex/Stripe overhaul)
+
+### Typography stack
+- **Display**: Geist (Google Fonts) — used by all `<h1>`-`<h6>` automatically via `@layer base`
+- **Body**: Inter (Google Fonts) — applied to `<body>`
+- **Mono**: Geist Mono — for IDs, transaction codes, tabular figures
+- CSS tokens: `--brand-display-font-family`, `--brand-mono-font-family`, `--brand-heading-font-family`
+
+### Utility classes (in `client/src/index.css`)
+- `.font-display` — Geist with `ss01 cv05` OpenType features for Stripe-quality numerals
+- `.font-mono-ui` — Geist Mono with `tnum` (tabular figures)
+- `.text-display-{2xl,xl,lg,md,sm}` — Stripe-style sizes (60/48/38/30/24px)
+- `.kpi-value` — bold tabular display for hero KPI numbers
+- `.kpi-label` — uppercase 11px micro-caps for KPI labels (e.g. "Gold Balance", "Balance in currencies")
+
+### Dark mode
+- Full `.dark` token block in `index.css` (deep zinc base #09090B + brand purple #A342FF)
+- All glass utilities (`.glass-card`, `.glass-card-elevated`, `.glass-hero`, `.glass-indigo`, `.glass-teal`, `.mesh-light`, `.premium-card`) have `.dark` overrides
+- Bulk sweep: ~290+ instances of `bg-white`/`text-gray-{300..900}`/`bg-gray-{50,100,200}`/`border-gray-{100,200,300}` swept across all 43 user-side pages + components → semantic tokens (`bg-card`, `text-foreground`, `text-muted-foreground`, `bg-muted`, `border-border`)
+- Theme toggle: `client/src/components/ThemeToggle.tsx` (next-themes Sun/Moon)
+
+### Hynex-style micro-polish patterns
+- Hero numbers: `kpi-value text-[52px]` with optional gold gradient via `WebkitBackgroundClip: text`
+- Section labels: `kpi-label` (replaces ad-hoc `text-[10px]/[11px] font-bold uppercase tracking-widest`)
+- Currency strip values: `font-mono-ui text-[13px] font-semibold` for tabular alignment
+- Card backgrounds: `bg-card/70 dark:bg-card/50 backdrop-blur-md border-border/60`
+- Avoid: animated shimmer top stripes, heavy 3D tilt + glare overlays (visual noise)
+
+### Installed design skills (global, ~/.agents/skills/)
+- `wshobson/agents@kpi-dashboard-design` — KPI selection + hierarchy patterns
+- `wshobson/agents@tailwind-design-system` — Tailwind design system patterns
+- `nextlevelbuilder/ui-ux-pro-max-skill` — 99 UX guidelines, 50+ styles, color palettes

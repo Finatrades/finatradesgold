@@ -58,14 +58,14 @@ export default function ContactForm() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white border border-[#8A2BE2]/20 text-[#8A2BE2] text-sm font-medium mb-6">
+          <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-[#8A2BE2]/20 text-[#8A2BE2] text-sm font-medium mb-6">
             <MessageSquare className="w-4 h-4" />
             Get In Touch
           </span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0D0D0D] mb-4 text-balance">
             Contact <span className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] bg-clip-text text-transparent">Us</span>
           </h2>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-muted-foreground max-w-2xl mx-auto">
             Have questions about our gold-backed financial services? Our team is here to help you get started.
           </p>
         </motion.div>
@@ -77,13 +77,13 @@ export default function ContactForm() {
             viewport={{ once: true }}
             className="space-y-8"
           >
-            <div className="bg-white rounded-2xl p-8 border border-[#8A2BE2]/10 shadow-xl shadow-[#8A2BE2]/5">
+            <div className="bg-card rounded-2xl p-8 border border-[#8A2BE2]/10 shadow-xl shadow-[#8A2BE2]/5">
               <h3 className="text-2xl font-bold text-[#0D0D0D] mb-6">Send us a message</h3>
               
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground/85 mb-2">
                       <User className="w-4 h-4 inline mr-2" />
                       Full Name *
                     </label>
@@ -93,13 +93,13 @@ export default function ContactForm() {
                       value={formData.name}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 text-base"
                       placeholder="John Smith"
                       data-testid="input-contact-name"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground/85 mb-2">
                       <Mail className="w-4 h-4 inline mr-2" />
                       Email Address *
                     </label>
@@ -109,7 +109,7 @@ export default function ContactForm() {
                       value={formData.email}
                       onChange={handleChange}
                       required
-                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 text-base"
                       placeholder="john@example.com"
                       data-testid="input-contact-email"
                     />
@@ -118,7 +118,7 @@ export default function ContactForm() {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-foreground/85 mb-2">
                       <Phone className="w-4 h-4 inline mr-2" />
                       Phone Number
                     </label>
@@ -127,14 +127,14 @@ export default function ContactForm() {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
+                      className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 text-base"
                       placeholder="+971 50 123 4567"
                       data-testid="input-contact-phone"
                     />
                   </div>
                   {!isPersonal && (
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                      <label className="block text-sm font-medium text-foreground/85 mb-2">
                         <Building2 className="w-4 h-4 inline mr-2" />
                         Company Name
                       </label>
@@ -143,7 +143,7 @@ export default function ContactForm() {
                         name="company"
                         value={formData.company}
                         onChange={handleChange}
-                        className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
+                        className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 text-base"
                         placeholder="Your Company Ltd"
                         data-testid="input-contact-company"
                       />
@@ -152,13 +152,13 @@ export default function ContactForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Subject *</label>
+                  <label className="block text-sm font-medium text-foreground/85 mb-2">Subject *</label>
                   <select
                     name="subject"
                     value={formData.subject}
                     onChange={handleChange}
                     required
-                    className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 text-base"
+                    className="w-full px-4 py-4 min-h-[52px] rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 text-base"
                     data-testid="select-contact-subject"
                   >
                     <option value="">Select a subject</option>
@@ -174,14 +174,14 @@ export default function ContactForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">Message *</label>
+                  <label className="block text-sm font-medium text-foreground/85 mb-2">Message *</label>
                   <textarea
                     name="message"
                     value={formData.message}
                     onChange={handleChange}
                     required
                     rows={5}
-                    className="w-full px-4 py-4 rounded-xl border border-gray-200 focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-gray-50/50 resize-none text-base"
+                    className="w-full px-4 py-4 rounded-xl border border-border focus:border-[#8A2BE2] focus:ring-2 focus:ring-[#8A2BE2]/20 outline-none transition-all bg-muted/40/50 resize-none text-base"
                     placeholder="How can we help you?"
                     data-testid="textarea-contact-message"
                   />
@@ -220,7 +220,7 @@ export default function ContactForm() {
               
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-white/10 flex items-center justify-center flex-shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-card/10 flex items-center justify-center flex-shrink-0">
                     <Mail className="w-5 h-5 text-[#A342FF]" />
                   </div>
                   <div>
@@ -233,9 +233,9 @@ export default function ContactForm() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-8 border border-[#8A2BE2]/10 shadow-xl shadow-[#8A2BE2]/5">
+            <div className="bg-card rounded-2xl p-8 border border-[#8A2BE2]/10 shadow-xl shadow-[#8A2BE2]/5">
               <h3 className="text-xl font-bold text-[#0D0D0D] mb-4">Business Hours</h3>
-              <div className="space-y-3 text-gray-600">
+              <div className="space-y-3 text-muted-foreground">
                 <div className="flex justify-between">
                   <span>Monday - Friday</span>
                   <span className="font-medium text-[#0D0D0D]">9:00 AM - 6:00 PM</span>
@@ -246,10 +246,10 @@ export default function ContactForm() {
                 </div>
                 <div className="flex justify-between">
                   <span>Sunday</span>
-                  <span className="font-medium text-gray-400">Closed</span>
+                  <span className="font-medium text-muted-foreground/70">Closed</span>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 mt-4">
+              <p className="text-sm text-muted-foreground mt-4">
                 * All times are in Gulf Standard Time (GST)
               </p>
             </div>

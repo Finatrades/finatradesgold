@@ -359,8 +359,8 @@ export default function CMSManagement() {
       <div className="space-y-6">
         <div className="flex justify-between items-center flex-wrap gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-cms-title">Content Management</h1>
-            <p className="text-gray-500 mt-1">Manage website content, blocks, and templates</p>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-cms-title">Content Management</h1>
+            <p className="text-muted-foreground mt-1">Manage website content, blocks, and templates</p>
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button
@@ -455,10 +455,10 @@ export default function CMSManagement() {
 
             <div className="grid gap-4">
               {pagesLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading pages...</div>
+                <div className="text-center py-8 text-muted-foreground">Loading pages...</div>
               ) : pages.length === 0 ? (
                 <Card>
-                  <CardContent className="py-8 text-center text-gray-500">
+                  <CardContent className="py-8 text-center text-muted-foreground">
                     No content pages yet. Create your first page to get started.
                   </CardContent>
                 </Card>
@@ -503,7 +503,7 @@ export default function CMSManagement() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="flex gap-4 text-sm text-gray-500">
+                      <div className="flex gap-4 text-sm text-muted-foreground">
                         <span>Module: {page.module || 'General'}</span>
                         {page.description && <span>{page.description}</span>}
                       </div>
@@ -562,10 +562,10 @@ export default function CMSManagement() {
 
             <div className="grid gap-4">
               {blocksLoading ? (
-                <div className="text-center py-8 text-gray-500">Loading blocks...</div>
+                <div className="text-center py-8 text-muted-foreground">Loading blocks...</div>
               ) : filteredBlocks.length === 0 ? (
                 <Card>
-                  <CardContent className="py-8 text-center text-gray-500">
+                  <CardContent className="py-8 text-center text-muted-foreground">
                     No content blocks yet. Create blocks to add editable content sections.
                   </CardContent>
                 </Card>
@@ -613,8 +613,8 @@ export default function CMSManagement() {
                       </div>
                     </CardHeader>
                     <CardContent>
-                      <div className="bg-gray-50 rounded p-3 text-sm">
-                        <p className="text-gray-700 line-clamp-2">
+                      <div className="bg-muted/40 rounded p-3 text-sm">
+                        <p className="text-foreground/85 line-clamp-2">
                           {block.content || block.defaultContent || 'No content set'}
                         </p>
                       </div>
@@ -828,15 +828,15 @@ function BlockDialog({
         return displayContent.startsWith('http') ? (
           <img src={displayContent} alt="Preview" className="max-w-full h-auto rounded" loading="lazy" />
         ) : (
-          <div className="text-gray-500 italic">Enter a valid image URL to preview</div>
+          <div className="text-muted-foreground italic">Enter a valid image URL to preview</div>
         );
       case 'json':
         if (!displayContent || displayContent === 'No content to preview') {
-          return <div className="text-gray-500 italic">Enter JSON content to preview</div>;
+          return <div className="text-muted-foreground italic">Enter JSON content to preview</div>;
         }
         try {
           const parsed = JSON.parse(displayContent);
-          return <pre className="text-xs bg-gray-100 p-2 rounded overflow-auto">{JSON.stringify(parsed, null, 2)}</pre>;
+          return <pre className="text-xs bg-muted p-2 rounded overflow-auto">{JSON.stringify(parsed, null, 2)}</pre>;
         } catch {
           return <div className="text-fuchsia-600 text-sm">JSON format will be validated on save</div>;
         }
@@ -853,7 +853,7 @@ function BlockDialog({
           />
         );
       default:
-        return <p className="text-gray-800">{displayContent}</p>;
+        return <p className="text-foreground">{displayContent}</p>;
     }
   };
 
@@ -992,8 +992,8 @@ function BlockDialog({
               <Eye className="w-4 h-4 text-green-600" />
               <span className="text-sm font-medium text-green-600">Live Preview</span>
             </div>
-            <div className="bg-white border rounded-lg p-4 min-h-[200px]">
-              <div className="text-xs text-gray-400 mb-2">{section} / {key}</div>
+            <div className="bg-card border rounded-lg p-4 min-h-[200px]">
+              <div className="text-xs text-muted-foreground/70 mb-2">{section} / {key}</div>
               {renderPreview()}
             </div>
           </div>
@@ -1202,17 +1202,17 @@ function TemplateDialog({
   const getPreviewStyle = () => {
     switch (type) {
       case 'email':
-        return 'bg-white';
+        return 'bg-card';
       case 'certificate':
         return 'bg-gradient-to-br from-purple-50 to-purple-50 border-2 border-purple-200';
       case 'notification':
         return 'bg-blue-50 border-l-4 border-blue-500';
       case 'invoice':
-        return 'bg-white border-2 border-gray-300';
+        return 'bg-card border-2 border-border';
       case 'financial_report':
         return 'bg-gradient-to-br from-slate-50 to-blue-50 border-2 border-slate-200';
       default:
-        return 'bg-white';
+        return 'bg-card';
     }
   };
 
@@ -1307,7 +1307,7 @@ function TemplateDialog({
                   placeholder="user_name, amount, date"
                   data-testid="input-template-variables"
                 />
-                <p className="text-xs text-gray-500">Use &#123;&#123;variable_name&#125;&#125; in the body to insert values</p>
+                <p className="text-xs text-muted-foreground">Use &#123;&#123;variable_name&#125;&#125; in the body to insert values</p>
               </div>
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
@@ -1345,14 +1345,14 @@ function TemplateDialog({
                     className="font-mono text-xs"
                   />
                 ) : (
-                  <div className="border rounded-lg p-3 bg-gray-50 max-h-[200px] overflow-y-auto">
-                    <p className="text-xs text-gray-500 mb-2">
+                  <div className="border rounded-lg p-3 bg-muted/40 max-h-[200px] overflow-y-auto">
+                    <p className="text-xs text-muted-foreground mb-2">
                       Edit the text values below. The template design is preserved.
                     </p>
                     <div className="space-y-3">
                       {extractTextContent(body).map((item, index) => (
                         <div key={index} className="grid gap-1">
-                          <Label className="text-xs text-gray-600">{item.label}</Label>
+                          <Label className="text-xs text-muted-foreground">{item.label}</Label>
                           {item.multiline ? (
                             <Textarea
                               value={item.value}
@@ -1370,7 +1370,7 @@ function TemplateDialog({
                         </div>
                       ))}
                       {extractTextContent(body).length === 0 && (
-                        <p className="text-sm text-gray-400 italic">No editable text found. Use HTML mode to edit.</p>
+                        <p className="text-sm text-muted-foreground/70 italic">No editable text found. Use HTML mode to edit.</p>
                       )}
                     </div>
                   </div>
@@ -1429,12 +1429,12 @@ function TemplateDialog({
               <Badge variant="outline">{type}</Badge>
             </div>
             {variableNames.length > 0 && (
-              <div className="mb-3 p-2 bg-gray-50 rounded text-xs">
-                <div className="font-medium mb-1 text-gray-600">Sample Data:</div>
+              <div className="mb-3 p-2 bg-muted/40 rounded text-xs">
+                <div className="font-medium mb-1 text-muted-foreground">Sample Data:</div>
                 <div className="grid grid-cols-2 gap-1">
                   {variableNames.map(varName => (
                     <div key={varName} className="flex gap-1">
-                      <span className="text-gray-500">{varName}:</span>
+                      <span className="text-muted-foreground">{varName}:</span>
                       <Input 
                         className="h-5 text-xs px-1 py-0"
                         value={previewData[varName] || ''}
@@ -1451,7 +1451,7 @@ function TemplateDialog({
               <div className={`rounded-lg p-4 ${getPreviewStyle()}`}>
                 {type === 'email' && previewSubject && (
                   <div className="mb-3 pb-2 border-b">
-                    <div className="text-xs text-gray-500">Subject:</div>
+                    <div className="text-xs text-muted-foreground">Subject:</div>
                     <div className="font-semibold">{previewSubject}</div>
                   </div>
                 )}
@@ -1469,13 +1469,13 @@ function TemplateDialog({
                 {type === 'invoice' && (
                   <div className="text-center mb-4 pb-2 border-b-2 border-purple-500">
                     <FileText className="w-10 h-10 mx-auto text-purple-600" />
-                    <div className="text-lg font-bold text-gray-800 mt-2">INVOICE</div>
+                    <div className="text-lg font-bold text-foreground mt-2">INVOICE</div>
                   </div>
                 )}
                 {type === 'financial_report' && (
                   <div className="text-center mb-4 pb-2 border-b-2 border-slate-400">
                     <BarChart3 className="w-10 h-10 mx-auto text-slate-600" />
-                    <div className="text-lg font-bold text-gray-800 mt-2">FINANCIAL REPORT</div>
+                    <div className="text-lg font-bold text-foreground mt-2">FINANCIAL REPORT</div>
                   </div>
                 )}
                 {previewBody ? (
@@ -1489,7 +1489,7 @@ function TemplateDialog({
                     }}
                   />
                 ) : (
-                  <div className="text-sm text-gray-400 italic">
+                  <div className="text-sm text-muted-foreground/70 italic">
                     Enter template body to see preview...
                   </div>
                 )}
@@ -1596,7 +1596,7 @@ const quickAddTemplates = [
   {
     category: 'Footer Section',
     icon: Link2,
-    color: 'bg-gray-100 text-gray-700',
+    color: 'bg-muted text-foreground/85',
     items: [
       { name: 'Company Name', section: 'footer', key: 'company_name', type: 'text' as const, defaultContent: 'Finatrades' },
       { name: 'Tagline', section: 'footer', key: 'tagline', type: 'text' as const, defaultContent: 'Gold-backed digital finance for everyone.' },
@@ -1712,7 +1712,7 @@ const quickAddTemplates = [
   {
     category: 'Settings (Private)',
     icon: Settings,
-    color: 'bg-gray-100 text-gray-700',
+    color: 'bg-muted text-foreground/85',
     items: [
       { name: 'Page Title', section: 'settings', key: 'title', type: 'text' as const, defaultContent: 'Settings' },
       { name: 'Page Subtitle', section: 'settings', key: 'subtitle', type: 'text' as const, defaultContent: 'Manage your account preferences and security.' },
@@ -1781,7 +1781,7 @@ function QuickAddTemplates({
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="mb-6">
       <Card className="border-dashed">
         <CollapsibleTrigger asChild>
-          <CardHeader className="cursor-pointer hover:bg-gray-50 transition-colors">
+          <CardHeader className="cursor-pointer hover:bg-muted/40 transition-colors">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100">
@@ -1792,16 +1792,16 @@ function QuickAddTemplates({
                   <CardDescription>Pre-configured templates for buttons, stats, text, badges, links & more</CardDescription>
                 </div>
               </div>
-              <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown className={`w-5 h-5 text-muted-foreground/70 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </div>
           </CardHeader>
         </CollapsibleTrigger>
         <CollapsibleContent>
           <CardContent className="pt-0">
             {/* Page & Custom Overrides */}
-            <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-3 gap-4 mb-6 p-4 bg-muted/40 rounded-lg">
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Target Page (Optional)</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Target Page (Optional)</Label>
                 <Select value={selectedPage} onValueChange={setSelectedPage}>
                   <SelectTrigger className="h-9" data-testid="select-quick-add-page">
                     <SelectValue placeholder="Select page..." />
@@ -1815,7 +1815,7 @@ function QuickAddTemplates({
                 </Select>
               </div>
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Custom Section (Override)</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Custom Section (Override)</Label>
                 <Input 
                   value={customSection}
                   onChange={(e) => setCustomSection(e.target.value)}
@@ -1825,7 +1825,7 @@ function QuickAddTemplates({
                 />
               </div>
               <div>
-                <Label className="text-xs text-gray-500 mb-1.5 block">Custom Key (Override)</Label>
+                <Label className="text-xs text-muted-foreground mb-1.5 block">Custom Key (Override)</Label>
                 <Input 
                   value={customKey}
                   onChange={(e) => setCustomKey(e.target.value)}
@@ -1910,8 +1910,8 @@ const templateCategories = [
     name: 'Invoice Templates',
     description: 'Payment and billing invoices',
     icon: FileText,
-    color: 'bg-gray-100 text-gray-600',
-    borderColor: 'border-gray-200'
+    color: 'bg-muted text-muted-foreground',
+    borderColor: 'border-border'
   },
   {
     type: 'financial_report',
@@ -1953,7 +1953,7 @@ function TemplatesTab({
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-500">Loading templates...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Loading templates...</div>;
   }
 
   if (selectedCategory) {
@@ -1966,7 +1966,7 @@ function TemplatesTab({
         <div className="flex items-center justify-between">
           <button 
             onClick={() => setSelectedCategory(null)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
+            className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
             data-testid="button-back-to-categories"
           >
             <ChevronDown className="w-4 h-4 rotate-90" />
@@ -2017,8 +2017,8 @@ function TemplatesTab({
               <div className={`inline-flex p-3 rounded-full ${category?.color} mb-3`}>
                 <IconComponent className="w-6 h-6" />
               </div>
-              <h3 className="font-medium text-gray-900 mb-1">No {category?.name} Yet</h3>
-              <p className="text-sm text-gray-500 mb-4">Create your first template to get started.</p>
+              <h3 className="font-medium text-foreground mb-1">No {category?.name} Yet</h3>
+              <p className="text-sm text-muted-foreground mb-4">Create your first template to get started.</p>
               <Button 
                 onClick={() => {
                   setEditingTemplate(null);
@@ -2042,8 +2042,8 @@ function TemplatesTab({
                         <IconComponent className="w-4 h-4" />
                       </div>
                       <div>
-                        <h4 className="font-medium text-gray-900">{template.name}</h4>
-                        <p className="text-sm text-gray-500">{template.slug}</p>
+                        <h4 className="font-medium text-foreground">{template.name}</h4>
+                        <p className="text-sm text-muted-foreground">{template.slug}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -2095,7 +2095,7 @@ function TemplatesTab({
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-lg font-semibold">Template Categories</h2>
-          <p className="text-sm text-gray-500">Select a category to manage templates</p>
+          <p className="text-sm text-muted-foreground">Select a category to manage templates</p>
         </div>
       </div>
 
@@ -2120,8 +2120,8 @@ function TemplatesTab({
                     {count} {count === 1 ? 'template' : 'templates'}
                   </Badge>
                 </div>
-                <h3 className="font-semibold text-gray-900 mt-4">{category.name}</h3>
-                <p className="text-sm text-gray-500 mt-1">{category.description}</p>
+                <h3 className="font-semibold text-foreground mt-4">{category.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">{category.description}</p>
               </CardContent>
             </Card>
           );
@@ -2254,7 +2254,7 @@ function LabelsTab() {
   };
 
   if (isLoading) {
-    return <div className="text-center py-8 text-gray-500">Loading labels...</div>;
+    return <div className="text-center py-8 text-muted-foreground">Loading labels...</div>;
   }
 
   return (
@@ -2262,7 +2262,7 @@ function LabelsTab() {
       <div className="flex justify-between items-center">
         <div>
           <h2 className="text-lg font-semibold">UI Labels</h2>
-          <p className="text-sm text-gray-500">Customize button text, card titles, and other UI labels</p>
+          <p className="text-sm text-muted-foreground">Customize button text, card titles, and other UI labels</p>
         </div>
       </div>
 
@@ -2286,13 +2286,13 @@ function LabelsTab() {
                   return (
                     <div 
                       key={label.key} 
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-3 bg-muted/40 rounded-lg"
                     >
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-gray-400">{label.key}</span>
+                          <span className="text-xs font-mono text-muted-foreground/70">{label.key}</span>
                         </div>
-                        <p className="text-xs text-gray-500 mt-0.5">{label.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{label.description}</p>
                       </div>
                       <div className="flex items-center gap-2 min-w-[200px]">
                         {isEditing ? (
@@ -2320,7 +2320,7 @@ function LabelsTab() {
                           </>
                         ) : (
                           <>
-                            <span className="text-sm font-medium text-gray-700 flex-1 text-right">
+                            <span className="text-sm font-medium text-foreground/85 flex-1 text-right">
                               {currentValue}
                             </span>
                             <Button
@@ -2444,13 +2444,13 @@ function BrandingTab({
   const ColorInput = ({ label, field, value }: { label: string; field: string; value: string }) => (
     <div className="flex items-center gap-3">
       <div className="flex-1">
-        <Label className="text-sm text-gray-600">{label}</Label>
+        <Label className="text-sm text-muted-foreground">{label}</Label>
         <div className="flex gap-2 mt-1">
           <input
             type="color"
             value={value}
             onChange={(e) => updateField(field, e.target.value)}
-            className="w-10 h-10 rounded cursor-pointer border border-gray-200"
+            className="w-10 h-10 rounded cursor-pointer border border-border"
             data-testid={`input-color-${field}`}
           />
           <Input
@@ -2467,7 +2467,7 @@ function BrandingTab({
 
   if (isLoading) {
     return (
-      <div className="text-center py-8 text-gray-500">Loading branding settings...</div>
+      <div className="text-center py-8 text-muted-foreground">Loading branding settings...</div>
     );
   }
 
@@ -2552,14 +2552,14 @@ function BrandingTab({
                       e.target.value = '';
                     }}
                   />
-                  <div className={`h-10 px-4 py-2 border rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${isUploading ? 'bg-gray-100 text-gray-400 cursor-wait' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 cursor-pointer'}`}>
+                  <div className={`h-10 px-4 py-2 border rounded-md flex items-center gap-2 text-sm font-medium transition-colors ${isUploading ? 'bg-muted text-muted-foreground/70 cursor-wait' : 'bg-purple-50 hover:bg-purple-100 text-purple-700 cursor-pointer'}`}>
                     {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                     {isUploading ? 'Uploading...' : 'Upload'}
                   </div>
                 </label>
               </div>
               {formData.logoUrl && (
-                <div className="mt-2 p-4 bg-gray-100 rounded flex items-center justify-center">
+                <div className="mt-2 p-4 bg-muted rounded flex items-center justify-center">
                   <img src={formData.logoUrl} alt="Logo preview" className="max-h-16 max-w-full" loading="lazy" />
                 </div>
               )}
@@ -2628,8 +2628,8 @@ function BrandingTab({
                 </SelectContent>
               </Select>
             </div>
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-gray-500 mb-3">Preview</p>
+            <div className="mt-4 p-4 bg-muted/40 rounded-lg">
+              <p className="text-sm text-muted-foreground mb-3">Preview</p>
               <div className="flex gap-3">
                 <button
                   type="button"

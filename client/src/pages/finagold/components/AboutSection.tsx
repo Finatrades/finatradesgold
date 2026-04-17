@@ -133,10 +133,10 @@ export default function AboutSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
             {data.title}
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-6">
             {data.subtitle}
           </p>
           <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full" />
@@ -150,24 +150,24 @@ export default function AboutSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: index * 0.1, duration: 0.5 }}
-              className="bg-white rounded-2xl p-8 shadow-sm border border-purple-100/50"
+              className="bg-card rounded-2xl p-8 shadow-sm border border-purple-100/50"
             >
               <div className="flex items-center gap-4 mb-4">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
                   <card.icon className="w-6 h-6 text-white" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-xl font-semibold text-gray-900">{card.title}</h3>
+                <h3 className="text-xl font-semibold text-foreground">{card.title}</h3>
               </div>
               {card.description && (
                 <p 
-                  className="text-gray-600"
+                  className="text-muted-foreground"
                   dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(card.description) }}
                 />
               )}
               {card.benefits && (
                 <ul className="space-y-3 mt-2">
                   {card.benefits.map((benefit, i) => (
-                    <li key={i} className="flex items-center gap-3 text-gray-600">
+                    <li key={i} className="flex items-center gap-3 text-muted-foreground">
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                       <span>{benefit}</span>
                     </li>
@@ -188,14 +188,14 @@ export default function AboutSection() {
               transition={{ delay: (index + 2) * 0.1, duration: 0.5 }}
               className="group"
             >
-              <div className="bg-white rounded-2xl p-6 h-full shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200">
+              <div className="bg-card rounded-2xl p-6 h-full shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
                   <feature.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-gray-500 text-sm">
+                <p className="text-muted-foreground text-sm">
                   {feature.description}
                 </p>
               </div>

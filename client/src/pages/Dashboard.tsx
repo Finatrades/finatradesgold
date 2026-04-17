@@ -493,17 +493,17 @@ export default function Dashboard() {
             {/* ── Transfer group (Withdraw / Send / Request) ── */}
             <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border/60">
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
                 data-testid="button-withdraw-gold">
                 <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw
               </motion.button>
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
                 data-testid="button-send-gold">
                 <Send className="w-3.5 h-3.5 text-blue-500" /> Send
               </motion.button>
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-white text-foreground/85 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
                 data-testid="button-request-gold">
                 <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request
               </motion.button>
@@ -512,7 +512,7 @@ export default function Dashboard() {
             {/* ── Manage group (Lock / Deposit / Business) ── */}
             <div className="flex items-center gap-1 p-1 rounded-2xl" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.14)' }}>
               <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-emerald-200 bg-white text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-emerald-200 bg-card text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
                 data-testid="button-lock-gold">
                 <Shield className="w-3.5 h-3.5" /> Lock Price
               </motion.button>
@@ -524,7 +524,7 @@ export default function Dashboard() {
               </motion.button>
               {isBusinessUser && (
                 <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-indigo-200 bg-white text-indigo-700 hover:bg-indigo-50 transition-all duration-200"
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-indigo-200 bg-card text-indigo-700 hover:bg-indigo-50 transition-all duration-200"
                   data-testid="button-create-trade-quick">
                   <Landmark className="w-3.5 h-3.5" /> Create Trade
                 </motion.button>
@@ -574,31 +574,31 @@ export default function Dashboard() {
                 <div className="flex items-start justify-between mb-2">
                   {/* Left: balance info */}
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-2">
+                    <div className="flex items-center gap-2 mb-3">
                       <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.18)' }}>
                         <Sparkles className="w-4 h-4 text-purple-600" />
                       </div>
-                      <span className="text-[13px] text-muted-foreground font-semibold tracking-wide">Gold Balance</span>
-                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-purple-50 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
+                      <span className="kpi-label text-foreground/70">Gold Balance</span>
+                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-primary/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
                         {balanceVisible ? <Eye className="w-4 h-4 text-muted-foreground/70" /> : <EyeOff className="w-4 h-4 text-muted-foreground/70" />}
                       </button>
                     </div>
-                    {/* Gold grams — primary hero number */}
+                    {/* Gold grams — primary hero number, Stripe-style Geist display */}
                     <motion.p
-                      className="text-[42px] font-extrabold leading-none num-hero flex items-end gap-2"
-                      style={{ background: 'linear-gradient(135deg, #B8860B, #D4AF37, #f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                      initial={{ opacity: 0, scale: 0.95 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.6, delay: 0.2 }}
+                      className="kpi-value text-[52px] flex items-baseline gap-1.5"
+                      style={{ background: 'linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #f59e0b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
+                      initial={{ opacity: 0, y: 6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
                       data-testid="text-total-balance"
                     >
                       {showBalance ? `${formatNumber(totals.walletGoldGrams || 0, 3)}` : hiddenValue}
-                      {showBalance && <span className="text-[22px] font-bold" style={{ background: 'linear-gradient(135deg, #B8860B, #D4AF37)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>g</span>}
+                      {showBalance && <span className="text-[24px] font-medium opacity-70">g</span>}
                     </motion.p>
                     {/* USD equivalent as sub-line */}
-                    <div className="flex items-center gap-2 mt-2.5">
+                    <div className="flex items-center gap-2 mt-3">
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
-                        <span className="text-purple-700 text-[11px] font-bold num-metric">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</span>
+                        <span className="text-purple-700 dark:text-purple-300 text-[12px] font-semibold font-mono-ui">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</span>
                       </div>
                       <span className="text-muted-foreground/70 text-[11px] font-medium">wallet value</span>
                     </div>
@@ -693,33 +693,33 @@ export default function Dashboard() {
                 </div>
 
                 {/* ── Currency conversion strip ── */}
-                <div className="mt-4 pt-4 border-t border-border/40">
-                  <p className="text-[10px] font-bold text-muted-foreground/70/70 uppercase tracking-widest mb-2.5">Balance in currencies</p>
+                <div className="mt-5 pt-4 border-t border-border/40">
+                  <p className="kpi-label mb-3">Balance in currencies</p>
                   <div className="grid grid-cols-3 gap-2">
                     {/* USD */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }} data-testid="wallet-usd">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[9px] text-white font-black flex-shrink-0">$</div>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }} data-testid="wallet-usd">
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0">$</div>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-bold text-blue-600 uppercase tracking-wide">USD</p>
-                        <p className="text-[13px] font-extrabold text-blue-900 num-metric leading-tight truncate">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
+                        <p className="text-[9px] font-semibold text-blue-600 dark:text-blue-300 uppercase tracking-wider">USD</p>
+                        <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-100 font-mono-ui leading-tight truncate">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
                       </div>
                     </div>
                     {/* AED */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }} data-testid="wallet-aed">
-                      <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0" style={{ fontSize: 8, color: 'white', fontWeight: 900 }}>د</div>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }} data-testid="wallet-aed">
+                      <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0" style={{ fontSize: 8, color: 'white', fontWeight: 700 }}>د</div>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wide">AED</p>
-                        <p className="text-[13px] font-extrabold text-amber-900 num-metric leading-tight truncate flex items-center gap-0.5">
+                        <p className="text-[9px] font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wider">AED</p>
+                        <p className="text-[13px] font-semibold text-amber-900 dark:text-amber-100 font-mono-ui leading-tight truncate flex items-center gap-0.5">
                           <DirhamSymbol size="0.85em" />{showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
                         </p>
                       </div>
                     </div>
                     {/* EUR */}
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }} data-testid="wallet-eur">
-                      <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-black flex-shrink-0">€</div>
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }} data-testid="wallet-eur">
+                      <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0">€</div>
                       <div className="min-w-0">
-                        <p className="text-[9px] font-bold text-indigo-600 uppercase tracking-wide">EUR</p>
-                        <p className="text-[13px] font-extrabold text-indigo-900 num-metric leading-tight truncate">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
+                        <p className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wider">EUR</p>
+                        <p className="text-[13px] font-semibold text-indigo-900 dark:text-indigo-100 font-mono-ui leading-tight truncate">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
                       </div>
                     </div>
                   </div>
@@ -1110,12 +1110,12 @@ export default function Dashboard() {
                     </div>
                     {bnslPlans.length > 0 ? (
                       <Link href="/bnsl">
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-card hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
                           Manage My Plans <ChevronRight className="w-3.5 h-3.5" />
                         </motion.button>
                       </Link>
                     ) : (
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-white hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
+                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-card hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
                         Join Plan Now <ChevronRight className="w-3.5 h-3.5" />
                       </motion.button>
                     )}

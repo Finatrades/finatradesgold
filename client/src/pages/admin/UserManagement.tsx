@@ -169,8 +169,8 @@ export default function UserManagement() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-            <p className="text-gray-500">Manage platform users, email verification, and permissions.</p>
+            <h1 className="text-3xl font-bold text-foreground">User Management</h1>
+            <p className="text-muted-foreground">Manage platform users, email verification, and permissions.</p>
           </div>
           <Button onClick={fetchUsers} variant="outline" size="icon" data-testid="button-refresh">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -185,7 +185,7 @@ export default function UserManagement() {
                   <Users className="w-5 h-5 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Total</p>
+                  <p className="text-xs text-muted-foreground">Total</p>
                   <p className="text-xl font-bold" data-testid="text-total-users">{stats.total}</p>
                 </div>
               </div>
@@ -198,7 +198,7 @@ export default function UserManagement() {
                   <User className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Personal</p>
+                  <p className="text-xs text-muted-foreground">Personal</p>
                   <p className="text-xl font-bold" data-testid="text-personal-users">{stats.personal}</p>
                 </div>
               </div>
@@ -211,7 +211,7 @@ export default function UserManagement() {
                   <Building className="w-5 h-5 text-indigo-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Corporate</p>
+                  <p className="text-xs text-muted-foreground">Corporate</p>
                   <p className="text-xl font-bold" data-testid="text-corporate-users">{stats.corporate}</p>
                 </div>
               </div>
@@ -224,7 +224,7 @@ export default function UserManagement() {
                   <Mail className="w-5 h-5 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Verified</p>
+                  <p className="text-xs text-muted-foreground">Verified</p>
                   <p className="text-xl font-bold" data-testid="text-verified-users">{stats.verified}</p>
                 </div>
               </div>
@@ -237,7 +237,7 @@ export default function UserManagement() {
                   <UserX className="w-5 h-5 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Pending</p>
+                  <p className="text-xs text-muted-foreground">Pending</p>
                   <p className="text-xl font-bold" data-testid="text-pending-users">{stats.pending}</p>
                 </div>
               </div>
@@ -250,7 +250,7 @@ export default function UserManagement() {
                   <Shield className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500">Admins</p>
+                  <p className="text-xs text-muted-foreground">Admins</p>
                   <p className="text-xl font-bold" data-testid="text-admin-users">{stats.admins}</p>
                 </div>
               </div>
@@ -263,7 +263,7 @@ export default function UserManagement() {
             <div className="flex items-center justify-between">
               <CardTitle>All Users</CardTitle>
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                 <Input
                   placeholder="Search users..."
                   value={searchQuery}
@@ -277,12 +277,12 @@ export default function UserManagement() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                     <tr>
                       <th className="px-6 py-4 font-semibold tracking-wide">Finatrades ID</th>
                       <th className="px-6 py-4 font-semibold tracking-wide">Name</th>
@@ -299,9 +299,9 @@ export default function UserManagement() {
                   <tbody className="divide-y divide-gray-100">
                     {filteredUsers.length === 0 ? (
                       <tr>
-                        <td colSpan={10} className="px-6 py-12 text-center text-gray-500 bg-gray-50/50">
+                        <td colSpan={10} className="px-6 py-12 text-center text-muted-foreground bg-muted/40/50">
                           <div className="flex flex-col items-center gap-2">
-                            <Users className="w-8 h-8 text-gray-300" />
+                            <Users className="w-8 h-8 text-muted-foreground/50" />
                             <span>No users found</span>
                           </div>
                         </td>
@@ -310,7 +310,7 @@ export default function UserManagement() {
                       filteredUsers.map((user, index) => (
                         <tr 
                           key={user.id} 
-                          className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
+                          className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150 group`} 
                           data-testid={`row-user-${user.id}`}
                         >
                           <td className="px-6 py-4">
@@ -324,19 +324,19 @@ export default function UserManagement() {
                                 <img 
                                   src={user.profilePhoto} 
                                   alt={`${user.firstName} ${user.lastName}`}
-                                  className="w-10 h-10 rounded-full object-cover border-2 border-gray-200"
+                                  className="w-10 h-10 rounded-full object-cover border-2 border-border"
                                   loading="lazy"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold">
+                                <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-muted-foreground font-bold">
                                   {user.firstName[0]}{user.lastName[0]}
                                 </div>
                               )}
-                              <span className="font-medium text-gray-900">{user.firstName} {user.lastName}</span>
+                              <span className="font-medium text-foreground">{user.firstName} {user.lastName}</span>
                             </div>
                           </td>
                           <td className="px-6 py-4">{user.email}</td>
-                          <td className="px-6 py-4 text-gray-500">{user.phoneNumber || '-'}</td>
+                          <td className="px-6 py-4 text-muted-foreground">{user.phoneNumber || '-'}</td>
                           <td className="px-6 py-4">
                             {user.isEmailVerified ? (
                               <Badge variant="default" className="bg-green-500 hover:bg-green-600">
@@ -385,7 +385,7 @@ export default function UserManagement() {
                                 </Badge>
                               )}
                               {user.accountType === 'business' && user.companyName && (
-                                <div className="text-xs text-gray-500 mt-1">{user.companyName}</div>
+                                <div className="text-xs text-muted-foreground mt-1">{user.companyName}</div>
                               )}
                             </div>
                           </td>
@@ -400,7 +400,7 @@ export default function UserManagement() {
                               {user.kycStatus}
                             </Badge>
                           </td>
-                          <td className="px-6 py-4 text-gray-500">
+                          <td className="px-6 py-4 text-muted-foreground">
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 text-right">

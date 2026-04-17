@@ -235,7 +235,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                       {/* Product Details */}
                       <CardContent className="flex-1 p-4 flex flex-col">
                         <div className="flex items-start justify-between gap-2 mb-2">
-                          <h3 className="font-semibold text-gray-900 text-sm leading-tight">{product.name}</h3>
+                          <h3 className="font-semibold text-foreground text-sm leading-tight">{product.name}</h3>
                           {product.inStock ? (
                             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200 text-xs shrink-0">
                               In Stock
@@ -274,8 +274,8 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
             )}
           </div>
 
-          <div className="w-80 border-l bg-gray-50 flex flex-col shrink-0">
-            <div className="p-4 border-b bg-white">
+          <div className="w-80 border-l bg-muted/40 flex flex-col shrink-0">
+            <div className="p-4 border-b bg-card">
               <h3 className="font-semibold flex items-center gap-2">
                 <ShoppingCart className="w-5 h-5" />
                 Your Cart
@@ -297,7 +297,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                     return (
                       <div
                         key={item.product.productId}
-                        className="bg-white rounded-lg p-3 shadow-sm border"
+                        className="bg-card rounded-lg p-3 shadow-sm border"
                         data-testid={`cart-item-${item.product.productId}`}
                       >
                         <div className="flex items-start justify-between mb-2">
@@ -351,7 +351,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
             </ScrollArea>
 
             {cart.length > 0 && (
-              <div className="p-4 border-t bg-white space-y-3">
+              <div className="p-4 border-t bg-card space-y-3">
                 <div className="space-y-1.5 text-sm">
                   <div className="flex justify-between">
                     <span className="text-muted-foreground">Total Gold</span>

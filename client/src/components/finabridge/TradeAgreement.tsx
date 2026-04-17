@@ -183,7 +183,7 @@ export function TradeAgreement({
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  importerSigned ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                  importerSigned ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground/70'
                 }`}>
                   {importerSigned ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                 </div>
@@ -206,7 +206,7 @@ export function TradeAgreement({
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  exporterSigned ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                  exporterSigned ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground/70'
                 }`}>
                   {exporterSigned ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                 </div>

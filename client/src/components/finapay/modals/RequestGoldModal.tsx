@@ -173,7 +173,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowDownLeft className="w-5 h-5 text-purple-500" />
@@ -215,9 +215,9 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                   <div className="space-y-2">
                     <div className="flex justify-between items-center">
                       <Label>Amount</Label>
-                      <div className="flex bg-gray-100 rounded-md p-0.5">
-                        <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
-                        <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                      <div className="flex bg-muted rounded-md p-0.5">
+                        <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                        <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
                       </div>
                     </div>
                     <div className="relative">
@@ -320,7 +320,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                       </div>
                     </div>
 
-                    <div className="text-xs text-muted-foreground bg-white/50 p-2 rounded-md">
+                    <div className="text-xs text-muted-foreground bg-card/50 p-2 rounded-md">
                       Based on current gold price: ${currentGoldPrice.toFixed(2)}/gram
                     </div>
                   </div>
@@ -370,7 +370,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                           </label>
                           <details className="mt-2">
                             <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
-                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-white p-2 rounded border max-h-32 overflow-y-auto">
+                            <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded border max-h-32 overflow-y-auto">
                               {termsContent.terms}
                             </div>
                           </details>
@@ -398,7 +398,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                 </p>
                 
                 {myQrCode ? (
-                  <div className="bg-white p-4 rounded-xl border border-border inline-block mx-auto">
+                  <div className="bg-card p-4 rounded-xl border border-border inline-block mx-auto">
                     <img src={myQrCode} alt="Your payment QR Code" className="w-48 h-48" loading="lazy" data-testid="img-my-qr-code" />
                   </div>
                 ) : (
@@ -466,7 +466,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
             </div>
 
             {qrCodeDataUrl && (
-              <div className="bg-white p-4 rounded-xl border border-border inline-block mx-auto">
+              <div className="bg-card p-4 rounded-xl border border-border inline-block mx-auto">
                 <img src={qrCodeDataUrl} alt="Payment Request QR Code" className="w-48 h-48" loading="lazy" />
               </div>
             )}

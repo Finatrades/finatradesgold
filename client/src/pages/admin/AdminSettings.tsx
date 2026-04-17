@@ -67,8 +67,8 @@ export default function AdminSettings() {
     <AdminLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Admin Resources</h1>
-          <p className="text-gray-500">Quick access to configuration pages and admin documentation.</p>
+          <h1 className="text-3xl font-bold text-foreground">Admin Resources</h1>
+          <p className="text-muted-foreground">Quick access to configuration pages and admin documentation.</p>
         </div>
 
         <Card>
@@ -79,14 +79,14 @@ export default function AdminSettings() {
             <CardDescription>Download the comprehensive admin panel manual.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between p-4 border border-gray-200 rounded-lg bg-gray-50">
+            <div className="flex items-center justify-between p-4 border border-border rounded-lg bg-muted/40">
               <div className="flex items-center gap-3">
                 <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
                   <FileText className="w-5 h-5" />
                 </div>
                 <div>
                   <p className="font-medium">Admin Panel Manual</p>
-                  <p className="text-sm text-gray-500">Comprehensive guide for platform administrators</p>
+                  <p className="text-sm text-muted-foreground">Comprehensive guide for platform administrators</p>
                 </div>
               </div>
               <Button 
@@ -101,7 +101,7 @@ export default function AdminSettings() {
         </Card>
 
         <div>
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Configuration Quick Links</h2>
+          <h2 className="text-lg font-semibold text-foreground mb-4">Configuration Quick Links</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {configLinks.map((link) => (
               <Link key={link.href} href={link.href}>
@@ -113,10 +113,10 @@ export default function AdminSettings() {
                       </div>
                       <div className="flex-1">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-medium text-gray-900">{link.title}</h3>
-                          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+                          <h3 className="font-medium text-foreground">{link.title}</h3>
+                          <ArrowRight className="w-4 h-4 text-muted-foreground/70 group-hover:text-purple-600 transition-colors" />
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">{link.description}</p>
+                        <p className="text-sm text-muted-foreground mt-1">{link.description}</p>
                       </div>
                     </div>
                   </CardContent>

@@ -672,7 +672,7 @@ export default function FinaVaultManagement() {
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         {selectedDeposit.documents.map((doc: any, idx: number) => (
-                          <div key={idx} className="border-2 border-amber-300 rounded-lg p-2 bg-white shadow-sm">
+                          <div key={idx} className="border-2 border-amber-300 rounded-lg p-2 bg-card shadow-sm">
                             {typeof doc === 'string' && doc.startsWith('data:image') ? (
                               <img 
                                 src={doc} 

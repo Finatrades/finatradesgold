@@ -75,10 +75,10 @@ export default function VaultPhysicalRegistry() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Physical Custody Registry
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Manage WinGold physical storage certificates and bar inventory
             </p>
           </div>
@@ -100,7 +100,7 @@ export default function VaultPhysicalRegistry() {
               <div className="text-2xl font-bold text-purple-600">
                 {data?.certificates?.length || 0}
               </div>
-              <p className="text-sm text-gray-500">Total Certificates</p>
+              <p className="text-sm text-muted-foreground">Total Certificates</p>
             </CardContent>
           </Card>
           <Card>
@@ -108,7 +108,7 @@ export default function VaultPhysicalRegistry() {
               <div className="text-2xl font-bold text-green-600">
                 {data?.certificates?.filter(c => c.status === 'Active').length || 0}
               </div>
-              <p className="text-sm text-gray-500">Active</p>
+              <p className="text-sm text-muted-foreground">Active</p>
             </CardContent>
           </Card>
           <Card>
@@ -116,7 +116,7 @@ export default function VaultPhysicalRegistry() {
               <div className="text-2xl font-bold text-blue-600">
                 {data?.certificates?.filter(c => c.status === 'Linked').length || 0}
               </div>
-              <p className="text-sm text-gray-500">Linked</p>
+              <p className="text-sm text-muted-foreground">Linked</p>
             </CardContent>
           </Card>
           <Card>
@@ -124,7 +124,7 @@ export default function VaultPhysicalRegistry() {
               <div className="text-2xl font-bold text-amber-600">
                 {formatGrams(data?.certificates?.reduce((sum, c) => sum + parseGrams(c.gold_grams), 0) || 0)}g
               </div>
-              <p className="text-sm text-gray-500">Total Gold</p>
+              <p className="text-sm text-muted-foreground">Total Gold</p>
             </CardContent>
           </Card>
         </div>
@@ -150,7 +150,7 @@ export default function VaultPhysicalRegistry() {
           <CardContent>
             <div className="flex gap-4 mb-4">
               <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
                 <Input
                   placeholder="Search by reference or issuer..."
                   value={searchQuery}
@@ -173,15 +173,15 @@ export default function VaultPhysicalRegistry() {
             </div>
 
             {isLoading ? (
-              <div className="text-center py-8 text-gray-500">Loading certificates...</div>
+              <div className="text-center py-8 text-muted-foreground">Loading certificates...</div>
             ) : filteredCertificates.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 No physical certificates found. Add your first certificate to start tracking physical custody.
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-muted/40">
                     <tr>
                       <th className="text-left p-3 font-medium">Reference</th>
                       <th className="text-left p-3 font-medium">Issuer</th>
@@ -194,15 +194,15 @@ export default function VaultPhysicalRegistry() {
                   </thead>
                   <tbody className="divide-y">
                     {filteredCertificates.map((cert) => (
-                      <tr key={cert.id} className="hover:bg-gray-50">
+                      <tr key={cert.id} className="hover:bg-muted/40">
                         <td className="p-3 font-mono text-xs">{cert.physical_storage_ref}</td>
                         <td className="p-3">{cert.issuer}</td>
                         <td className="p-3 text-right font-medium">{formatGrams(parseGrams(cert.gold_grams))}</td>
                         <td className="p-3">
-                          <span className="text-gray-600">{cert.vault_location_name || 'N/A'}</span>
-                          <span className="text-xs text-gray-400 ml-1">({cert.country_code || '-'})</span>
+                          <span className="text-muted-foreground">{cert.vault_location_name || 'N/A'}</span>
+                          <span className="text-xs text-muted-foreground/70 ml-1">({cert.country_code || '-'})</span>
                         </td>
-                        <td className="p-3 text-gray-500">
+                        <td className="p-3 text-muted-foreground">
                           {cert.issued_at ? format(new Date(cert.issued_at), 'MMM dd, yyyy') : 'N/A'}
                         </td>
                         <td className="p-3 text-center">{getStatusBadge(cert.status)}</td>

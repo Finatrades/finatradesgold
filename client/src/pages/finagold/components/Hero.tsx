@@ -69,59 +69,59 @@ export default function Hero() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
+              className="bg-card rounded-2xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="p-6 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white z-10">
+              <div className="p-6 border-b border-border/60 flex items-center justify-between sticky top-0 bg-card z-10">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
                     <Shield className="w-5 h-5 text-red-600" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Trusted & Regulated</h3>
-                    <p className="text-xs text-gray-500">Complete Regulatory and Legal Information</p>
+                    <h3 className="text-lg font-semibold text-foreground">Trusted & Regulated</h3>
+                    <p className="text-xs text-muted-foreground">Complete Regulatory and Legal Information</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowRegulatory(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors"
+                  className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                 >
-                  <X className="w-4 h-4 text-gray-600" />
+                  <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               </div>
               <div className="p-6 space-y-6">
                 {/* Company Information */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900 text-base">About Finatrades Finance SA</h4>
-                  <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+                  <h4 className="font-semibold text-foreground text-base">About Finatrades Finance SA</h4>
+                  <div className="bg-muted/40 rounded-lg p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-gray-500 text-xs">Full Legal Name</p>
-                        <p className="text-gray-900 font-medium">Finatrades Finance SA</p>
+                        <p className="text-muted-foreground text-xs">Full Legal Name</p>
+                        <p className="text-foreground font-medium">Finatrades Finance SA</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Website</p>
-                        <p className="text-gray-900 font-medium">finatrades.com</p>
+                        <p className="text-muted-foreground text-xs">Website</p>
+                        <p className="text-foreground font-medium">finatrades.com</p>
                       </div>
                       <div className="col-span-2">
-                        <p className="text-gray-500 text-xs">Registered Office</p>
-                        <p className="text-gray-900 font-medium">Rue Robert-CÉARD 6, 1204, GENEVA</p>
+                        <p className="text-muted-foreground text-xs">Registered Office</p>
+                        <p className="text-foreground font-medium">Rue Robert-CÉARD 6, 1204, GENEVA</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Canton</p>
-                        <p className="text-gray-900 font-medium">GENEVA</p>
+                        <p className="text-muted-foreground text-xs">Canton</p>
+                        <p className="text-foreground font-medium">GENEVA</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Company Number (UID)</p>
-                        <p className="text-gray-900 font-medium">CHE-422.960.092</p>
+                        <p className="text-muted-foreground text-xs">Company Number (UID)</p>
+                        <p className="text-foreground font-medium">CHE-422.960.092</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Date of Formation</p>
-                        <p className="text-gray-900 font-medium">29.01.2019</p>
+                        <p className="text-muted-foreground text-xs">Date of Formation</p>
+                        <p className="text-foreground font-medium">29.01.2019</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Type of Corporation</p>
-                        <p className="text-gray-900 font-medium">Société Anonyme LLC</p>
+                        <p className="text-muted-foreground text-xs">Type of Corporation</p>
+                        <p className="text-foreground font-medium">Société Anonyme LLC</p>
                       </div>
                     </div>
                   </div>
@@ -131,14 +131,14 @@ export default function Hero() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="px-2 py-1 bg-red-100 rounded text-red-700 text-xs font-semibold">FINMA</div>
-                    <h4 className="font-semibold text-gray-900 text-base">License Confirmation</h4>
+                    <h4 className="font-semibold text-foreground text-base">License Confirmation</h4>
                   </div>
                   <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
                     <p className="text-xs text-purple-800 font-medium mb-2">SO-FIT Member No.: 1186</p>
-                    <p className="text-sm text-gray-700 leading-relaxed">
+                    <p className="text-sm text-foreground/85 leading-relaxed">
                       Finatrades Finance SA ("Finatrades") is an authorized member of d'Organisme de Surveillance pour Intermédiaires Financiers & Trustees (SO-FIT), and as such is subject to supervision by SO-FIT, a supervisory body officially recognized by the Swiss Financial Market Supervisory Authority (FINMA).
                     </p>
-                    <p className="text-sm text-gray-700 leading-relaxed mt-3">
+                    <p className="text-sm text-foreground/85 leading-relaxed mt-3">
                       Finatrades' activities, including provision of its digital barter and payment platform, are carried out in compliance with the Swiss Federal Anti-Money Laundering Act (AMLA) and other applicable Swiss and international financial regulations.
                     </p>
                   </div>
@@ -146,8 +146,8 @@ export default function Hero() {
 
                 {/* AML Compliance */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-gray-900 text-base">Anti-Money Laundering (AML)</h4>
-                  <p className="text-sm text-gray-600 leading-relaxed">
+                  <h4 className="font-semibold text-foreground text-base">Anti-Money Laundering (AML)</h4>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     Finatrades Finance SA is subject to the Swiss Federal Anti-Money Laundering Act (AMLA) and operates in full alignment with the Financial Action Task Force (FATF) Recommendations.
                   </p>
                   <div className="space-y-3">
@@ -162,8 +162,8 @@ export default function Hero() {
                       <div key={i} className="flex items-start gap-3">
                         <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-gray-900">{item.title}</p>
-                          <p className="text-xs text-gray-600">{item.desc}</p>
+                          <p className="text-sm font-medium text-foreground">{item.title}</p>
+                          <p className="text-xs text-muted-foreground">{item.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -171,9 +171,9 @@ export default function Hero() {
                 </div>
 
                 {/* Contact */}
-                <div className="bg-gray-50 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-gray-700 font-medium mb-1">Compliance Contact</p>
-                  <p className="text-xs text-gray-600">For compliance-related inquiries: support@finatrades.com</p>
+                <div className="bg-muted/40 rounded-lg p-4 mt-4">
+                  <p className="text-sm text-foreground/85 font-medium mb-1">Compliance Contact</p>
+                  <p className="text-xs text-muted-foreground">For compliance-related inquiries: support@finatrades.com</p>
                 </div>
               </div>
             </motion.div>
@@ -222,13 +222,13 @@ export default function Hero() {
               </motion.div>
 
               {/* Personal / Business Toggle */}
-              <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-white/80 backdrop-blur-sm rounded-full border border-gray-200 shadow-sm w-fit">
+              <motion.div variants={itemVariants} className="flex items-center gap-1 p-1 bg-card/80 backdrop-blur-sm rounded-full border border-border shadow-sm w-fit">
                 <button
                   onClick={() => setMode('personal')}
                   className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                     isPersonal 
                       ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                   data-testid="toggle-personal"
                 >
@@ -239,7 +239,7 @@ export default function Hero() {
                   className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                     !isPersonal 
                       ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                   }`}
                   data-testid="toggle-business"
                 >
@@ -278,7 +278,7 @@ export default function Hero() {
 
               {/* CTA Buttons - Sign In outline, Get Started orange */}
               <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-3 sm:gap-4 pt-4">
-                <Link href="/sign-in" className="group flex items-center justify-center gap-2 border border-gray-300 text-[#0D0D0D] bg-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-gray-50 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto" data-testid="btn-sign-in">
+                <Link href="/sign-in" className="group flex items-center justify-center gap-2 border border-border text-[#0D0D0D] bg-card px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-muted/40 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto" data-testid="btn-sign-in">
                   {c.secondaryCta}
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
@@ -323,7 +323,7 @@ export default function Hero() {
                         <div className="w-1.5 h-1.5 rounded-full bg-[#A342FF]" />
                         <span className="text-white font-semibold text-xs tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
                       </div>
-                      <p className="text-gray-400 text-[8px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+                      <p className="text-muted-foreground/70 text-[8px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
                     </div>
                   </div>
                   
@@ -337,11 +337,11 @@ export default function Hero() {
                   {/* Bottom row: Card holder + Valid thru */}
                   <div className="flex justify-between items-end relative z-10">
                     <div>
-                      <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
+                      <p className="text-muted-foreground text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
                       <p className="text-white text-xs font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500 text-[8px] uppercase tracking-wider mb-0.5">Valid Thru</p>
+                      <p className="text-muted-foreground text-[8px] uppercase tracking-wider mb-0.5">Valid Thru</p>
                       <p className="text-white text-xs font-semibold">12/28</p>
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export default function Hero() {
                           <div className="w-2 h-2 rounded-full bg-[#A342FF]" />
                           <span className="text-white font-semibold text-sm tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
                         </div>
-                        <p className="text-gray-400 text-[10px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+                        <p className="text-muted-foreground/70 text-[10px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
                       </div>
                     </div>
                     
@@ -433,15 +433,15 @@ export default function Hero() {
                     <div className="flex justify-between items-end relative z-10">
                       <div className="flex gap-8">
                         <div>
-                          <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
+                          <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
                           <p className="text-white text-sm font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500 text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
+                          <p className="text-muted-foreground text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
                           <p className="text-white text-sm font-semibold">12/28</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/10 rounded-full border border-white/20">
+                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-card/10 rounded-full border border-white/20">
                         <span className="text-white/80 text-[10px]">🔒</span>
                         <span className="text-white text-[10px] font-semibold tracking-wide">SECURED</span>
                       </div>

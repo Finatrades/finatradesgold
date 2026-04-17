@@ -224,13 +224,13 @@ export default function BnslPlanDetailAdmin({
   };
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-xl overflow-hidden">
+    <div className="flex flex-col h-full bg-card rounded-lg shadow-xl overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 border-b bg-muted/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-gray-900">{plan.contractId}</h2>
-            <Badge variant="outline" className="bg-white">{plan.status}</Badge>
+            <h2 className="text-2xl font-bold text-foreground">{plan.contractId}</h2>
+            <Badge variant="outline" className="bg-card">{plan.status}</Badge>
             <Badge className={
               plan.planRiskLevel === 'Critical' ? 'bg-red-600' :
               plan.planRiskLevel === 'High' ? 'bg-purple-600' :
@@ -239,7 +239,7 @@ export default function BnslPlanDetailAdmin({
               {plan.planRiskLevel} Risk
             </Badge>
           </div>
-          <p className="text-gray-500 mt-1">{plan.participant.name} • {plan.participant.country}</p>
+          <p className="text-muted-foreground mt-1">{plan.participant.name} • {plan.participant.country}</p>
         </div>
         
         <div className="flex gap-2">
@@ -266,25 +266,25 @@ export default function BnslPlanDetailAdmin({
                 </CardHeader>
                 <CardContent className="space-y-6">
                    <div>
-                     <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Original Sale</h4>
-                     <div className="grid grid-cols-2 gap-4 bg-gray-50 p-4 rounded-lg">
+                     <h4 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">Original Sale</h4>
+                     <div className="grid grid-cols-2 gap-4 bg-muted/40 p-4 rounded-lg">
                         <div>
-                          <p className="text-xs text-gray-500">Gold Sold</p>
+                          <p className="text-xs text-muted-foreground">Gold Sold</p>
                           <p className="font-bold">{plan.goldSoldGrams}g</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Enrollment Price</p>
+                          <p className="text-xs text-muted-foreground">Enrollment Price</p>
                           <p className="font-bold">${plan.enrollmentPriceUsdPerGram}/g</p>
                         </div>
                         <div className="col-span-2 border-t pt-2 mt-1">
-                          <p className="text-xs text-gray-500">Base Price Component (Deferred)</p>
+                          <p className="text-xs text-muted-foreground">Base Price Component (Deferred)</p>
                           <p className="text-xl font-bold text-blue-700">${plan.basePriceComponentUsd.toLocaleString()}</p>
                         </div>
                      </div>
                    </div>
                    
                    <div>
-                     <h4 className="text-sm font-semibold text-gray-900 mb-3 uppercase tracking-wider">Margin Component</h4>
+                     <h4 className="text-sm font-semibold text-foreground mb-3 uppercase tracking-wider">Margin Component</h4>
                      <div className="grid grid-cols-2 gap-4 bg-purple-50 p-4 rounded-lg">
                         <div>
                           <p className="text-xs text-fuchsia-800">Annual Rate</p>
@@ -303,10 +303,10 @@ export default function BnslPlanDetailAdmin({
 
                    <div className="bg-gray-900 text-white p-4 rounded-lg">
                       <div className="flex justify-between items-center">
-                        <span className="text-gray-400">Total Sale Proceeds</span>
+                        <span className="text-muted-foreground/70">Total Sale Proceeds</span>
                         <span className="text-2xl font-bold">${plan.totalSaleProceedsUsd.toLocaleString()}</span>
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">Total amount Wingold owes under this agreement.</p>
+                      <p className="text-xs text-muted-foreground mt-1">Total amount Wingold owes under this agreement.</p>
                    </div>
                 </CardContent>
               </Card>
@@ -320,16 +320,16 @@ export default function BnslPlanDetailAdmin({
                   <CardContent className="space-y-4">
                      <div className="grid grid-cols-2 gap-4">
                        <div>
-                         <Label className="text-gray-500">Start Date</Label>
+                         <Label className="text-muted-foreground">Start Date</Label>
                          <div className="flex items-center gap-2">
-                           <Calendar className="w-4 h-4 text-gray-400" />
+                           <Calendar className="w-4 h-4 text-muted-foreground/70" />
                            <p className="font-medium">{new Date(plan.startDate).toLocaleDateString()}</p>
                          </div>
                        </div>
                        <div>
-                         <Label className="text-gray-500">Maturity Date</Label>
+                         <Label className="text-muted-foreground">Maturity Date</Label>
                          <div className="flex items-center gap-2">
-                           <Clock className="w-4 h-4 text-gray-400" />
+                           <Clock className="w-4 h-4 text-muted-foreground/70" />
                            <p className="font-medium">{new Date(plan.maturityDate).toLocaleDateString()}</p>
                          </div>
                        </div>
@@ -337,16 +337,16 @@ export default function BnslPlanDetailAdmin({
                      
                      <div className="mt-6 pt-6 border-t">
                         <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-600">Margin Paid Progress</span>
+                          <span className="text-sm text-muted-foreground">Margin Paid Progress</span>
                           <span className="text-sm font-bold">{((plan.paidMarginUsd / plan.totalMarginComponentUsd) * 100).toFixed(1)}%</span>
                         </div>
-                        <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
                            <div 
                              className="h-full bg-green-500 rounded-full" 
                              style={{ width: `${(plan.paidMarginUsd / plan.totalMarginComponentUsd) * 100}%` }}
                            />
                         </div>
-                        <div className="flex justify-between mt-2 text-xs text-gray-500">
+                        <div className="flex justify-between mt-2 text-xs text-muted-foreground">
                            <span>Paid: ${plan.paidMarginUsd.toLocaleString()}</span>
                            <span>Remaining: ${plan.remainingMarginUsd.toLocaleString()}</span>
                         </div>
@@ -365,7 +365,7 @@ export default function BnslPlanDetailAdmin({
                              <>Complete Maturity & Credit Base Price</>
                            )}
                          </Button>
-                         <p className="text-xs text-gray-500 mt-2 text-center">
+                         <p className="text-xs text-muted-foreground mt-2 text-center">
                            This will credit ${plan.basePriceComponentUsd.toLocaleString()} worth of gold to user's wallet at current market price
                          </p>
                        </div>
@@ -400,7 +400,7 @@ export default function BnslPlanDetailAdmin({
                <CardContent>
                  <div className="rounded-md border">
                    <table className="w-full text-sm text-left">
-                     <thead className="bg-gray-50 text-gray-500">
+                     <thead className="bg-muted/40 text-muted-foreground">
                        <tr>
                          <th className="p-3">#</th>
                          <th className="p-3">Date</th>
@@ -413,11 +413,11 @@ export default function BnslPlanDetailAdmin({
                      </thead>
                      <tbody className="divide-y">
                        {plan.payouts.map((payout) => (
-                         <tr key={payout.id} className="hover:bg-gray-50">
+                         <tr key={payout.id} className="hover:bg-muted/40">
                            <td className="p-3 font-medium">{payout.sequence}</td>
                            <td className="p-3">{new Date(payout.scheduledDate).toLocaleDateString()}</td>
                            <td className="p-3 font-mono">${payout.monetaryAmountUsd.toLocaleString()}</td>
-                           <td className="p-3 text-gray-500">
+                           <td className="p-3 text-muted-foreground">
                              {payout.marketPriceUsdPerGram ? `$${payout.marketPriceUsdPerGram}/g` : '-'}
                            </td>
                            <td className="p-3 font-bold text-fuchsia-600">
@@ -453,15 +453,15 @@ export default function BnslPlanDetailAdmin({
              {!plan.earlyTermination ? (
                <Card className={plan.status === 'Early Termination Requested' ? "border-2 border-orange-300 bg-orange-50" : "border-dashed border-2"}>
                  <CardContent className="flex flex-col items-center justify-center py-12">
-                    <div className={`p-4 rounded-full mb-4 ${plan.status === 'Early Termination Requested' ? 'bg-orange-100' : 'bg-gray-100'}`}>
-                      <AlertTriangle className={`w-8 h-8 ${plan.status === 'Early Termination Requested' ? 'text-orange-500' : 'text-gray-400'}`} />
+                    <div className={`p-4 rounded-full mb-4 ${plan.status === 'Early Termination Requested' ? 'bg-orange-100' : 'bg-muted'}`}>
+                      <AlertTriangle className={`w-8 h-8 ${plan.status === 'Early Termination Requested' ? 'text-orange-500' : 'text-muted-foreground/70'}`} />
                     </div>
-                    <h3 className="text-lg font-bold text-gray-900">
+                    <h3 className="text-lg font-bold text-foreground">
                       {plan.status === 'Early Termination Requested' 
                         ? 'Early Termination Pending Review' 
                         : 'No Early Termination Requested'}
                     </h3>
-                    <p className="text-gray-500 mb-6 text-center max-w-md">
+                    <p className="text-muted-foreground mb-6 text-center max-w-md">
                       {plan.status === 'Early Termination Requested' 
                         ? 'User has requested early termination. Run simulation to calculate settlement and process the request.'
                         : 'The plan is proceeding according to schedule. You can simulate an early termination to see the financial impact.'}
@@ -488,16 +488,16 @@ export default function BnslPlanDetailAdmin({
                    </CardHeader>
                    <CardContent className="space-y-4">
                       <div>
-                        <Label className="text-gray-500">Reason</Label>
-                        <p className="text-sm bg-gray-50 p-3 rounded border mt-1">{plan.earlyTermination.reason}</p>
+                        <Label className="text-muted-foreground">Reason</Label>
+                        <p className="text-sm bg-muted/40 p-3 rounded border mt-1">{plan.earlyTermination.reason}</p>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                          <div>
-                           <Label className="text-gray-500">Requested At</Label>
+                           <Label className="text-muted-foreground">Requested At</Label>
                            <p className="font-medium">{new Date(plan.earlyTermination.requestedAt).toLocaleDateString()}</p>
                          </div>
                          <div>
-                           <Label className="text-gray-500">Market Price Used</Label>
+                           <Label className="text-muted-foreground">Market Price Used</Label>
                            <p className="font-medium">${plan.earlyTermination.currentMarketPriceUsdPerGram}/g</p>
                          </div>
                       </div>
@@ -522,7 +522,7 @@ export default function BnslPlanDetailAdmin({
                                <>Settle & Credit Gold to User</>
                              )}
                            </Button>
-                           <p className="text-xs text-gray-500 mt-2 text-center">
+                           <p className="text-xs text-muted-foreground mt-2 text-center">
                              This will credit {plan.earlyTermination.finalGoldGrams.toFixed(4)}g to user's wallet
                            </p>
                         </div>
@@ -531,7 +531,7 @@ export default function BnslPlanDetailAdmin({
                  </Card>
 
                  {/* Financial Simulation Result */}
-                 <Card className="bg-gray-50 border-gray-200">
+                 <Card className="bg-muted/40 border-border">
                    <CardHeader>
                      <CardTitle>Settlement Simulation</CardTitle>
                      <CardDescription>Based on Terms Section 5 (Early Termination)</CardDescription>
@@ -539,11 +539,11 @@ export default function BnslPlanDetailAdmin({
                    <CardContent className="space-y-4">
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Base Price Component Value</span>
+                          <span className="text-muted-foreground">Base Price Component Value</span>
                           <span className="font-mono">${plan.earlyTermination.basePriceComponentValueUsd.toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between text-sm">
-                          <span className="text-gray-600">Total Sale Proceeds</span>
+                          <span className="text-muted-foreground">Total Sale Proceeds</span>
                           <span className="font-mono">${plan.earlyTermination.totalSaleProceedsUsd.toLocaleString()}</span>
                         </div>
                       </div>
@@ -567,7 +567,7 @@ export default function BnslPlanDetailAdmin({
 
                       <Separator className="bg-gray-300" />
 
-                      <div className="flex justify-between font-bold text-gray-900">
+                      <div className="flex justify-between font-bold text-foreground">
                          <span>Net Value (USD)</span>
                          <span>${plan.earlyTermination.netValueUsd.toLocaleString()}</span>
                       </div>
@@ -594,14 +594,14 @@ export default function BnslPlanDetailAdmin({
                   <div className="space-y-4">
                      {auditLogs.map((log) => (
                        <div key={log.id} className="flex gap-4 p-3 border-b last:border-0">
-                          <div className="text-xs text-gray-500 w-32 shrink-0">
+                          <div className="text-xs text-muted-foreground w-32 shrink-0">
                              {new Date(log.timestamp).toLocaleString()}
                           </div>
                           <div>
-                             <p className="font-medium text-sm text-gray-900">
+                             <p className="font-medium text-sm text-foreground">
                                <span className="font-bold">{log.actor}</span> ({log.actorRole}) - {log.actionType}
                              </p>
-                             <p className="text-sm text-gray-600">{log.details}</p>
+                             <p className="text-sm text-muted-foreground">{log.details}</p>
                           </div>
                        </div>
                      ))}
@@ -623,12 +623,12 @@ export default function BnslPlanDetailAdmin({
           </DialogHeader>
           <div className="space-y-4 py-4">
              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-gray-50 p-3 rounded border">
-                   <p className="text-xs text-gray-500">Scheduled Amount</p>
+                <div className="bg-muted/40 p-3 rounded border">
+                   <p className="text-xs text-muted-foreground">Scheduled Amount</p>
                    <p className="font-bold font-mono">${payoutToProcess?.monetaryAmountUsd.toLocaleString()}</p>
                 </div>
-                <div className="bg-gray-50 p-3 rounded border">
-                   <p className="text-xs text-gray-500">Current Market Price</p>
+                <div className="bg-muted/40 p-3 rounded border">
+                   <p className="text-xs text-muted-foreground">Current Market Price</p>
                    <p className="font-bold font-mono">${currentMarketPrice}/g</p>
                 </div>
              </div>
@@ -687,15 +687,15 @@ export default function BnslPlanDetailAdmin({
                 </div>
                 <div>
                    <Label>Admin Fee (%)</Label>
-                   <Input value="2.0" disabled className="mt-1 bg-gray-100" />
+                   <Input value="2.0" disabled className="mt-1 bg-muted" />
                 </div>
                 <div>
                    <Label>Penalty (%)</Label>
-                   <Input value="5.0" disabled className="mt-1 bg-gray-100" />
+                   <Input value="5.0" disabled className="mt-1 bg-muted" />
                 </div>
              </div>
 
-             <div className="space-y-2 bg-gray-50 p-4 rounded border">
+             <div className="space-y-2 bg-muted/40 p-4 rounded border">
                 <div className="flex justify-between text-sm">
                    <span>Base Price Value</span>
                    <span className="font-mono">${simulation.basePriceComponentValueUsd.toLocaleString()}</span>

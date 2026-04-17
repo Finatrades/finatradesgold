@@ -47,13 +47,13 @@ export default function MobileDashboard() {
   if (isLoading) {
     return (
       <div className="space-y-4 animate-pulse">
-        <div className="h-48 bg-gray-200 rounded-2xl"></div>
-        <div className="h-16 bg-gray-200 rounded-xl"></div>
+        <div className="h-48 bg-muted rounded-2xl"></div>
+        <div className="h-16 bg-muted rounded-xl"></div>
         <div className="grid grid-cols-2 gap-2">
-          <div className="h-24 bg-gray-200 rounded-xl"></div>
-          <div className="h-24 bg-gray-200 rounded-xl"></div>
-          <div className="h-24 bg-gray-200 rounded-xl"></div>
-          <div className="h-24 bg-gray-200 rounded-xl"></div>
+          <div className="h-24 bg-muted rounded-xl"></div>
+          <div className="h-24 bg-muted rounded-xl"></div>
+          <div className="h-24 bg-muted rounded-xl"></div>
+          <div className="h-24 bg-muted rounded-xl"></div>
         </div>
       </div>
     );
@@ -82,7 +82,7 @@ export default function MobileDashboard() {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-fuchsia-500 to-pink-500 p-6 shadow-2xl"
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-card/20 rounded-full blur-3xl -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-pink-400/30 rounded-full blur-3xl -ml-16 -mb-16" />
         <div className="absolute top-1/2 left-1/2 w-32 h-32 bg-yellow-400/10 rounded-full blur-2xl -translate-x-1/2 -translate-y-1/2" />
         
@@ -117,7 +117,7 @@ export default function MobileDashboard() {
                 whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={handleRefresh}
                 disabled={isRefreshing}
-                className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg"
+                className="w-10 h-10 rounded-xl bg-card/15 backdrop-blur-lg border border-white/20 flex items-center justify-center shadow-lg"
               >
                 <RefreshCw className={`w-4 h-4 text-white ${isRefreshing ? 'animate-spin' : ''}`} />
               </motion.button>
@@ -161,15 +161,15 @@ export default function MobileDashboard() {
             transition={{ delay: 0.3 }}
             className="grid grid-cols-3 gap-3 mt-5 pt-4 border-t border-white/20"
           >
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+            <div className="bg-card/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
               <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">USD</p>
               <p className="text-white font-bold text-sm">${formatNumber(totalGoldGrams * goldPrice)}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+            <div className="bg-card/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
               <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">AED</p>
               <p className="text-white font-bold text-sm">{formatNumber(totalGoldGrams * goldPrice * 3.67)}</p>
             </div>
-            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
+            <div className="bg-card/10 backdrop-blur-sm rounded-xl p-2.5 text-center">
               <p className="text-white/60 text-[10px] uppercase tracking-wider mb-0.5">Vault</p>
               <p className="text-white font-bold text-sm">{formatNumber((totals.vaultGoldGrams || 0), 2)}g</p>
             </div>
@@ -246,11 +246,11 @@ export default function MobileDashboard() {
           transition={{ delay: 0.2 }}
           className="relative overflow-hidden rounded-xl bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-4"
         >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-card/10 rounded-full blur-2xl"></div>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-card/20 backdrop-blur-sm flex items-center justify-center">
                   <Coins className="w-4 h-4 text-white" />
                 </div>
                 <div>
@@ -258,7 +258,7 @@ export default function MobileDashboard() {
                   <p className="text-[10px] text-purple-200">Live Gold Price</p>
                 </div>
               </div>
-              <Badge className="bg-white/20 text-white border-0 text-[10px] px-2 py-0.5">
+              <Badge className="bg-card/20 text-white border-0 text-[10px] px-2 py-0.5">
                 {isGoldPriceLive ? 'Live' : 'Cached'}
               </Badge>
             </div>
@@ -293,11 +293,11 @@ export default function MobileDashboard() {
           transition={{ delay: 0.25 }}
           className="relative overflow-hidden rounded-xl bg-gradient-to-br from-amber-500 via-amber-600 to-orange-700 p-4"
         >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-white/10 rounded-full blur-2xl"></div>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-card/10 rounded-full blur-2xl"></div>
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <div className="w-9 h-9 rounded-lg bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                <div className="w-9 h-9 rounded-lg bg-card/20 backdrop-blur-sm flex items-center justify-center">
                   <Database className="w-4 h-4 text-white" />
                 </div>
                 <div>
@@ -305,7 +305,7 @@ export default function MobileDashboard() {
                   <p className="text-[10px] text-amber-100">Fixed Gold Price</p>
                 </div>
               </div>
-              <Badge className="bg-white/20 text-white border-0 text-[10px] px-2 py-0.5">Fixed</Badge>
+              <Badge className="bg-card/20 text-white border-0 text-[10px] px-2 py-0.5">Fixed</Badge>
             </div>
             
             <div className="mb-3">

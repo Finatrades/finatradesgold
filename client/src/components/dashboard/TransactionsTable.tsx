@@ -32,12 +32,12 @@ const getStatusBadge = (status: string) => {
     return <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs px-2 py-0.5">Pending</Badge>;
   }
   if (s === 'locked') {
-    return <Badge className="bg-gray-200 text-gray-700 border-0 text-xs px-2 py-0.5">Locked</Badge>;
+    return <Badge className="bg-muted text-foreground/85 border-0 text-xs px-2 py-0.5">Locked</Badge>;
   }
   if (s === 'failed' || s === 'rejected') {
     return <Badge className="bg-red-100 text-red-700 border-0 text-xs px-2 py-0.5">Failed</Badge>;
   }
-  return <Badge className="bg-gray-100 text-gray-600 border-0 text-xs px-2 py-0.5">{status}</Badge>;
+  return <Badge className="bg-muted text-muted-foreground border-0 text-xs px-2 py-0.5">{status}</Badge>;
 };
 
 const isSwapType = (description: string | null) => {
@@ -130,9 +130,9 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
   }, [transactions, filter, dateRange]);
 
   return (
-    <Card className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm" data-testid="transactions-card">
+    <Card className="p-5 bg-card border border-border rounded-xl shadow-sm" data-testid="transactions-card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[20px] font-bold text-gray-900">Recent Transactions</h3>
+        <h3 className="text-[20px] font-bold text-foreground">Recent Transactions</h3>
         <Link href="/transactions">
           <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-transactions">
             View All
@@ -169,7 +169,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
 
       <div className="space-y-0.5">
         {filteredTransactions.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/70">
             <RefreshCw className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No transactions found</p>
           </div>
@@ -185,26 +185,26 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
             return (
               <div 
                 key={tx.id} 
-                className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-gray-50 last:border-0 hover:bg-muted/40 transition-colors"
                 data-testid={`transaction-row-${tx.id}`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  isPpSwap ? 'bg-green-100' : isCredit ? 'bg-green-100' : 'bg-gray-100'
+                  isPpSwap ? 'bg-green-100' : isCredit ? 'bg-green-100' : 'bg-muted'
                 }`}>
                   {isPpSwap ? (
                     <ShieldCheck className="w-4 h-4 text-green-600" />
                   ) : isCredit ? (
                     <ArrowDownLeft className="w-4 h-4 text-green-600" />
                   ) : (
-                    <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                    <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                   )}
                 </div>
                 
                 <div className="flex-1 min-w-0">
-                  <p className="text-[14px] font-medium text-gray-900 truncate">
+                  <p className="text-[14px] font-medium text-foreground truncate">
                     {getTransactionLabel(tx.type, tx.description)}
                   </p>
-                  <p className="text-[12px] text-gray-500">
+                  <p className="text-[12px] text-muted-foreground">
                     {format(new Date(tx.createdAt), 'MMM dd, yyyy')}
                   </p>
                 </div>
@@ -212,15 +212,15 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 <div className="text-right shrink-0">
                   {goldAmount > 0 ? (
                     <p className={`text-[14px] font-semibold ${
-                      isPpSwap ? 'text-gray-500' : isCredit ? 'text-green-600' : 'text-gray-900'
+                      isPpSwap ? 'text-muted-foreground' : isCredit ? 'text-green-600' : 'text-foreground'
                     }`}>
                       {isCredit ? '+' : isDebit ? '-' : ''}{goldAmount.toFixed(2)}g
                     </p>
                   ) : (
-                    <p className="text-sm text-gray-400">&mdash;</p>
+                    <p className="text-sm text-muted-foreground/70">&mdash;</p>
                   )}
                   {usdAmount > 0 && (
-                    <p className="text-[12px] text-gray-500">${usdAmount.toFixed(2)}</p>
+                    <p className="text-[12px] text-muted-foreground">${usdAmount.toFixed(2)}</p>
                   )}
                 </div>
                 

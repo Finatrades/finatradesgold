@@ -53,7 +53,7 @@ export default function BottomSheet({ isOpen, onClose, title, children }: Bottom
                 onClose();
               }
             }}
-            className="fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-[28px] shadow-2xl max-h-[90vh] overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 bg-card rounded-t-[28px] shadow-2xl max-h-[90vh] overflow-hidden"
             style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 0px))' }}
             role="dialog"
             aria-modal="true"
@@ -64,14 +64,14 @@ export default function BottomSheet({ isOpen, onClose, title, children }: Bottom
             </div>
 
             {title && (
-              <div className="flex items-center justify-between px-5 pb-4 border-b border-gray-100">
-                <h2 className="text-xl font-bold text-gray-900">{title}</h2>
+              <div className="flex items-center justify-between px-5 pb-4 border-b border-border/60">
+                <h2 className="text-xl font-bold text-foreground">{title}</h2>
                 <button
                   onClick={onClose}
-                  className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
+                  className="w-10 h-10 rounded-full bg-muted flex items-center justify-center touch-target haptic-press active:bg-muted"
                   aria-label="Close"
                 >
-                  <X className="w-5 h-5 text-gray-600" />
+                  <X className="w-5 h-5 text-muted-foreground" />
                 </button>
               </div>
             )}

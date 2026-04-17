@@ -33,35 +33,35 @@ function TermsContent() {
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-6 text-[#0D0D0D]">1. Definitions & Interpretation</h2>
               <div className="space-y-4">
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Customer" or "User"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means any natural or legal person who accesses or uses the Platform.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Gold Certificate"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means a digital instrument issued and administered on the Platform that certifies the Customer's beneficial ownership of a specific quantity and purity of physical gold that has been deposited, assayed, and stored with a licensed third-party vault operator under a vaulting agreement between the vault operator and the relevant Commercial Partner.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Underlying Gold"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means the specific physical gold bullion (bars, coins) that corresponds to a Gold Certificate. Legal title to the Underlying Gold is held by the Customer, subject to the terms of the vaulting agreement between the Commercial Partner and the third-party vault operator.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Platform"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means the Finatrades digital infrastructure, including websites, apps, and APIs, that acts as a registry and transaction system for Gold Certificates.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Commercial Partner"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">refers to Wingold & Metals DMCC, a UAE-licensed precious metals trading company, which utilizes the Platform for specific commercial activities. A Commercial Partner acts as an independent principal in its transactions with Users and is responsible for all arrangements regarding the physical gold, including vaulting agreements.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Vaulting Agreement"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means the separate contractual agreement between the Commercial Partner (Wingold & Metals DMCC) and a licensed third-party vault operator governing the storage, insurance, and safekeeping of physical gold. This agreement is independent of Finatrades and these Terms.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Affiliate"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means, with respect to Finatrades, any entity that directly or indirectly controls, is controlled by, or is under common control with Finatrades. Affiliates may be engaged to perform specific technical, operational, or administrative functions related to the Platform.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#0D0D0D] mb-1">"Swiss Law"</p>
                   <p className="text-[#0D0D0D]/70 text-sm">means all applicable statutory, regulatory, and supervisory frameworks of Switzerland.</p>
                 </div>
@@ -75,19 +75,19 @@ function TermsContent() {
               <p className="text-[#0D0D0D]/80 leading-relaxed mb-4">Finatrades operates a technological and administrative platform that provides the following services:</p>
               
               <div className="space-y-4 mb-8">
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#8A2BE2] mb-2">A. Gold Certification & Registry</p>
                   <p className="text-[#0D0D0D]/70 text-sm">We provide the digital infrastructure to issue and maintain a registry of Gold Certificates. These Certificates represent beneficial ownership of physical gold that is stored under vaulting agreements managed solely by Commercial Partners.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#8A2BE2] mb-2">B. Gold-Based Payment and Settlement System</p>
                   <p className="text-[#0D0D0D]/70 text-sm">The Platform enables a payment and settlement system where Gold Certificates function as the medium of exchange. This involves the transfer of ownership of a Gold Certificate (and the beneficial interest in the Underlying Gold) to another User on the Platform. All transactions are settled through the transfer of Gold Certificates, representing gold. Finatrades does not accept, hold, or transmit customer funds.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#8A2BE2] mb-2">C. Platform Infrastructure for Commercial Partners</p>
                   <p className="text-[#0D0D0D]/70 text-sm">Finatrades provides the neutral digital infrastructure that enables Commercial Partners to offer their services to Users.</p>
                 </div>
-                <div className="bg-white rounded-xl p-4 border border-gray-200">
+                <div className="bg-card rounded-xl p-4 border border-border">
                   <p className="font-semibold text-[#8A2BE2] mb-2">D. Operational Support</p>
                   <p className="text-[#0D0D0D]/70 text-sm">Finatrades may engage its Affiliates to provide specific technical, operational, or administrative support for the Platform. Such Affiliates act under Finatrades' instruction and for its benefit, and Finatrades remains responsible for their performance under these Terms.</p>
                 </div>
@@ -232,11 +232,11 @@ function TermsContent() {
               </p>
             </section>
 
-            <div className="border-t border-gray-200 pt-8 mt-12">
+            <div className="border-t border-border pt-8 mt-12">
               <p className="text-[#0D0D0D]/80 leading-relaxed mb-6">
                 IN WITNESS WHEREOF, these Terms have been made accessible and effective as of the date first posted above.
               </p>
-              <div className="bg-white rounded-xl p-6 border border-gray-200">
+              <div className="bg-card rounded-xl p-6 border border-border">
                 <p className="text-[#0D0D0D]/70 mb-2">For questions regarding these Terms, please contact:</p>
                 <p className="font-semibold text-[#0D0D0D]">Finatrades Finance SA</p>
                 <p className="text-[#0D0D0D]/70">Rue Robert Céard 6</p>

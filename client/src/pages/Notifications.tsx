@@ -116,7 +116,7 @@ export default function Notifications() {
       case 'vault': return 'bg-yellow-500/10 text-yellow-500';
       case 'security': return 'bg-red-500/10 text-red-500';
       case 'referral': return 'bg-pink-500/10 text-pink-500';
-      default: return 'bg-gray-500/10 text-gray-500';
+      default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 

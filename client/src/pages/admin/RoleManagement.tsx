@@ -328,7 +328,7 @@ export default function RoleManagement() {
           </div>
         </div>
 
-        <Card className="bg-gray-50 border-gray-200">
+        <Card className="bg-muted/40 border-border">
           <CardContent className="py-3 px-4">
             <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
               <span className="flex items-center gap-1.5"><Eye className="h-4 w-4" /> View</span>

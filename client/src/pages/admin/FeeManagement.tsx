@@ -291,7 +291,7 @@ export default function FeeManagement() {
                         {getModuleFees(module).map((fee) => (
                           <div 
                             key={fee.id} 
-                            className={`flex items-center justify-between p-4 rounded-lg border ${fee.isActive ? 'bg-white' : 'bg-muted/50 opacity-60'}`}
+                            className={`flex items-center justify-between p-4 rounded-lg border ${fee.isActive ? 'bg-card' : 'bg-muted/50 opacity-60'}`}
                             data-testid={`fee-row-${fee.id}`}
                           >
                             <div className="flex-1">

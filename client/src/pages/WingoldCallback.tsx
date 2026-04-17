@@ -92,7 +92,7 @@ export default function WingoldCallback() {
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Loader2 className="h-12 w-12 animate-spin text-purple-600 mb-4" />
-            <p className="text-gray-600">Processing your order...</p>
+            <p className="text-muted-foreground">Processing your order...</p>
           </CardContent>
         </Card>
       </div>
@@ -110,34 +110,34 @@ export default function WingoldCallback() {
             <CardTitle className="text-2xl text-green-700">Payment Successful!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-center text-gray-600">
+            <p className="text-center text-muted-foreground">
               Your gold purchase has been completed successfully.
             </p>
             
             {orderDetails && (
-              <div className="bg-gray-50 rounded-lg p-4 space-y-3">
+              <div className="bg-muted/40 rounded-lg p-4 space-y-3">
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Order ID</span>
+                  <span className="text-muted-foreground">Order ID</span>
                   <span className="font-medium text-sm">{orderDetails.orderId.substring(0, 8)}...</span>
                 </div>
                 {orderDetails.referenceNumber && (
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Reference</span>
+                    <span className="text-muted-foreground">Reference</span>
                     <span className="font-medium">{orderDetails.referenceNumber}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Gold Amount</span>
+                  <span className="text-muted-foreground">Gold Amount</span>
                   <span className="font-medium text-amber-600">{orderDetails.grams}g</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-500">Total Paid</span>
+                  <span className="text-muted-foreground">Total Paid</span>
                   <span className="font-medium">${parseFloat(orderDetails.usd).toLocaleString()}</span>
                 </div>
               </div>
             )}
 
-            <p className="text-sm text-gray-500 text-center">
+            <p className="text-sm text-muted-foreground text-center">
               Your gold will be credited to your wallet shortly. You will receive a confirmation email.
             </p>
 
@@ -165,7 +165,7 @@ export default function WingoldCallback() {
             <CardTitle className="text-2xl text-amber-700">Payment Cancelled</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            <p className="text-center text-gray-600">
+            <p className="text-center text-muted-foreground">
               Your gold purchase was cancelled. No charges have been made.
             </p>
 
@@ -203,7 +203,7 @@ export default function WingoldCallback() {
           <CardTitle className="text-2xl text-red-700">Payment Failed</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
-          <p className="text-center text-gray-600">
+          <p className="text-center text-muted-foreground">
             {errorMessage || 'There was an issue processing your payment. Please try again.'}
           </p>
 
@@ -226,7 +226,7 @@ export default function WingoldCallback() {
             </Button>
           </div>
 
-          <p className="text-xs text-gray-400 text-center">
+          <p className="text-xs text-muted-foreground/70 text-center">
             If you continue to experience issues, please contact support.
           </p>
         </CardContent>

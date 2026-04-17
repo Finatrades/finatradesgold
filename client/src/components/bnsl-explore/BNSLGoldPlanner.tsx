@@ -94,13 +94,13 @@ export default function BNSLGoldPlanner() {
             <span className="text-sm font-semibold text-purple-800">BNSL Gold Buy Back Planner</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             BNSL Gold Buy Back{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Planner
             </span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             Plan your gold buy back and projected margins over time.
           </p>
         </motion.div>
@@ -111,30 +111,30 @@ export default function BNSLGoldPlanner() {
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               viewport={{ once: true }}
-              className="bg-white rounded-3xl border border-gray-100 p-8 shadow-xl"
+              className="bg-card rounded-3xl border border-border/60 p-8 shadow-xl"
             >
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
                   <Sparkles className="w-5 h-5 text-purple-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">BNSL Gold Buy Back Planner</h3>
-                  <p className="text-sm text-gray-500">Plan your gold buy back and projected margins over time.</p>
+                  <h3 className="font-bold text-foreground text-lg">BNSL Gold Buy Back Planner</h3>
+                  <p className="text-sm text-muted-foreground">Plan your gold buy back and projected margins over time.</p>
                 </div>
               </div>
 
               <div className="space-y-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">BNSL Plan Value</label>
+                  <label className="block text-sm font-medium text-foreground/85 mb-2">BNSL Plan Value</label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-semibold text-gray-400">
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-semibold text-muted-foreground/70">
                       $
                     </span>
                     <input
                       type="number"
                       value={planValue}
                       onChange={(e) => handleValueChange(Number(e.target.value))}
-                      className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-gray-900 bg-gray-50 rounded-xl border border-gray-200 focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                      className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-foreground bg-muted/40 rounded-xl border border-border focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
                       data-testid="input-plan-value"
                     />
                   </div>
@@ -145,40 +145,40 @@ export default function BNSLGoldPlanner() {
                     step="500"
                     value={planValue}
                     onChange={(e) => handleValueChange(Number(e.target.value))}
-                    className="w-full h-2 mt-4 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    className="w-full h-2 mt-4 bg-muted rounded-lg appearance-none cursor-pointer accent-purple-500"
                     data-testid="slider-plan-value"
                   />
-                  <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                     <Info className="w-3.5 h-3.5" />
                     <span>Total value of physical gold you buy and store in our vault.</span>
                   </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100">
+                <div className="pt-2 border-t border-border/60">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-medium text-gray-700">Locked-In Gold Price (per gram)</span>
+                    <span className="text-sm font-medium text-foreground/85">Locked-In Gold Price (per gram)</span>
                     <span className="text-xs font-medium text-purple-600 flex items-center gap-1">
                       <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
                       Live Price
                     </span>
                   </div>
-                  <div className="flex items-center gap-3 bg-gray-50 rounded-xl p-4 border border-gray-100">
-                    <div className="p-2 rounded-lg bg-gray-200/70">
-                      <Lock className="w-4 h-4 text-gray-600" />
+                  <div className="flex items-center gap-3 bg-muted/40 rounded-xl p-4 border border-border/60">
+                    <div className="p-2 rounded-lg bg-muted/70">
+                      <Lock className="w-4 h-4 text-muted-foreground" />
                     </div>
                     <div className="flex-1">
-                      <span className="text-2xl font-bold text-gray-900">{goldPrice.toFixed(2)}</span>
-                      <span className="text-gray-500 ml-1">/gram</span>
+                      <span className="text-2xl font-bold text-foreground">{goldPrice.toFixed(2)}</span>
+                      <span className="text-muted-foreground ml-1">/gram</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1.5 mt-2 text-xs text-gray-500">
+                  <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                     <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                     <span className="text-yellow-600">Live market price — locked at plan start</span>
                   </div>
                 </div>
 
                 <div className="pt-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Plan Tenure</label>
+                  <label className="block text-sm font-medium text-foreground/85 mb-3">Plan Tenure</label>
                   <div className="grid grid-cols-3 gap-3">
                     {planTenures.map((tenure) => (
                       <motion.button
@@ -189,7 +189,7 @@ export default function BNSLGoldPlanner() {
                         className={`py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
                           selectedTenure.months === tenure.months
                             ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200'
+                            : 'bg-muted text-foreground/85 hover:bg-muted border border-border'
                         }`}
                         data-testid={`button-tenure-${tenure.months}`}
                       >
@@ -199,14 +199,14 @@ export default function BNSLGoldPlanner() {
                   </div>
                 </div>
 
-                <div className="pt-4 border-t border-gray-100">
-                  <label className="block text-sm font-medium text-gray-700 mb-3">Estimated Gold Addition Rate</label>
+                <div className="pt-4 border-t border-border/60">
+                  <label className="block text-sm font-medium text-foreground/85 mb-3">Estimated Gold Addition Rate</label>
                   <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-100">
                     <div className="flex items-baseline gap-2">
                       <span className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                         {calculations.annualRate}%
                       </span>
-                      <span className="text-gray-600 font-medium">per annum</span>
+                      <span className="text-muted-foreground font-medium">per annum</span>
                     </div>
                     <p className="text-sm text-purple-700 mt-1">
                       Fixed rate for {selectedTenure.months}-month plan
@@ -227,56 +227,56 @@ export default function BNSLGoldPlanner() {
                   <TrendingUp className="w-5 h-5 text-green-600" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-gray-900 text-lg">Gold Buy Back Projection</h3>
-                  <p className="text-sm text-gray-500">Based on your selected parameters</p>
+                  <h3 className="font-bold text-foreground text-lg">Gold Buy Back Projection</h3>
+                  <p className="text-sm text-muted-foreground">Based on your selected parameters</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">BNSL Plan Value</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">BNSL Plan Value</span>
                     <div className="p-1.5 rounded-lg bg-purple-100">
                       <Lock className="w-3.5 h-3.5 text-purple-600" />
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.planValue)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Value of your BNSL plan</p>
+                  <p className="text-3xl font-black text-foreground">{formatCurrency(calculations.planValue)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Value of your BNSL plan</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
                     <Sparkles className="w-4 h-4 text-yellow-500" />
                   </div>
                   <p className="text-3xl font-black text-green-600">+{formatCurrency(calculations.guaranteedMargin)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Guaranteed margin on buy back</p>
+                  <p className="text-xs text-muted-foreground mt-1">Guaranteed margin on buy back</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Gold Value at Maturity *</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Gold Value at Maturity *</span>
                     <div className="p-1.5 rounded-lg bg-blue-100">
                       <TrendingUp className="w-3.5 h-3.5 text-blue-600" />
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.totalValueAtMaturity)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Combined purchased and additional gold</p>
+                  <p className="text-3xl font-black text-foreground">{formatCurrency(calculations.totalValueAtMaturity)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Combined purchased and additional gold</p>
                 </div>
 
-                <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-lg">
+                <div className="bg-card rounded-2xl p-5 border border-border/60 shadow-lg">
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Quarterly Paid Margin *</span>
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quarterly Paid Margin *</span>
                     <div className="p-1.5 rounded-lg bg-orange-100">
                       <Sparkles className="w-3.5 h-3.5 text-orange-600" />
                     </div>
                   </div>
-                  <p className="text-3xl font-black text-gray-900">{formatCurrency(calculations.quarterlyMargin)}</p>
-                  <p className="text-xs text-gray-500 mt-1">Margin paid every quarter + Principal paid after locking period.</p>
+                  <p className="text-3xl font-black text-foreground">{formatCurrency(calculations.quarterlyMargin)}</p>
+                  <p className="text-xs text-muted-foreground mt-1">Margin paid every quarter + Principal paid after locking period.</p>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-500 italic flex items-center gap-1">
+              <p className="text-xs text-muted-foreground italic flex items-center gap-1">
                 <ExternalLink className="w-3 h-3" />
                 *Terms and Conditions
               </p>

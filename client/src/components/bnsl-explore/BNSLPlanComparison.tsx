@@ -164,13 +164,13 @@ export default function BNSLPlanComparison() {
             <span className="text-sm font-medium text-purple-800">Choose Your Plan</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Investment{' '}
             <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
               Plans
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Select the plan that matches your investment goals
           </p>
         </motion.div>
@@ -209,33 +209,33 @@ export default function BNSLPlanComparison() {
                   className={`h-full p-6 rounded-2xl border-2 cursor-pointer transition-all duration-300 ${
                     isSelected
                       ? `border-transparent bg-gradient-to-br ${plan.gradient} text-white shadow-xl`
-                      : 'border-gray-100 bg-white hover:border-gray-200 hover:shadow-lg'
+                      : 'border-border/60 bg-card hover:border-border hover:shadow-lg'
                   }`}
                   data-testid={`card-plan-${plan.id}`}
                 >
                   {/* Icon */}
                   <div
                     className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-4 ${
-                      isSelected ? 'bg-white/20' : `bg-gradient-to-br ${plan.gradient}`
+                      isSelected ? 'bg-card/20' : `bg-gradient-to-br ${plan.gradient}`
                     }`}
                   >
                     <Icon className={`w-7 h-7 ${isSelected ? 'text-white' : 'text-white'}`} />
                   </div>
 
                   {/* Plan Info */}
-                  <h3 className={`text-xl font-bold mb-1 ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                  <h3 className={`text-xl font-bold mb-1 ${isSelected ? 'text-white' : 'text-foreground'}`}>
                     {plan.name}
                   </h3>
-                  <p className={`text-sm mb-4 ${isSelected ? 'text-white/80' : 'text-gray-500'}`}>
+                  <p className={`text-sm mb-4 ${isSelected ? 'text-white/80' : 'text-muted-foreground'}`}>
                     {plan.duration}
                   </p>
 
                   {/* Bonus Rate */}
                   <div className="mb-4">
-                    <div className={`text-4xl font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                    <div className={`text-4xl font-bold ${isSelected ? 'text-white' : 'text-foreground'}`}>
                       {plan.monthlyBonus}
                     </div>
-                    <div className={`text-sm ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>
+                    <div className={`text-sm ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                       monthly bonus
                     </div>
                   </div>
@@ -244,7 +244,7 @@ export default function BNSLPlanComparison() {
                   <div
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium mb-4 ${
                       isSelected
-                        ? 'bg-white/20 text-white'
+                        ? 'bg-card/20 text-white'
                         : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200/50'
                     }`}
                   >
@@ -260,7 +260,7 @@ export default function BNSLPlanComparison() {
                           className={`w-4 h-4 ${isSelected ? 'text-white' : 'text-emerald-500'}`}
                         />
                         <span
-                          className={`text-sm ${isSelected ? 'text-white/90' : 'text-gray-600'}`}
+                          className={`text-sm ${isSelected ? 'text-white/90' : 'text-muted-foreground'}`}
                         >
                           {feature}
                         </span>
@@ -270,12 +270,12 @@ export default function BNSLPlanComparison() {
 
                   {/* Min Investment */}
                   <div
-                    className={`pt-4 border-t ${isSelected ? 'border-white/20' : 'border-gray-100'}`}
+                    className={`pt-4 border-t ${isSelected ? 'border-white/20' : 'border-border/60'}`}
                   >
-                    <div className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-500'}`}>
+                    <div className={`text-xs ${isSelected ? 'text-white/70' : 'text-muted-foreground'}`}>
                       Minimum investment
                     </div>
-                    <div className={`text-lg font-bold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
+                    <div className={`text-lg font-bold ${isSelected ? 'text-white' : 'text-foreground'}`}>
                       {plan.minInvestment}
                     </div>
                   </div>
@@ -313,7 +313,7 @@ export default function BNSLPlanComparison() {
         >
           <motion.button
             onClick={() => setShowFullComparison(!showFullComparison)}
-            className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium transition-colors"
+            className="inline-flex items-center gap-2 text-muted-foreground hover:text-foreground font-medium transition-colors"
             data-testid="button-toggle-comparison"
           >
             <span>{showFullComparison ? 'Hide' : 'Show'} Full Comparison</span>
@@ -331,16 +331,16 @@ export default function BNSLPlanComparison() {
             exit={{ opacity: 0, height: 0 }}
             className="mt-12 overflow-hidden"
           >
-            <div className="max-w-5xl mx-auto bg-white rounded-2xl border border-gray-100 shadow-lg overflow-hidden">
+            <div className="max-w-5xl mx-auto bg-card rounded-2xl border border-border/60 shadow-lg overflow-hidden">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="bg-gray-50 border-b border-gray-100">
-                      <th className="text-left p-4 font-semibold text-gray-700">Feature</th>
+                    <tr className="bg-muted/40 border-b border-border/60">
+                      <th className="text-left p-4 font-semibold text-foreground/85">Feature</th>
                       {plans.map((plan) => (
                         <th key={plan.id} className="p-4 text-center">
-                          <div className="font-bold text-gray-900">{plan.name}</div>
-                          <div className="text-xs text-gray-500">{plan.duration}</div>
+                          <div className="font-bold text-foreground">{plan.name}</div>
+                          <div className="text-xs text-muted-foreground">{plan.duration}</div>
                         </th>
                       ))}
                     </tr>
@@ -349,9 +349,9 @@ export default function BNSLPlanComparison() {
                     {comparisonFeatures.map((feature, index) => (
                       <tr
                         key={feature.name}
-                        className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}
+                        className={index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'}
                       >
-                        <td className="p-4 text-gray-700 font-medium">{feature.name}</td>
+                        <td className="p-4 text-foreground/85 font-medium">{feature.name}</td>
                         {['starter', 'growth', 'premium', 'elite'].map((planId) => {
                           const value = feature[planId as keyof PlanFeature];
                           return (
@@ -360,10 +360,10 @@ export default function BNSLPlanComparison() {
                                 value ? (
                                   <Check className="w-5 h-5 text-emerald-500 mx-auto" />
                                 ) : (
-                                  <X className="w-5 h-5 text-gray-300 mx-auto" />
+                                  <X className="w-5 h-5 text-muted-foreground/50 mx-auto" />
                                 )
                               ) : (
-                                <span className="font-medium text-gray-900">{value}</span>
+                                <span className="font-medium text-foreground">{value}</span>
                               )}
                             </td>
                           );

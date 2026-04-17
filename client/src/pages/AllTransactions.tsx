@@ -160,7 +160,7 @@ export default function AllTransactions() {
       case 'finavault': return 'bg-purple-100 text-fuchsia-700';
       case 'bnsl': return 'bg-purple-100 text-purple-700';
       case 'finabridge': return 'bg-green-100 text-green-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-muted text-foreground/85';
     }
   };
 
@@ -177,7 +177,7 @@ export default function AllTransactions() {
       case 'UNLOCK':
       case 'Sell': return <Unlock className="w-4 h-4 text-blue-500" />;
       case 'BUY_GOLD_BAR': return <Plus className="w-4 h-4 text-purple-500" />;
-      default: return <Wallet className="w-4 h-4 text-gray-500" />;
+      default: return <Wallet className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -424,14 +424,14 @@ export default function AllTransactions() {
                     >
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full shrink-0 ${
-                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-muted' : 'bg-purple-100'
                         }`}>
                           {isSwap ? (
                             <ArrowLeftRight className="w-4 h-4 text-purple-600" />
                           ) : isCredit ? (
                             <ArrowDownLeft className="w-4 h-4 text-green-600" />
                           ) : isDebit ? (
-                            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                           ) : (
                             getActionIcon(tx.actionType)
                           )}
@@ -490,14 +490,14 @@ export default function AllTransactions() {
                       {/* DESCRIPTION Column */}
                       <div className="col-span-3 flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
-                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-gray-100' : 'bg-purple-100'
+                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-muted' : 'bg-purple-100'
                         }`}>
                           {isSwap ? (
                             <ArrowLeftRight className="w-4 h-4 text-purple-600" />
                           ) : isCredit ? (
                             <ArrowDownLeft className="w-4 h-4 text-green-600" />
                           ) : isDebit ? (
-                            <ArrowUpRight className="w-4 h-4 text-gray-600" />
+                            <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                           ) : (
                             getActionIcon(tx.actionType)
                           )}
@@ -671,7 +671,7 @@ export default function AllTransactions() {
                           </div>
                         ) : (
                           /* Standard expanded details for other transactions */
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-white rounded-lg border mt-2">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-card rounded-lg border mt-2">
                             <div>
                               <p className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Full Reference ID</p>
                               <p className="text-sm font-mono text-foreground break-all">{tx.referenceId || tx.id}</p>

@@ -166,7 +166,7 @@ export default function InternalTransferModal({
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'radial-gradient(circle at 80% 20%, white 0%, transparent 60%)' }} />
           <div className="relative z-10 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-xl bg-white/15 flex items-center justify-center border border-white/20">
+              <div className="w-9 h-9 rounded-xl bg-card/15 flex items-center justify-center border border-white/20">
                 <ArrowLeftRight className="w-4 h-4 text-violet-200" />
               </div>
               <div>
@@ -186,7 +186,7 @@ export default function InternalTransferModal({
               {[1, 2].map(s => (
                 <div
                   key={s}
-                  className={`h-1 flex-1 rounded-full transition-all ${s <= step ? 'bg-violet-300' : 'bg-white/20'}`}
+                  className={`h-1 flex-1 rounded-full transition-all ${s <= step ? 'bg-violet-300' : 'bg-card/20'}`}
                 />
               ))}
             </div>
@@ -194,7 +194,7 @@ export default function InternalTransferModal({
         </div>
 
         {/* Body */}
-        <div className="p-5 bg-white">
+        <div className="p-5 bg-card">
 
           {/* Available balance pill */}
           {!isDone && (
@@ -236,7 +236,7 @@ export default function InternalTransferModal({
                   className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all text-left ${
                     selectedWallet === wallet.id
                       ? `${wallet.bg} ${wallet.border} border-2`
-                      : 'bg-white border-slate-200 hover:border-slate-300'
+                      : 'bg-card border-slate-200 hover:border-slate-300'
                   }`}
                   data-testid={`option-transfer-${wallet.id}`}
                 >

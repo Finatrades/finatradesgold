@@ -292,7 +292,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       case 'Send': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
       case 'Receive': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
       case 'Deposit': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      default: return 'text-gray-500 bg-gray-500/10 border-gray-500/20';
+      default: return 'text-muted-foreground bg-gray-500/10 border-gray-500/20';
     }
   };
 
@@ -301,7 +301,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       case 'Completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
       case 'Pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
       case 'Failed': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      case 'Declined': return 'bg-gray-500/10 text-gray-600 border-gray-500/20';
+      case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
       default: return 'bg-muted/50 text-muted-foreground border-border';
     }
   };
@@ -312,7 +312,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[90vh] overflow-y-auto p-0 gap-0">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md max-h-[90vh] overflow-y-auto p-0 gap-0">
         <DialogHeader className="p-0">
           <DialogTitle className="sr-only">Transaction Details</DialogTitle>
 

@@ -263,7 +263,7 @@ function StageBanner({ stage: rawStage, userRole, isClosed }: { stage: string; u
     red: 'bg-red-50 border-red-200 text-red-700',
     purple: 'bg-purple-50 border-purple-200 text-purple-700',
     teal: 'bg-teal-50 border-teal-200 text-teal-700',
-    gray: 'bg-gray-50 border-gray-200 text-gray-700',
+    gray: 'bg-muted/40 border-border text-foreground/85',
   };
   const cls = colorMap[info.color] || colorMap.blue;
   return (
@@ -278,7 +278,7 @@ function StageBanner({ stage: rawStage, userRole, isClosed }: { stage: string; u
 
 function DocumentStatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; className: string }> = {
-    Missing: { label: 'Missing', className: 'bg-gray-100 text-gray-500 border-gray-200' },
+    Missing: { label: 'Missing', className: 'bg-muted text-muted-foreground border-border' },
     Pending: { label: 'Uploaded', className: 'bg-blue-50 text-blue-600 border-blue-200' },
     'Under Review': { label: 'Under Review', className: 'bg-amber-50 text-amber-600 border-amber-200' },
     Approved: { label: 'Approved', className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
@@ -296,7 +296,7 @@ function RiskBadge({ level }: { level: string }) {
     Medium: 'bg-amber-50 text-amber-700 border-amber-200',
     High: 'bg-red-50 text-red-700 border-red-200',
     Critical: 'bg-red-100 text-red-900 border-red-300',
-    Unknown: 'bg-gray-50 text-gray-500 border-gray-200',
+    Unknown: 'bg-muted/40 text-muted-foreground border-border',
   };
   return <Badge variant="outline" className={`text-xs ${cfg[level] || cfg.Unknown}`}>{level}</Badge>;
 }
@@ -1043,7 +1043,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       <button onClick={() => setLcWizardForm(f => ({ ...f, [key]: !f[key] }))}
                         className={`w-12 h-6 rounded-full transition-colors ${isOn ? 'bg-purple-500' : 'bg-border'}`}
                         data-testid={`toggle-${key}`}>
-                        <div className={`w-5 h-5 bg-white rounded-full shadow transition-transform mx-0.5 ${isOn ? 'translate-x-6' : ''}`} />
+                        <div className={`w-5 h-5 bg-card rounded-full shadow transition-transform mx-0.5 ${isOn ? 'translate-x-6' : ''}`} />
                       </button>
                     </div>
                   );
@@ -1434,7 +1434,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
                                 {msg.attachmentUrl && (
                                   <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer"
-                                    className={`flex items-center gap-2 mt-2 p-2 rounded border ${isOwn ? 'border-white/30 hover:bg-white/10' : 'border-border hover:bg-muted/50'}`}>
+                                    className={`flex items-center gap-2 mt-2 p-2 rounded border ${isOwn ? 'border-white/30 hover:bg-card/10' : 'border-border hover:bg-muted/50'}`}>
                                     <FileText className="w-4 h-4" />
                                     <span className="text-xs truncate max-w-[150px]">{msg.attachmentName || 'Attachment'}</span>
                                     <Download className="w-3 h-3 ml-auto" />

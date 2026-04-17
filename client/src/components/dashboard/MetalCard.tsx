@@ -48,7 +48,7 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center shadow-md">
-                <div className="w-4 h-4 bg-white/90 rounded-sm" />
+                <div className="w-4 h-4 bg-card/90 rounded-sm" />
               </div>
               <div className="text-right">
                 <p className="text-white font-bold text-base tracking-wide">
@@ -61,17 +61,17 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
           
           <div>
             <p className="text-white text-xl tracking-[0.2em] font-medium mb-4">
-              4532 <span className="text-gray-400">••••</span> <span className="text-gray-400">••••</span> {lastFour}
+              4532 <span className="text-muted-foreground/70">••••</span> <span className="text-muted-foreground/70">••••</span> {lastFour}
             </p>
           </div>
           
           <div className="flex justify-between items-end">
             <div>
-              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Card Holder</p>
+              <p className="text-muted-foreground text-[9px] uppercase tracking-wider mb-1">Card Holder</p>
               <p className="text-white text-sm font-semibold tracking-wide">{userName}</p>
             </div>
             <div className="text-right">
-              <p className="text-gray-500 text-[9px] uppercase tracking-wider mb-1">Expires</p>
+              <p className="text-muted-foreground text-[9px] uppercase tracking-wider mb-1">Expires</p>
               <p className="text-white text-sm font-semibold">12/28</p>
             </div>
             <div className="flex -space-x-2">

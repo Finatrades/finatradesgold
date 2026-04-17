@@ -51,7 +51,7 @@ export default function Certificates() {
               key={`desc-${mode}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-gray-600 leading-relaxed mb-8"
+              className="text-muted-foreground leading-relaxed mb-8"
             >
               {c.description}
             </motion.p>
@@ -69,7 +69,7 @@ export default function Certificates() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: index * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white border border-[#8A2BE2]/10 hover:border-[#8A2BE2]/30 shadow-sm transition-colors group"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-card border border-[#8A2BE2]/10 hover:border-[#8A2BE2]/30 shadow-sm transition-colors group"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-[#8A2BE2]/10 to-[#FF2FBF]/10 flex items-center justify-center group-hover:from-[#8A2BE2]/20 group-hover:to-[#FF2FBF]/20 transition-colors">
                     <feature.icon className="w-5 h-5 text-[#8A2BE2]" />
@@ -87,14 +87,14 @@ export default function Certificates() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className="p-8 rounded-3xl bg-white border-2 border-[#8A2BE2]/20 shadow-xl shadow-[#8A2BE2]/10 relative overflow-hidden">
+            <div className="p-8 rounded-3xl bg-card border-2 border-[#8A2BE2]/20 shadow-xl shadow-[#8A2BE2]/10 relative overflow-hidden">
               <div className="absolute top-0 right-0 w-32 h-32 bg-[#8A2BE2]/10 rounded-full blur-[60px]" />
               
               <div className="relative space-y-6">
                 <div className="flex items-center justify-between pb-4 border-b border-[#8A2BE2]/10">
                   <div>
                     <p className="text-[#8A2BE2] font-bold text-sm tracking-wider">VAULT CERTIFICATE</p>
-                    <p className="text-gray-500 text-xs mt-1">{isPersonal ? 'Personal Holding' : 'Corporate Reserve'}</p>
+                    <p className="text-muted-foreground text-xs mt-1">{isPersonal ? 'Personal Holding' : 'Corporate Reserve'}</p>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
                     <div className="w-2 h-2 rounded-full bg-green-500" />
@@ -104,19 +104,19 @@ export default function Certificates() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Weight</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Weight</p>
                     <p className="text-[#0D0D0D] font-semibold">{isPersonal ? '142.85 grams' : '1,000 kg'}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Purity</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Purity</p>
                     <p className="text-[#0D0D0D] font-semibold">999.9 Fine Gold</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Refinery</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Refinery</p>
                     <p className="text-[#0D0D0D] font-semibold">PAMP Suisse</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Serial</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Serial</p>
                     <p className="text-[#0D0D0D] font-semibold">FT-2024-{isPersonal ? '00142' : '98765'}</p>
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export default function Certificates() {
                 <div className="pt-4 border-t border-[#8A2BE2]/10">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Vault Location</p>
+                      <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Vault Location</p>
                       <p className="text-[#0D0D0D] font-semibold">Zurich, Switzerland</p>
                     </div>
                     <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F97316] text-white text-sm font-medium hover:bg-[#EA580C] transition-colors">

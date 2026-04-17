@@ -80,7 +80,7 @@ export default function BNSLRiskDisclosure() {
       case 'high':
         return 'bg-red-100 text-red-700 border-red-200';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return 'bg-muted text-foreground/85 border-border';
     }
   };
 
@@ -115,13 +115,13 @@ export default function BNSLRiskDisclosure() {
             <span className="text-sm font-medium text-slate-700">Transparency First</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Risk{' '}
             <span className="bg-gradient-to-r from-slate-600 to-slate-800 bg-clip-text text-transparent">
               Disclosure
             </span>
           </h2>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             We believe in complete transparency. Understand the risks before you invest.
           </p>
         </motion.div>
@@ -158,11 +158,11 @@ export default function BNSLRiskDisclosure() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden"
+                className="bg-card rounded-xl border border-border/60 shadow-sm overflow-hidden"
               >
                 <button
                   onClick={() => setExpandedRisk(expandedRisk === risk.id ? null : risk.id)}
-                  className="w-full flex items-center justify-between p-5 text-left hover:bg-gray-50 transition-colors"
+                  className="w-full flex items-center justify-between p-5 text-left hover:bg-muted/40 transition-colors"
                   data-testid={`button-risk-${risk.id}`}
                 >
                   <div className="flex items-center gap-4">
@@ -170,7 +170,7 @@ export default function BNSLRiskDisclosure() {
                       <AlertCircle className="w-5 h-5 text-slate-600" />
                     </div>
                     <div>
-                      <h4 className="font-semibold text-gray-900">{risk.title}</h4>
+                      <h4 className="font-semibold text-foreground">{risk.title}</h4>
                       <span
                         className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium border ${getSeverityColor(risk.severity)}`}
                       >
@@ -182,7 +182,7 @@ export default function BNSLRiskDisclosure() {
                     animate={{ rotate: expandedRisk === risk.id ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                   >
-                    <ChevronDown className="w-5 h-5 text-gray-400" />
+                    <ChevronDown className="w-5 h-5 text-muted-foreground/70" />
                   </motion.div>
                 </button>
 
@@ -195,17 +195,17 @@ export default function BNSLRiskDisclosure() {
                       transition={{ duration: 0.2 }}
                     >
                       <div className="px-5 pb-5">
-                        <div className="p-4 rounded-lg bg-gray-50 space-y-4">
+                        <div className="p-4 rounded-lg bg-muted/40 space-y-4">
                           <div>
-                            <h5 className="text-sm font-medium text-gray-500 mb-2">Description</h5>
-                            <p className="text-gray-700">{risk.description}</p>
+                            <h5 className="text-sm font-medium text-muted-foreground mb-2">Description</h5>
+                            <p className="text-foreground/85">{risk.description}</p>
                           </div>
                           <div>
-                            <h5 className="text-sm font-medium text-gray-500 mb-2 flex items-center gap-2">
+                            <h5 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
                               <Shield className="w-4 h-4 text-emerald-500" />
                               How We Mitigate This
                             </h5>
-                            <p className="text-gray-700">{risk.mitigation}</p>
+                            <p className="text-foreground/85">{risk.mitigation}</p>
                           </div>
                         </div>
                       </div>
@@ -221,16 +221,16 @@ export default function BNSLRiskDisclosure() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="p-6 rounded-2xl bg-white border border-gray-100 shadow-sm mb-8"
+            className="p-6 rounded-2xl bg-card border border-border/60 shadow-sm mb-8"
           >
             <div className="flex items-center gap-3 mb-4">
-              <FileText className="w-5 h-5 text-gray-600" />
-              <h3 className="font-bold text-gray-900">Legal Disclaimers</h3>
+              <FileText className="w-5 h-5 text-muted-foreground" />
+              <h3 className="font-bold text-foreground">Legal Disclaimers</h3>
             </div>
             <ul className="grid md:grid-cols-2 gap-3">
               {legalPoints.map((point, index) => (
-                <li key={index} className="flex items-start gap-2 text-gray-600 text-sm">
-                  <Info className="w-4 h-4 text-gray-400 mt-0.5 shrink-0" />
+                <li key={index} className="flex items-start gap-2 text-muted-foreground text-sm">
+                  <Info className="w-4 h-4 text-muted-foreground/70 mt-0.5 shrink-0" />
                   {point}
                 </li>
               ))}
@@ -254,7 +254,7 @@ export default function BNSLRiskDisclosure() {
               />
               <div>
                 <span className="font-medium">I understand and acknowledge the risks</span>
-                <p className="text-sm text-gray-400 mt-1">
+                <p className="text-sm text-muted-foreground/70 mt-1">
                   By checking this box, I confirm that I have read and understood the risk
                   disclosure, and I accept that investments in gold carry inherent risks including
                   potential loss of capital.

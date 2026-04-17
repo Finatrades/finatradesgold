@@ -151,8 +151,8 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
       <div className="bg-gradient-to-br from-purple-50 to-purple-50 rounded-xl p-5 border border-purple-100">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-            <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
+            <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+            <p className="text-2xl font-bold text-foreground">${walletBalance.toFixed(2)}</p>
           </div>
           <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
             <Building2 className="w-6 h-6 text-purple-600" />
@@ -163,17 +163,17 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
           <WalletTypeSelector value={selectedWalletType} onChange={setSelectedWalletType} />
 
           <div className="flex items-center justify-between mb-2 mt-3">
-            <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
-            <div className="flex bg-gray-100 rounded-lg p-1">
+            <Label className="text-sm font-medium text-foreground/85">Amount to Withdraw *</Label>
+            <div className="flex bg-muted rounded-lg p-1">
               <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>Grams</button>
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
               <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600'}`}>USD</button>
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
             </div>
           </div>
           <div className="relative">
-            {inputMode === 'usd' ? <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" /> : <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">g</span>}
-            <Input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={inputMode === 'grams' ? "0.0000" : "0.00"} className="pl-9 bg-white border-gray-200 text-lg font-semibold h-14 rounded-xl" />
+            {inputMode === 'usd' ? <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" /> : <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 font-medium text-sm">g</span>}
+            <Input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={inputMode === 'grams' ? "0.0000" : "0.00"} className="pl-9 bg-card border-border text-lg font-semibold h-14 rounded-xl" />
           </div>
           {numericValue > 0 && goldPricePerGram > 0 && (
             <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
@@ -191,18 +191,18 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
         </div>
       </div>
 
-      <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+      <div className="bg-muted/40 rounded-xl p-5 border border-border/60">
         <div className="flex items-center gap-2 mb-4">
-          <CreditCard className="w-5 h-5 text-gray-600" />
-          <h4 className="font-semibold text-gray-900">Bank Account Details</h4>
+          <CreditCard className="w-5 h-5 text-muted-foreground" />
+          <h4 className="font-semibold text-foreground">Bank Account Details</h4>
         </div>
         <div className="space-y-4">
-          <div><Label className="text-sm text-gray-600">Bank Name *</Label><Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g., Chase Bank" className="mt-1 bg-white h-12 rounded-xl" /></div>
-          <div><Label className="text-sm text-gray-600">Account Holder Name *</Label><Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g., John Doe" className="mt-1 bg-white h-12 rounded-xl" /></div>
-          <div><Label className="text-sm text-gray-600">Account Number / IBAN *</Label><Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Account number or IBAN" className="mt-1 bg-white h-12 rounded-xl" /></div>
+          <div><Label className="text-sm text-muted-foreground">Bank Name *</Label><Input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="e.g., Chase Bank" className="mt-1 bg-card h-12 rounded-xl" /></div>
+          <div><Label className="text-sm text-muted-foreground">Account Holder Name *</Label><Input value={accountName} onChange={(e) => setAccountName(e.target.value)} placeholder="e.g., John Doe" className="mt-1 bg-card h-12 rounded-xl" /></div>
+          <div><Label className="text-sm text-muted-foreground">Account Number / IBAN *</Label><Input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Account number or IBAN" className="mt-1 bg-card h-12 rounded-xl" /></div>
           <div className="grid grid-cols-2 gap-3">
-            <div><Label className="text-sm text-gray-600">Routing Number</Label><Input value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value)} placeholder="Optional" className="mt-1 bg-white h-12 rounded-xl" /></div>
-            <div><Label className="text-sm text-gray-600">SWIFT Code</Label><Input value={swiftCode} onChange={(e) => setSwiftCode(e.target.value)} placeholder="Optional" className="mt-1 bg-white h-12 rounded-xl" /></div>
+            <div><Label className="text-sm text-muted-foreground">Routing Number</Label><Input value={routingNumber} onChange={(e) => setRoutingNumber(e.target.value)} placeholder="Optional" className="mt-1 bg-card h-12 rounded-xl" /></div>
+            <div><Label className="text-sm text-muted-foreground">SWIFT Code</Label><Input value={swiftCode} onChange={(e) => setSwiftCode(e.target.value)} placeholder="Optional" className="mt-1 bg-card h-12 rounded-xl" /></div>
           </div>
         </div>
       </div>
@@ -216,15 +216,15 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
           <CheckCircle2 className="w-10 h-10 text-green-600" />
         </div>
         <h3 className="text-xl font-bold">Withdrawal Request Submitted!</h3>
-        <p className="text-sm text-gray-500 mt-2">Your request is now being reviewed.</p>
+        <p className="text-sm text-muted-foreground mt-2">Your request is now being reviewed.</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Reference</p>
+          <p className="text-xs text-muted-foreground mb-1">Reference</p>
           <p className="font-mono font-bold text-lg text-purple-600">{referenceNumber}</p>
         </div>
         <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
-          <p className="text-xs text-gray-500 mb-1">Amount</p>
+          <p className="text-xs text-muted-foreground mb-1">Amount</p>
           <p className="font-bold text-lg text-green-600">{grams.toFixed(4)}g</p>
         </div>
       </div>
@@ -257,7 +257,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowUpRight className="w-5 h-5 text-purple-500" />
@@ -276,8 +276,8 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
               <div className="bg-gradient-to-br from-purple-50 to-purple-50 rounded-xl p-5 border border-purple-100">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <p className="text-xs text-gray-500 mb-1">Available Balance</p>
-                    <p className="text-2xl font-bold text-gray-900">${walletBalance.toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
+                    <p className="text-2xl font-bold text-foreground">${walletBalance.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
                     <Building2 className="w-6 h-6 text-purple-600" />
@@ -294,19 +294,19 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                 </div>
 
                   <div className="flex items-center justify-between mb-2">
-                    <Label className="text-sm font-medium text-gray-700">Amount to Withdraw *</Label>
-                    <div className="flex bg-gray-100 rounded-lg p-1">
+                    <Label className="text-sm font-medium text-foreground/85">Amount to Withdraw *</Label>
+                    <div className="flex bg-muted rounded-lg p-1">
                       <button
                         type="button"
                         onClick={() => { setInputMode('grams'); setInputValue(''); }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                       >
                         Grams
                       </button>
                       <button
                         type="button"
                         onClick={() => { setInputMode('usd'); setInputValue(''); }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                       >
                         USD
                       </button>
@@ -314,9 +314,9 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                   </div>
                   <div className="relative">
                     {inputMode === 'usd' ? (
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                     ) : (
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 font-medium text-sm">g</span>
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/70 font-medium text-sm">g</span>
                     )}
                     <Input 
                       type="number"
@@ -324,7 +324,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                       onChange={(e) => setInputValue(e.target.value)}
                       placeholder={inputMode === 'grams' ? "0.0000" : "0.00"}
                       step={inputMode === 'grams' ? "0.0001" : "0.01"}
-                      className="pl-9 bg-white border-gray-200 text-lg font-semibold"
+                      className="pl-9 bg-card border-border text-lg font-semibold"
                       data-testid="input-withdrawal-amount"
                     />
                   </div>
@@ -375,64 +375,64 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
             </div>
 
             {/* Right Panel - Bank Details */}
-            <div className="bg-gray-50 rounded-xl p-5 border border-gray-100">
+            <div className="bg-muted/40 rounded-xl p-5 border border-border/60">
               <div className="flex items-center gap-2 mb-4">
-                <CreditCard className="w-5 h-5 text-gray-600" />
-                <h4 className="font-semibold text-gray-900">Bank Account Details</h4>
+                <CreditCard className="w-5 h-5 text-muted-foreground" />
+                <h4 className="font-semibold text-foreground">Bank Account Details</h4>
               </div>
               
               <div className="space-y-4">
                 <div>
-                  <Label className="text-sm text-gray-600">Bank Name *</Label>
+                  <Label className="text-sm text-muted-foreground">Bank Name *</Label>
                   <Input 
                     value={bankName}
                     onChange={(e) => setBankName(e.target.value)}
                     placeholder="e.g., Chase Bank"
-                    className="mt-1 bg-white"
+                    className="mt-1 bg-card"
                     data-testid="input-bank-name"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm text-gray-600">Account Holder Name *</Label>
+                  <Label className="text-sm text-muted-foreground">Account Holder Name *</Label>
                   <Input 
                     value={accountName}
                     onChange={(e) => setAccountName(e.target.value)}
                     placeholder="e.g., John Doe"
-                    className="mt-1 bg-white"
+                    className="mt-1 bg-card"
                     data-testid="input-account-name"
                   />
                 </div>
 
                 <div>
-                  <Label className="text-sm text-gray-600">Account Number / IBAN *</Label>
+                  <Label className="text-sm text-muted-foreground">Account Number / IBAN *</Label>
                   <Input 
                     value={accountNumber}
                     onChange={(e) => setAccountNumber(e.target.value)}
                     placeholder="Account number or IBAN"
-                    className="mt-1 bg-white"
+                    className="mt-1 bg-card"
                     data-testid="input-account-number"
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm text-gray-600">Routing Number</Label>
+                    <Label className="text-sm text-muted-foreground">Routing Number</Label>
                     <Input 
                       value={routingNumber}
                       onChange={(e) => setRoutingNumber(e.target.value)}
                       placeholder="Optional"
-                      className="mt-1 bg-white"
+                      className="mt-1 bg-card"
                       data-testid="input-routing-number"
                     />
                   </div>
                   <div>
-                    <Label className="text-sm text-gray-600">SWIFT Code</Label>
+                    <Label className="text-sm text-muted-foreground">SWIFT Code</Label>
                     <Input 
                       value={swiftCode}
                       onChange={(e) => setSwiftCode(e.target.value)}
                       placeholder="Optional"
-                      className="mt-1 bg-white"
+                      className="mt-1 bg-card"
                       data-testid="input-swift-code"
                     />
                   </div>

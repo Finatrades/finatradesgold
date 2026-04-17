@@ -45,7 +45,7 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200/80 shadow-2xl mobile-bottom-nav" 
+    <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border/80 shadow-2xl mobile-bottom-nav" 
          style={{ paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom, 0px))' }}>
       <div className="flex items-center justify-around h-16 px-2">
         {navItems.map((item, index) => {
@@ -60,7 +60,7 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
               >
                 <Plus className="w-8 h-8" />
                 <motion.div 
-                  className="absolute inset-0 rounded-full bg-white/20"
+                  className="absolute inset-0 rounded-full bg-card/20"
                   animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0, 0.3] }}
                   transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                 />
@@ -76,14 +76,14 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
               whileTap={{ scale: 0.92 }}
               onClick={() => setLocation(item.path)}
               className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] py-1.5 rounded-xl transition-colors touch-target ${
-                active ? 'text-purple-600' : 'text-gray-500'
+                active ? 'text-purple-600' : 'text-muted-foreground'
               }`}
               data-testid={`button-nav-${item.label.toLowerCase()}`}
             >
               <div className={`p-2 rounded-xl transition-all ${active ? 'bg-purple-100' : ''}`}>
                 {item.icon}
               </div>
-              <span className={`text-[11px] mt-0.5 font-semibold ${active ? 'text-purple-600' : 'text-gray-500'}`}>
+              <span className={`text-[11px] mt-0.5 font-semibold ${active ? 'text-purple-600' : 'text-muted-foreground'}`}>
                 {item.label}
               </span>
               {active && (

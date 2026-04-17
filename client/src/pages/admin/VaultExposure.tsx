@@ -223,10 +223,10 @@ export default function VaultExposure() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               Platform Exposure Dashboard
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               LGPW (Physical Gold) vs FGPW (Cash-Backed) wallet exposure management
             </p>
           </div>
@@ -270,12 +270,12 @@ export default function VaultExposure() {
                         <h2 className="text-xl font-bold" data-testid="text-mpgw-coverage-status">
                           {isMpgwFullyBacked ? 'LGPW Fully Backed' : 'LGPW Under-Backed'}
                         </h2>
-                        <p className="text-gray-600 text-sm" data-testid="text-mpgw-coverage-ratio">
+                        <p className="text-muted-foreground text-sm" data-testid="text-mpgw-coverage-ratio">
                           {mpgwCoverage.toFixed(2)}% physical gold coverage
                         </p>
                       </div>
                     </div>
-                    <div className="text-right text-xs text-gray-500">
+                    <div className="text-right text-xs text-muted-foreground">
                       <p>Physical: {formatGrams(physicalInventory)} g</p>
                       <p>LGPW: {formatGrams(mpgwTotal)} g</p>
                     </div>
@@ -296,12 +296,12 @@ export default function VaultExposure() {
                         <h2 className="text-xl font-bold" data-testid="text-fpgw-coverage-status">
                           {isFpgwFullyBacked ? 'FGPW Fully Backed' : 'FGPW Under-Backed'}
                         </h2>
-                        <p className="text-gray-600 text-sm" data-testid="text-fpgw-coverage-ratio">
+                        <p className="text-muted-foreground text-sm" data-testid="text-fpgw-coverage-ratio">
                           {fpgwCoverage.toFixed(2)}% cash safety coverage
                         </p>
                       </div>
                     </div>
-                    <div className="text-right text-xs text-gray-500">
+                    <div className="text-right text-xs text-muted-foreground">
                       <p>Cash: {formatUsd(cashBalance)}</p>
                       <p>FGPW Locked: {formatUsd(fpgwLockedValueUsd)}</p>
                     </div>
@@ -349,7 +349,7 @@ export default function VaultExposure() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">Physical Inventory</CardTitle>
-                  <Scale className="h-4 w-4 text-gray-500" />
+                  <Scale className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold" data-testid="text-physical-inventory">
@@ -438,7 +438,7 @@ export default function VaultExposure() {
                     ))}
                   </div>
                 ) : !pendingConversions?.conversions?.length ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <CheckCircle className="h-12 w-12 mx-auto mb-4 text-green-500" />
                     <p>No pending conversion requests</p>
                   </div>
@@ -461,7 +461,7 @@ export default function VaultExposure() {
                           <TableCell>
                             <div>
                               <p className="font-medium">{conversion.userName || 'Unknown'}</p>
-                              <p className="text-xs text-gray-500">{conversion.userEmail}</p>
+                              <p className="text-xs text-muted-foreground">{conversion.userEmail}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -528,7 +528,7 @@ export default function VaultExposure() {
               </CardHeader>
               <CardContent>
                 {!allConversions?.conversions?.length ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <ArrowRightLeft className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No conversion history</p>
                   </div>
@@ -550,7 +550,7 @@ export default function VaultExposure() {
                           <TableCell>
                             <div>
                               <p className="font-medium">{conversion.userName || 'Unknown'}</p>
-                              <p className="text-xs text-gray-500">{conversion.userEmail}</p>
+                              <p className="text-xs text-muted-foreground">{conversion.userEmail}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -628,7 +628,7 @@ export default function VaultExposure() {
                   </div>
                 )}
                 {!cashLedger?.entries?.length ? (
-                  <div className="text-center py-8 text-gray-500">
+                  <div className="text-center py-8 text-muted-foreground">
                     <DollarSign className="h-12 w-12 mx-auto mb-4 opacity-50" />
                     <p>No cash ledger entries</p>
                   </div>

@@ -177,7 +177,7 @@ function DisclaimerContent() {
             </section>
 
             {/* Footer Address Block */}
-            <div className="border-t border-gray-200 pt-10 mt-12">
+            <div className="border-t border-border pt-10 mt-12">
               <div className="bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] rounded-2xl p-8">
                 <img
                   src={finatradesLogo}

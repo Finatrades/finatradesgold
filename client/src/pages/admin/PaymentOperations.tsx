@@ -647,27 +647,27 @@ export default function FinaPayManagement() {
       case 'Receive': return 'bg-purple-100 text-purple-700';
       case 'Deposit': return 'bg-green-100 text-green-700';
       case 'Withdrawal': return 'bg-purple-100 text-purple-700';
-      default: return 'bg-gray-100 text-gray-700';
+      default: return 'bg-muted text-foreground/85';
     }
   };
 
   const TransactionRow = ({ tx, showActions = true }: { tx: Transaction; showActions?: boolean }) => (
-    <div className="flex items-center justify-between p-4 border border-gray-100 rounded-lg hover:bg-gray-50" data-testid={`row-tx-${tx.id}`}>
+    <div className="flex items-center justify-between p-4 border border-border/60 rounded-lg hover:bg-muted/40" data-testid={`row-tx-${tx.id}`}>
       <div className="flex items-center gap-4">
         <div className={`w-10 h-10 rounded-full flex items-center justify-center ${getTypeColor(tx.type)}`}>
           {getTypeIcon(tx.type)}
         </div>
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-bold text-gray-900">
+            <span className="font-bold text-foreground">
               {tx.amountGold ? `${parseFloat(tx.amountGold).toFixed(4)}g Gold` : ''}
               {tx.amountGold && tx.amountUsd ? ' / ' : ''}
               {tx.amountUsd ? `$${parseFloat(tx.amountUsd).toFixed(2)}` : ''}
             </span>
             <Badge variant="outline" className="text-xs">{tx.type}</Badge>
           </div>
-          <p className="text-sm text-gray-500">{getUserName(tx.userId)}</p>
-          {tx.recipientEmail && <p className="text-xs text-gray-400">To: {tx.recipientEmail}</p>}
+          <p className="text-sm text-muted-foreground">{getUserName(tx.userId)}</p>
+          {tx.recipientEmail && <p className="text-xs text-muted-foreground/70">To: {tx.recipientEmail}</p>}
         </div>
       </div>
       <div className="flex items-center gap-2">
@@ -675,7 +675,7 @@ export default function FinaPayManagement() {
           <Badge variant={tx.status === 'Pending' ? 'secondary' : tx.status === 'Completed' ? 'default' : 'destructive'}>
             {tx.status}
           </Badge>
-          <p className="text-xs text-gray-400 mt-1">{new Date(tx.createdAt).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground/70 mt-1">{new Date(tx.createdAt).toLocaleString()}</p>
         </div>
         {showActions && tx.status === 'Pending' && (
           <>
@@ -699,8 +699,8 @@ export default function FinaPayManagement() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">FinaPay Management</h1>
-            <p className="text-gray-500">Manage bank accounts, deposits, withdrawals, and transactions.</p>
+            <h1 className="text-3xl font-bold text-foreground">FinaPay Management</h1>
+            <p className="text-muted-foreground">Manage bank accounts, deposits, withdrawals, and transactions.</p>
           </div>
           <Button onClick={fetchData} variant="outline" size="icon" data-testid="button-refresh">
             <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
@@ -754,8 +754,8 @@ export default function FinaPayManagement() {
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-xs font-medium text-gray-900">Total Transactions</p>
-                  <h3 className="text-xl font-bold text-gray-900" data-testid="text-total-tx">{transactions.length}</h3>
+                  <p className="text-xs font-medium text-foreground">Total Transactions</p>
+                  <h3 className="text-xl font-bold text-foreground" data-testid="text-total-tx">{transactions.length}</h3>
                 </div>
               </div>
             </CardContent>
@@ -802,20 +802,20 @@ export default function FinaPayManagement() {
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-gray-900 text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
+                                  <span className="font-bold text-foreground text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
                                   {getStatusBadge(withdrawal.status)}
                                 </div>
-                                <p className="text-sm text-gray-600">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
-                                <p className="text-xs text-gray-400">Ref: {withdrawal.referenceNumber}</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-sm text-muted-foreground">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
+                                <p className="text-xs text-muted-foreground/70">Ref: {withdrawal.referenceNumber}</p>
+                                <p className="text-xs text-muted-foreground/70">
                                   To: {withdrawal.bankName} - {withdrawal.accountName} ({withdrawal.accountNumber})
                                 </p>
-                                {withdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {withdrawal.swiftCode}</p>}
+                                {withdrawal.swiftCode && <p className="text-xs text-muted-foreground/70">SWIFT: {withdrawal.swiftCode}</p>}
                               </div>
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="text-right">
-                                <p className="text-xs text-gray-400">{new Date(withdrawal.createdAt).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground/70">{new Date(withdrawal.createdAt).toLocaleString()}</p>
                               </div>
                               <Button size="sm" onClick={() => openWithdrawalDialog(withdrawal)} data-testid={`button-process-withdrawal-${withdrawal.id}`}>
                                 Process
@@ -832,8 +832,8 @@ export default function FinaPayManagement() {
               <h2 className="text-lg font-semibold mb-4">Processed Withdrawals</h2>
               {withdrawalRequests.filter(w => w.status !== 'Pending' && w.status !== 'Processing').length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <ArrowUpRight className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <ArrowUpRight className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No processed withdrawals</p>
                   </CardContent>
                 </Card>
@@ -849,21 +849,21 @@ export default function FinaPayManagement() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
+                                <span className="font-bold text-foreground text-lg">${parseFloat(withdrawal.amountUsd).toFixed(2)}</span>
                                 {getStatusBadge(withdrawal.status)}
                               </div>
-                              <p className="text-sm text-gray-600">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
-                              <p className="text-xs text-gray-400">Ref: {withdrawal.referenceNumber}</p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-sm text-muted-foreground">{getUserName(withdrawal.userId)} ({getUserEmail(withdrawal.userId)})</p>
+                              <p className="text-xs text-muted-foreground/70">Ref: {withdrawal.referenceNumber}</p>
+                              <p className="text-xs text-muted-foreground/70">
                                 To: {withdrawal.bankName} - {withdrawal.accountName} ({withdrawal.accountNumber})
                               </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              <p className="text-xs text-gray-400">{new Date(withdrawal.createdAt).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground/70">{new Date(withdrawal.createdAt).toLocaleString()}</p>
                               {withdrawal.processedAt && (
-                                <p className="text-xs text-gray-400">Processed: {new Date(withdrawal.processedAt).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground/70">Processed: {new Date(withdrawal.processedAt).toLocaleString()}</p>
                               )}
                             </div>
                             <Button size="sm" variant="ghost" onClick={() => openWithdrawalDialog(withdrawal)}>
@@ -882,7 +882,7 @@ export default function FinaPayManagement() {
               <h2 className="text-lg font-semibold mb-4">Processed Transactions</h2>
               {transactions.filter(t => t.status !== 'Pending').length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
+                  <CardContent className="py-12 text-center text-muted-foreground">
                     No processed transactions
                   </CardContent>
                 </Card>
@@ -897,8 +897,8 @@ export default function FinaPayManagement() {
               <h2 className="text-lg font-semibold mb-4">Peer-to-Peer Transfers</h2>
               {peerTransfers.length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <Send className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Send className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No peer transfers yet</p>
                   </CardContent>
                 </Card>
@@ -914,24 +914,24 @@ export default function FinaPayManagement() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-lg">${parseFloat(transfer.amountUsd).toFixed(2)}</span>
+                                <span className="font-bold text-foreground text-lg">${parseFloat(transfer.amountUsd).toFixed(2)}</span>
                                 <Badge variant={transfer.status === 'Completed' ? 'default' : 'destructive'}>{transfer.status}</Badge>
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 <span className="font-medium">{getUserName(transfer.senderId)}</span>
                                 <span className="mx-2">→</span>
                                 <span className="font-medium">{getUserName(transfer.recipientId)}</span>
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-muted-foreground/70">
                                 Ref: {transfer.referenceNumber} | Channel: {transfer.channel.replace('_', ' ')}
                               </p>
                               {transfer.memo && (
-                                <p className="text-xs text-gray-500 mt-1 italic">"{transfer.memo}"</p>
+                                <p className="text-xs text-muted-foreground mt-1 italic">"{transfer.memo}"</p>
                               )}
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-400">{new Date(transfer.createdAt).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground/70">{new Date(transfer.createdAt).toLocaleString()}</p>
                           </div>
                         </div>
                       </CardContent>
@@ -945,8 +945,8 @@ export default function FinaPayManagement() {
               <h2 className="text-lg font-semibold mb-4">Payment Requests</h2>
               {peerRequests.length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <CreditCard className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No payment requests yet</p>
                   </CardContent>
                 </Card>
@@ -961,13 +961,13 @@ export default function FinaPayManagement() {
                               request.status === 'Paid' ? 'bg-green-100 text-green-700' :
                               request.status === 'Pending' ? 'bg-yellow-100 text-yellow-700' :
                               request.status === 'Declined' ? 'bg-red-100 text-red-700' :
-                              'bg-gray-100 text-gray-700'
+                              'bg-muted text-foreground/85'
                             }`}>
                               <CreditCard className="w-6 h-6" />
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-lg">${parseFloat(request.amountUsd).toFixed(2)}</span>
+                                <span className="font-bold text-foreground text-lg">${parseFloat(request.amountUsd).toFixed(2)}</span>
                                 <Badge variant={
                                   request.status === 'Paid' ? 'default' :
                                   request.status === 'Pending' ? 'secondary' :
@@ -975,17 +975,17 @@ export default function FinaPayManagement() {
                                   'outline'
                                 }>{request.status}</Badge>
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 <span className="font-medium">Requested by: {getUserName(request.requesterId)}</span>
                                 {request.targetId && (
                                   <span className="ml-2">→ {getUserName(request.targetId)}</span>
                                 )}
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-muted-foreground/70">
                                 Ref: {request.referenceNumber} | Channel: {request.channel.replace('_', ' ')}
                               </p>
                               {request.memo && (
-                                <p className="text-xs text-gray-500 mt-1 italic">"{request.memo}"</p>
+                                <p className="text-xs text-muted-foreground mt-1 italic">"{request.memo}"</p>
                               )}
                               {request.paidBy && (
                                 <p className="text-xs text-green-600 mt-1">Paid by: {getUserName(request.paidBy)}</p>
@@ -993,8 +993,8 @@ export default function FinaPayManagement() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
-                            <p className="text-xs text-gray-400">Expires: {new Date(request.expiresAt).toLocaleDateString()}</p>
+                            <p className="text-xs text-muted-foreground/70">{new Date(request.createdAt).toLocaleString()}</p>
+                            <p className="text-xs text-muted-foreground/70">Expires: {new Date(request.expiresAt).toLocaleDateString()}</p>
                             {request.paidAt && (
                               <p className="text-xs text-green-600">Paid: {new Date(request.paidAt).toLocaleString()}</p>
                             )}
@@ -1021,16 +1021,16 @@ export default function FinaPayManagement() {
                               </div>
                               <div>
                                 <div className="flex items-center gap-2">
-                                  <span className="font-bold text-gray-900 text-lg">
+                                  <span className="font-bold text-foreground text-lg">
                                     {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Awaiting Review'}
                                   </span>
                                   <Badge variant="secondary">{request.status}</Badge>
                                 </div>
-                                <p className="text-sm text-gray-600">
+                                <p className="text-sm text-muted-foreground">
                                   {request.user ? `${request.user.firstName} ${request.user.lastName}` : getUserName(request.userId)} 
                                   {' '}({request.user?.email || getUserEmail(request.userId)})
                                 </p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-xs text-muted-foreground/70">
                                   {request.referenceNumber ? `Ref: ${request.referenceNumber}` : `Submitted: ${new Date(request.createdAt).toLocaleDateString()}`}
                                   {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
                                 </p>
@@ -1038,7 +1038,7 @@ export default function FinaPayManagement() {
                             </div>
                             <div className="flex items-center gap-4">
                               <div className="text-right">
-                                <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground/70">{new Date(request.createdAt).toLocaleString()}</p>
                               </div>
                               <Button size="sm" onClick={() => openBuyGoldDialog(request)} data-testid={`button-review-buy-gold-${request.id}`}>
                                 Review
@@ -1055,8 +1055,8 @@ export default function FinaPayManagement() {
               <h2 className="text-lg font-semibold mb-4">Processed Buy Gold Requests</h2>
               {buyGoldRequests.filter(r => r.status !== 'Pending' && r.status !== 'Under Review').length === 0 ? (
                 <Card>
-                  <CardContent className="py-12 text-center text-gray-500">
-                    <Coins className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                  <CardContent className="py-12 text-center text-muted-foreground">
+                    <Coins className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
                     <p>No processed buy gold requests</p>
                   </CardContent>
                 </Card>
@@ -1072,21 +1072,21 @@ export default function FinaPayManagement() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-gray-900 text-lg">
+                                <span className="font-bold text-foreground text-lg">
                                   {request.amountUsd ? `$${parseFloat(request.amountUsd).toFixed(2)}` : 'Awaiting Review'}
                                 </span>
                                 {getStatusBadge(request.status)}
                               </div>
-                              <p className="text-sm text-gray-600">
+                              <p className="text-sm text-muted-foreground">
                                 {request.user ? `${request.user.firstName} ${request.user.lastName}` : getUserName(request.userId)} 
                                 {' '}({request.user?.email || getUserEmail(request.userId)})
                               </p>
-                              <p className="text-xs text-gray-400">
+                              <p className="text-xs text-muted-foreground/70">
                                 {request.referenceNumber ? `Ref: ${request.referenceNumber}` : `Submitted: ${new Date(request.createdAt).toLocaleDateString()}`}
                                 {request.wingoldReferenceId && ` • Wingold: ${request.wingoldReferenceId}`}
                               </p>
                               {request.goldGrams && (
-                                <p className={`text-xs ${request.status === 'Credited' ? 'text-green-600' : 'text-gray-600'}`}>
+                                <p className={`text-xs ${request.status === 'Credited' ? 'text-green-600' : 'text-muted-foreground'}`}>
                                   {parseFloat(request.goldGrams).toFixed(4)}g Gold
                                 </p>
                               )}
@@ -1094,9 +1094,9 @@ export default function FinaPayManagement() {
                           </div>
                           <div className="flex items-center gap-4">
                             <div className="text-right">
-                              <p className="text-xs text-gray-400">{new Date(request.createdAt).toLocaleString()}</p>
+                              <p className="text-xs text-muted-foreground/70">{new Date(request.createdAt).toLocaleString()}</p>
                               {request.reviewedAt && (
-                                <p className="text-xs text-gray-400">Reviewed: {new Date(request.reviewedAt).toLocaleString()}</p>
+                                <p className="text-xs text-muted-foreground/70">Reviewed: {new Date(request.reviewedAt).toLocaleString()}</p>
                               )}
                             </div>
                             <Button size="sm" variant="ghost" onClick={() => openBuyGoldDialog(request)}>
@@ -1123,27 +1123,27 @@ export default function FinaPayManagement() {
               <div className="grid grid-cols-3 gap-4">
                 {/* PANEL 1 - Payment Info */}
                 <div className="space-y-3">
-                  <div className="p-3 bg-gray-50 rounded-lg border">
-                    <h3 className="font-semibold text-xs text-gray-600 mb-2 uppercase tracking-wide">Payment Info</h3>
+                  <div className="p-3 bg-muted/40 rounded-lg border">
+                    <h3 className="font-semibold text-xs text-muted-foreground mb-2 uppercase tracking-wide">Payment Info</h3>
                     <div className="space-y-2">
                       <div>
-                        <p className="text-gray-500 text-xs">Amount</p>
+                        <p className="text-muted-foreground text-xs">Amount</p>
                         <p className="font-bold text-lg">${parseFloat(selectedCrypto.amountUsd).toFixed(2)}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Original Gold</p>
+                        <p className="text-muted-foreground text-xs">Original Gold</p>
                         <p className="font-bold text-lg text-primary">{parseFloat(selectedCrypto.goldGrams).toFixed(4)}g</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Original Price</p>
+                        <p className="text-muted-foreground text-xs">Original Price</p>
                         <p className="font-medium">${parseFloat(selectedCrypto.goldPriceAtTime).toFixed(2)}/g</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Network</p>
+                        <p className="text-muted-foreground text-xs">Network</p>
                         <p className="font-medium">{selectedCrypto.walletConfig?.networkLabel || 'Unknown'}</p>
                       </div>
                       <div>
-                        <p className="text-gray-500 text-xs">Status</p>
+                        <p className="text-muted-foreground text-xs">Status</p>
                         <Badge variant={
                           selectedCrypto.status === 'Credited' ? 'default' :
                           selectedCrypto.status === 'Rejected' ? 'destructive' : 'secondary'
@@ -1157,15 +1157,15 @@ export default function FinaPayManagement() {
                   <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <h3 className="font-semibold text-xs text-blue-600 mb-2 uppercase tracking-wide">User</h3>
                     <p className="font-medium text-sm">{selectedCrypto.user ? `${selectedCrypto.user.firstName} ${selectedCrypto.user.lastName}` : getUserName(selectedCrypto.userId)}</p>
-                    <p className="text-xs text-gray-500">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
+                    <p className="text-xs text-muted-foreground">{selectedCrypto.user?.email || getUserEmail(selectedCrypto.userId)}</p>
                   </div>
                 </div>
 
                 {/* PANEL 2 - Transaction Details */}
                 <div className="space-y-3">
                   {selectedCrypto.transactionHash && (
-                    <div className="p-3 bg-gray-50 rounded-lg border">
-                      <h3 className="font-semibold text-xs text-gray-600 mb-2 uppercase tracking-wide">Transaction</h3>
+                    <div className="p-3 bg-muted/40 rounded-lg border">
+                      <h3 className="font-semibold text-xs text-muted-foreground mb-2 uppercase tracking-wide">Transaction</h3>
                       <p className="font-mono text-xs break-all mb-2">{selectedCrypto.transactionHash}</p>
                       <Button 
                         variant="link" 
@@ -1260,7 +1260,7 @@ export default function FinaPayManagement() {
                       </div>
 
                       {cryptoPricingMode === 'LIVE' && (
-                        <div className="p-2 bg-white rounded border border-green-300">
+                        <div className="p-2 bg-card rounded border border-green-300">
                           {fetchingLivePrice ? (
                             <div className="flex items-center gap-2 text-green-700">
                               <Loader2 className="w-3 h-3 animate-spin" />
@@ -1284,7 +1284,7 @@ export default function FinaPayManagement() {
                       )}
 
                       {cryptoPricingMode === 'MANUAL' && (
-                        <div className="p-2 bg-white rounded border border-amber-300 space-y-2">
+                        <div className="p-2 bg-card rounded border border-amber-300 space-y-2">
                           <div>
                             <Label className="text-xs text-amber-700">Price ($/g)</Label>
                             <Input 
@@ -1293,7 +1293,7 @@ export default function FinaPayManagement() {
                               value={cryptoAdminPrice}
                               onChange={e => handleCryptoAdminPriceChange(e.target.value)}
                               placeholder="0.00"
-                              className="bg-white h-8 text-sm"
+                              className="bg-card h-8 text-sm"
                               data-testid="input-crypto-admin-price"
                             />
                           </div>
@@ -1305,7 +1305,7 @@ export default function FinaPayManagement() {
                               value={cryptoAdminGrams}
                               onChange={e => handleCryptoAdminGramsChange(e.target.value)}
                               placeholder="0.0000"
-                              className="bg-white h-8 text-sm"
+                              className="bg-card h-8 text-sm"
                               data-testid="input-crypto-admin-grams"
                             />
                           </div>
@@ -1315,7 +1315,7 @@ export default function FinaPayManagement() {
                       <div>
                         <Label className="text-xs text-green-700">Vault Location</Label>
                         <Select value={cryptoVaultLocation} onValueChange={setCryptoVaultLocation}>
-                          <SelectTrigger className="bg-white h-8 text-sm" data-testid="select-vault-location">
+                          <SelectTrigger className="bg-card h-8 text-sm" data-testid="select-vault-location">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1333,7 +1333,7 @@ export default function FinaPayManagement() {
                           value={cryptoWingoldOrderId}
                           onChange={e => setCryptoWingoldOrderId(e.target.value)}
                           placeholder="Optional"
-                          className="bg-white h-8 text-sm"
+                          className="bg-card h-8 text-sm"
                           data-testid="input-wingold-order-id"
                         />
                       </div>
@@ -1453,8 +1453,8 @@ export default function FinaPayManagement() {
               <div className="flex gap-6">
                 {selectedDeposit.proofOfPayment && (
                   <div className="w-1/2 flex-shrink-0">
-                    <p className="text-gray-500 text-sm mb-2">Proof of Payment</p>
-                    <div className="border rounded-lg p-2 bg-gray-50">
+                    <p className="text-muted-foreground text-sm mb-2">Proof of Payment</p>
+                    <div className="border rounded-lg p-2 bg-muted/40">
                       <img 
                         src={selectedDeposit.proofOfPayment} 
                         alt="Proof of Payment" 
@@ -1474,7 +1474,7 @@ export default function FinaPayManagement() {
                           }
                         }}
                       />
-                      <p className="text-xs text-center text-gray-400 mt-1">Click to view full size</p>
+                      <p className="text-xs text-center text-muted-foreground/70 mt-1">Click to view full size</p>
                     </div>
                   </div>
                 )}
@@ -1482,36 +1482,36 @@ export default function FinaPayManagement() {
                 <div className={`space-y-4 ${selectedDeposit.proofOfPayment ? 'w-1/2' : 'w-full'}`}>
                   <div className="grid grid-cols-2 gap-3 text-sm">
                     <div>
-                      <p className="text-gray-500">Amount</p>
+                      <p className="text-muted-foreground">Amount</p>
                       <p className="font-bold text-lg">${parseFloat(selectedDeposit.amountUsd).toFixed(2)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Status</p>
+                      <p className="text-muted-foreground">Status</p>
                       {getStatusBadge(selectedDeposit.status)}
                     </div>
                     <div>
-                      <p className="text-gray-500">Reference</p>
+                      <p className="text-muted-foreground">Reference</p>
                       <p className="font-mono text-xs">{selectedDeposit.referenceNumber}</p>
                     </div>
                     <div>
-                      <p className="text-gray-500">User</p>
+                      <p className="text-muted-foreground">User</p>
                       <p className="text-sm">{getUserName(selectedDeposit.userId)}</p>
-                      <p className="text-xs text-gray-400">{getUserEmail(selectedDeposit.userId)}</p>
+                      <p className="text-xs text-muted-foreground/70">{getUserEmail(selectedDeposit.userId)}</p>
                     </div>
                     {selectedDeposit.senderBankName && (
                       <>
                         <div>
-                          <p className="text-gray-500">Sender Bank</p>
+                          <p className="text-muted-foreground">Sender Bank</p>
                           <p className="text-sm">{selectedDeposit.senderBankName}</p>
                         </div>
                         <div>
-                          <p className="text-gray-500">Sender Account</p>
+                          <p className="text-muted-foreground">Sender Account</p>
                           <p className="text-sm">{selectedDeposit.senderAccountName}</p>
                         </div>
                       </>
                     )}
                     <div className="col-span-2">
-                      <p className="text-gray-500">Submitted</p>
+                      <p className="text-muted-foreground">Submitted</p>
                       <p className="text-sm">{new Date(selectedDeposit.createdAt).toLocaleString()}</p>
                     </div>
                   </div>
@@ -1554,32 +1554,32 @@ export default function FinaPayManagement() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Amount</p>
+                    <p className="text-muted-foreground">Amount</p>
                     <p className="font-bold text-lg">${parseFloat(selectedWithdrawal.amountUsd).toFixed(2)}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Status</p>
+                    <p className="text-muted-foreground">Status</p>
                     {getStatusBadge(selectedWithdrawal.status)}
                   </div>
                   <div>
-                    <p className="text-gray-500">Reference</p>
+                    <p className="text-muted-foreground">Reference</p>
                     <p className="font-mono text-xs">{selectedWithdrawal.referenceNumber}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">User</p>
+                    <p className="text-muted-foreground">User</p>
                     <p>{getUserName(selectedWithdrawal.userId)}</p>
-                    <p className="text-xs text-gray-400">{getUserEmail(selectedWithdrawal.userId)}</p>
+                    <p className="text-xs text-muted-foreground/70">{getUserEmail(selectedWithdrawal.userId)}</p>
                   </div>
-                  <div className="col-span-2 p-3 bg-gray-50 rounded-lg">
-                    <p className="text-gray-500 text-xs mb-1">Withdrawal Bank Details</p>
+                  <div className="col-span-2 p-3 bg-muted/40 rounded-lg">
+                    <p className="text-muted-foreground text-xs mb-1">Withdrawal Bank Details</p>
                     <p className="font-medium">{selectedWithdrawal.bankName}</p>
                     <p className="text-sm">{selectedWithdrawal.accountName}</p>
-                    <p className="text-sm text-gray-600">{selectedWithdrawal.accountNumber}</p>
-                    {selectedWithdrawal.routingNumber && <p className="text-xs text-gray-400">Routing: {selectedWithdrawal.routingNumber}</p>}
-                    {selectedWithdrawal.swiftCode && <p className="text-xs text-gray-400">SWIFT: {selectedWithdrawal.swiftCode}</p>}
+                    <p className="text-sm text-muted-foreground">{selectedWithdrawal.accountNumber}</p>
+                    {selectedWithdrawal.routingNumber && <p className="text-xs text-muted-foreground/70">Routing: {selectedWithdrawal.routingNumber}</p>}
+                    {selectedWithdrawal.swiftCode && <p className="text-xs text-muted-foreground/70">SWIFT: {selectedWithdrawal.swiftCode}</p>}
                   </div>
                   <div className="col-span-2">
-                    <p className="text-gray-500">Submitted</p>
+                    <p className="text-muted-foreground">Submitted</p>
                     <p>{new Date(selectedWithdrawal.createdAt).toLocaleString()}</p>
                   </div>
                 </div>
@@ -1655,73 +1655,73 @@ export default function FinaPayManagement() {
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <p className="text-gray-500">Transaction ID</p>
+                    <p className="text-muted-foreground">Transaction ID</p>
                     <p className="font-mono text-xs">{selectedTx.id}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500">Type</p>
+                    <p className="text-muted-foreground">Type</p>
                     <Badge>{selectedTx.type}</Badge>
                   </div>
                   <div>
-                    <p className="text-gray-500">Status</p>
+                    <p className="text-muted-foreground">Status</p>
                     <Badge variant={selectedTx.status === 'Pending' ? 'secondary' : selectedTx.status === 'Completed' ? 'default' : 'destructive'}>
                       {selectedTx.status}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-gray-500">User</p>
+                    <p className="text-muted-foreground">User</p>
                     <p>{getUserName(selectedTx.userId)}</p>
-                    <p className="text-xs text-gray-400">{getUserEmail(selectedTx.userId)}</p>
+                    <p className="text-xs text-muted-foreground/70">{getUserEmail(selectedTx.userId)}</p>
                   </div>
                   {selectedTx.amountGold && (
                     <div>
-                      <p className="text-gray-500">Gold Amount</p>
+                      <p className="text-muted-foreground">Gold Amount</p>
                       <p className="font-bold">{parseFloat(selectedTx.amountGold).toFixed(6)}g</p>
                     </div>
                   )}
                   {selectedTx.amountUsd && (
                     <div>
-                      <p className="text-gray-500">USD Amount</p>
+                      <p className="text-muted-foreground">USD Amount</p>
                       <p className="font-bold">${parseFloat(selectedTx.amountUsd).toFixed(2)}</p>
                     </div>
                   )}
                   {selectedTx.goldPriceUsdPerGram && (
                     <div>
-                      <p className="text-gray-500">Gold Price</p>
+                      <p className="text-muted-foreground">Gold Price</p>
                       <p>${parseFloat(selectedTx.goldPriceUsdPerGram).toFixed(2)}/g</p>
                     </div>
                   )}
                   {selectedTx.recipientEmail && (
                     <div>
-                      <p className="text-gray-500">Recipient</p>
+                      <p className="text-muted-foreground">Recipient</p>
                       <p>{selectedTx.recipientEmail}</p>
                     </div>
                   )}
                   <div>
-                    <p className="text-gray-500">Created</p>
+                    <p className="text-muted-foreground">Created</p>
                     <p>{new Date(selectedTx.createdAt).toLocaleString()}</p>
                   </div>
                   {selectedTx.completedAt && (
                     <div>
-                      <p className="text-gray-500">Completed</p>
+                      <p className="text-muted-foreground">Completed</p>
                       <p>{new Date(selectedTx.completedAt).toLocaleString()}</p>
                     </div>
                   )}
                   {selectedTx.approvedBy && (
                     <div>
-                      <p className="text-gray-500">Approved By</p>
+                      <p className="text-muted-foreground">Approved By</p>
                       <p>{getUserName(selectedTx.approvedBy)}</p>
                     </div>
                   )}
                   {selectedTx.rejectionReason && (
                     <div className="col-span-2">
-                      <p className="text-gray-500">Rejection Reason</p>
+                      <p className="text-muted-foreground">Rejection Reason</p>
                       <p className="text-red-600">{selectedTx.rejectionReason}</p>
                     </div>
                   )}
                   {selectedTx.description && (
                     <div className="col-span-2">
-                      <p className="text-gray-500">Description</p>
+                      <p className="text-muted-foreground">Description</p>
                       <p>{selectedTx.description}</p>
                     </div>
                   )}
@@ -1740,12 +1740,12 @@ export default function FinaPayManagement() {
             {selectedBuyGold && (
               <div className="space-y-3">
                 {/* Header Info Row */}
-                <div className="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                <div className="flex items-center justify-between bg-muted/40 rounded-lg p-3">
                   <div>
-                    <p className="text-2xl font-bold text-gray-900">
+                    <p className="text-2xl font-bold text-foreground">
                       {selectedBuyGold.amountUsd ? `$${parseFloat(selectedBuyGold.amountUsd).toLocaleString()}` : 'N/A'}
                     </p>
-                    <p className="text-xs text-gray-500">Amount (USD)</p>
+                    <p className="text-xs text-muted-foreground">Amount (USD)</p>
                   </div>
                   <Badge variant={
                     selectedBuyGold.status === 'Credited' ? 'default' :
@@ -1757,17 +1757,17 @@ export default function FinaPayManagement() {
 
                 {/* User & Reference Info */}
                 <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div className="bg-gray-50 rounded p-2">
-                    <p className="text-gray-500">User</p>
+                  <div className="bg-muted/40 rounded p-2">
+                    <p className="text-muted-foreground">User</p>
                     <p className="font-medium truncate">
                       {selectedBuyGold.user ? `${selectedBuyGold.user.firstName} ${selectedBuyGold.user.lastName}` : 'Unknown'}
                     </p>
-                    <p className="text-gray-400 truncate">{selectedBuyGold.user?.email}</p>
+                    <p className="text-muted-foreground/70 truncate">{selectedBuyGold.user?.email}</p>
                   </div>
-                  <div className="bg-gray-50 rounded p-2">
-                    <p className="text-gray-500">Reference</p>
+                  <div className="bg-muted/40 rounded p-2">
+                    <p className="text-muted-foreground">Reference</p>
                     <p className="font-medium">{selectedBuyGold.referenceNumber || 'N/A'}</p>
-                    <p className="text-gray-400">WG: {selectedBuyGold.wingoldReferenceId || 'N/A'}</p>
+                    <p className="text-muted-foreground/70">WG: {selectedBuyGold.wingoldReferenceId || 'N/A'}</p>
                   </div>
                 </div>
 
@@ -1790,7 +1790,7 @@ export default function FinaPayManagement() {
                 {/* Credit Gold Section */}
                 {(selectedBuyGold.status === 'Pending' || selectedBuyGold.status === 'Under Review') && (
                   <div className="space-y-2 pt-2 border-t">
-                    <p className="text-xs font-medium text-gray-700">Credit Gold to User</p>
+                    <p className="text-xs font-medium text-foreground/85">Credit Gold to User</p>
                     <div className="grid grid-cols-2 gap-2">
                       <div>
                         <Label htmlFor="buyGoldGrams" className="text-xs">Gold (grams)</Label>

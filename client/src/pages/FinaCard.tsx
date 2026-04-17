@@ -324,15 +324,15 @@ export default function FinaCard() {
                 </p>
 
                 <div className="grid grid-cols-3 gap-4 pt-2">
-                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-card/5 backdrop-blur">
                     <Globe className="w-6 h-6 text-blue-400" />
                     <span className="text-xs text-white/70 font-medium">40M+ Merchants</span>
                   </div>
-                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-card/5 backdrop-blur">
                     <Sparkles className="w-6 h-6 text-yellow-400" />
                     <span className="text-xs text-white/70 font-medium">0% FX Fee</span>
                   </div>
-                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-white/5 backdrop-blur">
+                  <div className="flex flex-col items-center text-center gap-2 p-4 rounded-xl bg-card/5 backdrop-blur">
                     <Zap className="w-6 h-6 text-green-400" />
                     <span className="text-xs text-white/70 font-medium">Instant Conversion</span>
                   </div>
@@ -388,10 +388,10 @@ export default function FinaCard() {
               >
                 <Clock className="w-10 h-10 text-amber-600" />
               </motion.div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2" data-testid="text-application-title">
+              <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-application-title">
                 {cardStatus === 'applied' ? 'Application Submitted' : 'Under Review'}
               </h2>
-              <p className="text-gray-500 max-w-md mx-auto mb-6">
+              <p className="text-muted-foreground max-w-md mx-auto mb-6">
                 {cardStatus === 'applied'
                   ? 'Your FinaCard application has been submitted and is waiting to be reviewed by our team.'
                   : 'Your application is currently being reviewed. We\'ll notify you once a decision is made.'}
@@ -400,9 +400,9 @@ export default function FinaCard() {
               <div className="flex items-center justify-center gap-2 mb-6">
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-xs text-gray-500">Submitted</span>
+                  <span className="text-xs text-muted-foreground">Submitted</span>
                 </div>
-                <div className="w-12 h-0.5 bg-gray-200 relative overflow-hidden">
+                <div className="w-12 h-0.5 bg-muted relative overflow-hidden">
                   <motion.div
                     className="absolute inset-0 bg-amber-400"
                     animate={{ x: ['-100%', '100%'] }}
@@ -411,16 +411,16 @@ export default function FinaCard() {
                 </div>
                 <div className="flex items-center gap-1">
                   <div className={`w-3 h-3 rounded-full ${cardStatus === 'under_review' ? 'bg-amber-400' : 'bg-gray-300'}`} />
-                  <span className="text-xs text-gray-500">Reviewing</span>
+                  <span className="text-xs text-muted-foreground">Reviewing</span>
                 </div>
-                <div className="w-12 h-0.5 bg-gray-200" />
+                <div className="w-12 h-0.5 bg-muted" />
                 <div className="flex items-center gap-1">
                   <div className="w-3 h-3 rounded-full bg-gray-300" />
-                  <span className="text-xs text-gray-500">Approved</span>
+                  <span className="text-xs text-muted-foreground">Approved</span>
                 </div>
               </div>
 
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-muted-foreground/70">
                 Applied {formatDistanceToNow(new Date(activeCard.appliedAt), { addSuffix: true })}
               </p>
             </Card>
@@ -443,12 +443,12 @@ export default function FinaCard() {
               <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-6">
                 <CheckCircle2 className="w-10 h-10 text-green-600" />
               </div>
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">Your Card is Approved!</h2>
-              <p className="text-gray-500 max-w-md mx-auto mb-2">
+              <h2 className="text-2xl font-bold text-foreground mb-2">Your Card is Approved!</h2>
+              <p className="text-muted-foreground max-w-md mx-auto mb-2">
                 Congratulations! Your FinaCard application has been approved. Activate your card to start spending gold worldwide.
               </p>
               {activeCard.last4Digits && (
-                <p className="text-sm text-gray-400 mb-6">
+                <p className="text-sm text-muted-foreground/70 mb-6">
                   Card ending in •••• {activeCard.last4Digits}
                 </p>
               )}
@@ -479,8 +479,8 @@ export default function FinaCard() {
             <div className="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-6">
               <Snowflake className="w-10 h-10 text-blue-600" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Card Frozen</h2>
-            <p className="text-gray-500 max-w-md mx-auto mb-4">
+            <h2 className="text-2xl font-bold text-foreground mb-2">Card Frozen</h2>
+            <p className="text-muted-foreground max-w-md mx-auto mb-4">
               Your FinaCard has been temporarily frozen. Spending is disabled until the card is unfrozen.
             </p>
             {activeCard.frozenReason && (
@@ -569,7 +569,7 @@ export default function FinaCard() {
               </Button>
               <Button
                 onClick={() => setShowWithdrawDialog(true)}
-                className="h-14 bg-white text-gray-900 hover:bg-gray-100 border border-gray-200 rounded-xl text-sm font-semibold"
+                className="h-14 bg-card text-foreground hover:bg-muted border border-border rounded-xl text-sm font-semibold"
                 disabled={finacardGrams <= 0}
                 data-testid="button-withdraw-finacard"
               >
@@ -596,14 +596,14 @@ export default function FinaCard() {
         </div>
 
         <Card className="p-6 rounded-2xl" data-testid="card-simulate-spending">
-          <h3 className="font-bold text-lg text-gray-900 mb-4 flex items-center gap-2">
+          <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-2">
             <ShoppingBag className="w-5 h-5 text-purple-600" />
             Simulate Spending
           </h3>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Merchant Name</label>
+                <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Merchant Name</label>
                 <Input
                   placeholder="e.g. Amazon, Starbucks, Emirates"
                   value={merchantName}
@@ -612,7 +612,7 @@ export default function FinaCard() {
                 />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Category</label>
+                <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Category</label>
                 <Select value={merchantCategory} onValueChange={setMerchantCategory}>
                   <SelectTrigger data-testid="select-merchant-category">
                     <SelectValue placeholder="Select category" />
@@ -628,7 +628,7 @@ export default function FinaCard() {
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Amount</label>
+                  <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Amount</label>
                   <Input
                     type="number"
                     step="0.01"
@@ -640,7 +640,7 @@ export default function FinaCard() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-700 mb-1.5 block">Currency</label>
+                  <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Currency</label>
                   <Select value={spendCurrency} onValueChange={setSpendCurrency}>
                     <SelectTrigger data-testid="select-spend-currency">
                       <SelectValue />
@@ -660,23 +660,23 @@ export default function FinaCard() {
             <div className="space-y-4">
               {spendAmountNum > 0 && goldPrice > 0 && (
                 <div className="bg-gradient-to-br from-gray-50 to-purple-50 rounded-xl p-5 space-y-3" data-testid="card-spend-preview">
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Transaction Preview</p>
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Transaction Preview</p>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Amount</span>
+                    <span className="text-muted-foreground">Amount</span>
                     <span className="font-semibold">{CURRENCIES.find(c => c.value === spendCurrency)?.symbol}{spendAmountNum.toFixed(2)} {spendCurrency}</span>
                   </div>
                   {spendCurrency !== 'USD' && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">USD Equivalent</span>
+                      <span className="text-muted-foreground">USD Equivalent</span>
                       <span className="font-medium">${spendUsdEquiv.toFixed(2)}</span>
                     </div>
                   )}
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Gold Price</span>
+                    <span className="text-muted-foreground">Gold Price</span>
                     <span className="font-medium">${goldPrice.toFixed(2)}/g</span>
                   </div>
-                  <div className="border-t border-gray-200 pt-3 flex justify-between">
-                    <span className="text-gray-700 font-medium">Gold to Deduct</span>
+                  <div className="border-t border-border pt-3 flex justify-between">
+                    <span className="text-foreground/85 font-medium">Gold to Deduct</span>
                     <span className="font-bold text-purple-700" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
                   </div>
                   {spendGoldPreview > finacardGrams && (
@@ -717,23 +717,23 @@ export default function FinaCard() {
         {spendingHistory.length > 0 && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-                <ShoppingBag className="w-5 h-5 text-gray-400" />
+              <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+                <ShoppingBag className="w-5 h-5 text-muted-foreground/70" />
                 Recent Spending
               </h3>
             </div>
-            <Card className="divide-y divide-gray-100 overflow-hidden" data-testid="card-spending-history">
+            <Card className="divide-y divide-border/60 overflow-hidden" data-testid="card-spending-history">
               {spendingHistory.map((s) => {
                 const CategoryIcon = getCategoryIcon(s.merchantCategory);
                 return (
-                  <div key={s.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors" data-testid={`row-spending-${s.id}`}>
+                  <div key={s.id} className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors" data-testid={`row-spending-${s.id}`}>
                     <div className="flex items-center gap-3">
                       <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
                         <CategoryIcon className="w-4 h-4 text-purple-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-sm text-gray-900" data-testid={`text-merchant-${s.id}`}>{s.merchantName}</p>
-                        <p className="text-xs text-gray-400">
+                        <p className="font-medium text-sm text-foreground" data-testid={`text-merchant-${s.id}`}>{s.merchantName}</p>
+                        <p className="text-xs text-muted-foreground/70">
                           {s.merchantCategory && <span>{s.merchantCategory} · </span>}
                           {formatDistanceToNow(new Date(s.createdAt), { addSuffix: true })}
                         </p>
@@ -743,7 +743,7 @@ export default function FinaCard() {
                       <p className="font-semibold text-sm text-red-600" data-testid={`text-spend-amount-${s.id}`}>
                         -{Number(s.goldGramsDeducted).toFixed(4)}g
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-muted-foreground/70">
                         {s.currencyLocal !== 'USD' ? `${Number(s.amountLocal).toFixed(2)} ${s.currencyLocal} · ` : ''}
                         ${Number(s.usdEquivalent).toFixed(2)}
                       </p>
@@ -757,21 +757,21 @@ export default function FinaCard() {
 
         <div>
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-lg text-gray-900 flex items-center gap-2">
-              <History className="w-5 h-5 text-gray-400" />
+            <h3 className="font-bold text-lg text-foreground flex items-center gap-2">
+              <History className="w-5 h-5 text-muted-foreground/70" />
               Transfer History
             </h3>
           </div>
           {transfers.length === 0 ? (
             <Card className="p-8 text-center">
-              <RefreshCw className="w-10 h-10 mx-auto text-gray-300 mb-3" />
-              <p className="text-gray-500 font-medium">No transfers yet</p>
-              <p className="text-gray-400 text-sm mt-1">Fund your FinaCard to start using it</p>
+              <RefreshCw className="w-10 h-10 mx-auto text-muted-foreground/50 mb-3" />
+              <p className="text-muted-foreground font-medium">No transfers yet</p>
+              <p className="text-muted-foreground/70 text-sm mt-1">Fund your FinaCard to start using it</p>
             </Card>
           ) : (
-            <Card className="divide-y divide-gray-100 overflow-hidden">
+            <Card className="divide-y divide-border/60 overflow-hidden">
               {transfers.map((t) => (
-                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-gray-50 transition-colors" data-testid={`row-transfer-${t.id}`}>
+                <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors" data-testid={`row-transfer-${t.id}`}>
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-full flex items-center justify-center ${t.type === 'fund' ? 'bg-emerald-100' : 'bg-orange-100'}`}>
                       {t.type === 'fund' ? (
@@ -781,10 +781,10 @@ export default function FinaCard() {
                       )}
                     </div>
                     <div>
-                      <p className="font-medium text-sm text-gray-900">
+                      <p className="font-medium text-sm text-foreground">
                         {t.type === 'fund' ? 'Funded FinaCard' : 'Returned to Wallet'}
                       </p>
-                      <p className="text-xs text-gray-400">
+                      <p className="text-xs text-muted-foreground/70">
                         {formatDistanceToNow(new Date(t.createdAt), { addSuffix: true })}
                       </p>
                     </div>
@@ -794,7 +794,7 @@ export default function FinaCard() {
                       {t.type === 'fund' ? '+' : '-'}{Number(t.goldGrams).toFixed(4)}g
                     </p>
                     {t.usdEquivalent && (
-                      <p className="text-xs text-gray-400">≈ ${Number(t.usdEquivalent).toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground/70">≈ ${Number(t.usdEquivalent).toFixed(2)}</p>
                     )}
                   </div>
                 </div>
@@ -816,7 +816,7 @@ export default function FinaCard() {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Amount (grams)</label>
+                <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Amount (grams)</label>
                 <Input
                   type="number"
                   step="0.0001"
@@ -828,7 +828,7 @@ export default function FinaCard() {
                   data-testid="input-fund-amount"
                 />
                 <div className="flex justify-between mt-1.5">
-                  <p className="text-xs text-gray-400">Available: {walletGrams.toFixed(4)}g</p>
+                  <p className="text-xs text-muted-foreground/70">Available: {walletGrams.toFixed(4)}g</p>
                   <button
                     className="text-xs text-purple-600 hover:text-purple-800 font-medium"
                     onClick={() => setFundAmount(walletGrams.toFixed(6))}
@@ -839,13 +839,13 @@ export default function FinaCard() {
                 </div>
               </div>
               {fundAmountNum > 0 && (
-                <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                <div className="bg-muted/40 rounded-lg p-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Gold to transfer</span>
+                    <span className="text-muted-foreground">Gold to transfer</span>
                     <span className="font-medium">{fundAmountNum.toFixed(4)}g</span>
                   </div>
                   <div className="flex justify-between mt-1">
-                    <span className="text-gray-500">≈ USD value</span>
+                    <span className="text-muted-foreground">≈ USD value</span>
                     <span className="font-medium">${(fundAmountNum * goldPrice).toFixed(2)}</span>
                   </div>
                 </div>
@@ -878,7 +878,7 @@ export default function FinaCard() {
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div>
-                <label className="text-sm font-medium text-gray-700 mb-1.5 block">Amount (grams)</label>
+                <label className="text-sm font-medium text-foreground/85 mb-1.5 block">Amount (grams)</label>
                 <Input
                   type="number"
                   step="0.0001"
@@ -890,7 +890,7 @@ export default function FinaCard() {
                   data-testid="input-withdraw-amount"
                 />
                 <div className="flex justify-between mt-1.5">
-                  <p className="text-xs text-gray-400">FinaCard Balance: {finacardGrams.toFixed(4)}g</p>
+                  <p className="text-xs text-muted-foreground/70">FinaCard Balance: {finacardGrams.toFixed(4)}g</p>
                   <button
                     className="text-xs text-purple-600 hover:text-purple-800 font-medium"
                     onClick={() => setWithdrawAmount(finacardGrams.toFixed(6))}
@@ -901,13 +901,13 @@ export default function FinaCard() {
                 </div>
               </div>
               {withdrawAmountNum > 0 && (
-                <div className="bg-gray-50 rounded-lg p-3 text-sm">
+                <div className="bg-muted/40 rounded-lg p-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-gray-500">Gold to return</span>
+                    <span className="text-muted-foreground">Gold to return</span>
                     <span className="font-medium">{withdrawAmountNum.toFixed(4)}g</span>
                   </div>
                   <div className="flex justify-between mt-1">
-                    <span className="text-gray-500">≈ USD value</span>
+                    <span className="text-muted-foreground">≈ USD value</span>
                     <span className="font-medium">${(withdrawAmountNum * goldPrice).toFixed(2)}</span>
                   </div>
                 </div>

@@ -162,7 +162,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               exit={{ opacity: 0, x: 20 }}
               className="space-y-6"
             >
-              <Card className="bg-white shadow-sm border border-border">
+              <Card className="bg-card shadow-sm border border-border">
                 <CardHeader>
                   <CardTitle className="text-lg font-medium text-foreground flex items-center gap-2">
                     <DollarSign className="w-5 h-5 text-secondary" />
@@ -182,9 +182,9 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                          >
                            Max: {inputMode === 'grams' ? `${vaultBalance.toFixed(3)}g` : `$${(vaultBalance * goldPriceUsd).toFixed(2)}`}
                          </span>
-                         <div className="flex bg-gray-100 rounded-lg p-1">
-                           <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>Grams</button>
-                           <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-gray-600 hover:bg-gray-200'}`}>USD</button>
+                         <div className="flex bg-muted rounded-lg p-1">
+                           <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
+                           <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
                          </div>
                        </div>
                     </div>
@@ -413,7 +413,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <Card className="bg-white shadow-sm border border-border">
+              <Card className="bg-card shadow-sm border border-border">
                 <CardHeader>
                    <CardTitle className="text-lg font-medium text-foreground">Confirm Withdrawal Request</CardTitle>
                 </CardHeader>

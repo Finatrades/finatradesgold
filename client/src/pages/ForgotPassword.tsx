@@ -53,7 +53,7 @@ export default function ForgotPassword() {
               <p className="font-medium text-foreground mt-2">{email}</p>
             </div>
 
-            <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+            <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
               <div className="space-y-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   Click the link in the email to reset your password. If you don't see the email, check your spam folder.
@@ -107,7 +107,7 @@ export default function ForgotPassword() {
             <p className="text-muted-foreground">Enter your email address and we'll send you instructions to reset your password.</p>
           </div>
 
-          <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+          <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">

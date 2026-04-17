@@ -63,9 +63,9 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
             className={`relative overflow-hidden rounded-xl p-4 text-white bg-gradient-to-br ${action.gradient} shadow-lg hover:shadow-xl transition-shadow`}
             data-testid={`button-${action.id}`}
           >
-            <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute top-0 right-0 w-20 h-20 bg-card/10 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="relative z-10 flex flex-col items-start gap-2">
-              <div className="p-2 bg-white/20 rounded-lg backdrop-blur-sm">
+              <div className="p-2 bg-card/20 rounded-lg backdrop-blur-sm">
                 {action.icon}
               </div>
               <div>
@@ -85,7 +85,7 @@ export default function QuickActions({ onAction, goldPrice }: QuickActionsProps)
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onAction(action.id)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-sm font-medium text-foreground shadow-sm"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-card border border-border hover:border-primary/30 hover:bg-primary/5 transition-all text-sm font-medium text-foreground shadow-sm"
             data-testid={`button-${action.id}`}
           >
             <span className="text-muted-foreground">{action.icon}</span>

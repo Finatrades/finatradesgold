@@ -56,15 +56,15 @@ function Tile({ icon, label, sub, grams, goldPricePerGram, accent, bg, border, p
         <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${accent}`}>
           {icon}
         </div>
-        <span className={`text-xs font-semibold ${primary ? 'text-amber-800' : 'text-gray-600'}`}>{label}</span>
+        <span className={`text-xs font-semibold ${primary ? 'text-amber-800' : 'text-muted-foreground'}`}>{label}</span>
       </div>
-      <p className={`font-bold ${primary ? 'text-2xl text-amber-700' : 'text-lg text-gray-800'}`}>
+      <p className={`font-bold ${primary ? 'text-2xl text-amber-700' : 'text-lg text-foreground'}`}>
         {fmt(grams)}<span className="text-sm font-medium ml-0.5">g</span>
       </p>
       <p className={`text-xs ${primary ? 'text-amber-600' : 'text-muted-foreground'}`}>
         ≈ ${usd(grams, goldPricePerGram)} USD
       </p>
-      <p className={`text-[10px] leading-snug mt-0.5 ${primary ? 'text-amber-700/80' : 'text-gray-500'}`}>{sub}</p>
+      <p className={`text-[10px] leading-snug mt-0.5 ${primary ? 'text-amber-700/80' : 'text-muted-foreground'}`}>{sub}</p>
     </div>
   );
 }
@@ -79,16 +79,16 @@ export default function GoldOverviewCard({ ownership, goldPricePerGram }: GoldOv
   const total = sp(ownership.totalGoldGrams);
 
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5" data-testid="gold-overview-card">
+    <div className="bg-card rounded-2xl border border-border/60 shadow-sm p-5" data-testid="gold-overview-card">
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h2 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+          <h2 className="text-sm font-bold text-foreground flex items-center gap-2">
             <Database className="w-4 h-4 text-amber-500" />
             Your Gold Overview
           </h2>
           <p className="text-xs text-muted-foreground mt-0.5">Live breakdown of all your gold across the platform</p>
         </div>
-        <span className="text-xs text-muted-foreground bg-gray-50 border border-gray-100 px-2 py-1 rounded-full">
+        <span className="text-xs text-muted-foreground bg-muted/40 border border-border/60 px-2 py-1 rounded-full">
           ${goldPricePerGram.toFixed(2)}/g
         </span>
       </div>
@@ -140,14 +140,14 @@ export default function GoldOverviewCard({ ownership, goldPricePerGram }: GoldOv
           testId="tile-trade-collateral"
         />
         <Tile
-          icon={<Database className="w-4 h-4 text-gray-600" />}
+          icon={<Database className="w-4 h-4 text-muted-foreground" />}
           label="Total in Vault"
           sub="All gold backing the above"
           grams={total}
           goldPricePerGram={goldPricePerGram}
-          accent="bg-gray-100"
-          bg="bg-gray-50"
-          border="border-gray-200"
+          accent="bg-muted"
+          bg="bg-muted/40"
+          border="border-border"
           testId="tile-total-vault"
         />
       </div>

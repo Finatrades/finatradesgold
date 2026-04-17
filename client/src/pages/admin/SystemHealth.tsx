@@ -64,7 +64,7 @@ export default function SystemHealth() {
       case 'unhealthy':
         return <XCircle className="h-5 w-5 text-red-600" />;
       default:
-        return <AlertTriangle className="h-5 w-5 text-gray-400" />;
+        return <AlertTriangle className="h-5 w-5 text-muted-foreground/70" />;
     }
   };
 
@@ -106,10 +106,10 @@ export default function SystemHealth() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-page-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-page-title">
               System Health
             </h1>
-            <p className="text-gray-500 mt-1">
+            <p className="text-muted-foreground mt-1">
               Monitor platform status, API health, and database connectivity
             </p>
           </div>
@@ -126,13 +126,13 @@ export default function SystemHealth() {
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
-            <RefreshCw className="h-8 w-8 animate-spin text-gray-400" />
+            <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
           </div>
         ) : !health ? (
           <Card>
             <CardContent className="py-12 text-center">
               <XCircle className="h-12 w-12 mx-auto mb-4 text-red-400" />
-              <p className="text-gray-500">Failed to load system health data</p>
+              <p className="text-muted-foreground">Failed to load system health data</p>
             </CardContent>
           </Card>
         ) : (
@@ -148,7 +148,7 @@ export default function SystemHealth() {
                       {getStatusIcon(health.overall)}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Overall Status</p>
+                      <p className="text-sm text-muted-foreground">Overall Status</p>
                       <p className="text-lg font-bold capitalize">{health.overall}</p>
                     </div>
                   </div>
@@ -162,7 +162,7 @@ export default function SystemHealth() {
                       <Clock className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Uptime</p>
+                      <p className="text-sm text-muted-foreground">Uptime</p>
                       <p className="text-lg font-bold">{formatUptime(health.uptime)}</p>
                     </div>
                   </div>
@@ -176,7 +176,7 @@ export default function SystemHealth() {
                       <Activity className="h-5 w-5 text-purple-600" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Active Sessions</p>
+                      <p className="text-sm text-muted-foreground">Active Sessions</p>
                       <p className="text-lg font-bold">{health.activeSessions}</p>
                     </div>
                   </div>
@@ -194,7 +194,7 @@ export default function SystemHealth() {
                       )}
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Recent Errors (24h)</p>
+                      <p className="text-sm text-muted-foreground">Recent Errors (24h)</p>
                       <p className="text-lg font-bold">{health.recentErrors.count}</p>
                     </div>
                   </div>
@@ -213,7 +213,7 @@ export default function SystemHealth() {
                     <div 
                       key={check.name} 
                       className={`flex items-center justify-between p-4 rounded-lg ${
-                        index % 2 === 0 ? 'bg-gray-50' : 'bg-white'
+                        index % 2 === 0 ? 'bg-muted/40' : 'bg-card'
                       } border`}
                       data-testid={`check-${check.name.toLowerCase().replace(/\s/g, '-')}`}
                     >
@@ -227,13 +227,13 @@ export default function SystemHealth() {
                         <div>
                           <p className="font-medium">{check.name}</p>
                           {check.details && (
-                            <p className="text-sm text-gray-500">{check.details}</p>
+                            <p className="text-sm text-muted-foreground">{check.details}</p>
                           )}
                         </div>
                       </div>
                       <div className="flex items-center gap-4">
                         {check.responseTime !== undefined && (
-                          <span className="text-sm text-gray-500">
+                          <span className="text-sm text-muted-foreground">
                             {check.responseTime}ms
                           </span>
                         )}
@@ -255,17 +255,17 @@ export default function SystemHealth() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-center p-4 bg-muted/40 rounded-lg">
                       <p className="text-2xl font-bold text-blue-600">{health.dbPoolInfo.total}</p>
-                      <p className="text-sm text-gray-500">Total Connections</p>
+                      <p className="text-sm text-muted-foreground">Total Connections</p>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-center p-4 bg-muted/40 rounded-lg">
                       <p className="text-2xl font-bold text-green-600">{health.dbPoolInfo.idle}</p>
-                      <p className="text-sm text-gray-500">Idle</p>
+                      <p className="text-sm text-muted-foreground">Idle</p>
                     </div>
-                    <div className="text-center p-4 bg-gray-50 rounded-lg">
+                    <div className="text-center p-4 bg-muted/40 rounded-lg">
                       <p className="text-2xl font-bold text-yellow-600">{health.dbPoolInfo.waiting}</p>
-                      <p className="text-sm text-gray-500">Waiting</p>
+                      <p className="text-sm text-muted-foreground">Waiting</p>
                     </div>
                   </div>
                 </CardContent>
@@ -306,21 +306,21 @@ export default function SystemHealth() {
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <div>
-                    <p className="text-sm text-gray-500">Version</p>
+                    <p className="text-sm text-muted-foreground">Version</p>
                     <p className="font-medium">{health.version}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Environment</p>
+                    <p className="text-sm text-muted-foreground">Environment</p>
                     <Badge variant="outline" className="mt-1">{health.environment}</Badge>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Last Check</p>
+                    <p className="text-sm text-muted-foreground">Last Check</p>
                     <p className="font-medium">
                       {format(new Date(health.lastChecked), 'HH:mm:ss')}
                     </p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Node.js</p>
+                    <p className="text-sm text-muted-foreground">Node.js</p>
                     <p className="font-medium">{process.env.NODE_ENV || 'development'}</p>
                   </div>
                 </div>

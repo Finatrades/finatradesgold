@@ -82,7 +82,7 @@ export default function ResetPassword() {
               <p className="text-muted-foreground">This password reset link is invalid or has expired.</p>
             </div>
 
-            <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+            <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
               <div className="space-y-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   Password reset links expire after 1 hour for security reasons. Please request a new link.
@@ -128,7 +128,7 @@ export default function ResetPassword() {
               <p className="text-muted-foreground">Your password has been successfully updated.</p>
             </div>
 
-            <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+            <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
               <div className="space-y-4 text-center">
                 <p className="text-sm text-muted-foreground">
                   You can now log in with your new password.
@@ -170,7 +170,7 @@ export default function ResetPassword() {
             <p className="text-muted-foreground">Enter your new password below.</p>
           </div>
 
-          <Card className="p-8 bg-white border-border shadow-md backdrop-blur-sm">
+          <Card className="p-8 bg-card border-border shadow-md backdrop-blur-sm">
             <form onSubmit={handleSubmit} className="space-y-6">
               
               <div className="space-y-2">

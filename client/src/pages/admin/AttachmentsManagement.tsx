@@ -278,7 +278,7 @@ export default function AttachmentsManagement() {
     if (lower.includes('pending') || lower.includes('review') || lower.includes('submitted')) {
       return 'bg-yellow-100 text-yellow-700';
     }
-    return 'bg-gray-100 text-gray-700';
+    return 'bg-muted text-foreground/85';
   };
 
   return (
@@ -375,8 +375,8 @@ export default function AttachmentsManagement() {
                             onClick={() => setSelectedAttachment(attachment)}
                           />
                         ) : (
-                          <div className="w-16 h-16 bg-gray-100 rounded border flex items-center justify-center">
-                            <FileText className="w-6 h-6 text-gray-400" />
+                          <div className="w-16 h-16 bg-muted rounded border flex items-center justify-center">
+                            <FileText className="w-6 h-6 text-muted-foreground/70" />
                           </div>
                         )}
                       </TableCell>
@@ -481,7 +481,7 @@ export default function AttachmentsManagement() {
                 </div>
               </div>
               
-              <div className="border rounded-lg p-4 bg-white">
+              <div className="border rounded-lg p-4 bg-card">
                 {selectedAttachment.fileType === 'image' && typeof selectedAttachment.fileUrl === 'string' && selectedAttachment.fileUrl.startsWith('data:image') ? (
                   <img 
                     src={selectedAttachment.fileUrl} 
@@ -496,8 +496,8 @@ export default function AttachmentsManagement() {
                     className="w-full h-[60vh] border-0"
                     title={selectedAttachment.fileName}
                   >
-                    <div className="flex flex-col items-center justify-center h-[60vh] bg-gray-50">
-                      <FileText className="w-16 h-16 text-gray-300 mb-4" />
+                    <div className="flex flex-col items-center justify-center h-[60vh] bg-muted/40">
+                      <FileText className="w-16 h-16 text-muted-foreground/50 mb-4" />
                       <p className="text-muted-foreground mb-4">PDF preview not available in your browser</p>
                       <a 
                         href={getDocumentDownloadUrl(selectedAttachment.fileUrl, true) || '#'}
@@ -512,7 +512,7 @@ export default function AttachmentsManagement() {
                   </object>
                 ) : (
                   <div className="text-center py-8">
-                    <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+                    <FileText className="w-16 h-16 mx-auto text-muted-foreground/50 mb-4" />
                     <p className="text-muted-foreground">Document preview not available</p>
                     {getDocumentDownloadUrl(selectedAttachment.fileUrl) && (
                       <a 

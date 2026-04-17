@@ -73,20 +73,20 @@ export default function TradeFinance() {
     <AdminLayout>
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Trade Finance Operations</h1>
-          <p className="text-gray-500">Manage BNSL positions and FinaBridge corporate financing.</p>
+          <h1 className="text-3xl font-bold text-foreground">Trade Finance Operations</h1>
+          <p className="text-muted-foreground">Manage BNSL positions and FinaBridge corporate financing.</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* ... Stats cards remain similar ... */}
            <Card>
              <CardHeader className="flex flex-row items-center justify-between pb-2">
-               <CardTitle className="text-sm font-medium text-gray-500">Total BNSL Exposure</CardTitle>
-               <TrendingUp className="w-4 h-4 text-gray-500" />
+               <CardTitle className="text-sm font-medium text-muted-foreground">Total BNSL Exposure</CardTitle>
+               <TrendingUp className="w-4 h-4 text-muted-foreground" />
              </CardHeader>
              <CardContent>
                <div className="text-2xl font-bold">CHF 450,000</div>
-               <p className="text-xs text-gray-500 mt-1">Across 124 Active Positions</p>
+               <p className="text-xs text-muted-foreground mt-1">Across 124 Active Positions</p>
                <div className="mt-4">
                  <div className="flex justify-between text-xs mb-1">
                     <span>Collateral Health</span>
@@ -99,12 +99,12 @@ export default function TradeFinance() {
 
            <Card>
              <CardHeader className="flex flex-row items-center justify-between pb-2">
-               <CardTitle className="text-sm font-medium text-gray-500">Active Bridge Loans</CardTitle>
-               <Briefcase className="w-4 h-4 text-gray-500" />
+               <CardTitle className="text-sm font-medium text-muted-foreground">Active Bridge Loans</CardTitle>
+               <Briefcase className="w-4 h-4 text-muted-foreground" />
              </CardHeader>
              <CardContent>
                <div className="text-2xl font-bold">CHF {(cases.reduce((acc, c) => acc + (c.valueUsd || 0), 0) / 1000000).toFixed(1)}M</div>
-               <p className="text-xs text-gray-500 mt-1">{cases.length} Active Supply Chain Deals</p>
+               <p className="text-xs text-muted-foreground mt-1">{cases.length} Active Supply Chain Deals</p>
                <div className="mt-4 flex gap-2">
                  <span className="bg-purple-600 text-white text-[11px] font-semibold rounded-full px-2.5 py-1 flex items-center justify-center">
                    {cases.filter(c => c.status === 'Under Review' || c.status === 'Funded – Docs Pending').length} Pending Review
@@ -137,17 +137,17 @@ export default function TradeFinance() {
                       <p className="text-center text-muted-foreground py-8">No active trade cases found.</p>
                     ) : (
                       cases.map((tradeCase) => (
-                        <div key={tradeCase.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-gray-100 rounded-lg bg-white hover:bg-gray-50 transition-colors">
+                        <div key={tradeCase.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 border border-border/60 rounded-lg bg-card hover:bg-muted/40 transition-colors">
                            <div className="flex items-center gap-4 mb-4 md:mb-0">
                               <div className={`p-2 rounded border ${tradeCase.status.includes('Approved') || tradeCase.status === 'Released' ? 'bg-green-50 border-green-100 text-green-600' : 'bg-blue-50 border-blue-100 text-blue-600'}`}>
                                  <Briefcase className="w-6 h-6" />
                               </div>
                               <div>
                                  <div className="flex items-center gap-2">
-                                    <h4 className="font-bold text-gray-900">{tradeCase.name}</h4>
+                                    <h4 className="font-bold text-foreground">{tradeCase.name}</h4>
                                     <Badge variant="outline" className="text-xs">{tradeCase.status}</Badge>
                                  </div>
-                                 <p className="text-sm text-gray-600">
+                                 <p className="text-sm text-muted-foreground">
                                    Requesting ${(tradeCase.valueUsd || 0).toLocaleString()} • {tradeCase.buyer.company}
                                  </p>
                               </div>
@@ -178,15 +178,15 @@ export default function TradeFinance() {
                       { id: 'POS-102', user: 'Bob Smith', collateral: '50g Gold', loan: 'CHF 2,800', ratio: '115%', status: 'Warning' },
                       { id: 'POS-103', user: 'Charlie Brown', collateral: '500g Gold', loan: 'CHF 25,000', ratio: '160%', status: 'Healthy' },
                     ].map((pos, i) => (
-                      <div key={i} className="flex items-center justify-between p-4 border border-gray-100 rounded-lg">
+                      <div key={i} className="flex items-center justify-between p-4 border border-border/60 rounded-lg">
                         <div>
-                          <p className="font-bold text-gray-900">{pos.loan}</p>
-                          <p className="text-sm text-gray-500">Loan against {pos.collateral}</p>
+                          <p className="font-bold text-foreground">{pos.loan}</p>
+                          <p className="text-sm text-muted-foreground">Loan against {pos.collateral}</p>
                         </div>
                         <div className="flex items-center gap-6">
                            <div className="text-right">
                              <p className={`font-bold ${pos.status === 'Warning' ? 'text-red-600' : 'text-green-600'}`}>{pos.ratio}</p>
-                             <p className="text-xs text-gray-500">LTV Ratio</p>
+                             <p className="text-xs text-muted-foreground">LTV Ratio</p>
                            </div>
                            <Badge variant={pos.status === 'Warning' ? 'destructive' : 'outline'} className={pos.status === 'Healthy' ? 'text-green-700 bg-green-50 border-green-200' : ''}>
                              {pos.status}
@@ -213,12 +213,12 @@ export default function TradeFinance() {
             {selectedCase && (
               <div className="space-y-6 py-4">
                  <div className="grid grid-cols-2 gap-4">
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-muted/40 rounded-lg">
                        <p className="text-xs text-muted-foreground uppercase">Buyer</p>
                        <p className="font-bold">{selectedCase.buyer.company}</p>
                        <p className="text-sm">{selectedCase.buyer.country}</p>
                     </div>
-                    <div className="p-3 bg-gray-50 rounded-lg">
+                    <div className="p-3 bg-muted/40 rounded-lg">
                        <p className="text-xs text-muted-foreground uppercase">Value</p>
                        <p className="font-bold">${selectedCase.valueUsd.toLocaleString()}</p>
                        <p className="text-sm">{selectedCase.valueGoldGrams}g Gold</p>
@@ -227,7 +227,7 @@ export default function TradeFinance() {
 
                  <div className="space-y-2">
                     <h4 className="font-medium text-sm border-b pb-1">Commodity Details</h4>
-                    <p className="text-sm text-gray-700">{selectedCase.commodityDescription}</p>
+                    <p className="text-sm text-foreground/85">{selectedCase.commodityDescription}</p>
                     <div className="flex gap-4 text-sm mt-2">
                        <Badge variant="outline">{selectedCase.paymentTerms}</Badge>
                        <Badge variant="outline">{selectedCase.deliveryTerms}</Badge>

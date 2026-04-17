@@ -49,17 +49,17 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
   };
 
   return (
-    <header className={`sticky top-0 z-40 mobile-header ${transparent ? 'bg-transparent' : 'bg-white/95 backdrop-blur-lg border-b border-gray-100/80 mobile-header-blur'}`}
+    <header className={`sticky top-0 z-40 mobile-header ${transparent ? 'bg-transparent' : 'bg-card/95 backdrop-blur-lg border-b border-border/60/80 mobile-header-blur'}`}
             style={{ paddingTop: 'max(0.5rem, env(safe-area-inset-top, 0px))' }}>
       <div className="h-14 px-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           {showBack ? (
             <button
               onClick={() => window.history.back()}
-              className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
+              className="w-11 h-11 rounded-full bg-muted flex items-center justify-center touch-target haptic-press active:bg-muted"
               data-testid="button-mobile-back"
             >
-              <ChevronLeft className="w-6 h-6 text-gray-700" />
+              <ChevronLeft className="w-6 h-6 text-foreground/85" />
             </button>
           ) : (
             <Avatar 
@@ -74,7 +74,7 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
           )}
           
           <div>
-            <h1 className="text-lg font-bold text-gray-900">{getPageTitle()}</h1>
+            <h1 className="text-lg font-bold text-foreground">{getPageTitle()}</h1>
             {!showBack && goldPrice > 0 && (
               <p className="text-[10px] text-green-600 font-medium">Gold: ${goldPrice.toFixed(2)}/g</p>
             )}
@@ -84,19 +84,19 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
         <div className="flex items-center gap-3">
           <button
             onClick={() => setLocation('/notifications')}
-            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center relative touch-target haptic-press active:bg-gray-200"
+            className="w-11 h-11 rounded-full bg-muted flex items-center justify-center relative touch-target haptic-press active:bg-muted"
             data-testid="button-mobile-notifications"
           >
-            <Bell className="w-5 h-5 text-gray-700" />
+            <Bell className="w-5 h-5 text-foreground/85" />
             <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
           </button>
           
           <button
             onClick={() => setLocation('/settings')}
-            className="w-11 h-11 rounded-full bg-gray-100 flex items-center justify-center touch-target haptic-press active:bg-gray-200"
+            className="w-11 h-11 rounded-full bg-muted flex items-center justify-center touch-target haptic-press active:bg-muted"
             data-testid="button-mobile-settings"
           >
-            <Settings className="w-5 h-5 text-gray-700" />
+            <Settings className="w-5 h-5 text-foreground/85" />
           </button>
         </div>
       </div>

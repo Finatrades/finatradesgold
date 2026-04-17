@@ -54,10 +54,10 @@ export default function HowItWorks() {
             {accountType === 'business' ? 'ENTERPRISE WORKFLOW' : 'PERSONAL WORKFLOW'}
           </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4">
-            <span className="text-gray-900">How It </span>
+            <span className="text-foreground">How It </span>
             <span className="bg-gradient-to-r from-purple-600 to-purple-500 bg-clip-text text-transparent">Works</span>
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
             {accountType === 'business' 
               ? 'A structured, compliant pathway for corporate gold management.'
               : 'Start your gold journey in just a few simple steps.'}
@@ -98,9 +98,9 @@ export default function HowItWorks() {
                 className={`relative flex items-center gap-8 lg:h-[180px] ${step.position === 'right' ? 'lg:flex-row-reverse' : ''}`}
               >
                 <div className={`flex-1 ${step.position === 'right' ? 'lg:text-left' : 'lg:text-right'}`}>
-                  <div className={`p-6 rounded-2xl bg-white border border-gray-100 shadow-sm hover:shadow-lg transition-all inline-block max-w-sm ${step.position === 'right' ? '' : 'lg:ml-auto'}`} data-testid={`card-step-${step.number}`}>
-                    <h3 className="text-lg font-bold text-gray-900 mb-2" data-testid={`text-step-title-${step.number}`}>{step.title}</h3>
-                    <p className="text-sm text-gray-500" data-testid={`text-step-desc-${step.number}`}>{step.description}</p>
+                  <div className={`p-6 rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-lg transition-all inline-block max-w-sm ${step.position === 'right' ? '' : 'lg:ml-auto'}`} data-testid={`card-step-${step.number}`}>
+                    <h3 className="text-lg font-bold text-foreground mb-2" data-testid={`text-step-title-${step.number}`}>{step.title}</h3>
+                    <p className="text-sm text-muted-foreground" data-testid={`text-step-desc-${step.number}`}>{step.description}</p>
                   </div>
                 </div>
                 

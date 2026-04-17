@@ -95,13 +95,13 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                 : 'bg-[#7C3AED] text-white shadow-lg shadow-violet-500/25'
               : isDanger
                 ? 'text-red-600 hover:bg-red-50 hover:text-red-700 font-semibold'
-                : 'text-gray-500 hover:bg-violet-50 hover:text-violet-700'
+                : 'text-muted-foreground hover:bg-violet-50 hover:text-violet-700'
           }`}
           onClick={() => setIsOpen(false)}
           data-testid={`sidebar-link-${item.href.replace(/\//g, '-').slice(1)}`}
         >
           {active && !isDanger && !collapsed && (
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-white rounded-r-full" />
+            <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-card rounded-r-full" />
           )}
           <div className={`flex-shrink-0 ${active ? 'text-white' : isDanger ? 'text-red-600' : ''}`}>
             {item.icon}
@@ -142,14 +142,14 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
       )}
 
       <aside 
-        className={`fixed top-0 left-0 h-full ${sidebarWidth} bg-white border-r border-gray-200 z-50 transition-all duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
+        className={`fixed top-0 left-0 h-full ${sidebarWidth} bg-card border-r border-border z-50 transition-all duration-300 lg:translate-x-0 shadow-xl lg:shadow-none ${
           isOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         data-testid="sidebar"
       >
         <div className="flex flex-col h-full">
           
-          <div className={`h-16 flex items-center ${collapsed ? 'justify-between px-3 lg:justify-center lg:px-2' : 'justify-between px-3'} border-b border-purple-100 bg-white`}>
+          <div className={`h-16 flex items-center ${collapsed ? 'justify-between px-3 lg:justify-center lg:px-2' : 'justify-between px-3'} border-b border-purple-100 bg-card`}>
             <Link href="/">
               <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
                 <img 
@@ -165,7 +165,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
               </div>
             </Link>
             <button 
-              className="lg:hidden p-2 text-gray-500 hover:text-gray-700"
+              className="lg:hidden p-2 text-muted-foreground hover:text-foreground/85"
               onClick={() => setIsOpen(false)}
               aria-label="Close sidebar"
             >
@@ -175,7 +175,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
 
           <div className={`flex-1 overflow-y-auto py-5 ${collapsed ? 'px-3 lg:px-2' : 'px-3'} space-y-5 custom-scrollbar`}>
             <div className="space-y-1">
-              <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
+              <p className={`px-4 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                 Main Menu
               </p>
               {mainMenuItems.map(renderMenuItem)}
@@ -183,7 +183,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
 
             {businessMenuItems.length > 0 && (
               <div className="space-y-1">
-                <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
+                <p className={`px-4 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                   Business
                 </p>
                 {businessMenuItems.map(renderMenuItem)}
@@ -191,21 +191,21 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
             )}
 
             <div className="space-y-1">
-              <p className={`px-4 text-[11px] font-semibold text-gray-400 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
+              <p className={`px-4 text-[11px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-3 ${collapsed ? 'lg:hidden' : ''}`}>
                 Account
               </p>
               {accountMenuItems.map(renderMenuItem)}
             </div>
           </div>
 
-          <div className={`border-t border-gray-200 ${collapsed ? 'p-4 lg:p-2' : 'p-4'}`}>
+          <div className={`border-t border-border ${collapsed ? 'p-4 lg:p-2' : 'p-4'}`}>
             <div className={`mb-3 p-3 rounded-xl bg-violet-50 border border-violet-100 ${collapsed ? 'lg:hidden' : ''}`}>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-[#7C3AED] flex items-center justify-center text-white font-bold text-sm flex-shrink-0">
                   {user?.firstName?.[0]}{user?.lastName?.[0]}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-gray-900 truncate">
+                  <p className="text-sm font-semibold text-foreground truncate">
                     {user?.firstName} {user?.lastName}
                   </p>
                   <p className="text-xs text-violet-600 capitalize font-medium">
@@ -220,7 +220,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <button
-                      className="w-full flex items-center justify-center p-2.5 rounded-xl text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center justify-center p-2.5 rounded-xl text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-colors"
                       onClick={logout}
                       data-testid="button-logout-collapsed"
                       aria-label="Log Out"
@@ -236,7 +236,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
             <div className={collapsed ? 'lg:hidden' : ''}>
               <Button 
                 variant="ghost" 
-                className="w-full justify-start text-gray-500 hover:text-red-600 hover:bg-red-50"
+                className="w-full justify-start text-muted-foreground hover:text-red-600 hover:bg-red-50"
                 onClick={logout}
                 data-testid="button-logout"
               >
@@ -252,7 +252,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                     <TooltipTrigger asChild>
                       <button
                         onClick={() => setCollapsed(false)}
-                        className="w-full flex items-center justify-center p-2.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full flex items-center justify-center p-2.5 rounded-xl text-muted-foreground/70 hover:text-foreground/85 hover:bg-muted transition-colors"
                         aria-label="Expand sidebar"
                         data-testid="button-expand-sidebar"
                       >
@@ -265,7 +265,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
               ) : (
                 <button
                   onClick={() => setCollapsed(true)}
-                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                  className="w-full flex items-center gap-3 px-4 py-2.5 rounded-xl text-muted-foreground/70 hover:text-foreground/85 hover:bg-muted transition-colors"
                   aria-label="Collapse sidebar"
                   data-testid="button-collapse-sidebar"
                 >

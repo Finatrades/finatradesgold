@@ -604,7 +604,7 @@ export function FileUploadZone({
                 <div className={cn(
                   'rounded-lg border divide-y text-xs overflow-hidden font-mono',
                   corpDocResult.isCorrectType
-                    ? 'border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-gray-100 dark:divide-green-900/40'
+                    ? 'border-green-200 dark:border-green-800 bg-card dark:bg-green-950/10 divide-gray-100 dark:divide-green-900/40'
                     : 'border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/10 divide-amber-100 dark:divide-amber-900/40'
                 )}>
                   {/* Type check row */}
@@ -621,7 +621,7 @@ export function FileUploadZone({
                         ? 'bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400'
                         : corpDocResult.confidence === 'medium'
                           ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400'
-                          : 'bg-gray-100 dark:bg-gray-900/40 text-gray-600'
+                          : 'bg-muted dark:bg-gray-900/40 text-muted-foreground'
                     )}>
                       {corpDocResult.confidence.toUpperCase()} CONFIDENCE
                     </span>
@@ -687,7 +687,7 @@ export function FileUploadZone({
               )}
 
               {enableOcr && scanFields && (
-                <div className="rounded-lg border border-green-200 dark:border-green-800 bg-white dark:bg-green-950/10 divide-y divide-gray-100 dark:divide-green-900/40 text-xs overflow-hidden font-mono">
+                <div className="rounded-lg border border-green-200 dark:border-green-800 bg-card dark:bg-green-950/10 divide-y divide-gray-100 dark:divide-green-900/40 text-xs overflow-hidden font-mono">
                   {scanFields.document_type ? (
                     <div className="flex items-center gap-2 px-3 py-2">
                       <span className="text-muted-foreground uppercase tracking-wide text-[10px] w-14 flex-shrink-0">TYPE</span>

@@ -50,8 +50,8 @@ export default function PresentationDownload() {
     <AdminLayout>
       <div className="p-6 max-w-4xl mx-auto">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Official Presentation</h1>
-          <p className="text-gray-600 mt-2">Download the Finatrades presentation for government and partner meetings</p>
+          <h1 className="text-3xl font-bold text-foreground">Official Presentation</h1>
+          <p className="text-muted-foreground mt-2">Download the Finatrades presentation for government and partner meetings</p>
         </div>
 
         <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
@@ -70,8 +70,8 @@ export default function PresentationDownload() {
             <div className="space-y-6">
               <div className="grid md:grid-cols-2 gap-4">
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-800">Presentation Contents:</h3>
-                  <ul className="space-y-2 text-sm text-gray-600">
+                  <h3 className="font-semibold text-foreground">Presentation Contents:</h3>
+                  <ul className="space-y-2 text-sm text-muted-foreground">
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
                       Executive Summary
@@ -107,22 +107,22 @@ export default function PresentationDownload() {
                   </ul>
                 </div>
                 <div className="space-y-3">
-                  <h3 className="font-semibold text-gray-800">File Details:</h3>
-                  <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-2">
+                  <h3 className="font-semibold text-foreground">File Details:</h3>
+                  <div className="bg-card p-4 rounded-lg border border-border space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Format:</span>
+                      <span className="text-muted-foreground">Format:</span>
                       <span className="font-medium">PowerPoint (.pptx)</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Slides:</span>
+                      <span className="text-muted-foreground">Slides:</span>
                       <span className="font-medium">9 slides</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Theme:</span>
+                      <span className="text-muted-foreground">Theme:</span>
                       <span className="font-medium">Finatrades Purple</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Purpose:</span>
+                      <span className="text-muted-foreground">Purpose:</span>
                       <span className="font-medium">Partnership Proposal</span>
                     </div>
                   </div>

@@ -130,7 +130,7 @@ export default function UserDetails() {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <RefreshCw className="w-8 h-8 animate-spin text-gray-400" />
+          <RefreshCw className="w-8 h-8 animate-spin text-muted-foreground/70" />
         </div>
       </AdminLayout>
     );
@@ -141,8 +141,8 @@ export default function UserDetails() {
       <AdminLayout>
         <div className="text-center py-12">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900">User Not Found</h2>
-          <p className="text-gray-500 mt-2">The user you're looking for doesn't exist.</p>
+          <h2 className="text-xl font-semibold text-foreground">User Not Found</h2>
+          <p className="text-muted-foreground mt-2">The user you're looking for doesn't exist.</p>
           <Link href="/admin/users">
             <Button className="mt-4">Back to Users</Button>
           </Link>
@@ -178,8 +178,8 @@ export default function UserDetails() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">User Details</h1>
-            <p className="text-sm text-gray-500">Viewing profile for {user.firstName} {user.lastName}</p>
+            <h1 className="text-2xl font-bold text-foreground">User Details</h1>
+            <p className="text-sm text-muted-foreground">Viewing profile for {user.firstName} {user.lastName}</p>
           </div>
           <div className="ml-auto flex gap-2">
             {user.kycStatus === 'Rejected' ? (
@@ -216,14 +216,14 @@ export default function UserDetails() {
               <div className="flex-1 space-y-4">
                 <div className="flex justify-between items-start">
                   <div>
-                    <h2 className="text-2xl font-bold text-gray-900">{user.firstName} {user.lastName}</h2>
+                    <h2 className="text-2xl font-bold text-foreground">{user.firstName} {user.lastName}</h2>
                     {user.accountType === 'business' && user.companyName && (
                       <p className="text-sm text-purple-600 flex items-center gap-1 mt-0.5">
                         <Building className="w-3 h-3" /> {user.companyName}
-                        {user.registrationNumber && <span className="text-gray-400">({user.registrationNumber})</span>}
+                        {user.registrationNumber && <span className="text-muted-foreground/70">({user.registrationNumber})</span>}
                       </p>
                     )}
-                    <div className="flex items-center gap-2 text-gray-500 mt-1 flex-wrap">
+                    <div className="flex items-center gap-2 text-muted-foreground mt-1 flex-wrap">
                       <span className="flex items-center gap-1"><Mail className="w-3 h-3" /> {user.email}</span>
                       {user.phoneNumber && (
                         <>
@@ -256,22 +256,22 @@ export default function UserDetails() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-4 border-t border-border/60">
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">USD Balance</p>
+                    <p className="text-sm text-muted-foreground">USD Balance</p>
                     <p className="text-xl font-bold text-slate-900">${usdBalance.toLocaleString('en-US', { minimumFractionDigits: 2 })}</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Gold Holdings</p>
+                    <p className="text-sm text-muted-foreground">Gold Holdings</p>
                     <p className="text-xl font-bold text-yellow-600">{goldBalance.toLocaleString('en-US', { maximumFractionDigits: 4 })}g</p>
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">KYC Status</p>
+                    <p className="text-sm text-muted-foreground">KYC Status</p>
                     {getKycStatusBadge(user.kycStatus)}
                   </div>
                   <div className="space-y-1">
-                    <p className="text-sm text-gray-500">Member Since</p>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm text-muted-foreground">Member Since</p>
+                    <p className="text-sm font-medium text-foreground">
                       {new Date(user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                     </p>
                   </div>
@@ -311,24 +311,24 @@ export default function UserDetails() {
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="flex items-start gap-3">
-                      <Mail className="w-5 h-5 text-gray-400 mt-0.5" />
+                      <Mail className="w-5 h-5 text-muted-foreground/70 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Email Address</p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="text-sm font-medium text-foreground">Email Address</p>
+                        <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <Phone className="w-5 h-5 text-gray-400 mt-0.5" />
+                      <Phone className="w-5 h-5 text-muted-foreground/70 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Phone Number</p>
-                        <p className="text-sm text-gray-500">{user.phoneNumber || 'Not provided'}</p>
+                        <p className="text-sm font-medium text-foreground">Phone Number</p>
+                        <p className="text-sm text-muted-foreground">{user.phoneNumber || 'Not provided'}</p>
                       </div>
                     </div>
                     <div className="flex items-start gap-3">
-                      <MapPin className="w-5 h-5 text-gray-400 mt-0.5" />
+                      <MapPin className="w-5 h-5 text-muted-foreground/70 mt-0.5" />
                       <div>
-                        <p className="text-sm font-medium text-gray-900">Country</p>
-                        <p className="text-sm text-gray-500">{user.country || 'Not provided'}</p>
+                        <p className="text-sm font-medium text-foreground">Country</p>
+                        <p className="text-sm text-muted-foreground">{user.country || 'Not provided'}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -339,22 +339,22 @@ export default function UserDetails() {
                     <CardTitle className="text-base">Account Details</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Account Type</span>
+                    <div className="flex justify-between py-2 border-b border-border/60">
+                      <span className="text-sm text-muted-foreground">Account Type</span>
                       <span className="text-sm font-medium capitalize">{user.accountType}</span>
                     </div>
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Role</span>
+                    <div className="flex justify-between py-2 border-b border-border/60">
+                      <span className="text-sm text-muted-foreground">Role</span>
                       <Badge variant={user.role === 'admin' ? 'default' : 'outline'} className="capitalize">{user.role}</Badge>
                     </div>
-                    <div className="flex justify-between py-2 border-b border-gray-100">
-                      <span className="text-sm text-gray-500">Email Verified</span>
+                    <div className="flex justify-between py-2 border-b border-border/60">
+                      <span className="text-sm text-muted-foreground">Email Verified</span>
                       <span className={`text-sm font-medium ${user.isEmailVerified ? 'text-green-600' : 'text-yellow-600'}`}>
                         {user.isEmailVerified ? 'Yes' : 'No'}
                       </span>
                     </div>
                     <div className="flex justify-between py-2">
-                      <span className="text-sm text-gray-500">Last Updated</span>
+                      <span className="text-sm text-muted-foreground">Last Updated</span>
                       <span className="text-sm font-medium">
                         {new Date(user.updatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
                       </span>
@@ -386,7 +386,7 @@ export default function UserDetails() {
                         </div>
                       </div>
                     ) : (
-                      <p className="text-gray-500">No wallet found for this user.</p>
+                      <p className="text-muted-foreground">No wallet found for this user.</p>
                     )}
                   </CardContent>
                 </Card>
@@ -402,11 +402,11 @@ export default function UserDetails() {
                 </CardHeader>
                 <CardContent>
                   {transactions.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No transactions found.</p>
+                    <p className="text-center text-muted-foreground py-8">No transactions found.</p>
                   ) : (
                     <div className="overflow-x-auto">
                       <table className="w-full">
-                        <thead className="text-xs text-gray-500 uppercase bg-gray-50 border-b">
+                        <thead className="text-xs text-muted-foreground uppercase bg-muted/40 border-b">
                           <tr>
                             <th className="px-4 py-3 text-left">Type</th>
                             <th className="px-4 py-3 text-left">Amount</th>
@@ -417,7 +417,7 @@ export default function UserDetails() {
                         </thead>
                         <tbody>
                           {transactions.map((tx: AdminTransaction) => (
-                            <tr key={tx.id} className="border-b hover:bg-gray-50">
+                            <tr key={tx.id} className="border-b hover:bg-muted/40">
                               <td className="px-4 py-3">
                                 <Badge variant="outline">{tx.type}</Badge>
                               </td>
@@ -430,8 +430,8 @@ export default function UserDetails() {
                                   {tx.status}
                                 </Badge>
                               </td>
-                              <td className="px-4 py-3 text-sm text-gray-500">{tx.sourceModule || '-'}</td>
-                              <td className="px-4 py-3 text-sm text-gray-500">
+                              <td className="px-4 py-3 text-sm text-muted-foreground">{tx.sourceModule || '-'}</td>
+                              <td className="px-4 py-3 text-sm text-muted-foreground">
                                 {new Date(tx.createdAt).toLocaleDateString()}
                               </td>
                             </tr>
@@ -454,30 +454,30 @@ export default function UserDetails() {
                 <CardContent>
                   {kycSubmission ? (
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+                      <div className="flex items-center justify-between p-4 bg-muted/40 rounded-lg">
                         <span className="font-medium">Status</span>
                         {getKycStatusBadge(kycSubmission.status)}
                       </div>
                       
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <p className="text-sm text-gray-500">Full Name</p>
+                          <p className="text-sm text-muted-foreground">Full Name</p>
                           <p className="font-medium">{kycSubmission.fullName || 'Not provided'}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Date of Birth</p>
+                          <p className="text-sm text-muted-foreground">Date of Birth</p>
                           <p className="font-medium">{kycSubmission.dateOfBirth || 'Not provided'}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Nationality</p>
+                          <p className="text-sm text-muted-foreground">Nationality</p>
                           <p className="font-medium">{kycSubmission.nationality || 'Not provided'}</p>
                         </div>
                         <div>
-                          <p className="text-sm text-gray-500">Country</p>
+                          <p className="text-sm text-muted-foreground">Country</p>
                           <p className="font-medium">{kycSubmission.country || 'Not provided'}</p>
                         </div>
                         <div className="md:col-span-2">
-                          <p className="text-sm text-gray-500">Address</p>
+                          <p className="text-sm text-muted-foreground">Address</p>
                           <p className="font-medium">{kycSubmission.address || 'Not provided'}</p>
                         </div>
                       </div>
@@ -489,19 +489,19 @@ export default function UserDetails() {
                           </h4>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-sm text-gray-500">Company Name</p>
+                              <p className="text-sm text-muted-foreground">Company Name</p>
                               <p className="font-medium">{kycSubmission.companyName || 'Not provided'}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500">Registration Number</p>
+                              <p className="text-sm text-muted-foreground">Registration Number</p>
                               <p className="font-medium">{kycSubmission.registrationNumber || 'Not provided'}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-gray-500">Tax ID</p>
+                              <p className="text-sm text-muted-foreground">Tax ID</p>
                               <p className="font-medium">{kycSubmission.taxId || 'Not provided'}</p>
                             </div>
                             <div className="md:col-span-2">
-                              <p className="text-sm text-gray-500">Company Address</p>
+                              <p className="text-sm text-muted-foreground">Company Address</p>
                               <p className="font-medium">{kycSubmission.companyAddress || 'Not provided'}</p>
                             </div>
                           </div>
@@ -515,7 +515,7 @@ export default function UserDetails() {
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                           {kycSubmission.idFrontUrl && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">ID Front</p>
                               <div className="p-2">
                                 <img src={kycSubmission.idFrontUrl} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idFrontUrl, '_blank')}  loading="lazy"/>
                               </div>
@@ -523,7 +523,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.idBackUrl && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">ID Back</p>
                               <div className="p-2">
                                 <img src={kycSubmission.idBackUrl} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.idBackUrl, '_blank')}  loading="lazy"/>
                               </div>
@@ -531,7 +531,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.passportUrl && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Passport</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">Passport</p>
                               <div className="p-2">
                                 <img src={kycSubmission.passportUrl} alt="Passport" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.passportUrl, '_blank')}  loading="lazy"/>
                               </div>
@@ -539,7 +539,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.addressProofUrl && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">Proof of Address</p>
                               <div className="p-2">
                                 <img src={kycSubmission.addressProofUrl} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.addressProofUrl, '_blank')}  loading="lazy"/>
                               </div>
@@ -547,7 +547,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.livenessCapture && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Liveness Verification</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">Liveness Verification</p>
                               <div className="p-2">
                                 <img src={kycSubmission.livenessCapture} alt="Liveness Capture" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.livenessCapture, '_blank')}  loading="lazy"/>
                               </div>
@@ -555,7 +555,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.documents?.idFront?.url && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Front (Documents)</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">ID Front (Documents)</p>
                               <div className="p-2">
                                 <img src={kycSubmission.documents.idFront.url} alt="ID Front" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idFront.url, '_blank')}  loading="lazy"/>
                               </div>
@@ -563,7 +563,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.documents?.idBack?.url && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">ID Back (Documents)</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">ID Back (Documents)</p>
                               <div className="p-2">
                                 <img src={kycSubmission.documents.idBack.url} alt="ID Back" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.idBack.url, '_blank')}  loading="lazy"/>
                               </div>
@@ -571,7 +571,7 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.documents?.selfie?.url && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Selfie</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">Selfie</p>
                               <div className="p-2">
                                 <img src={kycSubmission.documents.selfie.url} alt="Selfie" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.selfie.url, '_blank')}  loading="lazy"/>
                               </div>
@@ -579,15 +579,15 @@ export default function UserDetails() {
                           )}
                           {kycSubmission.documents?.proofOfAddress?.url && (
                             <div className="border rounded-lg overflow-hidden">
-                              <p className="text-xs font-medium bg-gray-100 px-3 py-1.5 text-gray-700">Proof of Address (Documents)</p>
+                              <p className="text-xs font-medium bg-muted px-3 py-1.5 text-foreground/85">Proof of Address (Documents)</p>
                               <div className="p-2">
                                 <img src={kycSubmission.documents.proofOfAddress.url} alt="Proof of Address" className="w-full h-40 object-cover rounded cursor-pointer hover:opacity-90" onClick={() => window.open(kycSubmission.documents.proofOfAddress.url, '_blank')}  loading="lazy"/>
                               </div>
                             </div>
                           )}
                           {!kycSubmission.idFrontUrl && !kycSubmission.idBackUrl && !kycSubmission.passportUrl && !kycSubmission.addressProofUrl && !kycSubmission.livenessCapture && !kycSubmission.documents?.idFront?.url && !kycSubmission.documents?.idBack?.url && !kycSubmission.documents?.selfie?.url && !kycSubmission.documents?.proofOfAddress?.url && (
-                            <div className="col-span-full text-center py-4 text-gray-500">
-                              <FileText className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                            <div className="col-span-full text-center py-4 text-muted-foreground">
+                              <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground/50" />
                               <p className="text-sm">No documents uploaded yet</p>
                             </div>
                           )}
@@ -603,9 +603,9 @@ export default function UserDetails() {
                     </div>
                   ) : (
                     <div className="text-center py-8">
-                      <FileText className="w-12 h-12 text-gray-300 mx-auto mb-4" />
-                      <p className="text-gray-500">No KYC submission found.</p>
-                      <p className="text-sm text-gray-400">User has not submitted KYC documents yet.</p>
+                      <FileText className="w-12 h-12 text-muted-foreground/50 mx-auto mb-4" />
+                      <p className="text-muted-foreground">No KYC submission found.</p>
+                      <p className="text-sm text-muted-foreground/70">User has not submitted KYC documents yet.</p>
                     </div>
                   )}
                 </CardContent>
@@ -621,18 +621,18 @@ export default function UserDetails() {
                 </CardHeader>
                 <CardContent>
                   {auditLogs.length === 0 ? (
-                    <p className="text-center text-gray-500 py-8">No activity logs found.</p>
+                    <p className="text-center text-muted-foreground py-8">No activity logs found.</p>
                   ) : (
                     <div className="space-y-4">
                       {auditLogs.map((log: AdminAuditLog, i: number) => (
-                        <div key={log.id || i} className="flex gap-4 p-3 bg-gray-50 rounded-lg">
+                        <div key={log.id || i} className="flex gap-4 p-3 bg-muted/40 rounded-lg">
                           <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
                             <Activity className="w-5 h-5" />
                           </div>
                           <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{log.actionType}</p>
-                            <p className="text-sm text-gray-500">{log.details}</p>
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-sm font-medium text-foreground">{log.actionType}</p>
+                            <p className="text-sm text-muted-foreground">{log.details}</p>
+                            <p className="text-xs text-muted-foreground/70 mt-1">
                               {new Date(log.createdAt).toLocaleString()} • By {log.actorRole}
                             </p>
                           </div>
@@ -648,11 +648,11 @@ export default function UserDetails() {
             <TabsContent value="brief">
               {briefLoading ? (
                 <div className="flex items-center justify-center h-40">
-                  <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                  <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
                 </div>
               ) : !brief ? (
-                <div className="text-center py-12 text-gray-500">
-                  <BookOpen className="w-10 h-10 mx-auto mb-3 text-gray-300" />
+                <div className="text-center py-12 text-muted-foreground">
+                  <BookOpen className="w-10 h-10 mx-auto mb-3 text-muted-foreground/50" />
                   <p>Client brief unavailable.</p>
                 </div>
               ) : (
@@ -670,7 +670,7 @@ export default function UserDetails() {
                         </div>
                         {brief.holdingsByWalletType?.liveGoldPriceUsdPerGram && (
                           <div className="text-right">
-                            <p className="text-xs text-gray-500">Live Gold Price</p>
+                            <p className="text-xs text-muted-foreground">Live Gold Price</p>
                             <p className="text-lg font-bold text-blue-700" data-testid="brief-gold-price">
                               ${parseFloat(brief.holdingsByWalletType.liveGoldPriceUsdPerGram).toFixed(2)}/g
                             </p>
@@ -704,10 +704,10 @@ export default function UserDetails() {
                       {/* Holdings breakdown by wallet type */}
                       {brief.holdingsByWalletType && (
                         <div>
-                          <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Holdings by Wallet Type</p>
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Holdings by Wallet Type</p>
                           <div className="border rounded-lg overflow-x-auto">
                             <table className="w-full text-sm" data-testid="brief-holdings-table">
-                              <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                              <thead className="bg-muted/40 text-xs text-muted-foreground uppercase">
                                 <tr>
                                   <th className="px-3 py-2 text-left">Wallet</th>
                                   <th className="px-3 py-2 text-right">Available (g)</th>
@@ -724,8 +724,8 @@ export default function UserDetails() {
                                   { key: 'bnsl', label: 'BNSL', data: brief.holdingsByWalletType.bnsl },
                                   { key: 'finabridge', label: 'FinaBridge', data: brief.holdingsByWalletType.finabridge },
                                 ].filter(w => w.data !== null).map(w => (
-                                  <tr key={w.key} className="border-t hover:bg-gray-50" data-testid={`brief-holding-${w.key}`}>
-                                    <td className="px-3 py-2 font-medium text-gray-700">{w.label}</td>
+                                  <tr key={w.key} className="border-t hover:bg-muted/40" data-testid={`brief-holding-${w.key}`}>
+                                    <td className="px-3 py-2 font-medium text-foreground/85">{w.label}</td>
                                     <td className="px-3 py-2 text-right font-mono text-yellow-700">
                                       {parseFloat(w.data!.availableGrams).toFixed(4)}
                                     </td>
@@ -762,7 +762,7 @@ export default function UserDetails() {
                         {brief.riskProfile ? (
                           <div className="space-y-3">
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Risk Level</span>
+                              <span className="text-sm text-muted-foreground">Risk Level</span>
                               <Badge
                                 data-testid="brief-risk-level"
                                 variant={
@@ -777,14 +777,14 @@ export default function UserDetails() {
                               </Badge>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Overall Score</span>
+                              <span className="text-sm text-muted-foreground">Overall Score</span>
                               <span className="text-sm font-medium" data-testid="brief-risk-score">
                                 {brief.riskProfile.overallRiskScore ?? 'N/A'}
                               </span>
                             </div>
                             <div className="flex items-center justify-between">
-                              <span className="text-sm text-gray-500">Last Assessed</span>
-                              <span className="text-sm text-gray-600">
+                              <span className="text-sm text-muted-foreground">Last Assessed</span>
+                              <span className="text-sm text-muted-foreground">
                                 {brief.riskProfile.lastAssessedAt
                                   ? new Date(brief.riskProfile.lastAssessedAt).toLocaleDateString()
                                   : 'N/A'}
@@ -792,7 +792,7 @@ export default function UserDetails() {
                             </div>
                           </div>
                         ) : (
-                          <p className="text-sm text-gray-400">No risk profile on record.</p>
+                          <p className="text-sm text-muted-foreground/70">No risk profile on record.</p>
                         )}
                       </CardContent>
                     </Card>
@@ -806,11 +806,11 @@ export default function UserDetails() {
                       <CardContent>
                         <div className="space-y-3">
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">Total Cases</span>
+                            <span className="text-sm text-muted-foreground">Total Cases</span>
                             <span className="text-sm font-medium" data-testid="brief-aml-total">{brief.aml.totalCases}</span>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="text-sm text-gray-500">Open Cases</span>
+                            <span className="text-sm text-muted-foreground">Open Cases</span>
                             <Badge
                               data-testid="brief-aml-open"
                               variant={brief.aml.openCases > 0 ? 'destructive' : 'outline'}
@@ -819,10 +819,10 @@ export default function UserDetails() {
                             </Badge>
                           </div>
                           {brief.aml.cases.slice(0, 3).map((c: BriefAmlCase) => (
-                            <div key={c.id} className="text-xs text-gray-500 bg-gray-50 rounded p-2">
+                            <div key={c.id} className="text-xs text-muted-foreground bg-muted/40 rounded p-2">
                               <span className="font-mono">{c.caseNumber}</span> —{' '}
                               <Badge variant="outline" className="text-xs">{c.status}</Badge>{' '}
-                              <span className="text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</span>
+                              <span className="text-muted-foreground/70">{new Date(c.createdAt).toLocaleDateString()}</span>
                             </div>
                           ))}
                         </div>
@@ -840,30 +840,30 @@ export default function UserDetails() {
                     <CardContent>
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                         <div>
-                          <p className="text-xs text-gray-500">Total Transactions</p>
+                          <p className="text-xs text-muted-foreground">Total Transactions</p>
                           <p className="text-xl font-bold" data-testid="brief-tx-total">{brief.recentActivity.transactionCount}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Completed</p>
+                          <p className="text-xs text-muted-foreground">Completed</p>
                           <p className="text-xl font-bold text-green-600" data-testid="brief-tx-completed">{brief.recentActivity.completedCount}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Pending</p>
+                          <p className="text-xs text-muted-foreground">Pending</p>
                           <p className="text-xl font-bold text-yellow-600" data-testid="brief-tx-pending">{brief.recentActivity.pendingCount}</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Gold Inflow</p>
+                          <p className="text-xs text-muted-foreground">Gold Inflow</p>
                           <p className="text-lg font-bold text-green-700" data-testid="brief-inflow">{parseFloat(brief.recentActivity.inflowGoldGrams).toFixed(4)}g</p>
                         </div>
                         <div>
-                          <p className="text-xs text-gray-500">Gold Outflow</p>
+                          <p className="text-xs text-muted-foreground">Gold Outflow</p>
                           <p className="text-lg font-bold text-red-600" data-testid="brief-outflow">{parseFloat(brief.recentActivity.outflowGoldGrams).toFixed(4)}g</p>
                         </div>
                       </div>
                       {brief.recentActivity.transactions.length > 0 && (
                         <div className="overflow-x-auto border rounded-lg">
                           <table className="w-full text-sm">
-                            <thead className="bg-gray-50 text-xs text-gray-500 uppercase">
+                            <thead className="bg-muted/40 text-xs text-muted-foreground uppercase">
                               <tr>
                                 <th className="px-3 py-2 text-left">Type</th>
                                 <th className="px-3 py-2 text-left">Gold (g)</th>
@@ -874,7 +874,7 @@ export default function UserDetails() {
                             </thead>
                             <tbody>
                               {brief.recentActivity.transactions.map((tx: BriefTransaction) => (
-                                <tr key={tx.id} className="border-t hover:bg-gray-50" data-testid={`brief-tx-row-${tx.id}`}>
+                                <tr key={tx.id} className="border-t hover:bg-muted/40" data-testid={`brief-tx-row-${tx.id}`}>
                                   <td className="px-3 py-2">
                                     <Badge variant="outline" className="text-xs">{tx.type}</Badge>
                                   </td>
@@ -892,7 +892,7 @@ export default function UserDetails() {
                                       {tx.status}
                                     </Badge>
                                   </td>
-                                  <td className="px-3 py-2 text-gray-500">{new Date(tx.createdAt).toLocaleDateString()}</td>
+                                  <td className="px-3 py-2 text-muted-foreground">{new Date(tx.createdAt).toLocaleDateString()}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -913,19 +913,19 @@ export default function UserDetails() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <div className="flex justify-between py-1 border-b border-gray-50">
-                            <span className="text-sm text-gray-500">Full Name</span>
+                            <span className="text-sm text-muted-foreground">Full Name</span>
                             <span className="text-sm font-medium">{brief.identity.firstName} {brief.identity.lastName}</span>
                           </div>
                           <div className="flex justify-between py-1 border-b border-gray-50">
-                            <span className="text-sm text-gray-500">Country</span>
+                            <span className="text-sm text-muted-foreground">Country</span>
                             <span className="text-sm font-medium">{brief.identity.country || 'N/A'}</span>
                           </div>
                           <div className="flex justify-between py-1 border-b border-gray-50">
-                            <span className="text-sm text-gray-500">Account Type</span>
+                            <span className="text-sm text-muted-foreground">Account Type</span>
                             <span className="text-sm font-medium capitalize">{brief.identity.accountType}</span>
                           </div>
                           <div className="flex justify-between py-1">
-                            <span className="text-sm text-gray-500">Member Since</span>
+                            <span className="text-sm text-muted-foreground">Member Since</span>
                             <span className="text-sm font-medium">
                               {new Date(brief.identity.memberSince).toLocaleDateString()}
                             </span>
@@ -933,27 +933,27 @@ export default function UserDetails() {
                         </div>
                         <div className="space-y-2">
                           <div className="flex justify-between py-1 border-b border-gray-50">
-                            <span className="text-sm text-gray-500">KYC Status</span>
+                            <span className="text-sm text-muted-foreground">KYC Status</span>
                             {brief.kyc ? getKycStatusBadge(brief.kyc.status) : <Badge variant="outline">Not Submitted</Badge>}
                           </div>
                           {brief.kyc && (
                             <>
                               <div className="flex justify-between py-1 border-b border-gray-50">
-                                <span className="text-sm text-gray-500">KYC Tier</span>
+                                <span className="text-sm text-muted-foreground">KYC Tier</span>
                                 <Badge variant="outline" data-testid="brief-kyc-tier" className="text-xs capitalize">
                                   {brief.kyc.tier?.replace(/_/g, ' ') || 'N/A'}
                                 </Badge>
                               </div>
                               <div className="flex justify-between py-1 border-b border-gray-50">
-                                <span className="text-sm text-gray-500">KYC Full Name</span>
+                                <span className="text-sm text-muted-foreground">KYC Full Name</span>
                                 <span className="text-sm font-medium">{brief.kyc.fullName || 'N/A'}</span>
                               </div>
                               <div className="flex justify-between py-1 border-b border-gray-50">
-                                <span className="text-sm text-gray-500">Nationality</span>
+                                <span className="text-sm text-muted-foreground">Nationality</span>
                                 <span className="text-sm font-medium">{brief.kyc.nationality || 'N/A'}</span>
                               </div>
                               <div className="flex justify-between py-1">
-                                <span className="text-sm text-gray-500">Submitted</span>
+                                <span className="text-sm text-muted-foreground">Submitted</span>
                                 <span className="text-sm font-medium">
                                   {brief.kyc.submittedAt ? new Date(brief.kyc.submittedAt).toLocaleDateString() : 'N/A'}
                                 </span>

@@ -250,13 +250,13 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                             <div className={`p-4 rounded-xl text-sm leading-relaxed shadow-sm ${
                               isMe ? 'bg-secondary text-white rounded-tr-none' : 
                               isAdmin ? 'bg-red-50 text-red-900 border border-red-100 rounded-tl-none' :
-                              'bg-white border border-border text-foreground rounded-tl-none'
+                              'bg-card border border-border text-foreground rounded-tl-none'
                             }`}>
                               {msg.content}
                               {msg.attachments && (
                                 <div className={`mt-3 pt-3 border-t space-y-2 ${isMe ? 'border-white/20' : 'border-border'}`}>
                                   {msg.attachments.map((att, i) => (
-                                    <div key={i} className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer ${isMe ? 'bg-white/10 hover:bg-white/20' : 'bg-muted hover:bg-muted/80'}`}>
+                                    <div key={i} className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer ${isMe ? 'bg-card/10 hover:bg-card/20' : 'bg-muted hover:bg-muted/80'}`}>
                                       <Paperclip className={`w-3 h-3 ${isMe ? 'text-white/80' : 'text-muted-foreground'}`} />
                                       {att.name}
                                     </div>

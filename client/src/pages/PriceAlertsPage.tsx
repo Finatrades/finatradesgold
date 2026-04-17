@@ -218,7 +218,7 @@ export default function PriceAlertsPage() {
                               Active
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="border-gray-400 text-gray-500">
+                            <Badge variant="outline" className="border-gray-400 text-muted-foreground">
                               <XCircle className="h-3 w-3 mr-1" />
                               Inactive
                             </Badge>
@@ -252,7 +252,7 @@ export default function PriceAlertsPage() {
                         {alert.isActive ? (
                           <ToggleRight className="h-5 w-5 text-purple-600" />
                         ) : (
-                          <ToggleLeft className="h-5 w-5 text-gray-400" />
+                          <ToggleLeft className="h-5 w-5 text-muted-foreground/70" />
                         )}
                       </Button>
                       <Button

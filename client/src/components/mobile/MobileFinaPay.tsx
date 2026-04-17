@@ -108,7 +108,7 @@ export default function MobileFinaPay() {
         transition={{ type: "spring", stiffness: 300, damping: 25 }}
         className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-purple-600 via-violet-500 to-indigo-600 p-6 text-white shadow-2xl"
       >
-        <div className="absolute top-0 right-0 w-48 h-48 bg-white/20 rounded-full blur-3xl -mr-16 -mt-16" />
+        <div className="absolute top-0 right-0 w-48 h-48 bg-card/20 rounded-full blur-3xl -mr-16 -mt-16" />
         <div className="absolute bottom-0 left-0 w-40 h-40 bg-violet-400/30 rounded-full blur-3xl -ml-16 -mb-16" />
         <div className="absolute top-1/2 left-1/3 w-32 h-32 bg-cyan-400/10 rounded-full blur-2xl" />
         
@@ -134,14 +134,14 @@ export default function MobileFinaPay() {
               <motion.button
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setShowBalance(!showBalance)}
-                className="w-10 h-10 bg-white/15 backdrop-blur-lg border border-white/20 rounded-xl flex items-center justify-center shadow-lg"
+                className="w-10 h-10 bg-card/15 backdrop-blur-lg border border-white/20 rounded-xl flex items-center justify-center shadow-lg"
               >
                 {showBalance ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
               </motion.button>
               <motion.button
                 whileTap={{ scale: 0.9, rotate: 180 }}
                 onClick={handleRefresh}
-                className="w-10 h-10 bg-white/15 backdrop-blur-lg border border-white/20 rounded-xl flex items-center justify-center shadow-lg"
+                className="w-10 h-10 bg-card/15 backdrop-blur-lg border border-white/20 rounded-xl flex items-center justify-center shadow-lg"
                 disabled={isRefreshing}
               >
                 <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
@@ -172,7 +172,7 @@ export default function MobileFinaPay() {
             transition={{ delay: 0.25 }}
             className="flex items-center gap-3 mt-4"
           >
-            <div className="flex items-center gap-1.5 bg-white/15 backdrop-blur-sm px-4 py-2 rounded-xl text-sm border border-white/10 shadow-lg">
+            <div className="flex items-center gap-1.5 bg-card/15 backdrop-blur-sm px-4 py-2 rounded-xl text-sm border border-white/10 shadow-lg">
               <Coins className="w-4 h-4 text-amber-300" />
               <span className="font-semibold">{showBalance ? `${goldGrams.toFixed(4)}g` : '••••'}</span>
             </div>
@@ -207,12 +207,12 @@ export default function MobileFinaPay() {
               <div className="relative">
                 <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${action.gradient} shadow-xl flex items-center justify-center relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/20" />
-                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 rounded-t-2xl" />
+                  <div className="absolute top-0 left-0 right-0 h-1/2 bg-card/20 rounded-t-2xl" />
                   <action.icon className="w-6 h-6 text-white relative z-10 drop-shadow-sm" />
                 </div>
                 <div className="absolute -inset-1 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-2xl blur-lg opacity-0 group-active:opacity-100 -z-10 transition-opacity" />
               </div>
-              <span className="text-[11px] font-semibold text-gray-700">{action.label}</span>
+              <span className="text-[11px] font-semibold text-foreground/85">{action.label}</span>
             </motion.button>
           ))}
         </div>
@@ -226,7 +226,7 @@ export default function MobileFinaPay() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
           whileTap={{ scale: 0.98 }}
-          className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-amber-200/50 p-5 shadow-lg shadow-amber-100/50"
+          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-amber-200/50 p-5 shadow-lg shadow-amber-100/50"
         >
           <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-amber-200/40 to-orange-200/40 rounded-full blur-2xl" />
           <div className="absolute right-4 bottom-4 opacity-5">
@@ -263,7 +263,7 @@ export default function MobileFinaPay() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
           whileTap={{ scale: 0.98 }}
-          className="relative overflow-hidden rounded-2xl bg-white/80 backdrop-blur-xl border border-emerald-200/50 p-5 shadow-lg shadow-emerald-100/50"
+          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-emerald-200/50 p-5 shadow-lg shadow-emerald-100/50"
         >
           <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-emerald-200/40 to-green-200/40 rounded-full blur-2xl" />
           <div className="absolute right-4 bottom-4 opacity-5">
@@ -298,10 +298,10 @@ export default function MobileFinaPay() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 300, damping: 25 }}
-        className="bg-white/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden"
+        className="bg-card/80 backdrop-blur-xl rounded-2xl border border-border/50 shadow-lg overflow-hidden"
       >
-        <div className="flex items-center justify-between p-4 border-b border-gray-100/80 bg-gradient-to-r from-gray-50/50 to-white">
-          <h3 className="font-bold text-gray-900">Recent Activity</h3>
+        <div className="flex items-center justify-between p-4 border-b border-border/60/80 bg-gradient-to-r from-gray-50/50 to-white">
+          <h3 className="font-bold text-foreground">Recent Activity</h3>
           <Button 
             variant="ghost" 
             size="sm" 
@@ -316,10 +316,10 @@ export default function MobileFinaPay() {
         {transactions.length === 0 ? (
           <div className="p-10 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-gray-100 to-gray-50 flex items-center justify-center">
-              <Coins className="w-8 h-8 text-gray-300" />
+              <Coins className="w-8 h-8 text-muted-foreground/50" />
             </div>
-            <p className="text-gray-500 font-medium">No transactions yet</p>
-            <p className="text-gray-400 text-sm mt-1">Your activity will appear here</p>
+            <p className="text-muted-foreground font-medium">No transactions yet</p>
+            <p className="text-muted-foreground/70 text-sm mt-1">Your activity will appear here</p>
           </div>
         ) : (
           <div className="divide-y divide-gray-100/80">
@@ -330,7 +330,7 @@ export default function MobileFinaPay() {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: index * 0.05 }}
                 whileTap={{ backgroundColor: "rgba(0,0,0,0.02)" }}
-                className="flex items-center justify-between p-4 active:bg-gray-50/50 transition-colors"
+                className="flex items-center justify-between p-4 active:bg-muted/40/50 transition-colors"
                 data-testid={`tx-item-${tx.id}`}
               >
                 <div className="flex items-center gap-3">
@@ -341,7 +341,7 @@ export default function MobileFinaPay() {
                       tx.type.toLowerCase().includes('sell') ? 'bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600' :
                       tx.type.toLowerCase().includes('send') ? 'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600' :
                       tx.type.toLowerCase().includes('receive') ? 'bg-gradient-to-br from-green-100 to-emerald-100 text-green-600' :
-                      'bg-gradient-to-br from-gray-100 to-slate-100 text-gray-600'
+                      'bg-gradient-to-br from-gray-100 to-slate-100 text-muted-foreground'
                     }`}
                   >
                     {tx.type.toLowerCase().includes('buy') ? <ShoppingCart className="w-5 h-5" /> :
@@ -351,8 +351,8 @@ export default function MobileFinaPay() {
                      <ArrowUpRight className="w-5 h-5" />}
                   </motion.div>
                   <div>
-                    <p className="font-semibold text-sm text-gray-900">{tx.type}</p>
-                    <p className="text-xs text-gray-500">
+                    <p className="font-semibold text-sm text-foreground">{tx.type}</p>
+                    <p className="text-xs text-muted-foreground">
                       {tx.timestamp ? new Date(tx.timestamp).toLocaleDateString() : 'N/A'}
                     </p>
                   </div>
@@ -366,7 +366,7 @@ export default function MobileFinaPay() {
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
                     tx.status === 'completed' ? 'bg-green-100 text-green-700' :
                     tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
-                    'bg-gray-100 text-gray-700'
+                    'bg-muted text-foreground/85'
                   }`}>
                     {tx.status}
                   </span>

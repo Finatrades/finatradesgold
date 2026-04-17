@@ -39,14 +39,14 @@ export default function MobileQuickActionButton({
           whileHover={{ boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)" }}
         >
           <div className="absolute inset-0 bg-gradient-to-t from-black/10 to-white/20" />
-          <div className="absolute top-0 left-0 right-0 h-1/2 bg-white/20 rounded-t-2xl" />
+          <div className="absolute top-0 left-0 right-0 h-1/2 bg-card/20 rounded-t-2xl" />
           <Icon className="w-6 h-6 text-white relative z-10 drop-shadow-sm" />
         </motion.div>
         <motion.div 
           className="absolute -inset-1 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-2xl blur-lg opacity-0 group-hover:opacity-100 -z-10 transition-opacity duration-300"
         />
       </div>
-      <span className="text-[11px] font-semibold text-gray-700 group-hover:text-gray-900 transition-colors">{label}</span>
+      <span className="text-[11px] font-semibold text-foreground/85 group-hover:text-foreground transition-colors">{label}</span>
     </motion.button>
   );
 }

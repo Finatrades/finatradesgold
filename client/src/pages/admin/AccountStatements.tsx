@@ -205,10 +205,10 @@ export default function AccountStatements() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900" data-testid="text-account-statements-title">
+            <h1 className="text-3xl font-bold text-foreground" data-testid="text-account-statements-title">
               Account Statements
             </h1>
-            <p className="text-gray-500">
+            <p className="text-muted-foreground">
               Generate bank-style account statements for any user
             </p>
           </div>
@@ -227,7 +227,7 @@ export default function AccountStatements() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground/70" />
                 <Input
                   placeholder="Search by name, email, or ID..."
                   value={searchQuery}
@@ -239,12 +239,12 @@ export default function AccountStatements() {
 
               <div className="max-h-80 overflow-y-auto border rounded-lg divide-y">
                 {loadingUsers || fetchingUsers ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-muted-foreground">
                     <Loader2 className="w-5 h-5 animate-spin mx-auto mb-2" />
                     {searchQuery ? 'Searching...' : 'Loading users...'}
                   </div>
                 ) : !users || users.length === 0 ? (
-                  <div className="p-4 text-center text-gray-500">
+                  <div className="p-4 text-center text-muted-foreground">
                     {searchQuery ? `No users found for "${searchQuery}"` : 'No users found'}
                   </div>
                 ) : (
@@ -259,10 +259,10 @@ export default function AccountStatements() {
                     >
                       <div className="flex items-center justify-between">
                         <div>
-                          <div className="font-medium text-gray-900">
+                          <div className="font-medium text-foreground">
                             {user.firstName} {user.lastName}
                           </div>
-                          <div className="text-xs text-gray-500">{user.email}</div>
+                          <div className="text-xs text-muted-foreground">{user.email}</div>
                           <div className="text-xs font-mono text-purple-600">{user.finatradesId}</div>
                         </div>
                         <Badge variant={user.accountType === 'Corporate' ? 'default' : 'secondary'} className="text-xs">
@@ -355,31 +355,31 @@ export default function AccountStatements() {
               )}
 
               {!selectedUserId && (
-                <div className="text-center py-8 text-gray-500">
+                <div className="text-center py-8 text-muted-foreground">
                   <User className="w-12 h-12 mx-auto mb-3 opacity-50" />
                   <p>Select a user from the list to generate their statement</p>
                 </div>
               )}
 
               {selectedUserId && statement && (
-                <Card className="bg-gray-50">
+                <Card className="bg-muted/40">
                   <CardContent className="pt-4">
-                    <div className="text-sm font-medium text-gray-700 mb-3">Balance Summary</div>
+                    <div className="text-sm font-medium text-foreground/85 mb-3">Balance Summary</div>
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <div className="text-gray-500">Opening USD</div>
+                        <div className="text-muted-foreground">Opening USD</div>
                         <div className="font-semibold">{formatCurrency(statement.balances.openingGoldUsdValue || 0)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Closing USD</div>
+                        <div className="text-muted-foreground">Closing USD</div>
                         <div className="font-semibold">{formatCurrency(statement.balances.closingGoldUsdValue || 0)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Opening Gold</div>
+                        <div className="text-muted-foreground">Opening Gold</div>
                         <div className="font-semibold">{formatGrams(statement.balances.openingGold || 0)}</div>
                       </div>
                       <div>
-                        <div className="text-gray-500">Closing Gold</div>
+                        <div className="text-muted-foreground">Closing Gold</div>
                         <div className="font-semibold">{formatGrams(statement.balances.closingGold || 0)}</div>
                       </div>
                     </div>
@@ -402,25 +402,25 @@ export default function AccountStatements() {
             {loadingStatement ? (
               <div className="py-12 text-center">
                 <Loader2 className="w-8 h-8 animate-spin mx-auto mb-3" />
-                <p className="text-gray-500">Loading statement...</p>
+                <p className="text-muted-foreground">Loading statement...</p>
               </div>
             ) : statement ? (
               <div className="space-y-6">
                 <div className="border-2 border-purple-200 rounded-lg p-6 bg-gradient-to-r from-purple-50 to-white">
                   <div className="text-center mb-4">
                     <h2 className="text-2xl font-bold text-purple-600">FINATRADES</h2>
-                    <p className="text-lg font-medium text-gray-700">Account Statement</p>
+                    <p className="text-lg font-medium text-foreground/85">Account Statement</p>
                   </div>
                   <div className="grid grid-cols-2 gap-4 text-sm">
                     <div>
-                      <p><span className="text-gray-500">Account Holder:</span> <strong>{statement.user.fullName}</strong></p>
-                      <p><span className="text-gray-500">Account ID:</span> <strong className="font-mono">{statement.user.finatradesId}</strong></p>
-                      <p><span className="text-gray-500">Account Type:</span> <strong>{statement.user.accountType}</strong></p>
+                      <p><span className="text-muted-foreground">Account Holder:</span> <strong>{statement.user.fullName}</strong></p>
+                      <p><span className="text-muted-foreground">Account ID:</span> <strong className="font-mono">{statement.user.finatradesId}</strong></p>
+                      <p><span className="text-muted-foreground">Account Type:</span> <strong>{statement.user.accountType}</strong></p>
                     </div>
                     <div className="text-right">
-                      <p><span className="text-gray-500">Statement Period:</span></p>
+                      <p><span className="text-muted-foreground">Statement Period:</span></p>
                       <p className="font-medium">{format(new Date(statement.period.from), 'dd MMM yyyy')} – {format(new Date(statement.period.to), 'dd MMM yyyy')}</p>
-                      <p className="text-xs text-gray-500 mt-1">Report ID: {statement.reportId}</p>
+                      <p className="text-xs text-muted-foreground mt-1">Report ID: {statement.reportId}</p>
                     </div>
                   </div>
                 </div>
@@ -430,7 +430,7 @@ export default function AccountStatements() {
                     <CardContent className="pt-4">
                       <div className="text-xs text-blue-600">Opening Balance</div>
                       <div className="font-bold text-lg">{formatCurrency(statement.balances.openingGoldUsdValue || 0)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.openingGold || 0)}</div>
+                      <div className="text-sm text-muted-foreground">{formatGrams(statement.balances.openingGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-green-50">
@@ -439,7 +439,7 @@ export default function AccountStatements() {
                         <ArrowUpRight className="w-3 h-3" /> Total Credits
                       </div>
                       <div className="font-bold text-lg text-green-700">{formatCurrency((statement.balances.totalCreditsGold || 0) * statement.currentGoldPrice)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalCreditsGold || 0)}</div>
+                      <div className="text-sm text-muted-foreground">{formatGrams(statement.balances.totalCreditsGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-red-50">
@@ -448,21 +448,21 @@ export default function AccountStatements() {
                         <ArrowDownRight className="w-3 h-3" /> Total Debits
                       </div>
                       <div className="font-bold text-lg text-red-700">{formatCurrency((statement.balances.totalDebitsGold || 0) * statement.currentGoldPrice)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.totalDebitsGold || 0)}</div>
+                      <div className="text-sm text-muted-foreground">{formatGrams(statement.balances.totalDebitsGold || 0)}</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-purple-50">
                     <CardContent className="pt-4">
                       <div className="text-xs text-purple-600">Closing Balance</div>
                       <div className="font-bold text-lg">{formatCurrency(statement.balances.closingGoldUsdValue || 0)}</div>
-                      <div className="text-sm text-gray-500">{formatGrams(statement.balances.closingGold || 0)}</div>
+                      <div className="text-sm text-muted-foreground">{formatGrams(statement.balances.closingGold || 0)}</div>
                     </CardContent>
                   </Card>
                 </div>
 
                 <div className="border rounded-lg overflow-hidden">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-100">
+                    <thead className="bg-muted">
                       <tr>
                         <th className="px-3 py-2 text-left font-medium">Date</th>
                         <th className="px-3 py-2 text-left font-medium">Reference</th>
@@ -475,13 +475,13 @@ export default function AccountStatements() {
                     <tbody className="divide-y">
                       {statement.transactions.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="px-3 py-8 text-center text-gray-500">
+                          <td colSpan={6} className="px-3 py-8 text-center text-muted-foreground">
                             No transactions in this period
                           </td>
                         </tr>
                       ) : (
                         statement.transactions.map((tx, idx) => (
-                          <tr key={tx.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <tr key={tx.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/40'}>
                             <td className="px-3 py-2">{format(new Date(tx.date), 'dd MMM yyyy')}</td>
                             <td className="px-3 py-2 font-mono text-xs">{tx.reference}</td>
                             <td className="px-3 py-2">{tx.description}</td>
@@ -493,7 +493,7 @@ export default function AccountStatements() {
                             </td>
                             <td className="px-3 py-2 text-right font-medium">
                               {formatCurrency((tx.balanceGold || 0) * statement.currentGoldPrice)}
-                              <span className="block text-xs text-gray-500">{formatGrams(tx.balanceGold || 0)}</span>
+                              <span className="block text-xs text-muted-foreground">{formatGrams(tx.balanceGold || 0)}</span>
                             </td>
                           </tr>
                         ))
@@ -502,7 +502,7 @@ export default function AccountStatements() {
                   </table>
                 </div>
 
-                <div className="text-center text-xs text-gray-500 border-t pt-4">
+                <div className="text-center text-xs text-muted-foreground border-t pt-4">
                   <p>This statement is generated by Finatrades and is for informational purposes only.</p>
                   <p>Gold values are calculated at transaction time rates. For questions, contact support@finatrades.com</p>
                 </div>
@@ -518,7 +518,7 @@ export default function AccountStatements() {
                 </div>
               </div>
             ) : (
-              <div className="py-12 text-center text-gray-500">
+              <div className="py-12 text-center text-muted-foreground">
                 <p>No statement data available</p>
               </div>
             )}

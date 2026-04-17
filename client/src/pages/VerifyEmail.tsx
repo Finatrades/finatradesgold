@@ -130,7 +130,7 @@ export default function VerifyEmail() {
             <p className="text-foreground font-medium mt-1">{email}</p>
           </div>
 
-          <Card className="p-8 bg-white border-border shadow-md">
+          <Card className="p-8 bg-card border-border shadow-md">
             <div className="space-y-6">
               <div className="flex justify-center gap-2" onPaste={handlePaste}>
                 {code.map((digit, index) => (

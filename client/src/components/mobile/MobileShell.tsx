@@ -40,7 +40,7 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
   const [location] = useLocation();
   
   return (
-    <div className="min-h-screen bg-gray-50 page-container" style={{ paddingTop: 'var(--safe-area-top)' }}>
+    <div className="min-h-screen bg-muted/40 page-container" style={{ paddingTop: 'var(--safe-area-top)' }}>
       <AnimatePresence mode="wait" initial={false}>
         <motion.div
           key={location}

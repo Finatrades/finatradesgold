@@ -232,7 +232,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => { if (!open) handleClose(); }}>
-      <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-bold flex items-center gap-2">
             <ArrowUpRight className="w-5 h-5 text-orange-500" />

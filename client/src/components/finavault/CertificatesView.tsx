@@ -635,7 +635,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
           <div className="space-y-6 text-center relative z-10">
             {/* Show transfer parties for Transfer certificates */}
             {isTransfer && (certificate.fromUserName || certificate.toUserName) && (
-              <div className="bg-white/5 rounded-lg p-4 mb-4 border" style={{ borderColor: certTheme.border }}>
+              <div className="bg-card/5 rounded-lg p-4 mb-4 border" style={{ borderColor: certTheme.border }}>
                 <p className="text-xs uppercase tracking-wider mb-3" style={{ color: certTheme.accent }}>Transfer of Ownership</p>
                 <div className="flex items-center justify-center gap-4">
                   <div className="text-right">
@@ -755,7 +755,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
           <Button 
             variant="outline" 
             size="sm" 
-            className="border-white/20 text-white hover:bg-white/10"
+            className="border-white/20 text-white hover:bg-card/10"
             disabled={isGenerating}
             onClick={handleDownloadPDF}
             data-testid="button-download-certificate-pdf"
@@ -766,7 +766,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
           <Button 
             variant="outline" 
             size="sm" 
-            className="border-white/20 text-white hover:bg-white/10"
+            className="border-white/20 text-white hover:bg-card/10"
             disabled={isGenerating}
             onClick={handlePrint}
             data-testid="button-print-certificate"
@@ -989,10 +989,10 @@ export default function CertificatesView() {
     const s = status?.toLowerCase();
     if (s === 'active') return <Badge className="text-[10px] bg-green-600 text-white border-0">Active</Badge>;
     if (s === 'locked') return <Badge className="text-[10px] bg-amber-500 text-white border-0">Locked</Badge>;
-    if (s === 'released') return <Badge variant="secondary" className="text-[10px] bg-gray-200 text-gray-600 border-0">Released</Badge>;
+    if (s === 'released') return <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground border-0">Released</Badge>;
     if (s === 'transferred') return <Badge className="text-[10px] bg-blue-500 text-white border-0">Transferred</Badge>;
     if (s === 'superseded' || s === 'updated') return <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-600 border-0">Superseded</Badge>;
-    if (s === 'cancelled') return <Badge variant="secondary" className="text-[10px] bg-gray-200 text-gray-500 border-0">Cancelled</Badge>;
+    if (s === 'cancelled') return <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground border-0">Cancelled</Badge>;
     return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
   };
 
@@ -1016,9 +1016,9 @@ export default function CertificatesView() {
       : cert.type === 'Trade Release' ? 'Trade Release'
       : cert.type;
 
-    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-gray-100' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : isTrade ? 'bg-teal-100' : 'bg-purple-100';
-    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-gray-500' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-600' : 'text-fuchsia-600';
-    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-gray-600' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-700' : 'text-fuchsia-600';
+    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-muted' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : isTrade ? 'bg-teal-100' : 'bg-purple-100';
+    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-600' : 'text-fuchsia-600';
+    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-700' : 'text-fuchsia-600';
 
     const expiresAt = cert.expiresAt ? new Date(cert.expiresAt) : null;
     const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
@@ -1031,7 +1031,7 @@ export default function CertificatesView() {
     return (
       <div
         key={cert.id}
-        className={`${compact ? 'p-3' : 'p-4'} rounded-xl border hover:bg-gray-50 cursor-pointer transition-colors flex items-center gap-3 ${isCurrent ? 'bg-white border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-white' : 'opacity-70 bg-gray-50'} ${compact ? 'border-gray-100' : ''}`}
+        className={`${compact ? 'p-3' : 'p-4'} rounded-xl border hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3 ${isCurrent ? 'bg-card border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-card' : 'opacity-70 bg-muted/40'} ${compact ? 'border-border/60' : ''}`}
         onClick={() => openCertificate(cert)}
         data-testid={`certificate-card-${cert.id}`}
       >
@@ -1043,7 +1043,7 @@ export default function CertificatesView() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`font-semibold ${compact ? 'text-xs' : 'text-sm'} ${compact ? 'text-gray-600' : labelColor}`}>{label}</span>
+            <span className={`font-semibold ${compact ? 'text-xs' : 'text-sm'} ${compact ? 'text-muted-foreground' : labelColor}`}>{label}</span>
             {statusBadge(cert.status)}
             {isCurrent && (
               <Badge className="text-[10px] bg-purple-100 text-purple-700 border border-purple-300">Current</Badge>
@@ -1106,9 +1106,9 @@ export default function CertificatesView() {
     <div className="space-y-6" data-testid="certificates-view">
 
       {/* Plain-English Explainer */}
-      <div className="bg-white border border-border rounded-2xl overflow-hidden">
+      <div className="bg-card border border-border rounded-2xl overflow-hidden">
         <button
-          className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-50 transition-colors"
+          className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/40 transition-colors"
           onClick={() => setShowExplainer(!showExplainer)}
           data-testid="btn-toggle-explainer"
         >
@@ -1128,7 +1128,7 @@ export default function CertificatesView() {
       </div>
 
       {/* Section 1: Ownership Certificates */}
-      <Card className="bg-white border">
+      <Card className="bg-card border">
         <CardHeader className="border-b pb-4">
           <div className="flex items-center justify-between">
             <div>
@@ -1166,7 +1166,7 @@ export default function CertificatesView() {
               {historicalOwnershipCerts.length > 0 && (
                 <>
                   <button
-                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-gray-700 transition-colors"
+                    className="w-full flex items-center justify-center gap-1.5 py-2 text-xs text-muted-foreground hover:text-foreground/85 transition-colors"
                     onClick={() => setShowSupersededOwnership(v => !v)}
                     data-testid="btn-toggle-ownership-history"
                   >
@@ -1182,11 +1182,11 @@ export default function CertificatesView() {
       </Card>
 
       {/* Section 2: Activity Records */}
-      <Card className="bg-white border">
+      <Card className="bg-card border">
         <CardHeader className="border-b pb-4">
           <div>
             <CardTitle className="text-base flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gray-500" /> Activity Records
+              <FileText className="w-5 h-5 text-muted-foreground" /> Activity Records
             </CardTitle>
             <p className="text-muted-foreground text-xs mt-0.5">BNSL locks, price protection, transfers, and trade activity</p>
           </div>

@@ -154,7 +154,7 @@ export default function QRScanner({ onScan, isActive }: QRScannerProps) {
               onClick={stopScanner}
               variant="secondary"
               size="sm"
-              className="bg-white/90 hover:bg-white shadow-lg"
+              className="bg-card/90 hover:bg-card shadow-lg"
               data-testid="button-stop-qr-scanner"
             >
               <CameraOff className="w-4 h-4 mr-2" />

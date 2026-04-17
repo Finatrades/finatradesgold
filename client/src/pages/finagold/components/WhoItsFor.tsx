@@ -70,7 +70,7 @@ export default function WhoItsFor() {
                   <div className="w-6 h-6 rounded-full bg-[#8A2BE2]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#8A2BE2]/20 transition-colors">
                     <CheckCircle2 className="w-4 h-4 text-[#8A2BE2]" />
                   </div>
-                  <p className="text-gray-700 leading-relaxed">{item}</p>
+                  <p className="text-foreground/85 leading-relaxed">{item}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -83,7 +83,7 @@ export default function WhoItsFor() {
             transition={{ duration: 0.6, delay: 0.2 }}
             className="relative"
           >
-            <div className={`p-10 rounded-3xl bg-white border-2 border-[#8A2BE2]/20 shadow-xl shadow-[#8A2BE2]/10 relative overflow-hidden`}>
+            <div className={`p-10 rounded-3xl bg-card border-2 border-[#8A2BE2]/20 shadow-xl shadow-[#8A2BE2]/10 relative overflow-hidden`}>
               <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent opacity-50 pointer-events-none" />
               
               <div className="relative space-y-6">
@@ -93,17 +93,17 @@ export default function WhoItsFor() {
                   </div>
                   <div>
                     <p className="text-[#0D0D0D] font-semibold text-lg">{isPersonal ? 'Personal Gold Account' : 'Corporate Reserve Account'}</p>
-                    <p className="text-gray-500 text-sm">Swiss-regulated infrastructure</p>
+                    <p className="text-muted-foreground text-sm">Swiss-regulated infrastructure</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <div className="p-4 rounded-xl bg-[#8A2BE2]/5 border border-[#8A2BE2]/10">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Gold Held</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Gold Held</p>
                     <p className="text-[#0D0D0D] font-bold text-xl">{isPersonal ? '142.85g' : '2,450 kg'}</p>
                   </div>
                   <div className="p-4 rounded-xl bg-[#8A2BE2]/5 border border-[#8A2BE2]/10">
-                    <p className="text-gray-500 text-xs uppercase tracking-wider mb-1">Est. Value</p>
+                    <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Est. Value</p>
                     <p className="text-[#8A2BE2] font-bold text-xl">{isPersonal ? '$10,247' : '$156.2M'}</p>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export default function WhoItsFor() {
                 <div className="flex items-center justify-between pt-4 border-t border-[#8A2BE2]/10">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    <span className="text-gray-600 text-sm">Vault Verified</span>
+                    <span className="text-muted-foreground text-sm">Vault Verified</span>
                   </div>
                   <span className="text-[#8A2BE2] text-sm font-medium">View Certificates →</span>
                 </div>

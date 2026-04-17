@@ -57,21 +57,21 @@ export default function CookieConsent() {
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
             className="fixed bottom-4 left-4 right-4 md:left-auto md:right-6 md:max-w-md z-50 pb-[env(safe-area-inset-bottom)]"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="bg-card rounded-2xl shadow-2xl border border-border overflow-hidden">
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
                     <Cookie className="w-6 h-6 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg">You control your data</h3>
-                    <p className="text-sm text-gray-600 mt-1">
+                    <h3 className="font-bold text-foreground text-lg">You control your data</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
                       We use cookies to enhance your experience and analyze site traffic.
                     </p>
                   </div>
                 </div>
 
-                <p className="text-sm text-gray-500 mb-4">
+                <p className="text-sm text-muted-foreground mb-4">
                   By clicking "Accept all", you consent to our use of cookies. You can customize your preferences below.
                 </p>
 
@@ -92,18 +92,18 @@ export default function CookieConsent() {
                       exit={{ height: 0, opacity: 0 }}
                       className="overflow-hidden mb-4"
                     >
-                      <div className="space-y-3 py-3 border-t border-b border-gray-100">
+                      <div className="space-y-3 py-3 border-t border-b border-border/60">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">Necessary</p>
-                            <p className="text-xs text-gray-500">Required for the website to function</p>
+                            <p className="font-medium text-foreground text-sm">Necessary</p>
+                            <p className="text-xs text-muted-foreground">Required for the website to function</p>
                           </div>
                           <Switch checked={true} disabled className="opacity-50" />
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">Functional</p>
-                            <p className="text-xs text-gray-500">Enhanced features and personalization</p>
+                            <p className="font-medium text-foreground text-sm">Functional</p>
+                            <p className="text-xs text-muted-foreground">Enhanced features and personalization</p>
                           </div>
                           <Switch
                             checked={preferences.functional}
@@ -112,8 +112,8 @@ export default function CookieConsent() {
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">Marketing</p>
-                            <p className="text-xs text-gray-500">Personalized ads and analytics</p>
+                            <p className="font-medium text-foreground text-sm">Marketing</p>
+                            <p className="text-xs text-muted-foreground">Personalized ads and analytics</p>
                           </div>
                           <Switch
                             checked={preferences.marketing}
@@ -129,7 +129,7 @@ export default function CookieConsent() {
                   <Button
                     variant="outline"
                     onClick={handleDeclineAll}
-                    className="flex-1 rounded-full border-gray-300 text-gray-700 hover:bg-gray-50 min-h-[48px] text-base active:scale-[0.98]"
+                    className="flex-1 rounded-full border-border text-foreground/85 hover:bg-muted/40 min-h-[48px] text-base active:scale-[0.98]"
                   >
                     Decline all
                   </Button>
@@ -150,7 +150,7 @@ export default function CookieConsent() {
                   )}
                 </div>
 
-                <p className="text-xs text-gray-400 mt-4 text-center">
+                <p className="text-xs text-muted-foreground/70 mt-4 text-center">
                   <a href="/privacy-policy" className="hover:text-purple-600 underline">Read more about cookies</a>
                 </p>
               </div>
@@ -162,7 +162,7 @@ export default function CookieConsent() {
       {!show && (
         <button
           onClick={() => setShow(true)}
-          className="fixed bottom-4 left-4 z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-white shadow-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50 active:scale-95 transition-all mb-[env(safe-area-inset-bottom)]"
+          className="fixed bottom-4 left-4 z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-card shadow-lg border border-border flex items-center justify-center hover:bg-muted/40 active:scale-95 transition-all mb-[env(safe-area-inset-bottom)]"
           title="Cookie settings"
         >
           <Cookie className="w-5 h-5 text-purple-600" />

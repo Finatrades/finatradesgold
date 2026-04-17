@@ -99,7 +99,7 @@ export function CallOverlay({ callerName = 'User', isVisible }: CallOverlayProps
                   </AvatarFallback>
                 </Avatar>
                 <h2 className="text-2xl font-semibold text-white mb-2">{callerName}</h2>
-                <p className="text-gray-400">
+                <p className="text-muted-foreground/70">
                   {isConnecting ? (
                     activeCall.status === 'ringing' ? 'Ringing...' : 'Connecting...'
                   ) : isConnected ? (
@@ -131,7 +131,7 @@ export function CallOverlay({ callerName = 'User', isVisible }: CallOverlayProps
               />
               {activeCall.isVideoOff && (
                 <div className="absolute inset-0 bg-gray-800 flex items-center justify-center">
-                  <VideoOff className="h-8 w-8 text-gray-400" />
+                  <VideoOff className="h-8 w-8 text-muted-foreground/70" />
                 </div>
               )}
             </motion.div>

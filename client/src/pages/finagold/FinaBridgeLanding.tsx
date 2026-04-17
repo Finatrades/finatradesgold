@@ -66,7 +66,7 @@ function TradeFlowAnimation() {
               Global Trade
             </span>
           </h2>
-          <p className="text-gray-400 max-w-2xl mx-auto">
+          <p className="text-muted-foreground/70 max-w-2xl mx-auto">
             Watch how FinaBridge facilitates secure transactions between importers and exporters
           </p>
         </motion.div>
@@ -369,7 +369,7 @@ function TradeFlowAnimation() {
                 <Building2 className="w-6 h-6 text-purple-400" />
               </div>
               <span className="text-purple-300 text-sm font-medium">Importer</span>
-              <span className="text-gray-500 text-xs">Receives Goods</span>
+              <span className="text-muted-foreground text-xs">Receives Goods</span>
             </motion.div>
           </div>
           
@@ -384,7 +384,7 @@ function TradeFlowAnimation() {
                 <Globe className="w-8 h-8 text-white" />
               </div>
               <span className="text-white text-base font-bold">FinaBridge</span>
-              <span className="text-gray-400 text-xs">Trade Finance Hub</span>
+              <span className="text-muted-foreground/70 text-xs">Trade Finance Hub</span>
             </motion.div>
           </div>
           
@@ -399,7 +399,7 @@ function TradeFlowAnimation() {
                 <Building2 className="w-6 h-6 text-pink-400" />
               </div>
               <span className="text-pink-300 text-sm font-medium">Exporter</span>
-              <span className="text-gray-500 text-xs">Ships Goods</span>
+              <span className="text-muted-foreground text-xs">Ships Goods</span>
             </motion.div>
           </div>
           
@@ -493,10 +493,10 @@ function AnimatedBridge() {
       
       <div className="absolute left-4 bottom-4 flex items-center gap-2">
         <Building2 className="w-6 h-6 text-purple-600" />
-        <span className="text-xs text-gray-500">Exporter</span>
+        <span className="text-xs text-muted-foreground">Exporter</span>
       </div>
       <div className="absolute right-4 bottom-4 flex items-center gap-2">
-        <span className="text-xs text-gray-500">Importer</span>
+        <span className="text-xs text-muted-foreground">Importer</span>
         <Building2 className="w-6 h-6 text-pink-500" />
       </div>
     </div>
@@ -537,7 +537,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                 Gold-Backed{' '}
                 <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   Trade
@@ -553,7 +553,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-lg text-gray-700 font-medium"
+              className="text-lg text-foreground/85 font-medium"
             >
               Structured trade support for global importers and exporters
             </motion.p>
@@ -562,7 +562,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-gray-600 leading-relaxed max-w-lg"
+              className="text-muted-foreground leading-relaxed max-w-lg"
             >
               Connect buyers and sellers through verified gold-backed value, transparent 
               documentation, and streamlined settlement processes for international 
@@ -582,7 +582,7 @@ function HeroSection() {
               ].map((badge, i) => (
                 <span
                   key={badge.label}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-white border border-gray-200 text-gray-600"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-card border border-border text-muted-foreground"
                 >
                   <badge.icon className="w-4 h-4 text-purple-500" />
                   {badge.label}
@@ -614,7 +614,7 @@ function HeroSection() {
             transition={{ delay: 0.4, duration: 0.6 }}
             className="hidden lg:block"
           >
-            <div className="relative rounded-2xl overflow-hidden bg-white/80 backdrop-blur-sm border border-gray-200 shadow-xl p-4">
+            <div className="relative rounded-2xl overflow-hidden bg-card/80 backdrop-blur-sm border border-border shadow-xl p-4">
               <div className="relative h-[280px] w-full">
                 <svg 
                   className="absolute inset-0 w-full h-full" 
@@ -753,7 +753,7 @@ function HeroSection() {
                 {/* Labels below nodes */}
                 <div className="absolute bottom-2 left-0 right-0 flex justify-between px-4">
                   <span className="text-purple-600 text-xs font-medium">Importer</span>
-                  <span className="text-gray-600 text-xs font-medium">FinaBridge</span>
+                  <span className="text-muted-foreground text-xs font-medium">FinaBridge</span>
                   <span className="text-pink-600 text-xs font-medium">Exporter</span>
                 </div>
               </div>
@@ -780,7 +780,7 @@ function WhatIsFinaBridgeSection() {
               Understanding the Platform
             </span>
             
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
               What is{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 FinaBridge
@@ -788,18 +788,18 @@ function WhatIsFinaBridgeSection() {
               ?
             </h2>
             
-            <p className="text-gray-700 leading-relaxed">
+            <p className="text-foreground/85 leading-relaxed">
               FinaBridge is a <strong>gold-backed trade support module</strong> designed for businesses 
               engaged in international import and export operations.
             </p>
             
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               It provides a <strong>stable reference</strong> for real-world trade by using the verified worth 
               of physical gold as an anchor point for contracts, negotiations, and 
               settlements.
             </p>
             
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               Unlike traditional trade finance that relies solely on bank letters of credit or 
               advance payments, FinaBridge introduces a <strong>tangible, documented value 
               layer</strong> that both parties can verify and trust.
@@ -814,14 +814,14 @@ function WhatIsFinaBridgeSection() {
             viewport={{ once: true }}
             className="hidden lg:block"
           >
-            <div className="relative p-8 rounded-3xl bg-white border border-gray-100 shadow-xl">
+            <div className="relative p-8 rounded-3xl bg-card border border-border/60 shadow-xl">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col items-center gap-2">
                   <div className="w-14 h-14 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center">
                     <Building2 className="w-7 h-7 text-purple-600" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">Importer</span>
-                  <span className="text-xs text-gray-500">Buyer</span>
+                  <span className="text-sm font-semibold text-foreground">Importer</span>
+                  <span className="text-xs text-muted-foreground">Buyer</span>
                 </div>
                 
                 <div className="flex-1 relative mx-4">
@@ -860,23 +860,23 @@ function WhatIsFinaBridgeSection() {
                   <div className="w-14 h-14 rounded-xl bg-pink-100 border border-pink-200 flex items-center justify-center">
                     <Building2 className="w-7 h-7 text-pink-600" />
                   </div>
-                  <span className="text-sm font-semibold text-gray-900">Exporter</span>
-                  <span className="text-xs text-gray-500">Seller</span>
+                  <span className="text-sm font-semibold text-foreground">Exporter</span>
+                  <span className="text-xs text-muted-foreground">Seller</span>
                 </div>
               </div>
               
-              <div className="flex justify-between mt-8 pt-6 border-t border-gray-100">
+              <div className="flex justify-between mt-8 pt-6 border-t border-border/60">
                 <div className="text-center">
                   <div className="text-purple-600 font-semibold text-sm">Documentation</div>
-                  <div className="text-gray-500 text-xs">Verified</div>
+                  <div className="text-muted-foreground text-xs">Verified</div>
                 </div>
                 <div className="text-center">
                   <div className="text-pink-600 font-semibold text-sm">Value Anchor</div>
-                  <div className="text-gray-500 text-xs">Stable</div>
+                  <div className="text-muted-foreground text-xs">Stable</div>
                 </div>
                 <div className="text-center">
                   <div className="text-purple-600 font-semibold text-sm">Settlement</div>
-                  <div className="text-gray-500 text-xs">Trusted</div>
+                  <div className="text-muted-foreground text-xs">Trusted</div>
                 </div>
               </div>
             </div>
@@ -914,7 +914,7 @@ function WhyUseFinaBridgeSection() {
           <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
             Trade with Confidence
           </span>
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground">
             Why Use FinaBridge for{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Trade
@@ -935,8 +935,8 @@ function WhyUseFinaBridgeSection() {
                 <Ship className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">For Exporters</h3>
-                <p className="text-sm text-gray-500">Sellers & Shippers</p>
+                <h3 className="text-lg font-bold text-foreground">For Exporters</h3>
+                <p className="text-sm text-muted-foreground">Sellers & Shippers</p>
               </div>
             </div>
             
@@ -947,15 +947,15 @@ function WhyUseFinaBridgeSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:border-purple-200 hover:shadow-md transition-all"
+                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-purple-200 hover:shadow-md transition-all"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
                     <benefit.icon className="w-4 h-4 text-purple-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-sm">{benefit.title}</h4>
-                    <p className="text-gray-600 text-xs mt-1">{benefit.description}</p>
+                    <h4 className="font-semibold text-foreground text-sm">{benefit.title}</h4>
+                    <p className="text-muted-foreground text-xs mt-1">{benefit.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -973,8 +973,8 @@ function WhyUseFinaBridgeSection() {
                 <Package className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900">For Importers</h3>
-                <p className="text-sm text-gray-500">Buyers & Receivers</p>
+                <h3 className="text-lg font-bold text-foreground">For Importers</h3>
+                <p className="text-sm text-muted-foreground">Buyers & Receivers</p>
               </div>
             </div>
             
@@ -985,15 +985,15 @@ function WhyUseFinaBridgeSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-xl bg-white border border-gray-100 shadow-sm hover:border-pink-200 hover:shadow-md transition-all"
+                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-pink-200 hover:shadow-md transition-all"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center shrink-0">
                     <benefit.icon className="w-4 h-4 text-pink-600" />
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 text-sm">{benefit.title}</h4>
-                    <p className="text-gray-600 text-xs mt-1">{benefit.description}</p>
+                    <h4 className="font-semibold text-foreground text-sm">{benefit.title}</h4>
+                    <p className="text-muted-foreground text-xs mt-1">{benefit.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -1033,7 +1033,7 @@ function RiskManagementSection() {
               </span>
             </div>
             
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900">
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground">
               Risk Management,
               <br />
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
@@ -1041,16 +1041,16 @@ function RiskManagementSection() {
               </span>
             </h2>
             
-            <p className="text-gray-700 leading-relaxed">
+            <p className="text-foreground/85 leading-relaxed">
               FinaBridge <strong>complements</strong> traditional trade finance instruments like 
               bank letters of credit, advance payments, and trade insurance.
             </p>
             
-            <p className="text-gray-600 leading-relaxed">
+            <p className="text-muted-foreground leading-relaxed">
               It provides <strong>documentation, assurance, and a stable value reference</strong> that strengthens—but does not replace—existing risk mitigation tools.
             </p>
             
-            <p className="text-gray-700">
+            <p className="text-foreground/85">
               We <span className="text-purple-600 font-semibold">reduce</span> trade risk; we do not <strong>remove</strong> it entirely.
             </p>
             
@@ -1063,7 +1063,7 @@ function RiskManagementSection() {
             viewport={{ once: true }}
             className="hidden lg:block"
           >
-            <div className="relative p-8 rounded-3xl bg-white border border-gray-100 shadow-xl">
+            <div className="relative p-8 rounded-3xl bg-card border border-border/60 shadow-xl">
               <div className="absolute -top-4 left-1/2 -translate-x-1/2 w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600 to-pink-500 flex items-center justify-center shadow-lg">
                 <Shield className="w-8 h-8 text-white" />
               </div>
@@ -1076,12 +1076,12 @@ function RiskManagementSection() {
                     whileInView={{ opacity: 1, x: 0 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.3 + i * 0.1 }}
-                    className="flex items-center gap-3 p-3 rounded-xl bg-gray-50 border border-gray-100"
+                    className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/60"
                   >
                     <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
                       <CheckCircle className="w-4 h-4 text-purple-600" />
                     </div>
-                    <span className="text-gray-700 text-sm">{feature}</span>
+                    <span className="text-foreground/85 text-sm">{feature}</span>
                   </motion.div>
                 ))}
               </div>
@@ -1126,8 +1126,8 @@ function ValuePillarsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Value Pillars</h2>
-          <p className="text-gray-600 text-lg">The foundation of modern trade finance</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Value Pillars</h2>
+          <p className="text-muted-foreground text-lg">The foundation of modern trade finance</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -1139,7 +1139,7 @@ function ValuePillarsSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(147, 51, 234, 0.15)' }}
-              className="relative p-6 rounded-2xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all group"
+              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all group"
             >
               <motion.div
                 animate={{ rotate: [0, 5, 0, -5, 0] }}
@@ -1148,8 +1148,8 @@ function ValuePillarsSection() {
               >
                 <pillar.icon className="w-8 h-8 text-purple-600" />
               </motion.div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{pillar.title}</h3>
-              <p className="text-sm text-gray-600">{pillar.description}</p>
+              <h3 className="text-lg font-semibold text-foreground mb-2">{pillar.title}</h3>
+              <p className="text-sm text-muted-foreground">{pillar.description}</p>
               
               <motion.div
                 initial={{ scaleX: 0 }}
@@ -1186,8 +1186,8 @@ function FeaturesShowcaseSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Platform Features</h2>
-          <p className="text-gray-600 text-lg">Powerful tools for global trade operations</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Platform Features</h2>
+          <p className="text-muted-foreground text-lg">Powerful tools for global trade operations</p>
         </motion.div>
 
         <div className="space-y-6">
@@ -1202,15 +1202,15 @@ function FeaturesShowcaseSection() {
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="flex-1 p-8 rounded-2xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all"
+                className="flex-1 p-8 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
                     <feature.icon className="w-7 h-7 text-purple-600" />
                   </div>
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                    <p className="text-gray-600">{feature.description}</p>
+                    <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
+                    <p className="text-muted-foreground">{feature.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -1242,8 +1242,8 @@ function DealRoomSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">The Deal Room</h2>
-          <p className="text-gray-600 text-lg">Where buyers and sellers connect securely</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">The Deal Room</h2>
+          <p className="text-muted-foreground text-lg">Where buyers and sellers connect securely</p>
         </motion.div>
 
         <div className="relative flex flex-col lg:flex-row items-center justify-center gap-8">
@@ -1251,11 +1251,11 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-white border border-blue-200 shadow-lg"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-blue-200 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
               <Building2 className="w-8 h-8 text-blue-500" />
-              <span className="text-gray-900 font-semibold">Buyer Panel</span>
+              <span className="text-foreground font-semibold">Buyer Panel</span>
             </div>
             <div className="space-y-3">
               {['Purchase Order', 'Payment Terms', 'Delivery Schedule'].map((item, i) => (
@@ -1264,7 +1264,7 @@ function DealRoomSection() {
                   initial={{ opacity: 0, x: -20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-600"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
                 >
                   <CheckCircle className="w-4 h-4 text-blue-500" />
                   {item}
@@ -1285,11 +1285,11 @@ function DealRoomSection() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5 + i * 0.15 }}
-                  className="p-4 rounded-xl bg-white border border-purple-200 shadow-lg flex items-center justify-between"
+                  className="p-4 rounded-xl bg-card border border-purple-200 shadow-lg flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
                     <FileText className="w-5 h-5 text-purple-600" />
-                    <span className="text-gray-900 text-sm">{doc}</span>
+                    <span className="text-foreground text-sm">{doc}</span>
                   </div>
                   <motion.div
                     animate={{ scale: [1, 1.2, 1] }}
@@ -1314,11 +1314,11 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-white border border-green-200 shadow-lg"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-green-200 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
               <Building2 className="w-8 h-8 text-green-500" />
-              <span className="text-gray-900 font-semibold">Seller Panel</span>
+              <span className="text-foreground font-semibold">Seller Panel</span>
             </div>
             <div className="space-y-3">
               {['Proforma Invoice', 'Shipping Details', 'Bank Info'].map((item, i) => (
@@ -1327,7 +1327,7 @@ function DealRoomSection() {
                   initial={{ opacity: 0, x: 20 }}
                   whileInView={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + i * 0.1 }}
-                  className="flex items-center gap-2 text-sm text-gray-600"
+                  className="flex items-center gap-2 text-sm text-muted-foreground"
                 >
                   <CheckCircle className="w-4 h-4 text-green-500" />
                   {item}
@@ -1359,11 +1359,11 @@ function GlobalTradeMapSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">Global Trade Routes</h2>
-          <p className="text-gray-600 text-lg">Connected hubs across major trading centers</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Global Trade Routes</h2>
+          <p className="text-muted-foreground text-lg">Connected hubs across major trading centers</p>
         </motion.div>
 
-        <div className="relative aspect-[2/1] rounded-2xl bg-white border border-gray-100 shadow-lg overflow-hidden">
+        <div className="relative aspect-[2/1] rounded-2xl bg-card border border-border/60 shadow-lg overflow-hidden">
           <div className="absolute inset-0 opacity-20">
             <div className="absolute inset-0" style={{
               backgroundImage: `radial-gradient(circle at 1px 1px, ${PRIMARY_COLOR}20 1px, transparent 0)`,
@@ -1403,7 +1403,7 @@ function GlobalTradeMapSection() {
                 <Ship className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600" />
               </div>
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-white/90 border border-purple-200 text-purple-700 shadow-sm">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 text-purple-700 shadow-sm">
                   {hub.name}
                 </span>
               </div>
@@ -1454,13 +1454,13 @@ function DocumentManagementSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
               Automated, Verifiable &{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Secure
               </span>
             </h2>
-            <p className="text-gray-600 text-lg leading-relaxed">
+            <p className="text-muted-foreground text-lg leading-relaxed">
               Track every invoice, PO, BL, and inspection report with instant validation. 
               All documents are securely stored and instantly verifiable.
             </p>
@@ -1479,13 +1479,13 @@ function DocumentManagementSection() {
                 whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -4, rotateY: 3 }}
-                className="p-5 rounded-xl bg-white border border-gray-100 shadow-lg hover:border-purple-200 transition-all flex items-center justify-between"
+                className="p-5 rounded-xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                     <FileText className="w-6 h-6 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-medium">{doc.name}</span>
+                  <span className="text-foreground font-medium">{doc.name}</span>
                 </div>
                 <motion.div
                   animate={doc.status === 'Verified' ? { scale: [1, 1.1, 1] } : {}}
@@ -1581,13 +1581,13 @@ function SecuritySection() {
             viewport={{ once: true }}
             className="space-y-8 order-1 lg:order-2"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900">
+            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
               Enterprise-Grade{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Security
               </span>
             </h2>
-            <p className="text-gray-600 text-lg">
+            <p className="text-muted-foreground text-lg">
               Your trade data is protected by multiple layers of security and compliance measures.
             </p>
             
@@ -1599,12 +1599,12 @@ function SecuritySection() {
                   whileInView={{ opacity: 1, x: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-4 p-4 rounded-xl bg-white border border-gray-100 shadow-lg"
+                  className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-lg"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                     <CheckCircle className="w-5 h-5 text-purple-600" />
                   </div>
-                  <span className="text-gray-900 font-medium">{feature}</span>
+                  <span className="text-foreground font-medium">{feature}</span>
                 </motion.div>
               ))}
             </div>
@@ -1625,20 +1625,20 @@ function GoldSettlementSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
             Settle Faster with{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Gold
             </span>
           </h2>
-          <p className="text-gray-600 text-lg">Unlock liquidity with secure, instant gold-based settlement</p>
+          <p className="text-muted-foreground text-lg">Unlock liquidity with secure, instant gold-based settlement</p>
         </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 rounded-2xl bg-white border border-purple-200 shadow-lg"
+          className="p-8 rounded-2xl bg-card border border-purple-200 shadow-lg"
         >
           <div className="grid md:grid-cols-3 gap-8 items-center">
             <div className="text-center">
@@ -1649,7 +1649,7 @@ function GoldSettlementSection() {
               >
                 <Coins className="w-12 h-12 text-white" />
               </motion.div>
-              <p className="text-gray-900 font-semibold">Gold-Backed Value</p>
+              <p className="text-foreground font-semibold">Gold-Backed Value</p>
             </div>
             
             <div className="flex flex-col items-center gap-4">
@@ -1662,7 +1662,7 @@ function GoldSettlementSection() {
                 <Zap className="w-6 h-6 text-purple-600" />
                 <div className="w-16 h-px bg-gradient-to-r from-pink-500 to-transparent" />
               </motion.div>
-              <p className="text-gray-600 text-sm">Instant Settlement</p>
+              <p className="text-muted-foreground text-sm">Instant Settlement</p>
             </div>
             
             <div className="text-center">
@@ -1673,7 +1673,7 @@ function GoldSettlementSection() {
               >
                 <CheckCircle className="w-12 h-12 text-green-500" />
               </motion.div>
-              <p className="text-gray-900 font-semibold">Deal Completed</p>
+              <p className="text-foreground font-semibold">Deal Completed</p>
             </div>
           </div>
         </motion.div>
@@ -1702,14 +1702,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-gray-900">
+          <h2 className="text-4xl md:text-6xl font-bold text-foreground">
             Start Your First Global{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Trade Deal
             </span>
           </h2>
           
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Execute cross-border transactions with complete confidence.
           </p>
 
@@ -1748,14 +1748,14 @@ function FinaBridgeContent() {
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-6">
               <Building2 className="w-10 h-10 text-purple-600" />
             </div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
+            <h1 className="text-3xl font-bold text-foreground mb-4">
               FinaBridge is for{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Business
               </span>{' '}
               Users
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-muted-foreground mb-8">
               FinaBridge provides trade finance solutions for importers and exporters. 
               Switch to Business mode to access cross-border trade financing, gold-backed settlements, 
               and document management features.
@@ -1770,7 +1770,7 @@ function FinaBridgeContent() {
               </button>
               <Link
                 href="/"
-                className="inline-flex items-center gap-2 border-2 border-gray-200 text-gray-700 px-8 py-4 rounded-full font-semibold hover:bg-gray-50 transition-all"
+                className="inline-flex items-center gap-2 border-2 border-border text-foreground/85 px-8 py-4 rounded-full font-semibold hover:bg-muted/40 transition-all"
               >
                 Back to Home
               </Link>
@@ -1785,7 +1785,7 @@ function FinaBridgeContent() {
   }
   
   return (
-    <div className="finabridge-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-gray-900" data-testid="finabridge-landing">
+    <div className="finabridge-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-foreground" data-testid="finabridge-landing">
       <style>{`
         .finabridge-landing {
           --purple-600: #9333ea;

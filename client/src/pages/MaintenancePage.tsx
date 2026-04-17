@@ -8,7 +8,7 @@ export default function MaintenancePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-4">
-      <div className="max-w-md w-full bg-white/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-2xl border border-white/20">
+      <div className="max-w-md w-full bg-card/10 backdrop-blur-lg rounded-2xl p-8 text-center shadow-2xl border border-white/20">
         <div className="w-20 h-20 bg-purple-600/30 rounded-full flex items-center justify-center mx-auto mb-6">
           <Wrench className="w-10 h-10 text-purple-200 animate-pulse" />
         </div>

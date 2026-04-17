@@ -128,7 +128,7 @@ function ProductCard({ product, index }: { product: { icon: any; title: string; 
       onMouseMove={handleMouse}
       onMouseLeave={handleLeave}
       style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-      className="group flex flex-col items-center text-center p-8 rounded-3xl bg-white border border-gray-100 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-2xl hover:shadow-[#8A2BE2]/15 transition-all duration-300 relative overflow-hidden cursor-pointer"
+      className="group flex flex-col items-center text-center p-8 rounded-3xl bg-card border border-border/60 shadow-lg shadow-[#8A2BE2]/5 hover:shadow-2xl hover:shadow-[#8A2BE2]/15 transition-all duration-300 relative overflow-hidden cursor-pointer"
       data-testid={`product-card-${index}`}
     >
       <motion.div
@@ -153,7 +153,7 @@ function ProductCard({ product, index }: { product: { icon: any; title: string; 
         {product.title}
       </h3>
 
-      <p className="text-gray-500 text-sm leading-relaxed mb-6 flex-grow relative z-10">
+      <p className="text-muted-foreground text-sm leading-relaxed mb-6 flex-grow relative z-10">
         {product.description}
       </p>
 

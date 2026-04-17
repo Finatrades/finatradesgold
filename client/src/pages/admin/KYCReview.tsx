@@ -336,13 +336,13 @@ function DocumentViewer({
             </div>
           </DialogTitle>
         </DialogHeader>
-        <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-gray-100 rounded-lg p-4">
+        <div ref={printRef} className="flex justify-center items-center overflow-auto max-h-[75vh] bg-muted rounded-lg p-4">
           {isDoc ? (
             /* Word documents can't be previewed in browser */
-            <div className="flex flex-col items-center justify-center p-8 bg-white rounded">
+            <div className="flex flex-col items-center justify-center p-8 bg-card rounded">
               <FileText className="w-16 h-16 mb-4 text-blue-500" />
-              <p className="text-gray-700 font-medium mb-2">Word Document</p>
-              <p className="text-gray-500 text-sm mb-4 text-center">
+              <p className="text-foreground/85 font-medium mb-2">Word Document</p>
+              <p className="text-muted-foreground text-sm mb-4 text-center">
                 Word documents cannot be previewed in the browser.<br />
                 Please download to view the document.
               </p>
@@ -355,13 +355,13 @@ function DocumentViewer({
               {pdfLoading ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <RefreshCw className="w-8 h-8 text-primary animate-spin mb-4" />
-                  <p className="text-gray-600">Loading PDF...</p>
+                  <p className="text-muted-foreground">Loading PDF...</p>
                 </div>
               ) : pdfError ? (
                 <div className="flex flex-col items-center justify-center h-full">
                   <AlertCircle className="w-12 h-12 text-red-400 mb-4" />
-                  <p className="text-gray-700 font-medium">Failed to load PDF</p>
-                  <p className="text-gray-500 text-sm mt-2">Try downloading the file instead</p>
+                  <p className="text-foreground/85 font-medium">Failed to load PDF</p>
+                  <p className="text-muted-foreground text-sm mt-2">Try downloading the file instead</p>
                   <Button variant="default" className="mt-4" onClick={handleDownload}>
                     <FileText className="w-4 h-4 mr-2" /> Download PDF
                   </Button>
@@ -1002,8 +1002,8 @@ export default function KYCReview() {
       <div className="space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">KYC Reviews</h1>
-            <p className="text-gray-500">Review and approve customer identity verifications.</p>
+            <h1 className="text-3xl font-bold text-foreground">KYC Reviews</h1>
+            <p className="text-muted-foreground">Review and approve customer identity verifications.</p>
           </div>
           <Button variant="outline" onClick={() => refetch()}>
             <RefreshCw className="w-4 h-4 mr-2" /> Refresh
@@ -1019,7 +1019,7 @@ export default function KYCReview() {
               </div>
               <div>
                 <p className="text-xl font-bold" data-testid="text-pending-count">{pendingSubmissions.length}</p>
-                <p className="text-xs text-gray-500">Pending</p>
+                <p className="text-xs text-muted-foreground">Pending</p>
               </div>
             </CardContent>
           </Card>
@@ -1030,7 +1030,7 @@ export default function KYCReview() {
               </div>
               <div>
                 <p className="text-xl font-bold" data-testid="text-in-review-count">{inReviewSubmissions.length}</p>
-                <p className="text-xs text-gray-500">In Review</p>
+                <p className="text-xs text-muted-foreground">In Review</p>
               </div>
             </CardContent>
           </Card>
@@ -1041,7 +1041,7 @@ export default function KYCReview() {
               </div>
               <div>
                 <p className="text-xl font-bold" data-testid="text-changes-count">{changesRequestedSubmissions.length}</p>
-                <p className="text-xs text-gray-500">Changes</p>
+                <p className="text-xs text-muted-foreground">Changes</p>
               </div>
             </CardContent>
           </Card>
@@ -1052,7 +1052,7 @@ export default function KYCReview() {
               </div>
               <div>
                 <p className="text-xl font-bold" data-testid="text-approved-count">{approvedSubmissions.length}</p>
-                <p className="text-xs text-gray-500">Approved</p>
+                <p className="text-xs text-muted-foreground">Approved</p>
               </div>
             </CardContent>
           </Card>
@@ -1063,7 +1063,7 @@ export default function KYCReview() {
               </div>
               <div>
                 <p className="text-xl font-bold" data-testid="text-rejected-count">{rejectedSubmissions.length}</p>
-                <p className="text-xs text-gray-500">Rejected</p>
+                <p className="text-xs text-muted-foreground">Rejected</p>
               </div>
             </CardContent>
           </Card>
@@ -1083,7 +1083,7 @@ export default function KYCReview() {
             {pendingSubmissions.length > 0 && (
               <div className="flex items-center gap-2">
                 {selectedIds.size > 0 && (
-                  <span className="text-sm text-gray-500 mr-2">{selectedIds.size} selected</span>
+                  <span className="text-sm text-muted-foreground mr-2">{selectedIds.size} selected</span>
                 )}
                 <Button 
                   variant="outline" 
@@ -1112,17 +1112,17 @@ export default function KYCReview() {
           <CardContent>
             {isLoading ? (
               <div className="flex justify-center py-8">
-                <RefreshCw className="w-6 h-6 animate-spin text-gray-400" />
+                <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground/70" />
               </div>
             ) : filteredSubmissions.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-muted-foreground">
                 <CheckCircle2 className="w-12 h-12 mx-auto mb-4 text-green-400" />
                 <p>No applications in this queue</p>
               </div>
             ) : (
-              <div className="overflow-x-auto rounded-lg border border-gray-200 shadow-sm">
+              <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
                 <table className="w-full">
-                  <thead className="text-xs text-gray-600 uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-gray-200">
+                  <thead className="text-xs text-muted-foreground uppercase bg-gradient-to-r from-gray-50 to-gray-100 border-b-2 border-border">
                     <tr>
                       <th className="px-3 py-3 text-left align-middle w-10">
                         <Checkbox 
@@ -1141,7 +1141,7 @@ export default function KYCReview() {
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {filteredSubmissions.map((app: any, index: number) => (
-                      <tr key={app.id} className={`${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`kyc-submission-${app.id}`}>
+                      <tr key={app.id} className={`${index % 2 === 0 ? 'bg-card' : 'bg-muted/40/50'} hover:bg-purple-50/50 transition-colors duration-150`} data-testid={`kyc-submission-${app.id}`}>
                         <td className="px-3 py-3 align-middle">
                           <Checkbox 
                             checked={selectedIds.has(app.id)}
@@ -1159,14 +1159,14 @@ export default function KYCReview() {
                         </td>
                         <td className="px-4 py-3 align-middle capitalize text-sm">{app.accountType}</td>
                         <td className="px-4 py-3 align-middle">{getStatusBadge(app.status)}</td>
-                        <td className="px-4 py-3 align-middle text-sm text-gray-500" data-testid={`text-reviewer-${app.id}`}>
+                        <td className="px-4 py-3 align-middle text-sm text-muted-foreground" data-testid={`text-reviewer-${app.id}`}>
                           {app.reviewedBy ? (
                             <span className="text-blue-600 font-medium">{app.reviewedByName || 'Assigned'}</span>
                           ) : (
-                            <span className="text-gray-400">Unassigned</span>
+                            <span className="text-muted-foreground/70">Unassigned</span>
                           )}
                         </td>
-                        <td className="px-4 py-3 align-middle text-sm text-gray-500">{new Date(app.createdAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-3 align-middle text-sm text-muted-foreground">{new Date(app.createdAt).toLocaleDateString()}</td>
                         <td className="px-4 py-3 align-middle text-right">
                           <Button variant="ghost" size="sm" onClick={() => setSelectedApplication(app)} data-testid={`button-review-${app.id}`}>
                             Review
@@ -1243,7 +1243,7 @@ export default function KYCReview() {
 
             {/* Version History Timeline */}
             {showVersionHistory && versions.length > 0 && (
-              <div className="border rounded-lg p-4 bg-gray-50 mb-4" data-testid="version-history-panel">
+              <div className="border rounded-lg p-4 bg-muted/40 mb-4" data-testid="version-history-panel">
                 <h4 className="font-medium text-sm mb-3 flex items-center gap-2">
                   <History className="w-4 h-4" /> Submission Version History
                 </h4>
@@ -1256,7 +1256,7 @@ export default function KYCReview() {
                           v.status === 'rejected' ? 'bg-red-100 text-red-700' :
                           v.status === 'changes_requested' ? 'bg-orange-100 text-orange-700' :
                           v.status === 'in_review' ? 'bg-blue-100 text-blue-700' :
-                          'bg-gray-200 text-gray-600'
+                          'bg-muted text-muted-foreground'
                         }`}>
                           {v.versionNumber}
                         </div>
@@ -1264,7 +1264,7 @@ export default function KYCReview() {
                       </div>
                       <div>
                         <p className="font-medium">Version {v.versionNumber} — <span className="capitalize">{v.status?.replace('_', ' ')}</span></p>
-                        <p className="text-gray-500 text-xs">
+                        <p className="text-muted-foreground text-xs">
                           {v.kycType} — Submitted {new Date(v.submittedAt).toLocaleString()}
                           {v.lockedAt && ` — Locked ${new Date(v.lockedAt).toLocaleString()}`}
                         </p>
@@ -1285,15 +1285,15 @@ export default function KYCReview() {
                   {previousSectionReviews.map((r: any, idx: number) => (
                     <div key={idx} className={`flex items-start gap-2 text-sm p-2 rounded ${
                       r.status === 'rejected' ? 'bg-red-50 border border-red-100' : 
-                      r.status === 'approved' ? 'bg-green-50 border border-green-100' : 'bg-gray-50 border'
+                      r.status === 'approved' ? 'bg-green-50 border border-green-100' : 'bg-muted/40 border'
                     }`}>
                       {r.status === 'rejected' ? <XCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" /> : 
                        r.status === 'approved' ? <CheckCircle2 className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" /> :
-                       <Clock className="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" />}
+                       <Clock className="w-4 h-4 text-muted-foreground/70 mt-0.5 flex-shrink-0" />}
                       <div>
                         <span className="font-medium">{SECTION_LABELS[r.sectionName] || r.sectionName}</span>
-                        {r.reasonCode && <span className="text-gray-500 ml-1">({r.reasonCode})</span>}
-                        {r.freeText && <p className="text-gray-600 text-xs mt-0.5">{r.freeText}</p>}
+                        {r.reasonCode && <span className="text-muted-foreground ml-1">({r.reasonCode})</span>}
+                        {r.freeText && <p className="text-muted-foreground text-xs mt-0.5">{r.freeText}</p>}
                       </div>
                     </div>
                   ))}
@@ -1316,42 +1316,42 @@ export default function KYCReview() {
                     
                     return (
                       <>
-                        <span className="text-gray-500">Full Name:</span>
+                        <span className="text-muted-foreground">Full Name:</span>
                         <span className="font-medium">{appData?.fullName || appData?.companyName || 'Not provided'}</span>
-                        <span className="text-gray-500">Account Type:</span>
+                        <span className="text-muted-foreground">Account Type:</span>
                         <span className="font-medium capitalize">{appData?.accountType}</span>
                         
                         {isFinatradesKyc(appData) && (
                           <>
-                            <span className="text-gray-500">Email:</span>
+                            <span className="text-muted-foreground">Email:</span>
                             <span className="font-medium">{email || 'Not provided'}</span>
-                            <span className="text-gray-500">Phone:</span>
+                            <span className="text-muted-foreground">Phone:</span>
                             <span className="font-medium">{phone || 'Not provided'}</span>
                             {!isCorporate && (
                               <>
-                                <span className="text-gray-500">Date of Birth:</span>
+                                <span className="text-muted-foreground">Date of Birth:</span>
                                 <span className="font-medium">{appData?.dateOfBirth || 'Not provided'}</span>
                               </>
                             )}
                           </>
                         )}
                         
-                        <span className="text-gray-500">Country:</span>
+                        <span className="text-muted-foreground">Country:</span>
                         <span className="font-medium">{country || 'Not provided'}</span>
                         
                         {isFinatradesKyc(appData) && (
                           <>
                             {!isCorporate && (
                               <>
-                                <span className="text-gray-500">City:</span>
+                                <span className="text-muted-foreground">City:</span>
                                 <span className="font-medium">{city || 'Not provided'}</span>
                               </>
                             )}
-                            <span className="text-gray-500">Address:</span>
+                            <span className="text-muted-foreground">Address:</span>
                             <span className="font-medium">{address || 'Not provided'}</span>
                             {!isCorporate && (
                               <>
-                                <span className="text-gray-500">Postal Code:</span>
+                                <span className="text-muted-foreground">Postal Code:</span>
                                 <span className="font-medium">{appData?.postalCode || 'Not provided'}</span>
                               </>
                             )}
@@ -1360,20 +1360,20 @@ export default function KYCReview() {
                         
                         {!isCorporate && (
                           <>
-                            <span className="text-gray-500">Nationality:</span>
+                            <span className="text-muted-foreground">Nationality:</span>
                             <span className="font-medium">{appData?.nationality || 'Not provided'}</span>
                           </>
                         )}
                         
                         {isFinatradesKyc(appData) && !isCorporate && (
                           <>
-                            <span className="text-gray-500">Occupation:</span>
+                            <span className="text-muted-foreground">Occupation:</span>
                             <span className="font-medium">{appData?.occupation || 'Not provided'}</span>
-                            <span className="text-gray-500">Source of Funds:</span>
+                            <span className="text-muted-foreground">Source of Funds:</span>
                             <span className="font-medium">{appData?.sourceOfFunds || 'Not provided'}</span>
                             {appData?.passportExpiryDate && (
                               <>
-                                <span className="text-gray-500">Passport Expiry:</span>
+                                <span className="text-muted-foreground">Passport Expiry:</span>
                                 <span className="font-medium">{appData.passportExpiryDate}</span>
                               </>
                             )}
@@ -1384,32 +1384,32 @@ export default function KYCReview() {
                           <>
                             {appData?.website && (
                               <>
-                                <span className="text-gray-500">Website:</span>
+                                <span className="text-muted-foreground">Website:</span>
                                 <span className="font-medium">{appData.website}</span>
                               </>
                             )}
                             {appData?.natureOfBusiness && (
                               <>
-                                <span className="text-gray-500">Nature of Business:</span>
+                                <span className="text-muted-foreground">Nature of Business:</span>
                                 <span className="font-medium">{appData.natureOfBusiness}</span>
                               </>
                             )}
                             {appData?.tradeLicenseExpiryDate && (
                               <>
-                                <span className="text-gray-500">Trade License Expiry:</span>
+                                <span className="text-muted-foreground">Trade License Expiry:</span>
                                 <span className="font-medium">{appData.tradeLicenseExpiryDate}</span>
                               </>
                             )}
                             {appData?.directorPassportExpiryDate && (
                               <>
-                                <span className="text-gray-500">Director Passport Expiry:</span>
+                                <span className="text-muted-foreground">Director Passport Expiry:</span>
                                 <span className="font-medium">{appData.directorPassportExpiryDate}</span>
                               </>
                             )}
                           </>
                         )}
                         
-                        <span className="text-gray-500">Submitted:</span>
+                        <span className="text-muted-foreground">Submitted:</span>
                         <span className="font-medium">{appData?.createdAt ? new Date(appData.createdAt).toLocaleString() : '-'}</span>
                       </>
                     );
@@ -1447,7 +1447,7 @@ export default function KYCReview() {
                             fraudRisk === 'medium' ? 'bg-amber-50 border-amber-200' :
                             'bg-green-50 border-green-200'
                           }`} data-testid="risk-fraud-score">
-                            <span className="text-gray-600">AI Fraud Score</span>
+                            <span className="text-muted-foreground">AI Fraud Score</span>
                             <span className={`font-bold ${
                               fraudRisk === 'high' ? 'text-red-700' :
                               fraudRisk === 'medium' ? 'text-amber-700' :
@@ -1460,9 +1460,9 @@ export default function KYCReview() {
                           </div>
                         )}
                         {aiStatus && (
-                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded border text-sm" data-testid="risk-ai-status">
-                            <span className="text-gray-600">AI Verification Status</span>
-                            <Badge className={aiStatus === 'completed' ? 'bg-green-100 text-green-700' : aiStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700'}>
+                          <div className="flex items-center justify-between p-2 bg-muted/40 rounded border text-sm" data-testid="risk-ai-status">
+                            <span className="text-muted-foreground">AI Verification Status</span>
+                            <Badge className={aiStatus === 'completed' ? 'bg-green-100 text-green-700' : aiStatus === 'failed' ? 'bg-red-100 text-red-700' : 'bg-muted text-foreground/85'}>
                               {aiStatus}
                             </Badge>
                           </div>
@@ -1485,8 +1485,8 @@ export default function KYCReview() {
                           </div>
                         )}
                         {riskScore != null && riskScore > 0 && (
-                          <div className="flex items-center justify-between p-2 bg-gray-50 rounded border text-sm" data-testid="risk-score">
-                            <span className="text-gray-600">Screening Risk Score</span>
+                          <div className="flex items-center justify-between p-2 bg-muted/40 rounded border text-sm" data-testid="risk-score">
+                            <span className="text-muted-foreground">Screening Risk Score</span>
                             <span className={`font-medium ${riskScore >= 70 ? 'text-red-600' : riskScore >= 40 ? 'text-amber-600' : 'text-green-600'}`}>
                               {riskScore} / 100
                             </span>
@@ -1569,53 +1569,53 @@ export default function KYCReview() {
                     <div className="mt-4 pt-4 border-t">
                       <h4 className="font-medium mb-2">Business Details</h4>
                       <div className="grid grid-cols-2 gap-2 text-sm">
-                        <span className="text-gray-500">Company Name:</span>
+                        <span className="text-muted-foreground">Company Name:</span>
                         <span className="font-medium">{biz?.companyName || 'Not provided'}</span>
-                        <span className="text-gray-500">Registration Number:</span>
+                        <span className="text-muted-foreground">Registration Number:</span>
                         <span className="font-medium">{biz?.registrationNumber || 'Not provided'}</span>
                         {biz?.companyType && (
                           <>
-                            <span className="text-gray-500">Company Type:</span>
+                            <span className="text-muted-foreground">Company Type:</span>
                             <span className="font-medium">{biz.companyType}</span>
                           </>
                         )}
                         {biz?.corporateRole && (
                           <>
-                            <span className="text-gray-500">Role:</span>
+                            <span className="text-muted-foreground">Role:</span>
                             <span className="font-medium capitalize">{biz.corporateRole === 'both' ? 'Importer & Exporter' : biz.corporateRole}</span>
                           </>
                         )}
                         {biz?.incorporationDate && (
                           <>
-                            <span className="text-gray-500">Incorporation Date:</span>
+                            <span className="text-muted-foreground">Incorporation Date:</span>
                             <span className="font-medium">{biz.incorporationDate}</span>
                           </>
                         )}
                         {biz?.numberOfEmployees && (
                           <>
-                            <span className="text-gray-500">Number of Employees:</span>
+                            <span className="text-muted-foreground">Number of Employees:</span>
                             <span className="font-medium">{biz.numberOfEmployees}</span>
                           </>
                         )}
                         {biz?.tradingContactName && (
                           <>
-                            <span className="text-gray-500">Trading Contact:</span>
+                            <span className="text-muted-foreground">Trading Contact:</span>
                             <span className="font-medium">{biz.tradingContactName} ({biz.tradingContactEmail})</span>
                           </>
                         )}
                         {biz?.financeContactName && (
                           <>
-                            <span className="text-gray-500">Finance Contact:</span>
+                            <span className="text-muted-foreground">Finance Contact:</span>
                             <span className="font-medium">{biz.financeContactName} ({biz.financeContactEmail})</span>
                           </>
                         )}
                         {biz?.bankName && (
                           <>
-                            <span className="text-gray-500">Bank:</span>
+                            <span className="text-muted-foreground">Bank:</span>
                             <span className="font-medium">{biz.bankName}{biz.bankCity ? `, ${biz.bankCity}` : ''}{biz.bankCountry ? `, ${biz.bankCountry}` : ''}</span>
                           </>
                         )}
-                        <span className="text-gray-500">Tax ID:</span>
+                        <span className="text-muted-foreground">Tax ID:</span>
                         <span className="font-medium">{biz?.taxId || 'Not provided'}</span>
                       </div>
                     </div>
@@ -1636,9 +1636,9 @@ export default function KYCReview() {
                   {fullApplicationData?.kycType === 'finatrades_corporate' ? (
                     <>
                       {/* Certificate of Incorporation */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Certificate of Incorporation</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1661,9 +1661,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Trade License */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Trade License</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1686,9 +1686,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Memorandum & Articles */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Memorandum & Articles</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1711,9 +1711,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* UBO Passports */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-gray-400" />
+                          <User className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">UBO Passports</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1736,9 +1736,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Bank Reference Letter */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-gray-400" />
+                          <Building className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Bank Reference Letter</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1761,9 +1761,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Authorized Signatories */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Authorized Signatories</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1786,9 +1786,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Liveness Capture for authorized signatory */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <Camera className="w-4 h-4 text-gray-400" />
+                          <Camera className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Signatory Liveness</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1815,9 +1815,9 @@ export default function KYCReview() {
                   ) : isFinatradesKyc(fullApplicationData) ? (
                     <>
                       {/* Finatrades Personal KYC - ID Front */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-gray-400" />
+                          <CreditCard className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">ID Front</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1840,9 +1840,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* ID Back */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4 text-gray-400" />
+                          <CreditCard className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">ID Back</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1865,9 +1865,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Passport (Optional) */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Passport (Optional)</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1890,9 +1890,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Address Proof */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-gray-400" />
+                          <MapPin className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Proof of Address</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1915,9 +1915,9 @@ export default function KYCReview() {
                       </div>
                       
                       {/* Liveness Capture */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <Camera className="w-4 h-4 text-gray-400" />
+                          <Camera className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Liveness Verification</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1945,9 +1945,9 @@ export default function KYCReview() {
                   ) : (
                     <>
                       {/* Legacy KYC format */}
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">ID Document</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1968,9 +1968,9 @@ export default function KYCReview() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <User className="w-4 h-4 text-gray-400" />
+                          <User className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Selfie</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1991,9 +1991,9 @@ export default function KYCReview() {
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center justify-between p-2 bg-gray-50 rounded border">
+                      <div className="flex items-center justify-between p-2 bg-muted/40 rounded border">
                         <div className="flex items-center gap-2">
-                          <FileText className="w-4 h-4 text-gray-400" />
+                          <FileText className="w-4 h-4 text-muted-foreground/70" />
                           <span className="text-sm">Proof of Address</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -2030,11 +2030,11 @@ export default function KYCReview() {
 
             {/* Section-wise Review UI */}
             {selectedApplication && selectedApplication.status !== 'Approved' && selectedApplication.status !== 'Rejected' && (
-              <div className="border rounded-lg p-4 bg-gray-50 mt-2" data-testid="section-review-panel">
+              <div className="border rounded-lg p-4 bg-muted/40 mt-2" data-testid="section-review-panel">
                 <h4 className="font-medium text-sm mb-3">Section-wise Review</h4>
                 <div className="space-y-3">
                   {sectionReviews.map((sr, idx) => (
-                    <div key={sr.section} className={`p-3 rounded border ${sr.status === 'rejected' ? 'bg-red-50 border-red-200' : sr.status === 'approved' ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`} data-testid={`section-review-${idx}`}>
+                    <div key={sr.section} className={`p-3 rounded border ${sr.status === 'rejected' ? 'bg-red-50 border-red-200' : sr.status === 'approved' ? 'bg-green-50 border-green-200' : 'bg-card border-border'}`} data-testid={`section-review-${idx}`}>
                       <div className="flex items-center justify-between mb-2">
                         <span className="font-medium text-sm">{SECTION_LABELS[sr.section] || sr.section}</span>
                         <div className="flex items-center gap-2">

@@ -159,25 +159,25 @@ export default function BnslWalletCard({
         <p className="text-xs font-semibold text-amber-800 mb-2">Gold Bar Breakdown:</p>
         <div className="grid grid-cols-4 gap-2 text-center">
           {bars.kg > 0 && (
-            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+            <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
               <span className="text-lg font-bold text-amber-700">{bars.kg}</span>
               <p className="text-[10px] text-amber-600 font-medium">1 KG</p>
             </div>
           )}
           {bars.g100 > 0 && (
-            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+            <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
               <span className="text-lg font-bold text-amber-700">{bars.g100}</span>
               <p className="text-[10px] text-amber-600 font-medium">100g</p>
             </div>
           )}
           {bars.g10 > 0 && (
-            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+            <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
               <span className="text-lg font-bold text-amber-700">{bars.g10}</span>
               <p className="text-[10px] text-amber-600 font-medium">10g</p>
             </div>
           )}
           {bars.g1 > 0 && (
-            <div className="bg-white rounded-lg p-2 border border-amber-300 shadow-sm">
+            <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
               <span className="text-lg font-bold text-amber-700">{bars.g1}</span>
               <p className="text-[10px] text-amber-600 font-medium">1g</p>
             </div>
@@ -189,7 +189,7 @@ export default function BnslWalletCard({
 
   return (
     <>
-      <Card className="bg-white shadow-sm border border-border overflow-hidden relative">
+      <Card className="bg-card shadow-sm border border-border overflow-hidden relative">
         <div className="absolute top-0 right-0 p-4 opacity-5">
           <Wallet className="w-32 h-32 text-secondary" />
         </div>
@@ -305,7 +305,7 @@ export default function BnslWalletCard({
 
       {/* Transfer Modal */}
       <Dialog open={isTransferModalOpen} onOpenChange={setIsTransferModalOpen}>
-        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transfer Gold from FinaPay</DialogTitle>
             <DialogDescription className="text-muted-foreground">
@@ -430,7 +430,7 @@ export default function BnslWalletCard({
 
       {/* Withdraw Modal */}
       <Dialog open={isWithdrawModalOpen} onOpenChange={setIsWithdrawModalOpen}>
-        <DialogContent className="bg-white border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
+        <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Withdraw Gold to FinaPay</DialogTitle>
             <DialogDescription className="text-muted-foreground">

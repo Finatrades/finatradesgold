@@ -27,9 +27,9 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
   const recentCertificates = Array.isArray(certificates) ? certificates.slice(0, 5) : [];
 
   return (
-    <Card className="p-5 bg-white border border-gray-200 rounded-xl shadow-sm" data-testid="certificates-card">
+    <Card className="p-5 bg-card border border-border rounded-xl shadow-sm" data-testid="certificates-card">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-[20px] font-bold text-gray-900">Certificates</h3>
+        <h3 className="text-[20px] font-bold text-foreground">Certificates</h3>
         <Link href="/finavault">
           <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-certificates">
             View All
@@ -43,7 +43,7 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
             <div className="animate-spin w-6 h-6 border-2 border-violet-500 border-t-transparent rounded-full" />
           </div>
         ) : recentCertificates.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-gray-400">
+          <div className="flex flex-col items-center justify-center py-8 text-muted-foreground/70">
             <FileText className="w-8 h-8 mb-2 opacity-50" />
             <p className="text-sm">No certificates yet</p>
           </div>
@@ -64,24 +64,24 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
                   data-testid={`certificate-row-${cert.id}`}
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                    isDigital ? 'bg-violet-100' : 'bg-gray-100'
+                    isDigital ? 'bg-violet-100' : 'bg-muted'
                   }`}>
                     {isDigital ? (
                       <Award className="w-4 h-4 text-violet-600" />
                     ) : (
-                      <Box className="w-4 h-4 text-gray-600" />
+                      <Box className="w-4 h-4 text-muted-foreground" />
                     )}
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <p className="text-[14px] font-medium text-gray-900 truncate">
+                    <p className="text-[14px] font-medium text-foreground truncate">
                       {cert.type}
                     </p>
-                    <p className="text-[12px] text-gray-500">{issueDate}</p>
+                    <p className="text-[12px] text-muted-foreground">{issueDate}</p>
                   </div>
                   
                   <div className="text-right shrink-0">
-                    <p className="text-[14px] font-semibold text-gray-900">{goldGrams.toFixed(2)}g</p>
+                    <p className="text-[14px] font-semibold text-foreground">{goldGrams.toFixed(2)}g</p>
                   </div>
                   
                   <div className="shrink-0 ml-1">
@@ -89,14 +89,14 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
                       className={`text-xs border-0 ${
                         cert.status === 'Active' 
                           ? 'bg-green-100 text-green-700' 
-                          : 'bg-gray-100 text-gray-600'
+                          : 'bg-muted text-muted-foreground'
                       }`}
                     >
                       {cert.status}
                     </Badge>
                   </div>
 
-                  <ChevronRight className="w-4 h-4 text-gray-300 group-hover:text-violet-500 transition-colors shrink-0" />
+                  <ChevronRight className="w-4 h-4 text-muted-foreground/50 group-hover:text-violet-500 transition-colors shrink-0" />
                 </div>
               </Link>
             );
