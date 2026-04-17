@@ -155,7 +155,7 @@ export default function NotificationCenter() {
     <div className="relative" ref={containerRef}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="w-10 h-10 rounded-full bg-muted hover:bg-muted/80 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors relative"
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/70 transition-all duration-300 hover:text-foreground hover:border-primary/40 hover:shadow-[0_0_0_3px_rgba(163,66,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         data-testid="button-notification-bell"
       >
         <Bell className="w-5 h-5" />
