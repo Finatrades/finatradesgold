@@ -94,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} collapsed={sidebarCollapsed} setCollapsed={handleSetCollapsed} />
 
-      <div className={`${sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-72'} min-h-screen flex flex-col transition-all duration-300`}>
+      <div className={`${sidebarCollapsed ? 'lg:ml-[88px]' : 'lg:ml-[300px]'} min-h-screen flex flex-col transition-all duration-300`}>
         
         <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
           {/* Row 1: Dark Ticker Bar */}
