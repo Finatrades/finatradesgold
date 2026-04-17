@@ -3,6 +3,9 @@ import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, Landmark, Lock, Gift, Users } from 'lucide-react';
+import { NumberTicker } from '@/components/ui/number-ticker';
+import { GlareCard } from '@/components/ui/glare-card';
+import { AnimatedList } from '@/components/ui/animated-list';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ReferenceLine, ResponsiveContainer, Area, AreaChart } from 'recharts';
 import { useDashboardData } from '@/hooks/useDashboardData';
 import { useUnifiedTransactions } from '@/hooks/useUnifiedTransactions';
@@ -477,11 +480,15 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* FinaCard credit card visual — Hynex style */}
+            {/* FinaCard credit card visual — Hynex style with GlareCard tilt */}
+            <GlareCard
+              className="relative h-[310px] rounded-3xl cursor-pointer"
+              glareColor="rgba(255, 215, 0, 0.28)"
+            >
             <motion.div
               whileHover={{ y: -4, scale: 1.008 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="relative h-[310px] rounded-3xl overflow-hidden cursor-pointer"
+              className="relative h-full rounded-3xl overflow-hidden cursor-pointer"
               style={{
                 background: 'linear-gradient(135deg,#1c1c26 0%,#0d0d14 60%,#16161e 100%)',
                 boxShadow: '0 24px 60px -18px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 1px 0 rgba(255,255,255,0.06) inset',
@@ -547,6 +554,7 @@ export default function Dashboard() {
                 </div>
               </div>
             </motion.div>
+            </GlareCard>
           </motion.div>
 
           {/* ── COL 2 (4/12): Gold Holdings & Metrics ── */}
@@ -561,9 +569,18 @@ export default function Dashboard() {
 
               {/* primary value */}
               <div className="flex items-baseline gap-3 mb-1">
-                <span className="kpi-value text-[36px] text-foreground" data-testid="text-gold-balance-usd">
-                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
-                </span>
+                {showBalance ? (
+                  <span data-testid="text-gold-balance-usd" className="inline-block">
+                    <NumberTicker
+                      value={walletGoldValue}
+                      decimalPlaces={2}
+                      prefix="$"
+                      className="kpi-value text-[36px] text-foreground"
+                    />
+                  </span>
+                ) : (
+                  <span className="kpi-value text-[36px] text-foreground" data-testid="text-gold-balance-usd">{hiddenValue}</span>
+                )}
                 <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
                   <TrendingUp className="w-2.5 h-2.5" />
                   {totals.walletGoldGrams > 0 ? `${formatNumber(totals.walletGoldGrams, 3)}g` : '0g'}
@@ -815,7 +832,7 @@ export default function Dashboard() {
                 <button className="p-1 hover:bg-muted rounded-lg" aria-label="More"><span className="text-muted-foreground leading-none">⋯</span></button>
               </div>
 
-              <div className="space-y-3.5 flex-1">
+              <AnimatedList className="space-y-3.5 flex-1" stagger={0.07}>
                 {(() => {
                   const today = new Date();
                   const items = [
@@ -858,7 +875,7 @@ export default function Dashboard() {
                     </div>
                   ));
                 })()}
-              </div>
+              </AnimatedList>
 
               <Link href="/transactions">
                 <a className="mt-5 block text-center py-2.5 rounded-full text-[12px] font-semibold text-foreground bg-muted/40 hover:bg-muted transition-colors" data-testid="link-view-all-schedule">
