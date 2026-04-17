@@ -93,18 +93,18 @@
   /* Purple & White Theme */
   
   /* Background - Soft Light Gradient Base */
-  --background: #FAFBFF;
-  --foreground: #0D0D0D;
+  --background: #F6F7F9;
+  --foreground: #0A0A0F;
 
   /* Cards - Pure White with Dark Text */
-  --card: #ffffff;
-  --card-foreground: #1f2937;
+  --card: #FFFFFF;
+  --card-foreground: #0A0A0F;
 
-  --popover: #ffffff;
-  --popover-foreground: #1f2937;
+  --popover: #FFFFFF;
+  --popover-foreground: #0A0A0F;
   
-  /* Sidebar background - White */
-  --sidebar-background: #ffffff;
+  /* Sidebar background - Pure white floating card */
+  --sidebar-background: #FFFFFF;
 
   /* Primary - Purple */
   --primary: #8A2BE2;
@@ -125,8 +125,8 @@
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  --border: #e5e7eb;
-  --input: #e5e7eb;
+  --border: #E4E7EC;
+  --input: #E4E7EC;
   --ring: #8A2BE2;
 
   --radius: var(--brand-border-radius);
@@ -691,12 +691,18 @@ input[type="number"] {
 /* Hynex-style premium glass card */
 .hynex-card {
   background: hsl(var(--card));
-  border: 1px solid hsl(var(--border) / 0.55);
-  border-radius: 24px;
+  border: 1px solid #EAECF0;
+  border-radius: 20px;
   box-shadow:
-    0 1px 0 0 hsl(var(--background) / 0.6) inset,
-    0 8px 24px -12px rgba(0, 0, 0, 0.06);
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 1px 3px rgba(16, 24, 40, 0.06);
   transition: transform 220ms cubic-bezier(.2,.7,.2,1), box-shadow 220ms ease, border-color 220ms ease;
+}
+.hynex-card:hover {
+  border-color: #D0D5DD;
+  box-shadow:
+    0 4px 8px rgba(16, 24, 40, 0.04),
+    0 12px 24px -8px rgba(16, 24, 40, 0.08);
 }
 .dark .hynex-card {
   background:
