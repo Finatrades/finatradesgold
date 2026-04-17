@@ -405,11 +405,10 @@ export default function Dashboard() {
     }
     return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-muted/50 text-muted-foreground border border-border/60"><span className="w-1.5 h-1.5 rounded-full bg-gray-400" />{status}</span>;
   };
-
   return (
     <DashboardLayout>
       <motion.div
-        className="max-w-[1400px] mx-auto space-y-6 pb-8"
+        className="max-w-[1400px] mx-auto pb-10 space-y-6"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
@@ -424,14 +423,14 @@ export default function Dashboard() {
               animate={{ opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 340, damping: 26 } }}
               exit={{ opacity: 0, y: -10, scale: 0.96, transition: { duration: 0.22 } }}
             >
-              <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 border-amber-200/60 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
-                <Package className="h-4 w-4 text-amber-600" />
+              <Alert className="bg-gradient-to-r from-amber-50 via-amber-50/80 to-orange-50 dark:from-amber-950/30 dark:via-amber-950/20 dark:to-orange-950/30 border-amber-200/60 dark:border-amber-800/40 rounded-2xl shadow-sm" data-testid="alert-physical-deposit">
+                <Package className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                 <AlertDescription className="flex items-center justify-between">
-                  <span className="text-amber-800" data-testid="text-physical-deposit-count">
+                  <span className="text-amber-800 dark:text-amber-200" data-testid="text-physical-deposit-count">
                     You have <strong>{pendingPhysicalDeposits.length}</strong> physical gold deposit{pendingPhysicalDeposits.length > 1 ? 's' : ''} in progress
                   </span>
                   <Link href="/finavault">
-                    <Button variant="outline" size="sm" className="border-amber-300 text-amber-700 hover:bg-amber-100 rounded-xl font-semibold" data-testid="button-view-physical-status">
+                    <Button variant="outline" size="sm" className="border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/40 rounded-xl font-semibold" data-testid="button-view-physical-status">
                       View Status
                     </Button>
                   </Link>
@@ -441,18 +440,16 @@ export default function Dashboard() {
           )}
         </AnimatePresence>
 
+        {/* ───────────────── PAGE TITLE ───────────────── */}
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
             <h1 className="text-display-md font-display" data-testid="text-welcome">
               <span className="text-foreground">{getGreeting()}, </span>
               <span className="gradient-text-purple">{userName}</span>
             </h1>
-            <p className="text-muted-foreground text-[14px] mt-1.5 font-normal" style={{ letterSpacing: '-0.005em' }}>Your gold portfolio at a glance</p>
+            <p className="text-muted-foreground text-[14px] mt-1.5">Quick Action</p>
           </div>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
-            className="flex items-center gap-2.5 bg-card/70 dark:bg-card/50 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border/60 shadow-sm cursor-default"
-          >
+          <motion.div whileHover={{ scale: 1.02 }} className="flex items-center gap-2.5 bg-card/70 dark:bg-card/50 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border/60 shadow-sm cursor-default">
             <span className="kpi-label">ID</span>
             <span className="text-sm font-semibold text-foreground font-mono-ui tracking-tight">{finatradesId}</span>
             <button onClick={copyFinatradesId} className="p-1.5 hover:bg-primary/10 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
@@ -461,1497 +458,364 @@ export default function Dashboard() {
           </motion.div>
         </motion.section>
 
-        <motion.div variants={itemVariants} data-testid="quick-actions">
-          {/* Section header row */}
-          <div className="flex items-center gap-2.5 mb-3">
-            <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
-              <Zap className="w-3 h-3 text-purple-600" />
-            </div>
-            <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Quick Actions</span>
-            <div className="flex-1 h-px bg-muted" />
-          </div>
+        {/* ═══════════════════ TOP ROW: Quick Action + Card | Holdings | Performance ═══════════════════ */}
+        <div className="grid grid-cols-12 gap-4">
 
-          {/* Grouped pill rows */}
-          <div className="flex flex-wrap gap-2.5">
-
-            {/* ── Trade group (Buy / Sell) ── */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl" style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.12)' }}>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('buybar')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-purple-400 focus-visible:ring-offset-1"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)', boxShadow: '0 2px 10px rgba(124,58,237,0.30)' }}
-                data-testid="button-buy-gold">
+          {/* ── COL 1 (5/12): Quick Action pills + FinaCard visual ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 space-y-4">
+            {/* Quick Action pill row */}
+            <div className="flex flex-wrap gap-2" data-testid="quick-actions">
+              <button onClick={() => setActiveModal('deposit')} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-add-funds">
+                <Plus className="w-3.5 h-3.5" /> Add Funds
+              </button>
+              <button onClick={() => setShowTransferModal(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-pay-bill">
+                <Send className="w-3.5 h-3.5" /> Pay Bill
+              </button>
+              <Link href="/transactions"><a className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-reports"><ArrowUpRight className="w-3.5 h-3.5" /> Reports</a></Link>
+              <button onClick={() => setActiveModal('buybar')} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold text-white transition-all hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)', boxShadow: '0 2px 10px rgba(124,58,237,0.30)' }} data-testid="button-buy-gold">
                 <Package className="w-3.5 h-3.5" /> Buy Gold
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('sell')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-white transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-400 focus-visible:ring-offset-1"
-                style={{ background: 'linear-gradient(135deg,#e11d48,#f43f5e)', boxShadow: '0 2px 10px rgba(225,29,72,0.28)' }}
-                data-testid="button-sell-gold">
-                <TrendingUp className="w-3.5 h-3.5" /> Sell
-              </motion.button>
+              </button>
             </div>
 
-            {/* ── Transfer group (Withdraw / Send / Request) ── */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl bg-muted/50 border border-border/60">
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('withdraw')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-orange-50 hover:border-orange-200 hover:text-orange-700 transition-all duration-200"
-                data-testid="button-withdraw-gold">
-                <ArrowUpRight className="w-3.5 h-3.5 text-orange-500" /> Withdraw
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('send')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-blue-50 hover:border-blue-200 hover:text-blue-700 transition-all duration-200"
-                data-testid="button-send-gold">
-                <Send className="w-3.5 h-3.5 text-blue-500" /> Send
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('request')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-border bg-card text-foreground/85 hover:bg-cyan-50 hover:border-cyan-200 hover:text-cyan-700 transition-all duration-200"
-                data-testid="button-request-gold">
-                <ArrowDownLeft className="w-3.5 h-3.5 text-cyan-500" /> Request
-              </motion.button>
-            </div>
-
-            {/* ── Manage group (Lock / Deposit / Business) ── */}
-            <div className="flex items-center gap-1 p-1 rounded-2xl" style={{ background: 'rgba(245,158,11,0.05)', border: '1px solid rgba(245,158,11,0.14)' }}>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setActiveModal('lock')}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-emerald-200 bg-card text-emerald-700 hover:bg-emerald-50 transition-all duration-200"
-                data-testid="button-lock-gold">
-                <Shield className="w-3.5 h-3.5" /> Lock Price
-              </motion.button>
-              <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setDepositGoldModalOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold cursor-pointer text-amber-800 transition-all duration-200"
-                style={{ background: 'linear-gradient(135deg,rgba(251,191,36,0.18),rgba(245,158,11,0.14))', border: '1px solid rgba(245,158,11,0.30)' }}
-                data-testid="button-deposit-gold-quick">
-                <Vault className="w-3.5 h-3.5" /> Deposit Gold
-              </motion.button>
-              {isBusinessUser && (
-                <motion.button whileHover={{ scale: 1.04, y: -1 }} whileTap={{ scale: 0.97 }} onClick={() => setShowTradeModal(true)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-semibold cursor-pointer border border-indigo-200 bg-card text-indigo-700 hover:bg-indigo-50 transition-all duration-200"
-                  data-testid="button-create-trade-quick">
-                  <Landmark className="w-3.5 h-3.5" /> Create Trade
-                </motion.button>
-              )}
-            </div>
-
-          </div>
-        </motion.div>
-
-
-        {/* Zone 1 header */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
-            <Sparkles className="w-3 h-3 text-amber-600" />
-          </div>
-          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Portfolio Overview</span>
-          <div className="flex-1 h-px bg-muted" />
-        </motion.div>
-
-        <motion.div layout className="grid grid-cols-12 gap-4">
-
-          {/* ═══ LEFT COLUMN — Balance Hero + Wallets + Usage ═══ */}
-          <motion.div layout className="col-span-12 xl:col-span-5 flex flex-col gap-4" style={{ perspective: 1200 }}>
-
-            {/* Hero Balance Card */}
+            {/* FinaCard credit card visual */}
             <motion.div
-              ref={tiltHero.ref}
-              variants={itemVariants}
-              style={tiltHero.motionStyle}
-              onMouseMove={tiltHero.onMouseMove}
-              onMouseLeave={tiltHero.onMouseLeave}
-              className="relative rounded-[28px] overflow-hidden glass-hero"
-              data-testid="card-total-balance"
+              whileHover={{ y: -3, scale: 1.005 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+              className="relative h-[260px] rounded-3xl overflow-hidden cursor-pointer"
+              style={{
+                background: 'linear-gradient(135deg,#1a1a2e 0%,#0f0f1e 50%,#1a1a2e 100%)',
+                boxShadow: '0 20px 50px -15px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset',
+              }}
+              data-testid="card-finacard-visual"
+              onClick={() => window.location.href = '/finacard'}
             >
-              {/* Light mesh orbs */}
-              <div className="absolute inset-0 mesh-light pointer-events-none" />
-              <div className="absolute top-0 right-0 w-64 h-64 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(-20%, 25%)' }} />
-              {/* Top accent stripe */}
-              <div className="absolute top-0 left-0 right-0 h-[3px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
-              {/* Mouse-tracking glare */}
-              <motion.div className="pointer-events-none absolute inset-0 rounded-[28px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.32) 55%, transparent 80%)', opacity: tiltHero.glare, zIndex: 25 }} />
-              {/* Glass shine sweep */}
-              <div className="glass-shine-layer" />
+              {/* gold gradient orb */}
+              <div className="absolute -bottom-16 -left-12 w-72 h-72 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.45), transparent 70%)', filter: 'blur(8px)' }} />
+              <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.30), transparent 70%)', filter: 'blur(6px)' }} />
+              {/* shine */}
+              <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%)' }} />
 
-              <div className="relative z-10 p-6">
-                <div className="flex items-start justify-between mb-2">
-                  {/* Left: balance info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.12), rgba(168,85,247,0.08))', border: '1px solid rgba(124,58,237,0.18)' }}>
-                        <Sparkles className="w-4 h-4 text-purple-600" />
-                      </div>
-                      <span className="kpi-label text-foreground/70">Gold Balance</span>
-                      <button onClick={() => setBalanceVisible(!balanceVisible)} className="ml-auto p-1.5 hover:bg-primary/10 rounded-lg transition-colors" aria-label={balanceVisible ? 'Hide balance' : 'Show balance'} data-testid="button-toggle-balance">
-                        {balanceVisible ? <Eye className="w-4 h-4 text-muted-foreground/70" /> : <EyeOff className="w-4 h-4 text-muted-foreground/70" />}
-                      </button>
+              <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                <div className="flex items-start justify-between">
+                  <span className="text-white/90 text-[18px] font-bold italic tracking-wider">VISA</span>
+                  <span className="text-white/50 text-[11px] font-mono-ui tracking-widest">**** **** **** {finatradesId.slice(-4)}</span>
+                </div>
+
+                <div className="flex items-end justify-between">
+                  <div>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-3" style={{ background: 'rgba(212,175,55,0.18)', border: '1px solid rgba(212,175,55,0.30)' }}>
+                      <Sparkles className="w-3 h-3 text-amber-300" />
+                      <span className="text-[10px] font-bold text-amber-200 uppercase tracking-widest">FinaCard</span>
                     </div>
-                    {/* Gold grams — primary hero number, Stripe-style Geist display */}
-                    <motion.p
-                      className="kpi-value text-[52px] flex items-baseline gap-1.5"
-                      style={{ background: 'linear-gradient(135deg, #B8860B 0%, #D4AF37 50%, #f59e0b 100%)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}
-                      initial={{ opacity: 0, y: 6 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.5, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
-                      data-testid="text-total-balance"
-                    >
-                      {showBalance ? `${formatNumber(totals.walletGoldGrams || 0, 3)}` : hiddenValue}
-                      {showBalance && <span className="text-[24px] font-medium opacity-70">g</span>}
-                    </motion.p>
-                    {/* USD equivalent as sub-line */}
-                    <div className="flex items-center gap-2 mt-3">
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.18)' }}>
-                        <span className="text-purple-700 dark:text-purple-300 text-[12px] font-semibold font-mono-ui">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</span>
-                      </div>
-                      <span className="text-muted-foreground/70 text-[11px] font-medium">wallet value</span>
-                    </div>
-                    {walletGoldValue === 0 && (
-                      <motion.button
-                        initial={{ opacity: 0, y: 4 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.4 }}
-                        onClick={() => setActiveModal('deposit')}
-                        className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-bold cursor-pointer transition-all hover:scale-[1.03]"
-                        style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.22)', color: '#7c3aed' }}
-                        data-testid="cta-empty-balance"
-                      >
-                        <Plus className="w-3 h-3" /> Deposit funds to start trading →
-                      </motion.button>
-                    )}
+                    <p className="text-[11px] text-white/60 font-medium mb-1 flex items-center gap-1.5">
+                      Wallet Balance
+                      {totals.totalPortfolioUsd > 0 && (
+                        <span className="text-emerald-400 text-[10px] font-bold inline-flex items-center gap-0.5">
+                          <TrendingUp className="w-2.5 h-2.5" /> +{((unrealizedGainPct || 0)).toFixed(1)}%
+                        </span>
+                      )}
+                    </p>
+                    <p className="kpi-value text-white text-[34px]" data-testid="text-total-balance">
+                      {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                    </p>
                   </div>
-
-                  {/* Right: Gold ARC gauge — wallet grams only (matches balance shown) */}
-                  {(() => {
-                    const arcGrams = totals.walletGoldGrams || 0;
-                    const maxGrams = 500;
-                    const clampedGrams = Math.min(arcGrams, maxGrams);
-                    const pct = maxGrams > 0 ? clampedGrams / maxGrams : 0;
-                    const r = 54;
-                    const cx = 76;
-                    const cy = 62;
-                    const circumference = Math.PI * r;
-                    const filled = pct * circumference;
-                    const startX = cx - r;
-                    const startY = cy;
-                    const endX = cx + r;
-                    const endY = cy;
-                    const arcD = `M ${startX} ${startY} A ${r} ${r} 0 0 1 ${endX} ${endY}`;
-                    return (
-                      <div className="flex-shrink-0 ml-4 flex flex-col items-center">
-                        <svg width="152" height="76" viewBox="0 0 152 76" fill="none">
-                          <defs>
-                            <linearGradient id="goldArc" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#B8860B" />
-                              <stop offset="50%" stopColor="#D4AF37" />
-                              <stop offset="100%" stopColor="#F59E0B" />
-                            </linearGradient>
-                          </defs>
-                          {/* Track — purple tint, visible on light card */}
-                          <path
-                            d={arcD}
-                            stroke="rgba(124,58,237,0.12)"
-                            strokeWidth="10"
-                            strokeLinecap="round"
-                            fill="none"
-                          />
-                          {/* Filled arc */}
-                          {pct > 0 && (
-                            <path
-                              d={arcD}
-                              stroke="url(#goldArc)"
-                              strokeWidth="10"
-                              strokeLinecap="round"
-                              strokeDasharray={`${circumference}`}
-                              strokeDashoffset={circumference - filled}
-                              fill="none"
-                            />
-                          )}
-                          {/* Grams label — dark amber on light card */}
-                          <text x={cx} y={cy - 6} textAnchor="middle" fontSize="15" fontWeight="800" fill="#92400e">
-                            {showBalance ? `${formatNumber(arcGrams, 2)}g` : '••••'}
-                          </text>
-                          <text x={cx} y={cy + 10} textAnchor="middle" fontSize="9.5" fill="#9ca3af">
-                            Total Gold
-                          </text>
-                        </svg>
-                        <div className="flex items-center gap-1 mt-1">
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[12px] font-bold tracking-wider" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(180,130,20,0.30)', color: '#92400e' }}>
-                            🥇 GOLD
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
+                  <span className="text-white/40 text-[11px] font-mono-ui">12/27</span>
                 </div>
-
-                <div className="flex gap-3 mt-6">
-                  <button onClick={() => setActiveModal('deposit')} className="flex-1 flex items-center justify-center gap-2 text-white py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 50%, #a855f7 100%)', boxShadow: '0 4px 20px rgba(124,58,237,0.30), 0 1px 0 rgba(255,255,255,0.15) inset' }} data-testid="button-add-funds">
-                    <Plus className="w-4 h-4" />
-                    Add Funds
-                  </button>
-                  <button onClick={() => setShowTransferModal(true)} className="flex-1 flex items-center justify-center gap-2 text-purple-700 py-3 px-4 rounded-2xl text-sm font-bold transition-all hover:scale-[1.02] active:scale-[0.98]" style={{ background: 'rgba(124,58,237,0.08)', border: '1.5px solid rgba(124,58,237,0.22)', backdropFilter: 'blur(12px)' }} data-testid="button-int-transfer">
-                    <Send className="w-4 h-4" />
-                    Int. Transfer
-                  </button>
-                </div>
-
-                {/* ── Currency conversion strip ── */}
-                <div className="mt-5 pt-4 border-t border-border/40">
-                  <p className="kpi-label mb-3">Balance in currencies</p>
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* USD */}
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.15)' }} data-testid="wallet-usd">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0">$</div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] font-semibold text-blue-600 dark:text-blue-300 uppercase tracking-wider">USD</p>
-                        <p className="text-[13px] font-semibold text-blue-900 dark:text-blue-100 font-mono-ui leading-tight truncate">{showBalance ? `$${formatNumber(walletGoldValue)}` : '••••'}</p>
-                      </div>
-                    </div>
-                    {/* AED */}
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.18)' }} data-testid="wallet-aed">
-                      <div className="w-5 h-5 rounded-full bg-amber-500 flex items-center justify-center flex-shrink-0" style={{ fontSize: 8, color: 'white', fontWeight: 700 }}>د</div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] font-semibold text-amber-600 dark:text-amber-300 uppercase tracking-wider">AED</p>
-                        <p className="text-[13px] font-semibold text-amber-900 dark:text-amber-100 font-mono-ui leading-tight truncate flex items-center gap-0.5">
-                          <DirhamSymbol size="0.85em" />{showBalance ? formatNumber(walletGoldValue * 3.67) : '••••'}
-                        </p>
-                      </div>
-                    </div>
-                    {/* EUR */}
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl" style={{ background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.15)' }} data-testid="wallet-eur">
-                      <div className="w-5 h-5 rounded-full bg-indigo-500 flex items-center justify-center text-[9px] text-white font-bold flex-shrink-0">€</div>
-                      <div className="min-w-0">
-                        <p className="text-[9px] font-semibold text-indigo-600 dark:text-indigo-300 uppercase tracking-wider">EUR</p>
-                        <p className="text-[13px] font-semibold text-indigo-900 dark:text-indigo-100 font-mono-ui leading-tight truncate">€{showBalance ? formatNumber(walletGoldValue * 0.92) : '••••'}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
               </div>
             </motion.div>
-
-            {/* Pending Actions Strip — hidden when count is zero */}
-            <AnimatePresence>
-              <motion.div layout key="pending-strip" variants={itemVariants}>
-                <PendingItemsStrip />
-              </motion.div>
-            </AnimatePresence>
-
           </motion.div>
 
-          {/* ═══ CENTRE COLUMN — Gold Price Lock ═══ */}
-          <div className="col-span-12 xl:col-span-4 flex flex-col gap-4 self-start" style={{ perspective: 1200 }}>
-
-            {/* Gold Price Lock Status */}
-            <motion.div
-              ref={tiltPriceLock.ref}
-              variants={itemVariants}
-              style={tiltPriceLock.motionStyle}
-              onMouseMove={tiltPriceLock.onMouseMove}
-              onMouseLeave={tiltPriceLock.onMouseLeave}
-              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
-              data-testid="card-price-lock-status"
-            >
-              <div className="glass-shine-layer" />
-              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.28) 55%, transparent 80%)', opacity: tiltPriceLock.glare, zIndex: 25 }} />
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                  <Lock className="w-4 h-4 text-purple-600" />
-                </div>
+          {/* ── COL 2 (4/12): Gold Holdings & Metrics ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4">
+            <div className="hynex-card h-full p-6 flex flex-col" data-testid="card-gold-holdings">
+              <div className="flex items-start justify-between mb-4">
                 <div>
-                  <h3 className="text-[13px] font-bold text-foreground">Gold Price Lock</h3>
-                  <p className="text-[12px] text-muted-foreground/70">Protect your buying rate</p>
+                  <h3 className="text-[15px] font-semibold text-foreground">Gold Holdings & Metrics</h3>
+                </div>
+                <button className="p-1.5 hover:bg-muted rounded-lg" aria-label="More options"><span className="text-muted-foreground text-lg leading-none">⋯</span></button>
+              </div>
+
+              {/* primary value */}
+              <div className="flex items-baseline gap-3 mb-1">
+                <span className="kpi-value text-[36px] text-foreground" data-testid="text-gold-balance-usd">
+                  {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
+                </span>
+                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
+                  <TrendingUp className="w-2.5 h-2.5" />
+                  {totals.walletGoldGrams > 0 ? `${formatNumber(totals.walletGoldGrams, 3)}g` : '0g'}
+                </span>
+              </div>
+              <p className="text-[12px] text-muted-foreground mb-1">Wallet Balance</p>
+              <p className="text-[11px] text-muted-foreground/70">Gold-backed savings &amp; trade settlements</p>
+
+              {/* sub metrics grid */}
+              <div className="mt-5 pt-5 border-t border-border/40 grid grid-cols-2 gap-4">
+                <div data-testid="metric-vault">
+                  <p className="kpi-value text-[22px] text-foreground">
+                    {showBalance ? `$${formatNumber(finacardValue)}` : hiddenValue}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">FinaCard Balance</p>
+                </div>
+                <div data-testid="metric-bnsl">
+                  <p className="kpi-value text-[22px] text-foreground">
+                    {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">BNSL Savings</p>
                 </div>
               </div>
-              {activeFpgwLocks.length > 0 ? (
-                <div className="space-y-1.5 mb-3">
-                  {activeFpgwLocks.map((lock) => (
-                    <div key={lock.id} className="flex items-center justify-between p-3 rounded-xl bg-purple-50 border border-purple-100">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full bg-purple-500" />
-                        <div>
-                          <span className="text-[11px] font-bold text-purple-800">{lock.goldGrams.toFixed(4)} g</span>
-                          <span className="text-[12px] text-purple-600 ml-1">@ ${lock.lockedPriceUsd.toFixed(2)}/g</span>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold text-purple-700">${lock.lockedValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+
+              {/* avatar stack + actions */}
+              <div className="mt-auto pt-5 flex items-center justify-between">
+                <div className="flex -space-x-2">
+                  {[0,1,2,3].map(i => (
+                    <div key={i} className="w-7 h-7 rounded-full ring-2 ring-card flex items-center justify-center text-[10px] font-bold text-white" style={{ background: ['#7c3aed','#f59e0b','#10b981','#3b82f6'][i] }}>
+                      {['F','B','V','C'][i]}
                     </div>
                   ))}
                 </div>
-              ) : (
-                <div className="flex items-center justify-between p-3 rounded-xl bg-muted/50 border border-border/60 mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-gray-300" />
-                    <span className="text-[11px] text-muted-foreground font-medium">No active lock</span>
-                  </div>
-                  <span className="text-[12px] text-muted-foreground/70">Lock price for 24–72h</span>
+                <div className="flex gap-1.5">
+                  <button onClick={() => setActiveModal('deposit')} className="w-7 h-7 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center" aria-label="Add" data-testid="button-add-deposit">
+                    <Plus className="w-3.5 h-3.5 text-foreground" />
+                  </button>
+                  <button onClick={() => setActiveModal('withdraw')} className="w-7 h-7 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center" aria-label="Remove" data-testid="button-withdraw-quick">
+                    <span className="text-foreground text-base leading-none">−</span>
+                  </button>
                 </div>
-              )}
-              <div className="flex items-center justify-between text-[12px] text-muted-foreground mb-3 font-medium">
-                <span>Current rate</span>
-                <span className="font-bold text-foreground num-metric">${formatNumber(goldPrice, 2)}/g</span>
               </div>
-              <motion.button
-                whileHover={{ scale: 1.02, y: -1 }}
-                whileTap={{ scale: 0.97 }}
-                onClick={() => setActiveModal('lock')}
-                className="w-full py-3 rounded-2xl text-[13px] font-bold text-white transition-all flex items-center justify-center gap-2"
-                style={{ background: 'linear-gradient(135deg, #6d28d9, #7c3aed, #9333ea)', boxShadow: '0 6px 24px rgba(109,40,217,0.38), 0 1px 0 rgba(255,255,255,0.12) inset' }}
-                data-testid="button-lock-price-card"
-              >
-                <Shield className="w-4 h-4" />
-                Lock Gold Price
-                <span className="ml-auto text-purple-200 text-[11px] font-semibold">24–72h →</span>
-              </motion.button>
-            </motion.div>
-
-            {/* ── Deposit Gold for Sale Card ── */}
-            <motion.div
-              ref={tiltDepositGold.ref}
-              variants={itemVariants}
-              style={tiltDepositGold.motionStyle}
-              onMouseMove={tiltDepositGold.onMouseMove}
-              onMouseLeave={tiltDepositGold.onMouseLeave}
-              className="glass-card-elevated rounded-[20px] p-6 relative overflow-hidden"
-              data-testid="card-deposit-gold-sale"
-            >
-              <div className="glass-shine-layer" />
-              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,215,0,0.22) 55%, transparent 80%)', opacity: tiltDepositGold.glare, zIndex: 25 }} />
-              {/* Subtle gold mesh accent */}
-              <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 80% 10%, rgba(251,191,36,0.10) 0%, transparent 65%)' }} />
-              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #d97706, #f59e0b, #fbbf24)' }} />
-
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}>
-                      <Vault className="w-4 h-4 text-amber-700" />
-                    </div>
-                    <div>
-                      <h3 className="text-[13px] font-bold text-foreground">Deposit Physical Gold</h3>
-                      <p className="text-[12px] text-muted-foreground/70">Submit physical gold to vault</p>
-                    </div>
-                  </div>
-                  <Link href="/physical-gold-deposit">
-                    <button className="text-[11px] font-semibold text-amber-700 hover:text-amber-900 px-2.5 py-1 rounded-lg hover:bg-amber-50 border border-amber-200/60 transition-all" data-testid="link-deposit-gold-view-all">
-                      View all
-                    </button>
-                  </Link>
-                </div>
-
-                {/* Live spot price + vault balance */}
-                <div className="grid grid-cols-2 gap-2.5 mb-4">
-                  <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
-                    <div className="flex items-center gap-1.5 mb-0.5">
-                      <span className="relative flex h-2 w-2">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
-                      </span>
-                      <p className="label-caps text-amber-700/70">Live Spot Price</p>
-                    </div>
-                    <p className="text-[15px] font-extrabold text-amber-900 num-metric">${formatNumber(goldPrice, 2)}<span className="text-[11px] font-semibold text-amber-600">/g</span></p>
-                  </div>
-                  <div className="rounded-xl px-3 py-2.5" style={{ background: 'rgba(251,191,36,0.08)', border: '1px solid rgba(251,191,36,0.20)' }}>
-                    <p className="label-caps text-amber-700/70">Gold Vault Balance</p>
-                    <p className="text-[15px] font-extrabold text-amber-900 num-metric mt-0.5">{formatNumber(totals.vaultGoldGrams || 0, 3)}<span className="text-[11px] font-semibold text-amber-600">g</span></p>
-                  </div>
-                </div>
-
-                {/* Description */}
-                <p className="text-[12px] text-muted-foreground mb-4 leading-relaxed">
-                  Deposit physical gold bars, coins, or raw gold into our secure vault. Receive digital gold credits upon verification.
-                </p>
-
-                {/* Primary CTA */}
-                <motion.button
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => setDepositGoldModalOpen(true)}
-                  className="w-full py-2.5 rounded-xl text-[12px] font-bold text-white transition-all"
-                  style={{ background: 'linear-gradient(135deg, #d97706, #f59e0b)', boxShadow: '0 4px 16px rgba(217,119,6,0.25)' }}
-                  data-testid="button-deposit-gold-card"
-                >
-                  Deposit Gold →
-                </motion.button>
-              </div>
-            </motion.div>
-
-          </div>
-
-          {/* ═══ RIGHT COLUMN — FinaCard + Referral ═══ */}
-          <div className="col-span-12 xl:col-span-3 flex flex-col gap-4 self-start" style={{ perspective: 1200 }}>
-
-            {/* FinaCard — Dark glass metal card */}
-            <Link href="/finacard">
-              <motion.div
-                ref={tiltFinaCard.ref}
-                variants={itemVariants}
-                onMouseMove={tiltFinaCard.onMouseMove}
-                onMouseLeave={tiltFinaCard.onMouseLeave}
-                className="relative w-full aspect-[1.586/1] rounded-[22px] overflow-hidden cursor-pointer"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(17,7,40,0.92) 0%, rgba(36,14,72,0.88) 40%, rgba(10,5,30,0.93) 75%, rgba(36,14,72,0.88) 100%)',
-                  backdropFilter: 'blur(40px) saturate(180%)',
-                  WebkitBackdropFilter: 'blur(40px) saturate(180%)',
-                  border: '1px solid rgba(139,92,246,0.30)',
-                  boxShadow: '0 8px 40px rgba(109,40,217,0.30), 0 2px 8px rgba(109,40,217,0.15), inset 0 1px 0 rgba(255,255,255,0.07)',
-                  ...tiltFinaCard.motionStyle,
-                }}
-                data-testid="card-dashboard-finacard"
-              >
-                {/* Purple→gold colour mesh matching orbs */}
-                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 15% 20%, rgba(139,92,246,0.28) 0%, transparent 55%)' }} />
-                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 90% 85%, rgba(212,175,55,0.22) 0%, transparent 50%)' }} />
-                <div className="absolute inset-0 pointer-events-none" style={{ background: 'radial-gradient(ellipse at 85% 10%, rgba(168,85,247,0.16) 0%, transparent 45%)' }} />
-                {/* Top accent stripe — purple→gold */}
-                <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[22px]" style={{ background: 'linear-gradient(90deg, #7c3aed, #a855f7, #D4AF37, #a855f7, #7c3aed)', backgroundSize: '200% 100%', animation: 'shimmer 4s ease-in-out infinite' }} />
-                {/* Holo shimmer overlay */}
-                <div className="absolute inset-0 holo-shimmer opacity-30" />
-                {/* Glass shine sweep */}
-                <div className="absolute inset-0 pointer-events-none" style={{ background: 'linear-gradient(125deg, rgba(255,255,255,0.10) 0%, transparent 40%, rgba(255,255,255,0.04) 100%)' }} />
-                {/* Mouse glare */}
-                <motion.div className="pointer-events-none absolute inset-0 rounded-[22px]" style={{ background: 'linear-gradient(105deg, transparent 25%, rgba(168,85,247,0.28) 50%, rgba(212,175,55,0.16) 65%, transparent 85%)', opacity: tiltFinaCard.glare, zIndex: 25 }} />
-
-                <div className="relative z-10 p-5 h-full flex flex-col justify-between">
-                  {/* Top row */}
-                  <div className="flex justify-between items-start">
-                    <div className="flex items-center gap-2">
-                      <img src={finatradesLogo} alt="Finatrades" className="h-8 brightness-0 invert opacity-90" loading="lazy" />
-                    </div>
-                    <div className="flex items-center gap-1.5 rounded-full px-2.5 py-1" style={{ background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.30)' }}>
-                      <CreditCard className="w-3 h-3 text-purple-300/80" />
-                      <span className="text-purple-200/80 text-[11px] font-bold tracking-wide">GOLD CARD</span>
-                    </div>
-                  </div>
-
-                  {/* Middle — chip + NFC */}
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-7 rounded-[4px] flex items-center justify-center relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #d4af37, #f5e17a, #b8941f)', boxShadow: '0 2px 8px rgba(212,175,55,0.40)' }}>
-                      <div className="absolute inset-0 flex flex-col justify-center gap-[3px] py-[3px]">
-                        <div className="h-px bg-yellow-900/25 mx-1.5" />
-                        <div className="h-px bg-yellow-900/25 mx-1.5" />
-                        <div className="h-px bg-yellow-900/25 mx-1.5" />
-                      </div>
-                      <div className="absolute inset-y-0 left-[38%] right-[38%] border-x border-yellow-900/20 rounded-sm" />
-                    </div>
-                    <Zap className="w-4 h-4 rotate-90" style={{ color: 'rgba(212,175,55,0.40)' }} />
-                  </div>
-
-                  {/* Card number dots */}
-                  <p className="font-mono text-[13px] tracking-[0.28em]" style={{ color: 'rgba(255,255,255,0.55)' }}>•••• •••• •••• ••••</p>
-
-                  {/* Bottom row */}
-                  <div className="flex justify-between items-end">
-                    <div>
-                      <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: 'rgba(139,92,246,0.65)' }}>Card Holder</p>
-                      <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: 'rgba(255,255,255,0.88)' }}>
-                        {user?.firstName || ''} {user?.lastName || ''}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[9px] uppercase tracking-widest mb-0.5" style={{ color: 'rgba(139,92,246,0.65)' }}>Balance</p>
-                      <p className="text-[13px] font-extrabold" style={{ color: 'rgba(255,255,255,0.92)' }}>
-                        {showBalance ? `${formatNumber(totals.finacardGoldGrams || 0, 3)}g` : '•••••'}
-                      </p>
-                      <p className="text-[10px] font-medium" style={{ color: 'rgba(212,175,55,0.65)' }}>
-                        {showBalance ? `≈ $${formatNumber(finacardValue)}` : ''}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            </Link>
-
-            {/* Referral Card */}
-            <motion.div
-              ref={tiltReferral.ref}
-              variants={itemVariants}
-              style={tiltReferral.motionStyle}
-              onMouseMove={tiltReferral.onMouseMove}
-              onMouseLeave={tiltReferral.onMouseLeave}
-              className="relative rounded-[20px] p-6 overflow-hidden glass-indigo"
-              data-testid="card-referral"
-            >
-              <div className="absolute inset-0 mesh-indigo pointer-events-none" />
-              <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
-              <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.08), transparent)', transform: 'translate(-20%, 25%)' }} />
-              {/* Top accent */}
-              <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #6366f1, #8b5cf6, #a855f7)' }} />
-              <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(168,85,247,0.22) 55%, transparent 80%)', opacity: tiltReferral.glare, zIndex: 25 }} />
-              <div className="relative z-10">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(99,102,241,0.12), rgba(139,92,246,0.08))', border: '1px solid rgba(99,102,241,0.20)' }}>
-                      <Gift className="w-4 h-4 text-indigo-600" />
-                    </div>
-                    <div>
-                      <p className="text-[12px] font-bold text-foreground">Refer & Earn</p>
-                      <p className="text-[11px] text-muted-foreground/70 font-medium">Invite friends, earn rewards</p>
-                    </div>
-                  </div>
-                  <Link href="/referrals">
-                    <button className="text-[12px] text-indigo-600 hover:text-indigo-800 transition-colors font-bold flex items-center gap-0.5" data-testid="link-referral-full">
-                      View all <ChevronRight className="w-3 h-3" />
-                    </button>
-                  </Link>
-                </div>
-                {referralData?.referralCode ? (
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 min-w-0 rounded-xl px-3 py-2.5" style={{ background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.14)' }}>
-                        <p className="text-[11px] text-muted-foreground/70 font-medium mb-0.5">Your referral code</p>
-                        <p className="text-[13px] font-extrabold text-indigo-800 tracking-widest truncate" data-testid="text-referral-code">{referralData.referralCode}</p>
-                      </div>
-                      <button
-                        onClick={async () => {
-                          const link = `${window.location.origin}/register?ref=${referralData.referralCode}`;
-                          await navigator.clipboard.writeText(link);
-                          setCopiedRef(true);
-                          setTimeout(() => setCopiedRef(false), 2000);
-                        }}
-                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors shrink-0"
-                        style={{ background: 'rgba(99,102,241,0.09)', border: '1px solid rgba(99,102,241,0.18)' }}
-                        data-testid="button-copy-referral"
-                      >
-                        {copiedRef ? <Check className="w-4 h-4 text-emerald-600" /> : <Copy className="w-4 h-4 text-indigo-500" />}
-                      </button>
-                    </div>
-                    <div className="flex gap-2">
-                      <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(99,102,241,0.05)', border: '1px solid rgba(99,102,241,0.10)' }}>
-                        <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <Users className="w-3 h-3 text-indigo-500" />
-                          <p className="text-[11px] text-muted-foreground/70 font-medium">Referred</p>
-                        </div>
-                        <p className="text-[16px] font-extrabold text-indigo-800">{referralData.stats?.totalReferrals ?? 0}</p>
-                      </div>
-                      <div className="flex-1 rounded-xl px-3 py-2.5 text-center" style={{ background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.12)' }}>
-                        <div className="flex items-center gap-1 mb-0.5 justify-center">
-                          <TrendingUp className="w-3 h-3 text-emerald-600" />
-                          <p className="text-[11px] text-muted-foreground/70 font-medium">Earned</p>
-                        </div>
-                        <p className="text-[16px] font-extrabold text-emerald-700">${formatNumber(referralData.stats?.totalBonusEarned ?? 0)}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-center py-2">
-                    <p className="text-[11px] text-muted-foreground/70">No referral code yet</p>
-                    <Link href="/referrals">
-                      <button className="mt-2 px-4 py-1.5 rounded-xl text-white text-[11px] font-bold transition-colors" style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)' }}>
-                        Get your code
-                      </button>
-                    </Link>
-                  </div>
-                )}
-              </div>
-            </motion.div>
-
-          </div>
-        </motion.div>
-
-        {/* ═══ ZONE 2 — BUSINESS MODULES (business users only) ═══ */}
-        {isBusinessUser && (
-          <motion.section variants={itemVariants}>
-            {/* Section label */}
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-lg bg-blue-600/10 border border-blue-200 flex items-center justify-center">
-                  <Landmark className="w-3.5 h-3.5 text-blue-600" />
-                </div>
-                <span className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">Business Modules</span>
-              </div>
-              <div className="flex-1 h-px bg-muted" />
             </div>
+          </motion.div>
 
-            {/* Cards row — BNSL (left) + FinaBridge Quick Trade (right) */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4" style={{ perspective: 1200 }}>
+          {/* ── COL 3 (3/12): Smart Gold Performance — Donut + Area chart ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-3">
+            <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-gold-performance">
+              <div className="flex items-start justify-between mb-3">
+                <h3 className="text-[14px] font-semibold text-foreground">Gold Performance</h3>
+                <select value={chartPeriod} onChange={e => setChartPeriod(e.target.value as any)} className="text-[11px] font-semibold bg-muted/60 border border-border/60 rounded-full px-2.5 py-1 cursor-pointer focus:outline-none" data-testid="select-chart-period">
+                  <option value="7D">Weekly</option>
+                  <option value="30D">Monthly</option>
+                  <option value="90D">Quarterly</option>
+                </select>
+              </div>
 
-              {/* ── BNSL card — Quick Join or Yield Summary ── */}
-              {totals.activeBnslPlans === 0 ? (
-                <motion.div
-                  ref={tiltBNSL.ref}
-                  variants={itemVariants}
-                  style={tiltBNSL.motionStyle}
-                  onMouseMove={tiltBNSL.onMouseMove}
-                  onMouseLeave={tiltBNSL.onMouseLeave}
-                  className="relative rounded-[20px] p-6 overflow-hidden h-full glass-teal"
-                  data-testid="card-quick-bnsl"
-                >
-                  <div className="absolute inset-0 mesh-teal pointer-events-none" />
-                  <div className="absolute top-0 right-0 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
-                  <div className="absolute -bottom-4 -left-4 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.09), transparent)', transform: 'translate(0,0)' }} />
-                  {/* Top accent */}
-                  <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
-                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(16,185,129,0.22) 55%, transparent 80%)', opacity: tiltBNSL.glare, zIndex: 25 }} />
-                  <div className="relative z-10 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <div className="w-7 h-7 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(13,148,136,0.14), rgba(16,185,129,0.08))', border: '1px solid rgba(13,148,136,0.22)' }}>
-                            <Zap className="w-3.5 h-3.5 text-teal-600" />
-                          </div>
-                          <p className="text-[13px] font-extrabold text-foreground">Gold Yield Plan</p>
-                        </div>
-                        <p className="text-[12px] text-muted-foreground font-medium">Earn passive income on your gold</p>
-                      </div>
-                      <div className="px-2.5 py-1 rounded-full" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
-                        <span className="text-[11px] font-extrabold text-amber-700">Up to 8%</span>
-                      </div>
-                    </div>
-                    <div className="space-y-1.5 mb-4 flex-1">
-                      {[
-                        { icon: '✦', text: 'Earn margin yield on locked gold' },
-                        { icon: '✦', text: 'Fixed rate for plan duration' },
-                        { icon: '✦', text: 'Flexible 3 – 12 month terms' },
-                      ].map((item, i) => (
-                        <div key={i} className="flex items-center gap-2">
-                          <span className="text-teal-500 text-[12px]">{item.icon}</span>
-                          <span className="text-[11px] text-muted-foreground font-medium">{item.text}</span>
+              {/* Donut */}
+              <div className="relative flex items-center justify-center mb-1" style={{ height: 110 }}>
+                <svg width="110" height="110" viewBox="0 0 110 110">
+                  <circle cx="55" cy="55" r="42" fill="none" stroke="currentColor" strokeWidth="9" className="text-muted/40" />
+                  {/* primary ring (purple) */}
+                  <circle cx="55" cy="55" r="42" fill="none" stroke="url(#perfPurple)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${(walletGoldValue / Math.max(totalPortfolioValue, 1)) * 263.9} 263.9`} transform="rotate(-90 55 55)" />
+                  {/* gold ring */}
+                  <circle cx="55" cy="55" r="32" fill="none" stroke="url(#perfGold)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(finacardValue / Math.max(totalPortfolioValue, 1)) * 201} 201`} transform="rotate(-90 55 55)" />
+                  <defs>
+                    <linearGradient id="perfPurple" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a855f7" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
+                    <linearGradient id="perfGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#D4AF37" /></linearGradient>
+                  </defs>
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="kpi-value text-[16px] text-foreground">{totalPortfolioValue > 0 ? `${Math.round((walletGoldValue / totalPortfolioValue) * 100)}%` : '0%'}</span>
+                </div>
+              </div>
+
+              {/* Legend */}
+              <div className="grid grid-cols-2 gap-1 text-[10px] mb-2">
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-muted-foreground">Wallet</span></div>
+                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /><span className="text-muted-foreground">FinaCard</span></div>
+              </div>
+
+              {/* Area chart */}
+              <div className="flex-1 -mx-1" style={{ minHeight: 70 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
+                    <defs>
+                      <linearGradient id="perfArea" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
+                        <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <Area type="monotone" dataKey="price" stroke="#22d3ee" strokeWidth={2} fill="url(#perfArea)" />
+                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 11 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground mt-1 text-center">
+                ${formatNumber(goldPrice)}/g · <span className="text-emerald-500 font-semibold">+{(unrealizedGainPct || 0).toFixed(1)}%</span> growth
+              </p>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ═══════════════════ BOTTOM ROW: Tracking + Schedule ═══════════════════ */}
+        <div className="grid grid-cols-12 gap-4">
+
+          {/* ── Portfolio Allocation Tracking + Transactions (8/12) ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-8">
+            <div className="hynex-card p-6" data-testid="card-portfolio-tracking">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Portfolio Allocation Tracking</h2>
+              </div>
+
+              {/* 4 progress segments */}
+              {(() => {
+                const segs = [
+                  { label: 'Wallet',    value: walletGoldValue,    color: '#10b981' },
+                  { label: 'FinaCard',  value: finacardValue,      color: '#84cc16' },
+                  { label: 'BNSL',      value: bnslValue,          color: '#facc15' },
+                  { label: 'FinaBridge',value: finaBridgeValue,    color: '#e5e7eb' },
+                ];
+                const total = Math.max(segs.reduce((s, x) => s + x.value, 0), 1);
+                return (
+                  <div className="space-y-2.5 mb-5">
+                    <div className="grid grid-cols-4 gap-3">
+                      {segs.map(s => (
+                        <div key={s.label}>
+                          <p className="kpi-value text-[20px] text-foreground">{Math.round((s.value / total) * 100)}%</p>
                         </div>
                       ))}
                     </div>
-                    {bnslPlans.length > 0 ? (
-                      <Link href="/bnsl">
-                        <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-card hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
-                          Manage My Plans <ChevronRight className="w-3.5 h-3.5" />
-                        </motion.button>
-                      </Link>
-                    ) : (
-                      <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setShowBnslModal(true)} className="w-full py-2.5 rounded-xl text-[12px] font-bold text-teal-800 bg-card hover:bg-amber-50 transition-colors flex items-center justify-center gap-1.5" data-testid="button-quick-join-bnsl">
-                        Join Plan Now <ChevronRight className="w-3.5 h-3.5" />
-                      </motion.button>
-                    )}
-                  </div>
-                </motion.div>
-              ) : (
-                <Link href="/bnsl">
-                  <motion.div
-                    ref={tiltBNSLSummary.ref}
-                    variants={itemVariants}
-                    style={tiltBNSLSummary.motionStyle}
-                    onMouseMove={tiltBNSLSummary.onMouseMove}
-                    onMouseLeave={tiltBNSLSummary.onMouseLeave}
-                    className="relative rounded-[20px] p-6 overflow-hidden cursor-pointer group h-full glass-teal"
-                    data-testid="card-bnsl-summary"
-                  >
-                    <div className="absolute inset-0 mesh-teal pointer-events-none" />
-                    <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(13,148,136,0.12), transparent)', transform: 'translate(30%, -30%)' }} />
-                    {/* Top accent */}
-                    <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #0d9488, #10b981, #D4AF37)' }} />
-                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(16,185,129,0.22) 55%, transparent 80%)', opacity: tiltBNSLSummary.glare, zIndex: 25 }} />
-                    <div className="relative z-10 h-full flex flex-col">
-                      <div className="flex items-center justify-between mb-4">
-                        <span className="text-[12px] text-teal-800 font-bold tracking-wide">BNSL Yield Plans</span>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full" style={{ background: 'rgba(13,148,136,0.10)', border: '1px solid rgba(13,148,136,0.20)' }}>
-                          <Zap className="w-3 h-3 text-teal-600" />
-                          <span className="text-[12px] font-bold text-teal-700">{totals.activeBnslPlans || 0} Active</span>
+                    <div className="grid grid-cols-4 gap-3">
+                      {segs.map(s => (
+                        <div key={s.label} className="h-2 rounded-full overflow-hidden bg-muted/60">
+                          <div className="h-full rounded-full" style={{ width: `${Math.max((s.value / total) * 100, 3)}%`, background: s.color, boxShadow: `0 0 12px ${s.color}55` }} />
                         </div>
-                      </div>
-                      <div className="flex items-center gap-4 mb-4">
-                        <div className="relative flex-shrink-0 flex flex-col items-center">
-                          <svg width="76" height="44" viewBox="0 0 76 44">
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="rgba(13,148,136,0.30)" strokeWidth="7" strokeLinecap="round" />
-                            <path d="M 6 40 A 32 32 0 0 1 70 40" fill="none" stroke="#D4AF37" strokeWidth="7" strokeLinecap="round"
-                              strokeDasharray={`${bnslArcDash} ${ARC_LEN}`}
-                              strokeDashoffset="0"
-                            />
-                          </svg>
-                          <div className="absolute top-[18px] left-0 right-0 flex flex-col items-center">
-                            <span className="text-[13px] font-extrabold text-teal-800 leading-none">{Math.round(bnslPlanProgress)}%</span>
-                            <span className="text-[11px] text-muted-foreground/70 font-medium leading-none mt-0.5">complete</span>
-                          </div>
-                        </div>
-                        <div className="flex-1 grid grid-cols-2 gap-x-3 gap-y-2">
-                          <div>
-                            <span className="label-caps">Locked Gold</span>
-                            <p className="text-[15px] font-extrabold text-foreground leading-tight num-metric mt-0.5">{formatNumber(totals.bnslLockedGrams || 0, 3)}g</p>
-                          </div>
-                          <div>
-                            <span className="label-caps">Total Earned</span>
-                            <p className="text-[15px] font-extrabold text-amber-700 leading-tight num-metric mt-0.5">${formatNumber(totals.bnslTotalProfit || 0)}</p>
-                          </div>
-                          <div>
-                            <span className="label-caps">Yield Rate</span>
-                            <p className="text-[13px] font-bold text-emerald-700 leading-tight num-metric mt-0.5">
-                              {firstActivePlan ? parseFloat(firstActivePlan.agreedMarginAnnualPercent || '0').toFixed(1) : '0'}% p.a.
-                            </p>
-                          </div>
-                          <div>
-                            <span className="label-caps">Next Payout</span>
-                            <p className="text-[13px] font-bold text-foreground leading-tight num-metric mt-0.5">{bnslDaysToNextPayout}d</p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mb-3 flex-1">
-                        <div className="flex items-center justify-between mb-1.5">
-                          <span className="text-[12px] text-muted-foreground font-medium">Q{bnslCurrentQuarter} Payout Progress</span>
-                          <span className="text-[12px] text-amber-700 font-bold">${formatNumber(bnslQuarterlyPayout)} due</span>
-                        </div>
-                        <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: 'rgba(13,148,136,0.12)' }}>
-                          <motion.div
-                            className="h-full rounded-full"
-                            style={{ background: 'linear-gradient(90deg, #0d9488, #D4AF37)' }}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${bnslQuarterProgress}%` }}
-                            transition={{ duration: 1, ease: 'easeOut' }}
-                          />
-                        </div>
-                        <p className="text-[11px] text-muted-foreground/70 mt-1">{bnslDaysIntoQuarter} / 90 days into this quarter</p>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-teal-600 group-hover:text-teal-800 transition-colors">
-                        <span className="text-[11px] font-semibold">View plans</span>
-                        <ChevronRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                      </div>
+                      ))}
                     </div>
-                  </motion.div>
-                </Link>
-              )}
-
-              {/* ── FinaBridge Quick Trade Card ── */}
-              <motion.div
-                ref={tiltTrade.ref}
-                variants={itemVariants}
-                style={tiltTrade.motionStyle}
-                onMouseMove={tiltTrade.onMouseMove}
-                onMouseLeave={tiltTrade.onMouseLeave}
-                data-testid="card-quick-trade"
-                className="relative rounded-[20px] p-5 overflow-hidden h-full glass-indigo"
-              >
-                  <div className="absolute inset-0 mesh-indigo pointer-events-none" />
-                  <div className="absolute top-0 right-0 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.10), transparent)', transform: 'translate(30%, -30%)' }} />
-                  {/* Top accent */}
-                  <div className="absolute top-0 left-0 right-0 h-[2px] rounded-t-[20px]" style={{ background: 'linear-gradient(90deg, #3b82f6, #6366f1, #8b5cf6)' }} />
-                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(99,102,241,0.22) 55%, transparent 80%)', opacity: tiltTrade.glare, zIndex: 25 }} />
-                  <div className="relative z-10 h-full flex flex-col">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(59,130,246,0.12), rgba(99,102,241,0.08))', border: '1px solid rgba(59,130,246,0.20)' }}>
-                          <ArrowLeftRight className="w-4 h-4 text-blue-600" />
+                    <div className="grid grid-cols-4 gap-3">
+                      {segs.map(s => (
+                        <div key={s.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                          <span className="w-2 h-2 rounded-sm" style={{ background: s.color }} /> {s.label}
                         </div>
-                        <div>
-                          <h3 className="text-foreground font-extrabold text-[14px] leading-tight">Trade Finance</h3>
-                          <p className="text-blue-500 text-[12px] font-medium">FinaBridge Platform</p>
-                        </div>
-                      </div>
-                      {finaBridge.activeCases > 0 && (
-                        <div className="text-right">
-                          <span className="text-[22px] font-extrabold text-blue-700 leading-none">{finaBridge.activeCases}</span>
-                          <p className="text-[12px] text-muted-foreground/70 leading-tight">active trades</p>
-                        </div>
-                      )}
-                    </div>
-                    {finaBridge.activeCases === 0 ? (
-                      <ul className="space-y-1.5 mb-4 flex-1">
-                        {[
-                          'Settle international trades in physical gold',
-                          'Global buyer-seller matching network',
-                          'Secure gold escrow & deal room',
-                        ].map(txt => (
-                          <li key={txt} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                            <span className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-                            {txt}
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-2 mb-4 flex-1">
-                        <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[12px] text-muted-foreground/70 font-medium">Volume</p>
-                          <p className="text-[14px] font-extrabold text-blue-800">${formatNumber(finaBridge.tradeVolume)}</p>
-                        </div>
-                        <div className="rounded-lg px-2.5 py-2" style={{ background: 'rgba(59,130,246,0.07)', border: '1px solid rgba(59,130,246,0.12)' }}>
-                          <p className="text-[12px] text-muted-foreground/70 font-medium">Gold Locked</p>
-                          <p className="text-[14px] font-extrabold text-blue-800">{formatNumber(finaBridge.goldGrams)}g</p>
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex gap-2 mt-auto">
-                      {finaBridge.activeCases === 0 ? (
-                        <button
-                          onClick={() => setShowTradeModal(true)}
-                          className="flex-1 flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
-                          style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 3px 14px rgba(59,130,246,0.28)' }}
-                          data-testid="button-quick-trade-create"
-                        >
-                          <Landmark className="w-3.5 h-3.5" />
-                          Create Trade
-                        </button>
-                      ) : (
-                        <Link href="/finabridge" className="flex-1">
-                          <button
-                            className="w-full flex items-center justify-center gap-1.5 rounded-xl py-2 text-[12px] font-bold text-white transition-all hover:scale-[1.02] active:scale-95"
-                            style={{ background: 'linear-gradient(135deg, #3b82f6, #6366f1)', boxShadow: '0 3px 14px rgba(59,130,246,0.28)' }}
-                            data-testid="button-quick-trade-view"
-                          >
-                            <ArrowLeftRight className="w-3.5 h-3.5" />
-                            View My Trades
-                          </button>
-                        </Link>
-                      )}
-                      <Link href="/finabridge">
-                        <button
-                          className="flex items-center justify-center gap-1 rounded-xl px-3 py-2 text-[11px] font-semibold text-blue-600 transition-all hover:scale-[1.02]"
-                          style={{ background: 'rgba(59,130,246,0.08)', border: '1px solid rgba(59,130,246,0.18)' }}
-                          data-testid="button-quick-trade-manage"
-                        >
-                          Manage
-                          <ChevronRight className="w-3 h-3" />
-                        </button>
-                      </Link>
+                      ))}
                     </div>
                   </div>
-              </motion.div>
-
-            </div>
-
-            {/* FinaBridge Trade Stats — full-width below, only when active trades */}
-            {finaBridge && (finaBridge.activeCases > 0 || finaBridge.tradeVolume > 0) && (
-              <Link href="/finabridge">
-                <motion.div
-                  ref={tiltFinaBridge.ref}
-                  variants={itemVariants}
-                  style={{ background: 'linear-gradient(135deg, #1e40af, #3b82f6, #60a5fa)', ...tiltFinaBridge.motionStyle }}
-                  onMouseMove={tiltFinaBridge.onMouseMove}
-                  onMouseLeave={tiltFinaBridge.onMouseLeave}
-                  className="relative rounded-[20px] p-5 overflow-hidden cursor-pointer group"
-                  data-testid="card-finabridge-summary"
-                >
-                  <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.20) 55%, transparent 80%)', opacity: tiltFinaBridge.glare, zIndex: 25 }} />
-                  <div className="absolute inset-0 holo-shimmer" />
-                  <div className="relative z-10 flex items-center justify-between">
-                    <div>
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-[12px] text-white/80 font-semibold tracking-wide">FinaBridge</span>
-                        <Landmark className="w-4 h-4 text-white/60" />
-                      </div>
-                      <div className="flex items-center gap-8">
-                        <div>
-                          <span className="text-[12px] text-white/50 font-medium">Active Cases</span>
-                          <p className="text-[24px] font-extrabold text-white leading-none">{finaBridge.activeCases}</p>
-                        </div>
-                        <div>
-                          <span className="text-[12px] text-white/50 font-medium">Trade Volume</span>
-                          <p className="text-[20px] font-extrabold text-white leading-none">${formatNumber(finaBridge.tradeVolume)}</p>
-                        </div>
-                        <div>
-                          <span className="text-[12px] text-white/50 font-medium">Gold Escrowed</span>
-                          <p className="text-[20px] font-extrabold text-white leading-none">{formatNumber(finaBridge.goldGrams)}g</p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1.5 text-white/60 group-hover:text-white transition-colors">
-                      <span className="text-[12px] font-medium">View trades</span>
-                      <ChevronRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            )}
-          </motion.section>
-        )}
-
-        {/* Zone 3 header — Vault Distribution */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(124,58,237,0.10)', border: '1px solid rgba(124,58,237,0.18)' }}>
-            <Vault className="w-3 h-3 text-purple-600" />
-          </div>
-          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Vault Distribution</span>
-          <div className="flex-1 h-px bg-muted" />
-        </motion.div>
-
-        {/* ═══ WALLET BREAKDOWN CARDS (2-panel) ═══ */}
-        {(() => {
-          const mpgwAvail = totals.mpgwAvailableGrams || 0;
-          const mpgwPend = totals.mpgwPendingGrams || 0;
-          const mpgwReserved = totals.mpgwReservedTradeGrams || 0;
-          const fpgwAvail = totals.fpgwAvailableGrams || 0;
-          const fpgwPend = totals.fpgwPendingGrams || 0;
-          const fpgwReserved = totals.fpgwReservedTradeGrams || 0;
-          const fpgwAvgPrice = totals.fpgwWeightedAvgPriceUsd || 0;
-          const bnslWallet = totals.bnslWalletGoldGrams || 0;
-          const finabridgeGrams = finaBridge?.goldGrams || 0;
-          const bnslLocked = totals.bnslLockedGrams || 0;
-          const tradeSettled = (mpgwReserved || 0) + (fpgwReserved || 0);
-
-          const allWalletZero = mpgwAvail === 0 && mpgwPend === 0 && mpgwReserved === 0 && fpgwAvail === 0 && fpgwPend === 0 && fpgwReserved === 0 && bnslWallet === 0 && finabridgeGrams === 0;
-          const allLockedZero = bnslLocked === 0 && tradeSettled === 0;
-
-          if (allWalletZero && allLockedZero) return null;
-
-          const totalLockedGrams = bnslLocked + tradeSettled;
-
-          const WALLET_ROWS = [
-            {
-              key: 'mpgw',
-              label: 'FinaPay Live (MPGW)',
-              color: '#7c3aed',
-              bg: 'rgba(124,58,237,0.18)',
-              grams: mpgwAvail,
-              usd: mpgwAvail * goldPrice,
-              sublabels: [
-                mpgwPend > 0 ? `${formatNumber(mpgwPend, 4)}g pending` : null,
-                mpgwReserved > 0 ? `${formatNumber(mpgwReserved, 4)}g reserved` : null,
-              ].filter(Boolean) as string[],
-              extra: null,
-            },
-            {
-              key: 'fpgw',
-              label: 'FinaPay Fixed / Hedged (FPGW)',
-              color: '#f59e0b',
-              bg: 'rgba(245,158,11,0.18)',
-              grams: fpgwAvail,
-              usd: fpgwAvail * goldPrice,
-              sublabels: [
-                fpgwPend > 0 ? `${formatNumber(fpgwPend, 4)}g pending` : null,
-                fpgwReserved > 0 ? `${formatNumber(fpgwReserved, 4)}g reserved` : null,
-              ].filter(Boolean) as string[],
-              extra: fpgwAvgPrice > 0 ? `Avg $${formatNumber(fpgwAvgPrice, 2)}/g` : null,
-            },
-            {
-              key: 'bnsl-wallet',
-              label: 'BNSL Wallet',
-              color: '#06b6d4',
-              bg: 'rgba(6,182,212,0.18)',
-              grams: bnslWallet,
-              usd: bnslWallet * goldPrice,
-              sublabels: [],
-              extra: null,
-            },
-            {
-              key: 'finabridge',
-              label: 'Finabridge Wallet',
-              color: '#22c55e',
-              bg: 'rgba(34,197,94,0.18)',
-              grams: finabridgeGrams,
-              usd: finabridgeGrams * goldPrice,
-              sublabels: [],
-              extra: null,
-            },
-          ];
-
-          const LOCKED_ROWS = [
-            {
-              key: 'bnsl-locked',
-              label: 'BNSL Plan Locked',
-              color: '#06b6d4',
-              bg: 'rgba(6,182,212,0.18)',
-              grams: bnslLocked,
-              usd: bnslLocked * goldPrice,
-            },
-            {
-              key: 'trade-settled',
-              label: 'Trades Settled (Locked)',
-              color: '#7c3aed',
-              bg: 'rgba(124,58,237,0.18)',
-              grams: tradeSettled,
-              usd: tradeSettled * goldPrice,
-            },
-          ];
-
-          return (
-            <motion.div variants={itemVariants} className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ perspective: 1200 }}>
-              {/* Gold Wallets card — concentric ring chart */}
-              {!allWalletZero && (() => {
-                const walletTotal = WALLET_ROWS.reduce((s, r) => s + r.grams, 0);
-                const wSize = 200;
-                const wCx = wSize / 2;
-                const wCy = wSize / 2;
-                const wRingW = 8;
-                const wGap = 8;
-                const wInnerR = 30;
-                const wRings = WALLET_ROWS.map((row, idx) => {
-                  const r = wInnerR + idx * (wRingW + wGap);
-                  const pct = walletTotal > 0 ? row.grams / walletTotal : 0;
-                  const circ = 2 * Math.PI * r;
-                  const filled = pct * circ;
-                  return { ...row, r, pct, circ, filled, idx };
-                });
-                return (
-                  <motion.div
-                    ref={tiltGoldWallets.ref}
-                    variants={itemVariants}
-                    style={tiltGoldWallets.motionStyle}
-                    onMouseMove={tiltGoldWallets.onMouseMove}
-                    onMouseLeave={tiltGoldWallets.onMouseLeave}
-                    className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
-                    data-testid="card-gold-wallets"
-                  >
-                    <div className="glass-shine-layer" />
-                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltGoldWallets.glare, zIndex: 25 }} />
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-[15px] font-bold text-foreground">Gold Wallets</h3>
-                        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Breakdown across wallet types</p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-extrabold text-foreground">{showBalance ? `${formatNumber(walletTotal, 3)}g` : hiddenValue}</span>
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-purple-100 to-purple-50 flex items-center justify-center">
-                          <Vault className="w-4 h-4 text-purple-600" />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-center mb-4">
-                      <svg width={wSize} height={wSize} viewBox={`0 0 ${wSize} ${wSize}`}>
-                        {[...wRings].reverse().map((ring) => (
-                          <g key={ring.key} transform={`rotate(-90 ${wCx} ${wCy})`}>
-                            <circle cx={wCx} cy={wCy} r={ring.r} fill="none" stroke={ring.bg} strokeWidth={wRingW} />
-                            {ring.pct > 0 && (
-                              <circle
-                                cx={wCx} cy={wCy} r={ring.r}
-                                fill="none" stroke={ring.color} strokeWidth={wRingW} strokeLinecap="round"
-                                strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
-                                strokeDashoffset={0}
-                                className="portfolio-ring"
-                                style={{
-                                  animationName: `wallet-ring-${ring.idx}`,
-                                  animationDuration: '1s',
-                                  animationTimingFunction: 'ease-out',
-                                  animationDelay: `${0.3 + ring.idx * 0.12}s`,
-                                  animationFillMode: 'backwards',
-                                }}
-                              />
-                            )}
-                          </g>
-                        ))}
-                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="white" />
-                        <circle cx={wCx} cy={wCy} r={wInnerR - 8} fill="none" stroke="rgba(124,58,237,0.18)" strokeWidth={2} />
-                        <text x={wCx} y={wCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>TOTAL</text>
-                        <text x={wCx} y={wCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
-                          {showBalance ? `${formatNumber(walletTotal, 2)}g` : '••••'}
-                        </text>
-                      </svg>
-                    </div>
-
-                    <style>{`
-                      ${wRings.map(r => `
-                        @keyframes wallet-ring-${r.idx} {
-                          from { stroke-dasharray: 0 ${r.circ}; }
-                          to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
-                        }
-                      `).join('')}
-                    `}</style>
-
-                    <div className="space-y-3">
-                      {WALLET_ROWS.map((row, idx) => {
-                        const isZero = row.grams === 0 && row.usd === 0;
-                        const pct = walletTotal > 0 ? (row.grams / walletTotal * 100) : 0;
-                        return (
-                          <div key={row.key} className="flex items-center gap-3 group" data-testid={`wallet-row-${row.key}`}>
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: row.bg }}>
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: row.color }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[12px] font-semibold text-foreground/85">{row.label}</span>
-                                <span className="text-[12px] font-bold text-foreground">
-                                  {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
-                                </span>
-                              </div>
-                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ background: row.color }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${pct}%` }}
-                                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
-                                />
-                              </div>
-                              {row.sublabels.length > 0 && (
-                                <p className="text-[12px] text-muted-foreground/70 mt-0.5">{row.sublabels.join(' · ')}</p>
-                              )}
-                              {row.extra && (
-                                <p className="text-[12px] font-medium mt-0.5" style={{ color: row.color }}>{row.extra}</p>
-                              )}
-                            </div>
-                            <span className="text-[11px] text-muted-foreground/70 font-semibold w-10 text-right flex-shrink-0">
-                              {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
                 );
               })()}
 
-              {/* Locked Positions card — concentric ring chart */}
-              {!allLockedZero && (() => {
-                const lockedTotal = totalLockedGrams;
-                const lSize = 200;
-                const lCx = lSize / 2;
-                const lCy = lSize / 2;
-                const lRingW = 10;
-                const lGap = 12;
-                const lInnerR = 38;
-                const lRings = LOCKED_ROWS.map((row, idx) => {
-                  const r = lInnerR + idx * (lRingW + lGap);
-                  const pct = lockedTotal > 0 ? row.grams / lockedTotal : 0;
-                  const circ = 2 * Math.PI * r;
-                  const filled = pct * circ;
-                  return { ...row, r, pct, circ, filled, idx };
-                });
-                return (
-                  <motion.div
-                    ref={tiltLocked.ref}
-                    variants={itemVariants}
-                    style={tiltLocked.motionStyle}
-                    onMouseMove={tiltLocked.onMouseMove}
-                    onMouseLeave={tiltLocked.onMouseLeave}
-                    className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
-                    data-testid="card-locked-positions"
-                  >
-                    <div className="glass-shine-layer" />
-                    <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.26) 55%, transparent 80%)', opacity: tiltLocked.glare, zIndex: 25 }} />
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h3 className="text-[15px] font-bold text-foreground">Locked Positions</h3>
-                        <p className="text-[11px] text-muted-foreground/70 mt-0.5">Gold locked in plans &amp; escrow</p>
+              {/* Search */}
+              <div className="relative mb-3">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  value={activitySearch}
+                  onChange={e => setActivitySearch(e.target.value)}
+                  placeholder="Search transactions..."
+                  className="w-full pl-9 pr-9 py-2.5 text-[13px] bg-muted/40 border border-border/60 rounded-full focus:outline-none focus:border-primary/40 placeholder:text-muted-foreground/50"
+                  data-testid="input-search-transactions"
+                />
+                <button className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-card border border-border flex items-center justify-center" aria-label="Filter">
+                  <ChevronRight className="w-3 h-3 text-muted-foreground" />
+                </button>
+              </div>
+
+              {/* Transactions table */}
+              <div className="overflow-hidden rounded-2xl border border-border/40">
+                <table className="w-full">
+                  <thead>
+                    <tr className="text-left text-[10px] font-semibold uppercase tracking-widest text-muted-foreground bg-muted/30">
+                      <th className="px-4 py-2.5">Transaction</th>
+                      <th className="px-4 py-2.5">Module</th>
+                      <th className="px-4 py-2.5">Date</th>
+                      <th className="px-4 py-2.5 text-right">Amount</th>
+                      <th className="px-4 py-2.5 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border/40">
+                    {filteredActivities.length > 0 ? filteredActivities.slice(0, 5).map((tx) => (
+                      <tr key={tx.id} className="hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setSelectedTransaction(tx as any)} data-testid={`row-tx-${tx.id}`}>
+                        <td className="px-4 py-3">
+                          <span className="text-[13px] font-medium text-foreground">{getTxDisplayName(tx)}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[12px] text-muted-foreground capitalize">{tx.sourceModule || '—'}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-[12px] text-muted-foreground font-mono-ui">{tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM d') : '—'}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <span className="text-[13px] font-semibold text-foreground font-mono-ui">{getTransactionAmount(tx as any)}</span>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {getStatusBadge(tx.status)}
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={5} className="px-4 py-10 text-center text-[12px] text-muted-foreground">
+                          No transactions yet
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* ── Wallet Insights Schedule timeline (4/12) ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4">
+            <div className="hynex-card h-full p-6 flex flex-col" data-testid="card-schedule">
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-[16px] font-semibold text-foreground">Wallet Insights Schedule</h2>
+                <button className="p-1 hover:bg-muted rounded-lg" aria-label="More"><span className="text-muted-foreground leading-none">⋯</span></button>
+              </div>
+
+              <div className="space-y-3.5 flex-1">
+                {(() => {
+                  const today = new Date();
+                  const items = [
+                    {
+                      d: new Date(today.getFullYear(), today.getMonth(), 15),
+                      title: 'Spending Breakdown',
+                      sub: `${transactions.length} txns · $${formatNumber(walletGoldValue)} this period`,
+                    },
+                    {
+                      d: new Date(today.getFullYear(), today.getMonth(), 20),
+                      title: 'Gold Price Lock Renewal',
+                      sub: `${activeFpgwLocks.length} active lock${activeFpgwLocks.length === 1 ? '' : 's'}`,
+                    },
+                    {
+                      d: new Date(today.getFullYear(), today.getMonth(), 25),
+                      title: 'BNSL Quarterly Payout',
+                      sub: `Q${bnslCurrentQuarter} · $${formatNumber(bnslQuarterlyPayout)}`,
+                    },
+                    {
+                      d: new Date(today.getFullYear(), today.getMonth(), 30),
+                      title: 'Monthly Statement',
+                      sub: `Total Portfolio: $${formatNumber(totalPortfolioValue)}`,
+                    },
+                    {
+                      d: new Date(today.getFullYear(), today.getMonth() + 1, 1),
+                      title: 'Scheduled Vault Audit',
+                      sub: `${(certsData?.certificates || []).length} certificates on file`,
+                    },
+                  ];
+                  return items.map((it, i) => (
+                    <div key={i} className="flex items-center gap-4" data-testid={`schedule-item-${i}`}>
+                      <div className="flex flex-col items-center justify-center w-10 shrink-0">
+                        <span className="kpi-value text-[18px] text-foreground leading-none">{format(it.d, 'd')}</span>
+                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-0.5">{format(it.d, 'MMM')}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[13px] font-extrabold text-foreground">{showBalance ? `${formatNumber(lockedTotal, 3)}g` : hiddenValue}</span>
-                        <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-100 to-cyan-50 flex items-center justify-center">
-                          <Lock className="w-4 h-4 text-cyan-600" />
-                        </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-semibold text-foreground truncate">{it.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{it.sub}</p>
                       </div>
                     </div>
-
-                    <div className="flex items-center justify-center mb-4">
-                      <svg width={lSize} height={lSize} viewBox={`0 0 ${lSize} ${lSize}`}>
-                        {[...lRings].reverse().map((ring) => (
-                          <g key={ring.key} transform={`rotate(-90 ${lCx} ${lCy})`}>
-                            <circle cx={lCx} cy={lCy} r={ring.r} fill="none" stroke={ring.bg} strokeWidth={lRingW} />
-                            {ring.pct > 0 && (
-                              <circle
-                                cx={lCx} cy={lCy} r={ring.r}
-                                fill="none" stroke={ring.color} strokeWidth={lRingW} strokeLinecap="round"
-                                strokeDasharray={`${ring.filled} ${ring.circ - ring.filled}`}
-                                strokeDashoffset={0}
-                                className="portfolio-ring"
-                                style={{
-                                  animationName: `locked-ring-${ring.idx}`,
-                                  animationDuration: '1s',
-                                  animationTimingFunction: 'ease-out',
-                                  animationDelay: `${0.3 + ring.idx * 0.12}s`,
-                                  animationFillMode: 'backwards',
-                                }}
-                              />
-                            )}
-                          </g>
-                        ))}
-                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="white" />
-                        <circle cx={lCx} cy={lCy} r={lInnerR - 10} fill="none" stroke="rgba(6,182,212,0.20)" strokeWidth={2} />
-                        <text x={lCx} y={lCy - 4} textAnchor="middle" fill="#9ca3af" style={{ fontSize: 7, fontWeight: 600, letterSpacing: '0.06em' }}>LOCKED</text>
-                        <text x={lCx} y={lCy + 8} textAnchor="middle" fill="#111827" style={{ fontSize: 11, fontWeight: 800 }}>
-                          {showBalance ? `${formatNumber(lockedTotal, 2)}g` : '••••'}
-                        </text>
-                      </svg>
-                    </div>
-
-                    <style>{`
-                      ${lRings.map(r => `
-                        @keyframes locked-ring-${r.idx} {
-                          from { stroke-dasharray: 0 ${r.circ}; }
-                          to { stroke-dasharray: ${r.filled} ${r.circ - r.filled}; }
-                        }
-                      `).join('')}
-                    `}</style>
-
-                    <div className="space-y-3">
-                      {LOCKED_ROWS.map((row, idx) => {
-                        const isZero = row.grams === 0;
-                        const pct = lockedTotal > 0 ? (row.grams / lockedTotal * 100) : 0;
-                        return (
-                          <div key={row.key} className="flex items-center gap-3 group" data-testid={`locked-row-${row.key}`}>
-                            <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 transition-transform group-hover:scale-110" style={{ background: row.bg }}>
-                              <div className="w-2.5 h-2.5 rounded-full" style={{ background: row.color }} />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between mb-1">
-                                <span className="text-[12px] font-semibold text-foreground/85">{row.label}</span>
-                                <span className="text-[12px] font-bold text-foreground">
-                                  {isZero ? '—' : showBalance ? `${formatNumber(row.grams, 4)}g` : '••••'}
-                                </span>
-                              </div>
-                              <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                                <motion.div
-                                  className="h-full rounded-full"
-                                  style={{ background: row.color }}
-                                  initial={{ width: 0 }}
-                                  animate={{ width: `${pct}%` }}
-                                  transition={{ duration: 1.2, ease: 'easeOut', delay: 0.4 + idx * 0.1 }}
-                                />
-                              </div>
-                              {!isZero && (
-                                <p className="text-[12px] text-muted-foreground/70 mt-0.5">
-                                  {showBalance ? `$${formatNumber(row.usd)}` : ''}
-                                </p>
-                              )}
-                            </div>
-                            <span className="text-[11px] text-muted-foreground/70 font-semibold w-10 text-right flex-shrink-0">
-                              {pct > 0 ? `${pct.toFixed(0)}%` : '0%'}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </motion.div>
-                );
-              })()}
-            </motion.div>
-          );
-        })()}
-
-        {/* Zone 4 header — Market Analytics */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.28)' }}>
-            <TrendingUp className="w-3 h-3 text-amber-600" />
-          </div>
-          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Market Analytics</span>
-          <div className="flex-1 h-px bg-muted" />
-        </motion.div>
-
-        {/* ═══ GOLD PRICE TREND CHART (full-width) ═══ */}
-        <motion.div
-          ref={tiltGoldChart.ref}
-          variants={itemVariants}
-          style={tiltGoldChart.motionStyle}
-          onMouseMove={tiltGoldChart.onMouseMove}
-          onMouseLeave={tiltGoldChart.onMouseLeave}
-          className="glass-card-elevated rounded-[20px] p-5 relative overflow-hidden"
-          data-testid="card-gold-price-chart"
-        >
-          <div className="glass-shine-layer" />
-          <motion.div className="pointer-events-none absolute inset-0 rounded-[20px]" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(212,175,55,0.18) 55%, transparent 80%)', opacity: tiltGoldChart.glare, zIndex: 25 }} />
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-[15px] font-bold text-foreground">Gold Price Trend</h3>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <span className="relative flex h-1.5 w-1.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
-                </span>
-                <p className="text-[11px] text-muted-foreground/70">XAU/USD · Per gram · Live</p>
+                  ));
+                })()}
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-0.5 rounded-xl p-0.5" style={{ background: 'rgba(124,58,237,0.08)', border: '1px solid rgba(124,58,237,0.14)' }}>
-                {(['7D', '30D', '90D'] as const).map(p => (
-                  <button key={p} onClick={() => setChartPeriod(p)}
-                    className={`px-3 py-1.5 rounded-[10px] text-[11px] font-bold transition-all ${chartPeriod === p ? 'text-white shadow-sm' : 'text-muted-foreground/70 hover:text-purple-600'}`}
-                    style={chartPeriod === p ? { background: 'linear-gradient(135deg,#7c3aed,#9333ea)' } : {}}>
-                    {p}
-                  </button>
-                ))}
-              </div>
-              <div className="text-right">
-                <p className="text-[17px] font-extrabold num-metric" style={{ background: 'linear-gradient(135deg,#D4AF37,#f59e0b)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>${formatNumber(goldPrice, 2)}</p>
-                <p className="text-[11px] text-muted-foreground/70">/gram now</p>
-              </div>
-            </div>
-          </div>
-          <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="goldGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.22} />
-                  <stop offset="55%" stopColor="#D4AF37" stopOpacity={0.08} />
-                  <stop offset="100%" stopColor="#D4AF37" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="goldStroke" x1="0" y1="0" x2="1" y2="0">
-                  <stop offset="0%" stopColor="#7c3aed" />
-                  <stop offset="60%" stopColor="#9333ea" />
-                  <stop offset="100%" stopColor="#D4AF37" />
-                </linearGradient>
-              </defs>
-              <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} axisLine={false} tickLine={false} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10, fill: '#9ca3af', fontWeight: 500 }} axisLine={false} tickLine={false} domain={['auto', 'auto']} tickFormatter={(v) => `$${v.toFixed(0)}`} />
-              <Tooltip
-                contentStyle={{ background: 'rgba(255,255,255,0.96)', border: '1px solid rgba(124,58,237,0.15)', borderRadius: '14px', fontSize: '12px', boxShadow: '0 8px 32px rgba(124,58,237,0.12), 0 2px 8px rgba(0,0,0,0.06)' }}
-                labelStyle={{ color: '#6b7280', fontWeight: 600, marginBottom: 4 }}
-                formatter={(v: any) => [`$${Number(v).toFixed(2)}/g`, 'Gold Price']}
-              />
-              <ReferenceLine y={avgBuyPrice} stroke="#D4AF37" strokeDasharray="5 3" strokeWidth={1.5}
-                label={{ value: `Avg Buy $${avgBuyPrice.toFixed(0)}`, position: 'insideTopRight', fontSize: 10, fill: '#B8860B', fontWeight: 700 }} />
-              <Area type="monotone" dataKey="price" stroke="url(#goldStroke)" strokeWidth={2.5} fill="url(#goldGradient)" dot={false} activeDot={{ r: 5, fill: '#7c3aed', stroke: 'rgba(124,58,237,0.30)', strokeWidth: 3 }} />
-            </AreaChart>
-          </ResponsiveContainer>
-          <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/60">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 bg-purple-600 rounded" />
-              <span className="text-[11px] text-muted-foreground">Market Price</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-0.5 bg-amber-400 rounded border-dashed" style={{ borderTop: '2px dashed #D4AF37', background: 'transparent' }} />
-              <span className="text-[11px] text-muted-foreground">Your Avg Buy</span>
-            </div>
-            <div className="ml-auto flex items-center gap-1">
-              {unrealizedGain >= 0
-                ? <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-                : <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
-              <span className={`text-[11px] font-bold ${unrealizedGain >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
-                {unrealizedGain >= 0 ? '+' : ''}{unrealizedGainPct.toFixed(2)}% vs avg buy
-              </span>
-            </div>
-          </div>
-        </motion.div>
 
-        {/* Zone 5 header — Activity */}
-        <motion.div variants={itemVariants} className="flex items-center gap-3">
-          <div className="w-5 h-5 rounded-lg flex items-center justify-center" style={{ background: 'rgba(16,185,129,0.10)', border: '1px solid rgba(16,185,129,0.22)' }}>
-            <TrendingUp className="w-3 h-3 text-emerald-600" />
-          </div>
-          <span className="text-[11px] font-bold text-muted-foreground/70 uppercase tracking-widest">Recent Activity</span>
-          <div className="flex-1 h-px bg-muted" />
-        </motion.div>
-
-        {/* ═══ RECENT TRANSACTIONS + CERTIFICATES (2-panel) ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ perspective: 1200 }}>
-
-          {/* Panel 1 — Recent Transactions */}
-          <motion.div
-            variants={itemVariants}
-            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
-            data-testid="card-recent-activities"
-          >
-            <div className="flex items-center justify-between px-6 pt-5 pb-4">
-              <h3 className="text-[15px] font-bold text-foreground">Recent Transactions</h3>
               <Link href="/transactions">
-                <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer" data-testid="button-view-all-activities">View All</span>
+                <a className="mt-5 block text-center py-2.5 rounded-full text-[12px] font-semibold text-foreground bg-muted/40 hover:bg-muted transition-colors" data-testid="link-view-all-schedule">
+                  View All
+                </a>
               </Link>
             </div>
-
-            <div className="px-4 pb-4 space-y-1">
-              {filteredActivities.length > 0 ? filteredActivities.map((tx, i) => {
-                const isPositive = tx.type === 'Buy' || tx.type === 'Receive' || tx.type === 'Deposit' || tx.type === 'Gold Credited' || tx.type === 'Refund' || tx.type === 'BNSL Payout' || tx.type === 'Trade Profit';
-                const isNeutral = tx.type === 'Swap' || tx.type === 'Price Protection Activated' || tx.type === 'Price Protection Removed';
-                const grams = tx.amountGold ? `${isPositive ? '+' : isNeutral ? '' : ''}${Number(tx.amountGold).toFixed(4)}g` : null;
-                const usd = tx.amountUsd ? `$${Number(tx.amountUsd).toFixed(2)}` : null;
-                const displayName = getTxDisplayName(tx);
-                const statusColor = tx.status === 'Completed' || tx.status === 'completed'
-                  ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                  : tx.status === 'Pending' || tx.status === 'pending'
-                  ? 'bg-amber-50 text-amber-600 border-amber-100'
-                  : 'bg-rose-50 text-rose-600 border-rose-100';
-                return (
-                  <motion.div
-                    key={tx.id}
-                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-100/60 hover:shadow-sm transition-all duration-200 cursor-pointer group"
-                    data-testid={`row-activity-${i}`}
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: i * 0.06 }}
-                    onClick={() => setSelectedTransaction({
-                      id: tx.id,
-                      type: tx.type,
-                      amountGrams: tx.amountGold ?? undefined,
-                      amountUsd: tx.amountUsd ?? 0,
-                      timestamp: tx.createdAt ?? '',
-                      referenceId: tx.id,
-                      status: tx.status,
-                      description: tx.description,
-                    })}
-                  >
-                    <div className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 bg-purple-50 border border-purple-100 group-hover:scale-105 transition-transform">
-                      {getActivityIcon(tx.type, tx.sourceModule)}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground truncate">{displayName}</p>
-                      <p className="text-[11px] text-muted-foreground/70">
-                        {tx.createdAt && isValid(new Date(tx.createdAt)) ? format(new Date(tx.createdAt), 'MMM dd, yyyy') : '-'}
-                        {tx.sourceModule && <span className="ml-1.5 text-[10px] text-purple-400 font-medium uppercase">{tx.sourceModule}</span>}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      {grams && <p className={`text-[13px] font-bold ${isPositive ? 'text-purple-600' : isNeutral ? 'text-muted-foreground' : 'text-foreground'}`}>{grams}</p>}
-                      {usd && <p className="text-[11px] text-muted-foreground/70">{usd}</p>}
-                    </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${statusColor}`}>
-                      {tx.status}
-                    </span>
-                  </motion.div>
-                );
-              }) : (
-                <div className="py-10 text-center text-muted-foreground/70 text-[13px]">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
-                      <Search className="w-5 h-5 text-muted-foreground/50" />
-                    </div>
-                    <span>No recent transactions found</span>
-                  </div>
-                </div>
-              )}
-            </div>
           </motion.div>
-
-          {/* Panel 2 — Certificates */}
-          <motion.div
-            variants={itemVariants}
-            whileHover={{ y: -4, boxShadow: '0 20px 40px rgba(124,58,237,0.10)' }}
-            transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-            className="glass-card-elevated rounded-[20px] overflow-hidden cursor-default"
-            data-testid="card-certificates"
-          >
-            <div className="flex items-center justify-between px-6 pt-5 pb-4">
-              <h3 className="text-[15px] font-bold text-foreground">Certificates</h3>
-              <Link href="/finavault">
-                <span className="text-[12px] font-semibold text-purple-600 hover:text-purple-700 transition-colors cursor-pointer">View All</span>
-              </Link>
-            </div>
-            <div className="px-4 pb-4 space-y-1">
-              {recentCertsList.length > 0 ? recentCertsList.map((cert, i) => (
-                  <motion.div
-                    key={cert.id}
-                    className="flex items-center gap-3 px-2 py-3 rounded-xl hover:bg-purple-100/60 hover:shadow-sm transition-all duration-200 cursor-pointer group"
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                    data-testid={`cert-row-${i}`}
-                    onClick={() => setSelectedCert(cert)}
-                  >
-                    <div className="w-9 h-9 rounded-full bg-purple-50 border border-purple-100 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Shield className="w-4 h-4 text-purple-500" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-foreground truncate">
-                        {cert.type === 'DIGITAL_OWNERSHIP' || cert.type === 'Digital Ownership' ? 'Digital Ownership'
-                          : cert.type === 'PHYSICAL_STORAGE' || cert.type === 'Physical Storage' ? 'Physical Storage'
-                          : cert.type}
-                      </p>
-                      <p className="text-[11px] text-muted-foreground/70">
-                        {cert.issuedAt && isValid(new Date(cert.issuedAt)) ? format(new Date(cert.issuedAt), 'MMM dd, yyyy') : '—'}
-                      </p>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[13px] font-bold text-foreground">{Number(cert.goldGrams || 0).toFixed(2)}g</p>
-                    </div>
-                    <span className={`px-2.5 py-0.5 rounded-full text-[12px] font-bold border shrink-0 ${
-                      cert.status === 'Active' || cert.status === 'ACTIVE'
-                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                        : cert.status === 'Locked'
-                        ? 'bg-amber-50 text-amber-600 border-amber-100'
-                        : cert.status === 'Superseded'
-                        ? 'bg-muted text-muted-foreground/70 border-border'
-                        : 'bg-muted text-muted-foreground border-border'
-                    }`}>
-                      {cert.status === 'Active' || cert.status === 'ACTIVE' ? 'Active' : cert.status}
-                    </span>
-                  </motion.div>
-              )) : (
-                <div className="py-10 text-center text-muted-foreground/70 text-[13px]">
-                  <div className="flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center">
-                      <Shield className="w-5 h-5 text-muted-foreground/50" />
-                    </div>
-                    <span>No certificates yet</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-
         </div>
+
       </motion.div>
+
+      {showOnboarding && (
+        <OnboardingTour onComplete={completeOnboarding} />
+      )}
 
       {showOnboarding && (
         <OnboardingTour onComplete={completeOnboarding} />

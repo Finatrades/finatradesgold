@@ -688,6 +688,30 @@ input[type="number"] {
   background-clip: text;
 }
 
+/* Hynex-style premium glass card */
+.hynex-card {
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.55);
+  border-radius: 24px;
+  box-shadow:
+    0 1px 0 0 hsl(var(--background) / 0.6) inset,
+    0 8px 24px -12px rgba(0, 0, 0, 0.06);
+  transition: transform 220ms cubic-bezier(.2,.7,.2,1), box-shadow 220ms ease, border-color 220ms ease;
+}
+.dark .hynex-card {
+  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.92) 100%);
+  border-color: hsl(var(--border) / 0.45);
+  box-shadow:
+    0 1px 0 0 rgba(255,255,255,0.04) inset,
+    0 12px 32px -16px rgba(0,0,0,0.55);
+}
+.hynex-card:hover {
+  border-color: hsl(var(--primary) / 0.25);
+  box-shadow:
+    0 1px 0 0 hsl(var(--background) / 0.6) inset,
+    0 14px 36px -16px rgba(124,58,237,0.18);
+}
+
 /* Premium Card with Subtle Glow */
 .premium-card {
   background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,251,255,0.92) 100%);
