@@ -159,8 +159,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Search bar — fills remaining space */}
             <div className="flex-1 max-w-2xl">
-              <div className="hynex-pill w-full !py-2.5" data-testid="header-search-wrap">
-                <Search className="w-4 h-4 text-muted-foreground" />
+              <div className="hynex-pill w-full" data-testid="header-search-wrap">
+                <Search className="w-4 h-4 text-muted-foreground/70" />
                 <input
                   type="text"
                   placeholder="Search wallet, trade, vault status, or documents"
