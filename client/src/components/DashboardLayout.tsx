@@ -10,7 +10,7 @@ import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield, RotateCcw, Calendar, Search } from 'lucide-react';
+import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield, RotateCcw, Calendar, Search, Sparkles, Bell, History } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -99,66 +99,112 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className={`du-stage ${sidebarCollapsed ? 'lg:ml-[100px]' : 'lg:ml-[304px]'} min-h-screen flex flex-col transition-all duration-300`}>
         
         <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
-          {/* Hynex-style pill bar */}
-          <div className="h-16 px-6 flex items-center justify-between border-b border-border/40 bg-background">
 
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => setSidebarOpen(true)}
-                className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
-                data-testid="button-mobile-sidebar"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
+          {/* ── Top status strip ── */}
+          <div className="h-9 px-6 flex items-center justify-between text-[12px] bg-gradient-to-r from-violet-50/60 via-background to-violet-50/60 dark:from-violet-950/20 dark:via-background dark:to-violet-950/20 border-b border-border/30">
+            <div className="flex items-center gap-2 text-foreground/80" data-testid="strip-gold-price">
+              <span className="relative flex h-2 w-2">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="font-medium">Gold Price:</span>
+              <span className="font-semibold text-foreground">${goldPrice ? goldPrice.toFixed(2) : '156.59'}/gram</span>
             </div>
 
-            <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowAssuranceDialog(true)}
+              className="hidden md:flex items-center gap-2 text-foreground/75 hover:text-foreground transition-colors"
+              data-testid="strip-settlement-assurance"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <span className="font-medium">Settlement Assurance</span>
+              <span className="text-muted-foreground">Backed by USD 42.134 Billion</span>
+            </button>
 
-              {/* Reports pill */}
-              <Link href="/transactions">
-                <button className="hynex-pill" data-testid="header-pill-reports">
-                  <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
-                  <span>Reports</span>
-                </button>
-              </Link>
+            <Link href="/security">
+              <button
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors text-[11.5px] font-medium dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-400"
+                data-testid="button-enable-2fa"
+              >
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                Enable 2FA
+              </button>
+            </Link>
+          </div>
 
-              {/* Date pill */}
-              <div className="hynex-pill" data-testid="header-pill-date">
-                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
-                <span>{format(new Date(), 'EEE d, MMM')}</span>
-              </div>
+          {/* ── Main bar ── */}
+          <div className="h-16 px-6 flex items-center gap-3 border-b border-border/40 bg-background">
 
-              {/* Search pill */}
-              <div className="hynex-pill min-w-[260px]" data-testid="header-pill-search">
-                <Search className="w-3.5 h-3.5 text-muted-foreground" />
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              data-testid="button-mobile-sidebar"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+
+            {/* Portfolio Console pill */}
+            <Link href="/dashboard">
+              <button className="hynex-pill" data-testid="header-pill-console">
+                <Sparkles className="w-3.5 h-3.5 text-violet-500" />
+                <span className="font-medium">Portfolio Console</span>
+              </button>
+            </Link>
+
+            {/* Date pill */}
+            <div className="hynex-pill" data-testid="header-pill-date">
+              <Calendar className="w-3.5 h-3.5 text-emerald-500" />
+              <span>{format(new Date(), 'EEE d, MMM')}</span>
+            </div>
+
+            {/* Search bar — fills remaining space */}
+            <div className="flex-1 max-w-2xl">
+              <div className="hynex-pill w-full !py-2.5" data-testid="header-search-wrap">
+                <Search className="w-4 h-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Search transactions, certificates..."
+                  placeholder="Search wallet, trade, vault status, or documents"
                   className="bg-transparent outline-none border-0 text-[13px] flex-1 placeholder:text-muted-foreground/60"
                   data-testid="input-header-search"
                 />
               </div>
+            </div>
 
-              <ThemeToggle />
+            {/* Right cluster */}
+            <Link href="/transactions">
+              <button
+                className="h-9 w-9 rounded-full bg-muted/60 hover:bg-muted border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                title="Recent activity"
+                data-testid="button-recent"
+              >
+                <History className="w-4 h-4" />
+              </button>
+            </Link>
 
-              <NotificationCenter />
+            <NotificationCenter />
 
-              <div className="h-7 w-px bg-border/60 mx-1" />
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" data-testid="button-user-menu">
-                    <Avatar className="h-9 w-9 border border-border/60">
-                      <AvatarImage 
-                        src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=7C3AED&textColor=ffffff`} 
-                        alt={user.firstName} 
-                      />
-                      <AvatarFallback className="bg-violet-600 text-white font-bold">
-                        {user.firstName[0]}{user.lastName[0]}
-                      </AvatarFallback>
-                    </Avatar>
+            <ThemeToggle />
+
+            <div className="h-7 w-px bg-border/60 mx-1" />
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity pl-1" data-testid="button-user-menu">
+                  <div className="hidden sm:flex flex-col items-end leading-tight">
+                    <span className="text-[13px] font-semibold text-foreground">{user.firstName} {user.lastName}</span>
+                    <span className="text-[11px] text-violet-500 font-medium">Personal Account</span>
                   </div>
-                </DropdownMenuTrigger>
+                  <Avatar className="h-9 w-9 border border-border/60">
+                    <AvatarImage
+                      src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=7C3AED&textColor=ffffff`}
+                      alt={user.firstName}
+                    />
+                    <AvatarFallback className="bg-violet-600 text-white font-bold">
+                      {user.firstName[0]}{user.lastName[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                </div>
+              </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
@@ -195,7 +241,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
-            </div>
           </div>
         </header>
 
