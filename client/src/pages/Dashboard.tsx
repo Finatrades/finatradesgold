@@ -477,49 +477,73 @@ export default function Dashboard() {
               </button>
             </div>
 
-            {/* FinaCard credit card visual */}
+            {/* FinaCard credit card visual — Hynex style */}
             <motion.div
-              whileHover={{ y: -3, scale: 1.005 }}
+              whileHover={{ y: -4, scale: 1.008 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="relative h-[260px] rounded-3xl overflow-hidden cursor-pointer"
+              className="relative h-[280px] rounded-3xl overflow-hidden cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg,#1a1a2e 0%,#0f0f1e 50%,#1a1a2e 100%)',
-                boxShadow: '0 20px 50px -15px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06) inset',
+                background: 'linear-gradient(135deg,#1c1c26 0%,#0d0d14 60%,#16161e 100%)',
+                boxShadow: '0 24px 60px -18px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 1px 0 rgba(255,255,255,0.06) inset',
               }}
               data-testid="card-finacard-visual"
               onClick={() => window.location.href = '/finacard'}
             >
-              {/* gold gradient orb */}
-              <div className="absolute -bottom-16 -left-12 w-72 h-72 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.45), transparent 70%)', filter: 'blur(8px)' }} />
-              <div className="absolute top-0 right-0 w-48 h-48 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(124,58,237,0.30), transparent 70%)', filter: 'blur(6px)' }} />
-              {/* shine */}
-              <div className="absolute inset-0 opacity-40" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%)' }} />
+              {/* big gold glow bottom-left */}
+              <div className="absolute -bottom-24 -left-16 w-[340px] h-[340px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,184,0,0.55) 0%, rgba(212,175,55,0.30) 40%, transparent 70%)', filter: 'blur(12px)' }} />
+              {/* purple accent top-right */}
+              <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.30), transparent 70%)', filter: 'blur(10px)' }} />
+              {/* top sparkle line */}
+              <div className="absolute top-12 left-6 w-12 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(255,215,0,0.8), transparent)' }} />
+              {/* diagonal sheen */}
+              <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%)' }} />
 
               <div className="relative z-10 p-6 h-full flex flex-col justify-between">
                 <div className="flex items-start justify-between">
-                  <span className="text-white/90 text-[18px] font-bold italic tracking-wider">VISA</span>
-                  <span className="text-white/50 text-[11px] font-mono-ui tracking-widest">**** **** **** {finatradesId.slice(-4)}</span>
+                  <span className="text-white text-[20px] font-bold italic tracking-wider" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>VISA</span>
+                  <div className="text-right">
+                    <span className="text-white/55 text-[11px] font-mono-ui tracking-[0.18em] block">**** **** **** {finatradesId.slice(-4)}</span>
+                    <span className="text-white/35 text-[10px] font-mono-ui mt-1 inline-block">12/27</span>
+                  </div>
+                </div>
+
+                {/* "6 Cards" badge — golden gradient like Hynex */}
+                <div className="flex">
+                  <div
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,215,0,0.30) 0%, rgba(255,184,0,0.18) 100%)',
+                      border: '1px solid rgba(255,215,0,0.35)',
+                      boxShadow: '0 4px 12px rgba(255,184,0,0.25)',
+                    }}
+                  >
+                    <Sparkles className="w-3 h-3 text-amber-200" />
+                    <span className="text-[11px] font-bold text-amber-100 tracking-tight">FinaCard</span>
+                  </div>
                 </div>
 
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full mb-3" style={{ background: 'rgba(212,175,55,0.18)', border: '1px solid rgba(212,175,55,0.30)' }}>
-                      <Sparkles className="w-3 h-3 text-amber-300" />
-                      <span className="text-[10px] font-bold text-amber-200 uppercase tracking-widest">FinaCard</span>
-                    </div>
-                    <p className="text-[11px] text-white/60 font-medium mb-1 flex items-center gap-1.5">
-                      Wallet Balance
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className="text-[11px] text-white/65 font-medium">Wallet Balance</span>
                       {totals.totalPortfolioUsd > 0 && (
-                        <span className="text-emerald-400 text-[10px] font-bold inline-flex items-center gap-0.5">
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 text-[10px] font-bold">
                           <TrendingUp className="w-2.5 h-2.5" /> +{((unrealizedGainPct || 0)).toFixed(1)}%
                         </span>
                       )}
-                    </p>
-                    <p className="kpi-value text-white text-[34px]" data-testid="text-total-balance">
+                    </div>
+                    <p className="kpi-value text-white text-[36px] leading-none" data-testid="text-total-balance" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
                       {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
                     </p>
                   </div>
-                  <span className="text-white/40 text-[11px] font-mono-ui">12/27</span>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setBalanceVisible(!balanceVisible); }}
+                    className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/12 flex items-center justify-center transition-colors"
+                    aria-label="Toggle balance visibility"
+                    data-testid="button-toggle-balance"
+                  >
+                    {showBalance ? <Eye className="w-3.5 h-3.5 text-white/70" /> : <EyeOff className="w-3.5 h-3.5 text-white/70" />}
+                  </button>
                 </div>
               </div>
             </motion.div>
@@ -597,29 +621,56 @@ export default function Dashboard() {
                 </select>
               </div>
 
-              {/* Donut */}
-              <div className="relative flex items-center justify-center mb-1" style={{ height: 110 }}>
-                <svg width="110" height="110" viewBox="0 0 110 110">
-                  <circle cx="55" cy="55" r="42" fill="none" stroke="currentColor" strokeWidth="9" className="text-muted/40" />
-                  {/* primary ring (purple) */}
-                  <circle cx="55" cy="55" r="42" fill="none" stroke="url(#perfPurple)" strokeWidth="9" strokeLinecap="round" strokeDasharray={`${(walletGoldValue / Math.max(totalPortfolioValue, 1)) * 263.9} 263.9`} transform="rotate(-90 55 55)" />
-                  {/* gold ring */}
-                  <circle cx="55" cy="55" r="32" fill="none" stroke="url(#perfGold)" strokeWidth="6" strokeLinecap="round" strokeDasharray={`${(finacardValue / Math.max(totalPortfolioValue, 1)) * 201} 201`} transform="rotate(-90 55 55)" />
-                  <defs>
-                    <linearGradient id="perfPurple" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#a855f7" /><stop offset="100%" stopColor="#7c3aed" /></linearGradient>
-                    <linearGradient id="perfGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#f59e0b" /><stop offset="100%" stopColor="#D4AF37" /></linearGradient>
-                  </defs>
-                </svg>
-                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="kpi-value text-[16px] text-foreground">{totalPortfolioValue > 0 ? `${Math.round((walletGoldValue / totalPortfolioValue) * 100)}%` : '0%'}</span>
-                </div>
-              </div>
+              {/* 3-ring donut with side labels (Hynex-style) */}
+              {(() => {
+                const tot = Math.max(totalPortfolioValue, 1);
+                const pctWallet = (walletGoldValue / tot) * 100;
+                const pctCard = (finacardValue / tot) * 100;
+                const pctBnsl = (bnslValue / tot) * 100;
+                return (
+                  <div className="relative flex items-center justify-between gap-2 mb-2">
+                    {/* left label */}
+                    <div className="text-right">
+                      <p className="kpi-value text-[15px] text-foreground leading-none">{Math.round(pctWallet)}%</p>
+                      <p className="text-[9px] text-muted-foreground mt-0.5">Wallet</p>
+                    </div>
 
-              {/* Legend */}
-              <div className="grid grid-cols-2 gap-1 text-[10px] mb-2">
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-purple-500" /><span className="text-muted-foreground">Wallet</span></div>
-                <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-400" /><span className="text-muted-foreground">FinaCard</span></div>
-              </div>
+                    <div className="relative" style={{ width: 120, height: 120 }}>
+                      <svg width="120" height="120" viewBox="0 0 120 120">
+                        {/* outer ring — cyan (Wallet) */}
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(34,211,238,0.10)" strokeWidth="7" />
+                        <circle cx="60" cy="60" r="50" fill="none" stroke="url(#perfCyan)" strokeWidth="7" strokeLinecap="round"
+                          strokeDasharray={`${(pctWallet / 100) * 314} 314`} transform="rotate(-90 60 60)" />
+                        {/* mid ring — green (FinaCard) */}
+                        <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(16,185,129,0.10)" strokeWidth="7" />
+                        <circle cx="60" cy="60" r="40" fill="none" stroke="url(#perfGreen)" strokeWidth="7" strokeLinecap="round"
+                          strokeDasharray={`${(pctCard / 100) * 251} 251`} transform="rotate(-90 60 60)" />
+                        {/* inner ring — amber (BNSL) */}
+                        <circle cx="60" cy="60" r="30" fill="none" stroke="rgba(245,158,11,0.10)" strokeWidth="7" />
+                        <circle cx="60" cy="60" r="30" fill="none" stroke="url(#perfGold)" strokeWidth="7" strokeLinecap="round"
+                          strokeDasharray={`${(pctBnsl / 100) * 188} 188`} transform="rotate(-90 60 60)" />
+                        <defs>
+                          <linearGradient id="perfCyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#22d3ee" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient>
+                          <linearGradient id="perfGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399" /><stop offset="100%" stopColor="#10b981" /></linearGradient>
+                          <linearGradient id="perfGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#f59e0b" /></linearGradient>
+                        </defs>
+                      </svg>
+                    </div>
+
+                    {/* right labels */}
+                    <div className="text-left space-y-2">
+                      <div>
+                        <p className="kpi-value text-[14px] text-foreground leading-none">{Math.round(pctCard)}%</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5">FinaCard</p>
+                      </div>
+                      <div>
+                        <p className="kpi-value text-[14px] text-foreground leading-none">{Math.round(pctBnsl)}%</p>
+                        <p className="text-[9px] text-muted-foreground mt-0.5">BNSL</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Area chart */}
               <div className="flex-1 -mx-1" style={{ minHeight: 70 }}>
@@ -654,35 +705,42 @@ export default function Dashboard() {
                 <h2 className="text-[16px] font-semibold text-foreground">Portfolio Allocation Tracking</h2>
               </div>
 
-              {/* 4 progress segments */}
+              {/* 4 progress segments — Hynex style: bigger %, taller bars */}
               {(() => {
                 const segs = [
-                  { label: 'Wallet',    value: walletGoldValue,    color: '#10b981' },
-                  { label: 'FinaCard',  value: finacardValue,      color: '#84cc16' },
-                  { label: 'BNSL',      value: bnslValue,          color: '#facc15' },
+                  { label: 'Wallet',    value: walletGoldValue,    color: '#22d3ee' },
+                  { label: 'FinaCard',  value: finacardValue,      color: '#34d399' },
+                  { label: 'BNSL',      value: bnslValue,          color: '#fbbf24' },
                   { label: 'FinaBridge',value: finaBridgeValue,    color: '#e5e7eb' },
                 ];
                 const total = Math.max(segs.reduce((s, x) => s + x.value, 0), 1);
                 return (
-                  <div className="space-y-2.5 mb-5">
-                    <div className="grid grid-cols-4 gap-3">
+                  <div className="space-y-3.5 mb-6">
+                    <div className="grid grid-cols-4 gap-4">
                       {segs.map(s => (
                         <div key={s.label}>
-                          <p className="kpi-value text-[20px] text-foreground">{Math.round((s.value / total) * 100)}%</p>
+                          <p className="kpi-value text-[28px] text-foreground leading-none">{Math.round((s.value / total) * 100)}%</p>
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-4 gap-4">
                       {segs.map(s => (
-                        <div key={s.label} className="h-2 rounded-full overflow-hidden bg-muted/60">
-                          <div className="h-full rounded-full" style={{ width: `${Math.max((s.value / total) * 100, 3)}%`, background: s.color, boxShadow: `0 0 12px ${s.color}55` }} />
+                        <div key={s.label} className="h-3 rounded-full overflow-hidden bg-muted/60">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{
+                              width: `${Math.max((s.value / total) * 100, 3)}%`,
+                              background: `linear-gradient(90deg, ${s.color}, ${s.color}cc)`,
+                              boxShadow: `0 0 14px ${s.color}66`,
+                            }}
+                          />
                         </div>
                       ))}
                     </div>
-                    <div className="grid grid-cols-4 gap-3">
+                    <div className="grid grid-cols-4 gap-4">
                       {segs.map(s => (
-                        <div key={s.label} className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                          <span className="w-2 h-2 rounded-sm" style={{ background: s.color }} /> {s.label}
+                        <div key={s.label} className="flex items-center gap-2 text-[12px] text-muted-foreground">
+                          <span className="w-2.5 h-2.5 rounded-sm" style={{ background: s.color }} /> {s.label}
                         </div>
                       ))}
                     </div>
@@ -788,14 +846,14 @@ export default function Dashboard() {
                     },
                   ];
                   return items.map((it, i) => (
-                    <div key={i} className="flex items-center gap-4" data-testid={`schedule-item-${i}`}>
-                      <div className="flex flex-col items-center justify-center w-10 shrink-0">
-                        <span className="kpi-value text-[18px] text-foreground leading-none">{format(it.d, 'd')}</span>
-                        <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mt-0.5">{format(it.d, 'MMM')}</span>
+                    <div key={i} className="flex items-center gap-4 group cursor-pointer hover:bg-muted/30 -mx-2 px-2 py-2 rounded-xl transition-colors" data-testid={`schedule-item-${i}`}>
+                      <div className="flex flex-col items-center justify-center w-12 shrink-0">
+                        <span className="kpi-value text-[26px] text-foreground leading-none group-hover:text-primary transition-colors">{format(it.d, 'd')}</span>
+                        <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-muted-foreground mt-1">{format(it.d, 'MMM')}</span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[13px] font-semibold text-foreground truncate">{it.title}</p>
-                        <p className="text-[11px] text-muted-foreground truncate">{it.sub}</p>
+                        <p className="text-[13px] font-semibold text-foreground truncate leading-tight">{it.title}</p>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{it.sub}</p>
                       </div>
                     </div>
                   ));

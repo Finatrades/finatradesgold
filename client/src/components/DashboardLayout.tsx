@@ -9,7 +9,7 @@ import KycStatusBanner from '@/components/KycStatusBanner';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield } from 'lucide-react';
+import { Menu, Clock, LogOut, User, Settings, CheckCircle2, ShieldCheck, Shield, RotateCcw, Calendar, Search } from 'lucide-react';
 import { motion } from 'framer-motion';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -143,27 +143,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
           
-          {/* Row 2: User Bar — matches dashboard bg */}
-          <div className="h-14 px-6 flex items-center justify-between border-b border-border/60 bg-background">
-            
-            <div className="flex items-center gap-4">
-              <button 
+          {/* Row 2: Hynex-style pill bar */}
+          <div className="h-16 px-6 flex items-center justify-between border-b border-border/40 bg-background">
+
+            <div className="flex items-center gap-3">
+              <button
                 onClick={() => setSidebarOpen(true)}
                 className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
                 data-testid="button-mobile-sidebar"
               >
                 <Menu className="w-5 h-5" />
               </button>
-              
             </div>
 
-            <div className="flex items-center gap-4">
-              
+            <div className="flex items-center gap-2.5">
+
+              {/* Reports pill */}
+              <Link href="/transactions">
+                <button className="hynex-pill" data-testid="header-pill-reports">
+                  <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                  <span>Reports</span>
+                </button>
+              </Link>
+
+              {/* Date pill */}
+              <div className="hynex-pill" data-testid="header-pill-date">
+                <Calendar className="w-3.5 h-3.5 text-muted-foreground" />
+                <span>{format(new Date(), 'EEE d, MMM')}</span>
+              </div>
+
+              {/* Search pill */}
+              <div className="hynex-pill min-w-[260px]" data-testid="header-pill-search">
+                <Search className="w-3.5 h-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search transactions, certificates..."
+                  className="bg-transparent outline-none border-0 text-[13px] flex-1 placeholder:text-muted-foreground/60"
+                  data-testid="input-header-search"
+                />
+              </div>
+
               <ThemeToggle />
 
               <NotificationCenter />
-              
-              <div className="h-8 w-px bg-border" />
+
+              <div className="h-7 w-px bg-border/60 mx-1" />
               
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

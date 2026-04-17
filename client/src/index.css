@@ -187,18 +187,18 @@
   --brand-border-color: rgba(255, 255, 255, 0.08);
   --brand-header-gradient: linear-gradient(90deg, #050507 0%, #0F0A1F 50%, #1E1B3A 100%);
 
-  /* Core surface — deep zinc with subtle warm undertone */
-  --background: #09090B;
+  /* Core surface — Hynex matte black */
+  --background: #07070A;
   --foreground: #FAFAFA;
 
-  /* Cards — elevated surface, very dark slate */
-  --card: #131318;
+  /* Cards — elevated charcoal with subtle warmth */
+  --card: #14141B;
   --card-foreground: #FAFAFA;
 
-  --popover: #18181C;
+  --popover: #1A1A22;
   --popover-foreground: #FAFAFA;
 
-  --sidebar-background: #0F0F13;
+  --sidebar-background: #0C0C11;
 
   /* Primary — brighter purple for dark contrast */
   --primary: #A342FF;
@@ -699,19 +699,49 @@ input[type="number"] {
   transition: transform 220ms cubic-bezier(.2,.7,.2,1), box-shadow 220ms ease, border-color 220ms ease;
 }
 .dark .hynex-card {
-  background: linear-gradient(180deg, hsl(var(--card)) 0%, hsl(var(--card) / 0.92) 100%);
-  border-color: hsl(var(--border) / 0.45);
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(255,255,255,0.05) 0%, transparent 55%),
+    linear-gradient(180deg, #18181F 0%, #14141B 100%);
+  border-color: rgba(255,255,255,0.06);
   box-shadow:
-    0 1px 0 0 rgba(255,255,255,0.04) inset,
-    0 12px 32px -16px rgba(0,0,0,0.55);
+    0 1px 0 0 rgba(255,255,255,0.05) inset,
+    0 0 0 1px rgba(255,255,255,0.02) inset,
+    0 16px 40px -20px rgba(0,0,0,0.7);
 }
-.hynex-card:hover {
-  border-color: hsl(var(--primary) / 0.25);
+.dark .hynex-card:hover {
+  border-color: rgba(167,139,250,0.25);
   box-shadow:
-    0 1px 0 0 hsl(var(--background) / 0.6) inset,
-    0 14px 36px -16px rgba(124,58,237,0.18);
+    0 1px 0 0 rgba(255,255,255,0.06) inset,
+    0 18px 48px -20px rgba(124,58,237,0.30);
 }
 
+/* Hynex pill button (header pills) */
+.hynex-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 500;
+  background: hsl(var(--card));
+  border: 1px solid hsl(var(--border) / 0.6);
+  color: hsl(var(--foreground));
+  transition: all 200ms ease;
+  cursor: pointer;
+}
+.hynex-pill:hover {
+  border-color: hsl(var(--primary) / 0.35);
+  background: hsl(var(--primary) / 0.06);
+}
+.dark .hynex-pill {
+  background: rgba(255,255,255,0.025);
+  border-color: rgba(255,255,255,0.06);
+}
+.dark .hynex-pill:hover {
+  background: rgba(255,255,255,0.05);
+  border-color: rgba(167,139,250,0.35);
+}
 /* Premium Card with Subtle Glow */
 .premium-card {
   background: linear-gradient(135deg, rgba(255,255,255,0.96) 0%, rgba(250,251,255,0.92) 100%);
