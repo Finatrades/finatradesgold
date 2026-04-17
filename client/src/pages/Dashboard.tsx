@@ -443,20 +443,20 @@ export default function Dashboard() {
 
         <motion.section variants={itemVariants} className="flex items-center justify-between">
           <div>
-            <h1 className="text-[30px] font-bold" style={{ letterSpacing: '-0.025em', lineHeight: '1.15' }} data-testid="text-welcome">
+            <h1 className="text-display-md font-display" data-testid="text-welcome">
               <span className="text-foreground">{getGreeting()}, </span>
-              <span className="gradient-text-purple font-extrabold">{userName}</span>
+              <span className="gradient-text-purple">{userName}</span>
             </h1>
-            <p className="text-muted-foreground text-[14px] mt-1 font-medium" style={{ letterSpacing: '-0.01em' }}>Your gold portfolio at a glance</p>
+            <p className="text-muted-foreground text-[14px] mt-1.5 font-normal" style={{ letterSpacing: '-0.005em' }}>Your gold portfolio at a glance</p>
           </div>
           <motion.div
-            whileHover={{ scale: 1.03 }}
-            className="flex items-center gap-2.5 bg-white/80 backdrop-blur-sm px-4 py-2.5 rounded-2xl border border-border/60 shadow-sm cursor-default"
+            whileHover={{ scale: 1.02 }}
+            className="flex items-center gap-2.5 bg-card/70 dark:bg-card/50 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-border/60 shadow-sm cursor-default"
           >
-            <span className="text-[12px] text-muted-foreground/70 uppercase tracking-widest font-bold">ID</span>
-            <span className="text-sm font-bold text-foreground font-mono tracking-wide">{finatradesId}</span>
-            <button onClick={copyFinatradesId} className="p-1.5 hover:bg-purple-50 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
-              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground/70" />}
+            <span className="kpi-label">ID</span>
+            <span className="text-sm font-semibold text-foreground font-mono-ui tracking-tight">{finatradesId}</span>
+            <button onClick={copyFinatradesId} className="p-1.5 hover:bg-primary/10 rounded-lg transition-all" title="Copy ID" aria-label="Copy Finatrades ID" data-testid="button-copy-id">
+              {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5 text-muted-foreground/70" />}
             </button>
           </motion.div>
         </motion.section>

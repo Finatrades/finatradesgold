@@ -80,7 +80,9 @@
   --brand-button-secondary-bg: #ffffff;
   --brand-button-secondary-text: #8A2BE2;
   --brand-font-family: 'Inter', system-ui, sans-serif;
-  --brand-heading-font-family: var(--brand-font-family);
+  --brand-display-font-family: 'Geist', 'Inter', system-ui, sans-serif;
+  --brand-mono-font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
+  --brand-heading-font-family: var(--brand-display-font-family);
   --brand-background: #FAFBFF;
   --brand-card-background: #ffffff;
   --brand-sidebar-background: #ffffff;
@@ -278,10 +280,56 @@ html *::before, html *::after {
     letter-spacing: -0.01em;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-feature-settings: 'kern' 1, 'liga' 1;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    font-family: var(--brand-display-font-family);
+    font-feature-settings: 'kern' 1, 'liga' 1, 'ss01' 1;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
   }
+}
+
+/* ============================================
+   STRIPE / VERCEL QUALITY DISPLAY UTILITIES
+   ============================================ */
+
+/* Display font (Geist) for hero headlines, big KPI numbers */
+.font-display {
+  font-family: var(--brand-display-font-family);
+  font-feature-settings: 'kern' 1, 'liga' 1, 'ss01' 1, 'cv05' 1;
+  letter-spacing: -0.025em;
+}
+
+/* Monospace (Geist Mono) for IDs, codes, timestamps */
+.font-mono-ui {
+  font-family: var(--brand-mono-font-family);
+  font-feature-settings: 'kern' 1, 'tnum' 1;
+  letter-spacing: -0.01em;
+}
+
+/* Stripe-style display sizes */
+.text-display-2xl { font-size: 60px; line-height: 1.05; letter-spacing: -0.035em; font-weight: 600; }
+.text-display-xl  { font-size: 48px; line-height: 1.08; letter-spacing: -0.032em; font-weight: 600; }
+.text-display-lg  { font-size: 38px; line-height: 1.1;  letter-spacing: -0.03em;  font-weight: 600; }
+.text-display-md  { font-size: 30px; line-height: 1.15; letter-spacing: -0.028em; font-weight: 600; }
+.text-display-sm  { font-size: 24px; line-height: 1.2;  letter-spacing: -0.025em; font-weight: 600; }
+
+/* KPI value — bold tabular numbers, Stripe-quality */
+.kpi-value {
+  font-family: var(--brand-display-font-family);
+  font-feature-settings: 'tnum' 1, 'ss01' 1, 'cv05' 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+/* KPI label — uppercase micro-caps */
+.kpi-label {
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted-foreground);
+  line-height: 1.2;
 }
 
 /* ============================================
