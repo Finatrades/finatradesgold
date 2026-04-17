@@ -97,53 +97,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className={`${sidebarCollapsed ? 'lg:ml-[88px]' : 'lg:ml-[300px]'} min-h-screen flex flex-col transition-all duration-300`}>
         
         <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
-          {/* Row 1: Dark Ticker Bar */}
-          <div className="h-9 bg-gradient-to-r from-slate-900 via-gray-900 to-slate-800 flex items-center justify-between px-5 text-xs">
-            <div className="flex items-center gap-2 text-emerald-400 font-medium" data-testid="gold-price-ticker">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              <span>Gold Price: <strong className="text-white">${goldPrice.toFixed(2)}/gram</strong></span>
-              {isGoldPriceLive && (
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              )}
-            </div>
-            
-            <div 
-              className="flex items-center gap-2 text-emerald-300 cursor-pointer hover:text-emerald-200 transition-colors group"
-              onClick={() => setShowAssuranceDialog(true)}
-              data-testid="settlement-assurance-trigger"
-            >
-              <motion.div
-                animate={{ scale: [1, 1.1, 1] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </motion.div>
-              <span className="hidden sm:inline font-medium">Settlement Assurance</span>
-              <motion.span 
-                className="hidden md:inline text-emerald-400/80 font-medium"
-                animate={{ opacity: [0.7, 1, 0.7] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-              >
-                Backed by USD 42.134 Billion
-              </motion.span>
-            </div>
-            
-            {!user.mfaEnabled ? (
-              <Link href="/security">
-                <div className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-full cursor-pointer transition-colors text-xs font-semibold" data-testid="button-enable-2fa">
-                  <Shield className="w-3 h-3" />
-                  <span className="hidden sm:inline">Enable 2FA</span>
-                </div>
-              </Link>
-            ) : (
-              <div className="flex items-center gap-1.5 text-emerald-400 text-xs font-medium">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">2FA Active</span>
-              </div>
-            )}
-          </div>
-          
-          {/* Row 2: Hynex-style pill bar */}
+          {/* Hynex-style pill bar */}
           <div className="h-16 px-6 flex items-center justify-between border-b border-border/40 bg-background">
 
             <div className="flex items-center gap-3">
@@ -192,11 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity" data-testid="button-user-menu">
-                    <div className="text-right hidden sm:block">
-                      <p className="text-sm font-semibold text-foreground">{user.firstName} {user.lastName}</p>
-                      <p className="text-xs text-primary capitalize font-medium">{accountType} Account</p>
-                    </div>
-                    <Avatar className="h-10 w-10 border-2 border-violet-200 ring-2 ring-violet-100">
+                    <Avatar className="h-9 w-9 border border-border/60">
                       <AvatarImage 
                         src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=7C3AED&textColor=ffffff`} 
                         alt={user.firstName} 

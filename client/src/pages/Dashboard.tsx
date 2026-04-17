@@ -481,7 +481,7 @@ export default function Dashboard() {
             <motion.div
               whileHover={{ y: -4, scale: 1.008 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-              className="relative h-[280px] rounded-3xl overflow-hidden cursor-pointer"
+              className="relative h-[310px] rounded-3xl overflow-hidden cursor-pointer"
               style={{
                 background: 'linear-gradient(135deg,#1c1c26 0%,#0d0d14 60%,#16161e 100%)',
                 boxShadow: '0 24px 60px -18px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 1px 0 rgba(255,255,255,0.06) inset',
@@ -628,27 +628,27 @@ export default function Dashboard() {
                 const pctCard = (finacardValue / tot) * 100;
                 const pctBnsl = (bnslValue / tot) * 100;
                 return (
-                  <div className="relative flex items-center justify-between gap-2 mb-2">
+                  <div className="relative flex items-center justify-between gap-3 mb-2">
                     {/* left label */}
                     <div className="text-right">
-                      <p className="kpi-value text-[15px] text-foreground leading-none">{Math.round(pctWallet)}%</p>
-                      <p className="text-[9px] text-muted-foreground mt-0.5">Wallet</p>
+                      <p className="kpi-value text-[22px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctWallet)}%</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Wallet</p>
                     </div>
 
-                    <div className="relative" style={{ width: 120, height: 120 }}>
-                      <svg width="120" height="120" viewBox="0 0 120 120">
+                    <div className="relative" style={{ width: 170, height: 170 }}>
+                      <svg width="170" height="170" viewBox="0 0 170 170">
                         {/* outer ring — cyan (Wallet) */}
-                        <circle cx="60" cy="60" r="50" fill="none" stroke="rgba(34,211,238,0.10)" strokeWidth="7" />
-                        <circle cx="60" cy="60" r="50" fill="none" stroke="url(#perfCyan)" strokeWidth="7" strokeLinecap="round"
-                          strokeDasharray={`${(pctWallet / 100) * 314} 314`} transform="rotate(-90 60 60)" />
+                        <circle cx="85" cy="85" r="72" fill="none" stroke="rgba(34,211,238,0.10)" strokeWidth="9" />
+                        <circle cx="85" cy="85" r="72" fill="none" stroke="url(#perfCyan)" strokeWidth="9" strokeLinecap="round"
+                          strokeDasharray={`${(pctWallet / 100) * 452} 452`} transform="rotate(-90 85 85)" />
                         {/* mid ring — green (FinaCard) */}
-                        <circle cx="60" cy="60" r="40" fill="none" stroke="rgba(16,185,129,0.10)" strokeWidth="7" />
-                        <circle cx="60" cy="60" r="40" fill="none" stroke="url(#perfGreen)" strokeWidth="7" strokeLinecap="round"
-                          strokeDasharray={`${(pctCard / 100) * 251} 251`} transform="rotate(-90 60 60)" />
+                        <circle cx="85" cy="85" r="58" fill="none" stroke="rgba(16,185,129,0.10)" strokeWidth="9" />
+                        <circle cx="85" cy="85" r="58" fill="none" stroke="url(#perfGreen)" strokeWidth="9" strokeLinecap="round"
+                          strokeDasharray={`${(pctCard / 100) * 364} 364`} transform="rotate(-90 85 85)" />
                         {/* inner ring — amber (BNSL) */}
-                        <circle cx="60" cy="60" r="30" fill="none" stroke="rgba(245,158,11,0.10)" strokeWidth="7" />
-                        <circle cx="60" cy="60" r="30" fill="none" stroke="url(#perfGold)" strokeWidth="7" strokeLinecap="round"
-                          strokeDasharray={`${(pctBnsl / 100) * 188} 188`} transform="rotate(-90 60 60)" />
+                        <circle cx="85" cy="85" r="44" fill="none" stroke="rgba(245,158,11,0.10)" strokeWidth="9" />
+                        <circle cx="85" cy="85" r="44" fill="none" stroke="url(#perfGold)" strokeWidth="9" strokeLinecap="round"
+                          strokeDasharray={`${(pctBnsl / 100) * 276} 276`} transform="rotate(-90 85 85)" />
                         <defs>
                           <linearGradient id="perfCyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#22d3ee" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient>
                           <linearGradient id="perfGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399" /><stop offset="100%" stopColor="#10b981" /></linearGradient>
@@ -658,14 +658,14 @@ export default function Dashboard() {
                     </div>
 
                     {/* right labels */}
-                    <div className="text-left space-y-2">
+                    <div className="text-left space-y-3">
                       <div>
-                        <p className="kpi-value text-[14px] text-foreground leading-none">{Math.round(pctCard)}%</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">FinaCard</p>
+                        <p className="kpi-value text-[20px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctCard)}%</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">FinaCard</p>
                       </div>
                       <div>
-                        <p className="kpi-value text-[14px] text-foreground leading-none">{Math.round(pctBnsl)}%</p>
-                        <p className="text-[9px] text-muted-foreground mt-0.5">BNSL</p>
+                        <p className="kpi-value text-[20px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctBnsl)}%</p>
+                        <p className="text-[11px] text-muted-foreground mt-1">BNSL</p>
                       </div>
                     </div>
                   </div>
