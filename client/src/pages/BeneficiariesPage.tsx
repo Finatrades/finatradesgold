@@ -265,7 +265,7 @@ export default function BeneficiariesPage() {
     <Card 
       key={beneficiary.id} 
       data-testid={`card-beneficiary-${beneficiary.id}`}
-      className="bg-card border border-border hover:border-primary/50 transition-all"
+      className="hynex-card hover:border-primary/50 transition-all"
     >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
@@ -391,7 +391,7 @@ export default function BeneficiariesPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-6">
               <div>
                 <div className="flex items-center justify-between mb-2">
@@ -408,7 +408,7 @@ export default function BeneficiariesPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -438,7 +438,7 @@ export default function BeneficiariesPage() {
             </CardContent>
           </Card>
         ) : beneficiaries.length === 0 ? (
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-12 text-center">
               <Users className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No Beneficiaries Yet</h3>

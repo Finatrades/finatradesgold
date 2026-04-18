@@ -84,7 +84,7 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
 
   if (isLoading) {
     return (
-      <Card className="bg-card shadow-sm border border-border">
+      <Card className="hynex-card">
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </CardContent>
@@ -93,7 +93,7 @@ function SignedAgreementsSection({ userId, plans }: { userId?: string; plans: Bn
   }
 
   return (
-    <Card className="bg-card shadow-sm border border-border">
+    <Card className="hynex-card">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -745,7 +745,7 @@ export default function BNSL() {
                />
                
                {/* Mini Summary Footer */}
-               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 bg-card shadow-sm rounded-xl border border-border">
+               <div className="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6 p-6 hynex-card">
                   <div>
                     <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Gold Sold</p>
                     <p className="text-xl font-bold text-foreground">

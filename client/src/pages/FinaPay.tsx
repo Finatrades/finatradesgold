@@ -321,7 +321,7 @@ export default function FinaPay() {
       <div className="max-w-5xl mx-auto space-y-6 pb-12">
 
         {/* Quick Actions - Horizontal Pill Tabs - TOP */}
-        <div className="bg-card rounded-2xl border border-border p-3 shadow-sm overflow-x-auto">
+        <div className="hynex-card p-3 overflow-x-auto">
           <div className="flex flex-wrap gap-2">
             <button
               onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
@@ -426,7 +426,7 @@ export default function FinaPay() {
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-stretch">
 
             {/* LEFT PANEL — Digital Gold Payments summary */}
-            <div id="finapay-wallet-section" className={`bg-card rounded-2xl border border-border p-6 shadow-sm transition-all duration-500 flex flex-col ${highlightSection ? 'ring-2 ring-primary ring-offset-2 bg-purple-50' : ''}`}>
+            <div id="finapay-wallet-section" className={`hynex-card p-6 transition-all duration-500 flex flex-col ${highlightSection ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-purple-100 rounded-lg shrink-0">
                   <WalletIcon className="w-5 h-5 text-fuchsia-600" />
@@ -569,7 +569,7 @@ export default function FinaPay() {
         </div>
 
         {/* Transaction History */}
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <div className="hynex-card p-6">
           <h3 className="text-lg font-bold text-foreground mb-4">Recent Transactions</h3>
           {transactions.length === 0 && ledgerEntries.length === 0 ? (
             <div className="text-center py-8">

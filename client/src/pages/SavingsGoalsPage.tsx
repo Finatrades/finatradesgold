@@ -226,7 +226,7 @@ export default function SavingsGoalsPage() {
       <Card 
         key={goal.id} 
         data-testid={`card-goal-${goal.id}`}
-        className="bg-card border border-border hover:border-primary/50 transition-all"
+        className="hynex-card hover:border-primary/50 transition-all"
       >
         <CardContent className="p-6">
           <div className="flex items-start justify-between mb-4">
@@ -364,7 +364,7 @@ export default function SavingsGoalsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -375,7 +375,7 @@ export default function SavingsGoalsPage() {
               </div>
             </CardContent>
           </Card>
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -403,7 +403,7 @@ export default function SavingsGoalsPage() {
             </CardContent>
           </Card>
         ) : goals.length === 0 ? (
-          <Card className="bg-card border border-border">
+          <Card className="hynex-card">
             <CardContent className="p-12 text-center">
               <Target className="w-16 h-16 text-muted-foreground/30 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-foreground mb-2">No Savings Goals Yet</h3>

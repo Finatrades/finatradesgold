@@ -1,22 +1,48 @@
-import { Moon, Sun } from "lucide-react";
+import { Moon, Sun, Monitor, Check } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+
+type Mode = "light" | "dark" | "system";
+
+const OPTIONS: { value: Mode; label: string; Icon: typeof Sun }[] = [
+  { value: "light", label: "Light", Icon: Sun },
+  { value: "dark", label: "Dark", Icon: Moon },
+  { value: "system", label: "System", Icon: Monitor },
+];
 
 export default function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setMounted(true), []);
 
-  const isDark = mounted && (resolvedTheme === "dark" || theme === "dark");
+  useEffect(() => {
+    if (!open) return;
+    const onClick = (e: MouseEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("mousedown", onClick);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onClick);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
 
-  const toggle = () => setTheme(isDark ? "light" : "dark");
+  const current: Mode = mounted ? ((theme as Mode) || "system") : "system";
+  const isDark = mounted && resolvedTheme === "dark";
+  const ActiveIcon = current === "system" ? Monitor : isDark ? Moon : Sun;
 
   if (!mounted) {
     return (
       <button
         type="button"
-        aria-label="Toggle theme"
+        aria-label="Theme"
         className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
         data-testid="button-theme-toggle"
       >
@@ -26,24 +52,53 @@ export default function ThemeToggle() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={toggle}
-      aria-label={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      title={isDark ? "Switch to light mode" : "Switch to dark mode"}
-      className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/70 transition-all duration-300 hover:text-foreground hover:border-primary/40 hover:shadow-[0_0_0_3px_rgba(163,66,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      data-testid="button-theme-toggle"
-    >
-      <Sun
-        className={`absolute h-4 w-4 transition-all duration-300 ${
-          isDark ? "rotate-90 scale-0 opacity-0" : "rotate-0 scale-100 opacity-100"
-        }`}
-      />
-      <Moon
-        className={`absolute h-4 w-4 transition-all duration-300 ${
-          isDark ? "rotate-0 scale-100 opacity-100" : "-rotate-90 scale-0 opacity-0"
-        }`}
-      />
-    </button>
+    <div ref={wrapRef} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Choose theme"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title={`Theme: ${current}`}
+        className="relative inline-flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-foreground/70 transition-all duration-300 hover:text-foreground hover:border-primary/40 hover:shadow-[0_0_0_3px_rgba(163,66,255,0.08)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        data-testid="button-theme-toggle"
+      >
+        <ActiveIcon className="h-4 w-4 transition-all duration-300" />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full mt-2 w-40 rounded-2xl border border-border bg-popover text-popover-foreground shadow-lg backdrop-blur-xl p-1 z-50"
+          data-testid="menu-theme"
+        >
+          {OPTIONS.map(({ value, label, Icon }) => {
+            const active = current === value;
+            return (
+              <button
+                key={value}
+                type="button"
+                role="menuitemradio"
+                aria-checked={active}
+                onClick={() => {
+                  setTheme(value);
+                  setOpen(false);
+                }}
+                className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
+                  active
+                    ? "bg-primary/10 text-foreground"
+                    : "text-foreground/80 hover:bg-muted/60 hover:text-foreground"
+                }`}
+                data-testid={`menuitem-theme-${value}`}
+              >
+                <Icon className="h-4 w-4" />
+                <span className="flex-1 text-left">{label}</span>
+                {active && <Check className="h-3.5 w-3.5 text-primary" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }

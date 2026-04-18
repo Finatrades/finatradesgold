@@ -1182,7 +1182,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'vault-activity' 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                  : 'bg-card border border-border text-foreground/85 hover:bg-muted/40'
+                  : 'hynex-card text-foreground/85 hover:bg-muted/40'
               } disabled:opacity-50`}
               data-testid="tab-vault-activity"
             >
@@ -1614,7 +1614,7 @@ export default function FinaVault() {
                 </TabsContent>
 
                 <TabsContent value="terms" className="mt-0">
-                  <Card className="bg-card border border-border">
+                  <Card className="hynex-card">
                     <CardHeader className="border-b border-border">
                       <CardTitle className="text-xl font-bold text-foreground flex items-center gap-3">
                         <div className="p-2 rounded-lg bg-primary/10">

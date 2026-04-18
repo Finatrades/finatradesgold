@@ -181,7 +181,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
 
   if (isLoading) {
     return (
-      <Card className="bg-card shadow-sm border border-border">
+      <Card className="hynex-card">
         <CardContent className="p-6 flex items-center justify-center">
           <Loader2 className="w-6 h-6 animate-spin text-primary" />
         </CardContent>
@@ -190,7 +190,7 @@ By signing, you acknowledge that you have read, understood, and agree to all ter
   }
 
   return (
-    <Card className="bg-card shadow-sm border border-border">
+    <Card className="hynex-card">
       <CardContent className="p-6">
         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-border">
           <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
@@ -1057,7 +1057,7 @@ export default function FinaBridge() {
         </div>
 
         {/* FinaBridge Wallet Card */}
-        <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
+        <div className="hynex-card p-6">
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">

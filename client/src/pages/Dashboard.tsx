@@ -545,7 +545,7 @@ export default function Dashboard() {
                   </div>
                   <button
                     onClick={(e) => { e.stopPropagation(); setBalanceVisible(!balanceVisible); }}
-                    className="w-8 h-8 rounded-full bg-white/8 hover:bg-white/12 flex items-center justify-center transition-colors"
+                    className="w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 flex items-center justify-center transition-colors"
                     aria-label="Toggle balance visibility"
                     data-testid="button-toggle-balance"
                   >
