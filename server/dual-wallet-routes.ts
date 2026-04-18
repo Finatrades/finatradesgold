@@ -10,7 +10,7 @@
 import { Router, Request, Response, NextFunction } from "express";
 import { storage } from "./storage";
 import { db } from "./db";
-import { eq, and, desc, asc, sql, gt } from "drizzle-orm";
+import { eq, and, desc, asc, sql, gt, gte } from "drizzle-orm";
 import { 
   vaultOwnershipSummary, 
   vaultLedgerEntries, 
@@ -273,10 +273,21 @@ async function handleDualWalletTransfer(req: Request, res: Response) {
         );
         
         // 2. Deduct from wallets.goldGrams (MPGW source of truth)
-        await tx
+        // SECURITY: Atomic conditional UPDATE prevents race-condition double-spend.
+        // Concurrent transfers cannot all pass an out-of-transaction balance check.
+        // CAST(... AS NUMERIC) is required — Drizzle gte() on decimal columns
+        // does lexicographical string comparison.
+        const debited = await tx
           .update(wallets)
           .set({ goldGrams: sql`${wallets.goldGrams} - ${goldGrams}`, updatedAt: now })
-          .where(eq(wallets.userId, userId));
+          .where(and(
+            eq(wallets.userId, userId),
+            sql`CAST(${wallets.goldGrams} AS NUMERIC) >= ${goldGrams}`,
+          ))
+          .returning({ id: wallets.id });
+        if (debited.length === 0) {
+          throw new Error('Insufficient LGPW balance for lock');
+        }
 
         // 3. Credit FPGW in vault_ownership_summary
         await tx

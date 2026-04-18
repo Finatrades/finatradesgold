@@ -20,7 +20,7 @@ import {
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   vaultLedgerEntries, vaultOwnershipSummary, vaultHoldings, vaultDepositRequests,
-  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, tradeCases,
+  wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, bnslPlans, bnslWallets, tradeCases,
   withdrawalRequests, cryptoPaymentRequests, buyGoldRequests,
   goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments, dealMilestones, dealDiscrepancies, dealRooms as dealRoomsTable,
@@ -7247,23 +7247,38 @@ export async function registerRoutes(
       const price = await getGoldPricePerGram() || 0;
       const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
 
-      await db.transaction(async (tx) => {
-        await tx.update(wallets)
-          .set({
-            goldGrams: sql`${wallets.goldGrams} - ${amount.toFixed(6)}`,
-            finacardGoldGrams: sql`${wallets.finacardGoldGrams} + ${amount.toFixed(6)}`,
-            updatedAt: new Date()
-          })
-          .where(eq(wallets.userId, userId));
+      // SECURITY: Atomic conditional UPDATE prevents concurrent fund-double-spend (TOCTOU race).
+      try {
+        await db.transaction(async (tx) => {
+          const debited = await tx.update(wallets)
+            .set({
+              goldGrams: sql`${wallets.goldGrams} - ${amount.toFixed(6)}`,
+              finacardGoldGrams: sql`${wallets.finacardGoldGrams} + ${amount.toFixed(6)}`,
+              updatedAt: new Date()
+            })
+            .where(and(
+              eq(wallets.userId, userId),
+              sql`CAST(${wallets.goldGrams} AS NUMERIC) >= ${amount}`,
+            ))
+            .returning({ id: wallets.id });
+          if (debited.length === 0) {
+            throw new Error('INSUFFICIENT_FINAPAY_BALANCE');
+          }
 
-        await tx.insert(finacardTransfers).values({
-          userId,
-          type: 'fund',
-          goldGrams: amount.toFixed(6),
-          goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
-          usdEquivalent: usdEquiv,
+          await tx.insert(finacardTransfers).values({
+            userId,
+            type: 'fund',
+            goldGrams: amount.toFixed(6),
+            goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
+            usdEquivalent: usdEquiv,
+          });
         });
-      });
+      } catch (txErr: any) {
+        if (txErr?.message === 'INSUFFICIENT_FINAPAY_BALANCE') {
+          return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
+        }
+        throw txErr;
+      }
 
       const updatedWallet = await storage.getWallet(userId);
       res.json({ 
@@ -7297,23 +7312,38 @@ export async function registerRoutes(
       const price = await getGoldPricePerGram() || 0;
       const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
 
-      await db.transaction(async (tx) => {
-        await tx.update(wallets)
-          .set({
-            goldGrams: sql`${wallets.goldGrams} + ${amount.toFixed(6)}`,
-            finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${amount.toFixed(6)}`,
-            updatedAt: new Date()
-          })
-          .where(eq(wallets.userId, userId));
+      // SECURITY: Atomic conditional UPDATE prevents concurrent FinaCard-withdraw double-spend.
+      try {
+        await db.transaction(async (tx) => {
+          const debited = await tx.update(wallets)
+            .set({
+              goldGrams: sql`${wallets.goldGrams} + ${amount.toFixed(6)}`,
+              finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${amount.toFixed(6)}`,
+              updatedAt: new Date()
+            })
+            .where(and(
+              eq(wallets.userId, userId),
+              sql`CAST(${wallets.finacardGoldGrams} AS NUMERIC) >= ${amount}`,
+            ))
+            .returning({ id: wallets.id });
+          if (debited.length === 0) {
+            throw new Error('INSUFFICIENT_FINACARD_BALANCE');
+          }
 
-        await tx.insert(finacardTransfers).values({
-          userId,
-          type: 'withdraw',
-          goldGrams: amount.toFixed(6),
-          goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
-          usdEquivalent: usdEquiv,
+          await tx.insert(finacardTransfers).values({
+            userId,
+            type: 'withdraw',
+            goldGrams: amount.toFixed(6),
+            goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
+            usdEquivalent: usdEquiv,
+          });
         });
-      });
+      } catch (txErr: any) {
+        if (txErr?.message === 'INSUFFICIENT_FINACARD_BALANCE') {
+          return res.status(400).json({ message: "Insufficient FinaCard balance" });
+        }
+        throw txErr;
+      }
 
       const updatedWallet = await storage.getWallet(userId);
       res.json({
@@ -11840,35 +11870,48 @@ export async function registerRoutes(
 
       const amountGrams = parseFloat(goldGrams);
       
-      // Get user's FinaPay wallet
+      // Get user's FinaPay wallet (existence check)
       const finapayWallet = await storage.getWallet(userId);
       if (!finapayWallet) {
         return res.status(404).json({ message: "FinaPay wallet not found" });
-      }
-      
-      const availableGold = parseFloat(finapayWallet.goldGrams);
-      if (availableGold < amountGrams) {
-        return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
       }
       
       // Get current gold price for USD value calculation
       const goldPrice = await getGoldPricePerGram();
       const usdValue = amountGrams * goldPrice;
       
-      // Debit from FinaPay wallet
-      await storage.updateWallet(finapayWallet.id, {
-        goldGrams: (availableGold - amountGrams).toFixed(6)
-      });
-      
-      // Credit to BNSL wallet with locked USD value
+      // SECURITY: Wrap debit+credit in a single transaction with atomic conditional UPDATE
+      // on the source wallet to prevent concurrent-request double-spend (TOCTOU).
       const bnslWallet = await storage.getOrCreateBnslWallet(userId);
-      const newAvailable = parseFloat(bnslWallet.availableGoldGrams) + amountGrams;
-      const currentAvailableValueUsd = parseFloat(bnslWallet.availableValueUsd || '0');
-      const newAvailableValueUsd = currentAvailableValueUsd + usdValue;
-      await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: newAvailable.toFixed(6),
-        availableValueUsd: newAvailableValueUsd.toFixed(2)
-      });
+      try {
+        await db.transaction(async (tx) => {
+          const debited = await tx
+            .update(wallets)
+            .set({ goldGrams: sql`${wallets.goldGrams} - ${amountGrams}`, updatedAt: new Date() })
+            .where(and(
+              eq(wallets.id, finapayWallet.id),
+              sql`CAST(${wallets.goldGrams} AS NUMERIC) >= ${amountGrams}`,
+            ))
+            .returning({ id: wallets.id });
+          if (debited.length === 0) {
+            throw new Error('INSUFFICIENT_FINAPAY_BALANCE');
+          }
+          // Atomic credit to BNSL wallet (no balance check needed for credits)
+          await tx
+            .update(bnslWallets)
+            .set({
+              availableGoldGrams: sql`${bnslWallets.availableGoldGrams} + ${amountGrams}`,
+              availableValueUsd: sql`${bnslWallets.availableValueUsd} + ${usdValue}`,
+              updatedAt: new Date(),
+            })
+            .where(eq(bnslWallets.id, bnslWallet.id));
+        });
+      } catch (txErr: any) {
+        if (txErr?.message === 'INSUFFICIENT_FINAPAY_BALANCE') {
+          return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
+        }
+        throw txErr;
+      }
       
       // Create transaction record with USD value
       const transferTx = await storage.createTransaction({
@@ -11949,13 +11992,9 @@ export async function registerRoutes(
 
       const amountGrams = parseFloat(goldGrams);
       
-      // Get user's BNSL wallet
+      // Get user's BNSL wallet (snapshot for proportional USD calc)
       const bnslWallet = await storage.getOrCreateBnslWallet(userId);
-      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
-      
-      if (availableGold < amountGrams) {
-        return res.status(400).json({ message: "Insufficient gold balance in BNSL wallet" });
-      }
+      const availableGoldSnapshot = parseFloat(bnslWallet.availableGoldGrams);
       
       // Verify FinaPay wallet exists BEFORE making any changes
       const finapayWallet = await storage.getWallet(userId);
@@ -11967,23 +12006,42 @@ export async function registerRoutes(
       const goldPrice = await getGoldPricePerGram();
       const usdValue = amountGrams * goldPrice;
       
-      // Calculate proportional locked USD to deduct (based on original locked price per gram)
+      // Calculate proportional locked USD to deduct (based on snapshot price per gram)
       const currentAvailableValueUsd = parseFloat(bnslWallet.availableValueUsd || '0');
-      const lockedPricePerGram = availableGold > 0 ? currentAvailableValueUsd / availableGold : 0;
+      const lockedPricePerGram = availableGoldSnapshot > 0 ? currentAvailableValueUsd / availableGoldSnapshot : 0;
       const usdToDeduct = amountGrams * lockedPricePerGram;
-      const newAvailableValueUsd = Math.max(0, currentAvailableValueUsd - usdToDeduct);
       
-      // Debit from BNSL wallet (including locked USD value)
-      await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: (availableGold - amountGrams).toFixed(6),
-        availableValueUsd: newAvailableValueUsd.toFixed(2)
-      });
-      
-      // Credit to FinaPay wallet
-      const newFinapayBalance = parseFloat(finapayWallet.goldGrams) + amountGrams;
-      await storage.updateWallet(finapayWallet.id, {
-        goldGrams: newFinapayBalance.toFixed(6)
-      });
+      // SECURITY: Atomic transaction with conditional UPDATE on BNSL wallet to prevent
+      // concurrent-withdrawal double-spend (TOCTOU race).
+      try {
+        await db.transaction(async (tx) => {
+          const debited = await tx
+            .update(bnslWallets)
+            .set({
+              availableGoldGrams: sql`${bnslWallets.availableGoldGrams} - ${amountGrams}`,
+              availableValueUsd: sql`GREATEST(${bnslWallets.availableValueUsd} - ${usdToDeduct}, 0)`,
+              updatedAt: new Date(),
+            })
+            .where(and(
+              eq(bnslWallets.id, bnslWallet.id),
+              sql`CAST(${bnslWallets.availableGoldGrams} AS NUMERIC) >= ${amountGrams}`,
+            ))
+            .returning({ id: bnslWallets.id });
+          if (debited.length === 0) {
+            throw new Error('INSUFFICIENT_BNSL_BALANCE');
+          }
+          // Atomic credit to FinaPay wallet
+          await tx
+            .update(wallets)
+            .set({ goldGrams: sql`${wallets.goldGrams} + ${amountGrams}`, updatedAt: new Date() })
+            .where(eq(wallets.id, finapayWallet.id));
+        });
+      } catch (txErr: any) {
+        if (txErr?.message === 'INSUFFICIENT_BNSL_BALANCE') {
+          return res.status(400).json({ message: "Insufficient gold balance in BNSL wallet" });
+        }
+        throw txErr;
+      }
       
       // Create transaction record with USD value
       const transferTx = await storage.createTransaction({
@@ -12310,23 +12368,30 @@ export async function registerRoutes(
       
       const goldGrams = parseFloat(planData.goldSoldGrams);
       
-      // Get BNSL wallet and verify sufficient funds
+      // Get BNSL wallet (snapshot for error messages only)
       const bnslWallet = await storage.getOrCreateBnslWallet(planData.userId);
-      const availableGold = parseFloat(bnslWallet.availableGoldGrams);
-      
-      if (availableGold < goldGrams) {
-        return res.status(400).json({ 
-          message: `Insufficient BNSL wallet balance. Available: ${availableGold.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
+      const availableGoldSnapshot = parseFloat(bnslWallet.availableGoldGrams);
+
+      // SECURITY: Atomic conditional UPDATE — locks gold only if available balance is sufficient.
+      // Prevents concurrent BNSL plan enrollments from each passing a stale balance check
+      // and over-committing locked gold.
+      const locked = await db
+        .update(bnslWallets)
+        .set({
+          availableGoldGrams: sql`${bnslWallets.availableGoldGrams} - ${goldGrams}`,
+          lockedGoldGrams: sql`${bnslWallets.lockedGoldGrams} + ${goldGrams}`,
+          updatedAt: new Date(),
+        })
+        .where(and(
+          eq(bnslWallets.id, bnslWallet.id),
+          sql`CAST(${bnslWallets.availableGoldGrams} AS NUMERIC) >= ${goldGrams}`,
+        ))
+        .returning({ id: bnslWallets.id });
+      if (locked.length === 0) {
+        return res.status(400).json({
+          message: `Insufficient BNSL wallet balance. Available: ${availableGoldSnapshot.toFixed(3)}g, Required: ${goldGrams.toFixed(3)}g`
         });
       }
-      
-      // Lock gold: move from available to locked
-      const newAvailable = availableGold - goldGrams;
-      const newLocked = parseFloat(bnslWallet.lockedGoldGrams) + goldGrams;
-      await storage.updateBnslWallet(bnslWallet.id, {
-        availableGoldGrams: newAvailable.toFixed(6),
-        lockedGoldGrams: newLocked.toFixed(6)
-      });
       
       // Auto-activate on enrollment — no admin approval required
       planData.status = 'Active';
@@ -13945,25 +14010,30 @@ export async function registerRoutes(
       });
       
       // GOLD-ONLY: Deduct gold grams from the selected wallet type atomically with request creation
+      // SECURITY: Uses atomic conditional UPDATE (WHERE balance >= amount) inside the transaction
+      // to prevent TOCTOU race conditions on concurrent withdrawal requests.
       const request = await storage.withTransaction(async (txStorage) => {
-        // Update the vault ownership summary to hold the gold
-        const [existingSummary] = await db.select().from(vaultOwnershipSummary)
-          .where(eq(vaultOwnershipSummary.userId, userId));
-        
-        if (existingSummary) {
-          if (selectedWalletType === 'LGPW') {
-            const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
-            await db.update(vaultOwnershipSummary).set({
-              mpgwAvailableGrams: (currentMpgw - goldGramsRequired).toFixed(6),
-              lastUpdated: new Date()
-            }).where(eq(vaultOwnershipSummary.userId, userId));
-          } else {
-            // For FGPW, need to consume from FGPW batches
-            const { consumeFpgwBatches } = await import("./fpgw-batch-service");
-            await consumeFpgwBatches(userId, goldGramsRequired, 'withdrawal_hold');
+        if (selectedWalletType === 'LGPW') {
+          // Atomic deduction: row is locked by UPDATE, balance verified in the WHERE clause.
+          // If concurrent requests race, only the first sufficient deduction succeeds.
+          // CAST(... AS NUMERIC) is required — Drizzle gte() on decimal columns
+          // does lexicographical string comparison, which is wrong for numbers.
+          const updated = await db.update(vaultOwnershipSummary).set({
+            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGramsRequired}`,
+            lastUpdated: new Date(),
+          }).where(and(
+            eq(vaultOwnershipSummary.userId, userId),
+            sql`CAST(${vaultOwnershipSummary.mpgwAvailableGrams} AS NUMERIC) >= ${goldGramsRequired}`,
+          )).returning({ id: vaultOwnershipSummary.userId });
+          if (updated.length === 0) {
+            throw new Error('Insufficient LGPW balance for withdrawal');
           }
+        } else {
+          // For FGPW, need to consume from FGPW batches (already SAFE — uses FOR UPDATE)
+          const { consumeFpgwBatches } = await import("./fpgw-batch-service");
+          await consumeFpgwBatches(userId, goldGramsRequired, 'withdrawal_hold');
         }
-        
+
         return await txStorage.createWithdrawalRequest(requestData);
       });
       
