@@ -165,7 +165,7 @@ export default function BNSLHistory() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground mb-1">Locked in Plans</p>
-                  <p className="text-xl font-semibold text-fuchsia-600 dark:text-fuchsia-400">
+                  <p className="text-xl font-semibold text-foreground">
                     {parseFloat(wallet.lockedGoldGrams || '0').toFixed(4)}g
                   </p>
                 </div>

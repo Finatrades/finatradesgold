@@ -970,7 +970,7 @@ export default function VaultActivityList() {
         <div className="text-left sm:text-right">
           {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
             <>
-              <p className="font-bold text-amber-600 dark:text-amber-400">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              <p className="font-bold text-foreground">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               {tx.goldPriceUsdPerGram && (
                 <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
                   {(tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')) ? (

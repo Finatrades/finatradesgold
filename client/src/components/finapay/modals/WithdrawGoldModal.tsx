@@ -371,7 +371,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
             <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 rounded-xl p-3 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Available Gold Balance</p>
-                <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                <p className="text-lg font-bold text-foreground">
                   {balanceLoading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${availableGrams.toFixed(4)} g`}
                 </p>
                 <p className="text-xs text-muted-foreground">≈ ${(availableGrams * goldPricePerGram).toFixed(2)}</p>

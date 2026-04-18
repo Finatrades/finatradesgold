@@ -209,7 +209,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                       <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 animate-in fade-in">
                         <div className="flex justify-between items-center">
                           <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
-                          <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{inputMode === 'grams' ? `$${grossAmount.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
+                          <span className="text-lg font-bold text-foreground">{inputMode === 'grams' ? `$${grossAmount.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
                         </div>
                       </div>
                     )}

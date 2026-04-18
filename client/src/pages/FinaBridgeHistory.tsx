@@ -164,7 +164,7 @@ export default function FinaBridgeHistory() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Locked in Trades</p>
-                  <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                  <p className="text-xl font-semibold text-foreground">
                     {parseFloat(wallet.lockedGoldGrams || '0').toFixed(4)}g
                   </p>
                 </div>

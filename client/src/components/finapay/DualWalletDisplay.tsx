@@ -191,7 +191,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       <div className="px-6 py-5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Your Gold</p>
         <div className="flex items-end gap-4 flex-wrap">
-          <p className="text-4xl font-bold text-amber-600 dark:text-amber-400" data-testid="total-gold">
+          <p className="text-4xl font-bold text-foreground" data-testid="total-gold">
             {totalGrams.toFixed(4)}<span className="text-xl ml-1 font-semibold">g</span>
           </p>
           <div className="pb-1">

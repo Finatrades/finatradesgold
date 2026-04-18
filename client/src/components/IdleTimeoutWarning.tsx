@@ -33,7 +33,7 @@ export default function IdleTimeoutWarning({
           </div>
           <AlertDialogDescription className="text-base">
             You've been inactive for a while. For your security, you'll be automatically signed out in{' '}
-            <span className="font-bold text-fuchsia-600 dark:text-fuchsia-400 text-lg">{timeDisplay}</span>.
+            <span className="font-bold text-foreground text-lg">{timeDisplay}</span>.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2 sm:gap-0">

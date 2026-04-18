@@ -179,7 +179,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
             <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 mt-3">
               <div className="flex justify-between items-center">
                 <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
-                <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{inputMode === 'grams' ? `$${amountUsd.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
+                <span className="text-lg font-bold text-foreground">{inputMode === 'grams' ? `$${amountUsd.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
               </div>
             </div>
           )}
@@ -221,7 +221,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-xl p-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Reference</p>
-          <p className="font-mono font-bold text-lg text-purple-600 dark:text-purple-400">{referenceNumber}</p>
+          <p className="font-mono font-bold text-lg text-foreground">{referenceNumber}</p>
         </div>
         <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl p-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Amount</p>
@@ -335,7 +335,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                         <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">
                           {inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}
                         </span>
-                        <span className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                        <span className="text-lg font-bold text-foreground">
                           {inputMode === 'grams' 
                             ? `$${amountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                             : `${grams.toFixed(4)}g`

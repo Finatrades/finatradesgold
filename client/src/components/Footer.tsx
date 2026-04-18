@@ -132,7 +132,7 @@ export default function Footer() {
                   href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
                   target="_blank" 
                   rel="noopener noreferrer"
-                  className="font-bold text-purple-400 hover:text-purple-300 transition-colors"
+                  className="font-bold text-foreground hover:text-purple-300 transition-colors"
                   data-testid="link-lei"
                 >
                   894500AF89I6QWOX2V69

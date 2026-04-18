@@ -58,7 +58,7 @@ function Tile({ icon, label, sub, grams, goldPricePerGram, accent, bg, border, p
         </div>
         <span className={`text-xs font-semibold ${primary ? 'text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>{label}</span>
       </div>
-      <p className={`font-bold ${primary ? 'text-2xl text-amber-700 dark:text-amber-300' : 'text-lg text-foreground'}`}>
+      <p className={`font-bold text-foreground ${primary ? 'text-2xl' : 'text-lg'}`}>
         {fmt(grams)}<span className="text-sm font-medium ml-0.5">g</span>
       </p>
       <p className={`text-xs ${primary ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>

@@ -252,7 +252,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                         </p>
                         
                         {/* Price Section - AED only */}
-                        <p className="text-lg font-bold text-purple-600 dark:text-purple-400 mb-3">
+                        <p className="text-lg font-bold text-foreground mb-3">
                           AED {unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </p>
                         
@@ -376,7 +376,7 @@ export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProp
                   )}
                   <div className="border-t pt-2 flex justify-between">
                     <span className="font-medium">Total</span>
-                    <span className="text-lg font-bold text-purple-600 dark:text-purple-400" data-testid="text-total-aed">
+                    <span className="text-lg font-bold text-foreground" data-testid="text-total-aed">
                       AED {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>

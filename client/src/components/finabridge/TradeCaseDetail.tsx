@@ -194,7 +194,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                    <Label className="text-muted-foreground">Locked Collateral</Label>
                    <div className="flex items-center gap-2 mt-1">
                      <Lock className="w-4 h-4 text-purple-500" />
-                     <p className="text-xl font-bold text-purple-500">{tradeCase.lockedGoldGrams.toFixed(3)} g</p>
+                     <p className="text-xl font-bold text-foreground">{tradeCase.lockedGoldGrams.toFixed(3)} g</p>
                    </div>
                    {currentRole === 'Exporter' && tradeCase.status !== 'Released' && (
                      <p className="text-xs text-blue-500 mt-2">Locked by Importer. Awaiting release.</p>

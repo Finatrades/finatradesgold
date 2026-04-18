@@ -526,7 +526,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
-                <span className="font-bold text-purple-700 dark:text-purple-300">${numericAmount.toFixed(2)}</span>
+                <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gold:</span>
@@ -1171,7 +1171,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Amount:</span>
-                        <span className="font-bold text-purple-700 dark:text-purple-300">${numericAmount.toFixed(2)}</span>
+                        <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gold:</span>

@@ -617,7 +617,7 @@ const [otpLoading, setOtpLoading] = useState(false);
             <div className="mt-8 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
               <Link href="/register">
-                <span className="text-purple-500 font-bold hover:text-purple-600 dark:text-purple-400 hover:underline cursor-pointer transition-colors">Create Account</span>
+                <span className="text-purple-500 font-bold hover:text-foreground hover:underline cursor-pointer transition-colors">Create Account</span>
               </Link>
             </div>
           </Card>

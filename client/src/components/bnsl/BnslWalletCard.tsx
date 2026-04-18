@@ -160,25 +160,25 @@ export default function BnslWalletCard({
         <div className="grid grid-cols-4 gap-2 text-center">
           {bars.kg > 0 && (
             <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
-              <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{bars.kg}</span>
+              <span className="text-lg font-bold text-foreground">{bars.kg}</span>
               <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">1 KG</p>
             </div>
           )}
           {bars.g100 > 0 && (
             <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
-              <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{bars.g100}</span>
+              <span className="text-lg font-bold text-foreground">{bars.g100}</span>
               <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">100g</p>
             </div>
           )}
           {bars.g10 > 0 && (
             <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
-              <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{bars.g10}</span>
+              <span className="text-lg font-bold text-foreground">{bars.g10}</span>
               <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">10g</p>
             </div>
           )}
           {bars.g1 > 0 && (
             <div className="bg-card rounded-lg p-2 border border-amber-300 shadow-sm">
-              <span className="text-lg font-bold text-amber-700 dark:text-amber-300">{bars.g1}</span>
+              <span className="text-lg font-bold text-foreground">{bars.g1}</span>
               <p className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">1g</p>
             </div>
           )}
@@ -237,7 +237,7 @@ export default function BnslWalletCard({
               <p className="text-amber-700 dark:text-amber-300 text-xs uppercase tracking-wider mb-2 font-semibold">Available Gold to Invest</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                  <span className="text-2xl font-bold text-foreground">
                     {bnslBalanceGold.toFixed(4)} g
                   </span>
                 </div>
@@ -261,7 +261,7 @@ export default function BnslWalletCard({
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-2">Gold Locked in Plans</p>
               <div className="space-y-1">
                 <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-purple-500">
+                  <span className="text-2xl font-bold text-foreground">
                     {lockedBalanceGold.toFixed(4)} g
                   </span>
                 </div>
@@ -283,7 +283,7 @@ export default function BnslWalletCard({
                <p className="text-amber-700 dark:text-amber-300 text-xs uppercase tracking-wider mb-2 font-semibold">Total BNSL Gold</p>
                <div className="space-y-1">
                  <div className="flex items-baseline gap-2">
-                   <span className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                   <span className="text-2xl font-bold text-foreground">
                      {(bnslBalanceGold + lockedBalanceGold).toFixed(4)} g
                    </span>
                  </div>
@@ -459,12 +459,12 @@ export default function BnslWalletCard({
                <div className="space-y-2">
                  <div className="flex justify-between items-baseline">
                    <span className="text-sm text-muted-foreground">Price per gram:</span>
-                   <span className="text-base font-bold text-amber-600 dark:text-amber-400">${currentGoldPrice.toFixed(2)}</span>
+                   <span className="text-base font-bold text-foreground">${currentGoldPrice.toFixed(2)}</span>
                  </div>
                  {bnslBalanceGold > 0 && (
                    <div className="flex justify-between items-baseline pt-2 border-t border-amber-200 dark:border-amber-800/40">
                      <span className="text-sm text-muted-foreground">Your gold value:</span>
-                     <span className="text-base font-bold text-amber-600 dark:text-amber-400">
+                     <span className="text-base font-bold text-foreground">
                        ≈ ${(bnslBalanceGold * currentGoldPrice).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                      </span>
                    </div>

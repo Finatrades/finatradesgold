@@ -533,7 +533,7 @@ export default function PendingTransfers() {
         onClick={() => setIsOpen((o) => !o)}
         data-testid="pending-items-header"
       >
-        <CardTitle className="text-lg font-bold flex items-center gap-2 text-amber-700 dark:text-amber-300">
+        <CardTitle className="text-lg font-bold flex items-center gap-2 text-foreground">
           <Clock className="w-5 h-5" />
           Pending Items
           <Badge

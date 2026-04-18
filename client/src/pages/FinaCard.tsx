@@ -677,7 +677,7 @@ export default function FinaCard() {
                   </div>
                   <div className="border-t border-border pt-3 flex justify-between">
                     <span className="text-foreground/85 font-medium">Gold to Deduct</span>
-                    <span className="font-bold text-purple-700 dark:text-purple-300" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
+                    <span className="font-bold text-foreground" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
                   </div>
                   {spendGoldPreview > finacardGrams && (
                     <p className="text-xs text-red-500 font-medium" data-testid="text-insufficient-balance">

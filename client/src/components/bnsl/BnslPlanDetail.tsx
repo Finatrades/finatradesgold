@@ -189,7 +189,7 @@ export default function BnslPlanDetail({
           <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-950/200/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
              <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
              <div>
-               <h4 className="font-bold text-blue-600 dark:text-blue-400 text-sm">Contract Type: Deferred Price Sale</h4>
+               <h4 className="font-bold text-foreground text-sm">Contract Type: Deferred Price Sale</h4>
                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                  You have sold this gold to Wingold. You no longer own it. You hold a contractual right to receive 
                  (1) Quarterly Margin in gold grams and (2) Base Price Component settlement at maturity.

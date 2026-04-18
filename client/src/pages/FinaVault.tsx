@@ -602,13 +602,13 @@ function MyPhysicalDeposits() {
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Offered Gold</p>
-                          <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
+                          <p className="text-lg font-bold text-foreground">
                             {offeredGrams ? `${parseFloat(offeredGrams).toLocaleString()} g` : '--'}
                           </p>
                         </div>
                         <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Total Fees</p>
-                          <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
+                          <p className="text-lg font-bold text-foreground">
                             {offeredFees ? `$${parseFloat(offeredFees).toLocaleString()}` : '--'}
                           </p>
                         </div>

@@ -831,7 +831,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             inputMode === 'usd' ? 'border-emerald-200 dark:border-emerald-800/40 focus-within:border-emerald-500' : 'border-purple-200 dark:border-purple-800/40 focus-within:border-purple-500'
           }`}>
             <div className="flex items-center justify-center py-6 px-4">
-              <span className={`text-3xl font-bold mr-2 ${inputMode === 'usd' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
+              <span className="text-3xl font-bold mr-2 text-foreground">
                 {inputMode === 'usd' ? '$' : ''}
               </span>
               <Input
@@ -894,7 +894,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div className="bg-slate-50 dark:bg-slate-950/20 rounded-xl p-4 border border-slate-200 dark:border-slate-800/40 space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">You'll receive:</span>
-                <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                <span className="text-lg font-bold text-foreground">
                   {inputMode === 'gold' 
                     ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toFixed(4)
                     : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toFixed(4)}g gold
@@ -954,7 +954,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         }}
                         className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-teal-400 hover:bg-teal-50 dark:bg-teal-950/20/50 transition-all"
                       >
-                        <span className="font-bold text-teal-600 dark:text-teal-400">AED</span>
+                        <span className="font-bold text-foreground">AED</span>
                         <span className="text-xs text-muted-foreground">Dirham</span>
                       </button>
                     )}
@@ -979,7 +979,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         }}
                         className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-blue-400 hover:bg-blue-50 dark:bg-blue-950/20/50 transition-all"
                       >
-                        <span className="font-bold text-blue-600 dark:text-blue-400">USD</span>
+                        <span className="font-bold text-foreground">USD</span>
                         <span className="text-xs text-muted-foreground">Dollar</span>
                       </button>
                     )}
@@ -1518,7 +1518,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   inputMode === 'usd' ? 'border-primary/30 focus-within:border-primary' : 'border-purple-300 focus-within:border-purple-500'
                 }`}>
                   <div className="flex items-center justify-center py-6 px-4">
-                    <span className={`text-3xl font-bold mr-2 ${inputMode === 'usd' ? 'text-primary' : 'text-purple-600 dark:text-purple-400'}`}>
+                    <span className="text-3xl font-bold mr-2 text-foreground">
                       {inputMode === 'usd' ? '$' : ''}
                     </span>
                     <Input
@@ -1617,7 +1617,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                 {/* You'll Receive - Main highlight */}
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">You'll receive:</span>
-                  <span className="text-lg font-bold text-purple-600 dark:text-purple-400">
+                  <span className="text-lg font-bold text-foreground">
                     {inputMode === 'gold' 
                       ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toFixed(4)
                       : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toFixed(4)}g gold
@@ -1701,12 +1701,12 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         {inputMode === 'gold' ? (
                           <>
                             <p className="text-xs text-muted-foreground">Estimated cost</p>
-                            <p className="text-lg font-bold text-emerald-600 dark:text-emerald-400">≈ ${(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)).toFixed(2)}</p>
+                            <p className="text-lg font-bold text-foreground">≈ ${(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)).toFixed(2)}</p>
                           </>
                         ) : (
                           <>
                             <p className="text-xs text-muted-foreground">You'll receive</p>
-                            <p className="text-lg font-bold text-purple-600 dark:text-purple-400">≈ {(parseFloat(amount) / (goldPrice?.pricePerGram || 1)).toFixed(4)}g</p>
+                            <p className="text-lg font-bold text-foreground">≈ {(parseFloat(amount) / (goldPrice?.pricePerGram || 1)).toFixed(4)}g</p>
                           </>
                         )}
                       </div>
@@ -1769,7 +1769,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <h4 className="font-bold text-foreground text-lg">Bank Transfer</h4>
-                      <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-full uppercase">Recommended</span>
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-foreground rounded-full uppercase">Recommended</span>
                     </div>
                     <p className="text-sm text-muted-foreground mt-0.5">Transfer from your bank account</p>
                     <div className="flex items-center gap-4 mt-2">
@@ -1801,7 +1801,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <h4 className="font-bold text-foreground text-lg">Card Payment</h4>
-                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-full uppercase flex items-center gap-0.5">
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-foreground rounded-full uppercase flex items-center gap-0.5">
                           <Zap className="w-2.5 h-2.5" />
                           Instant
                         </span>
@@ -2082,7 +2082,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <DollarSign className="w-4 h-4" />
                       Total to Pay:
                     </span>
-                    <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                    <span className="text-lg font-bold text-foreground">
                       {(() => {
                         // Calculate total based on input mode (fee is deducted from deposit, not added to payment)
                         let depositUsd = 0;
@@ -2301,7 +2301,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                     <div className="text-right">
                       {inputMode === 'gold' ? (
                         <>
-                          <p className="font-bold text-purple-700 dark:text-purple-300 text-lg">
+                          <p className="font-bold text-foreground text-lg">
                             {parseFloat(goldAmount).toFixed(4)}g gold
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -2310,7 +2310,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         </>
                       ) : (
                         <>
-                          <p className="font-bold text-purple-700 dark:text-purple-300 text-lg">
+                          <p className="font-bold text-foreground text-lg">
                             {getEffectiveGoldGrams().toFixed(4)}g gold
                           </p>
                           <p className="text-sm text-muted-foreground">
@@ -2475,7 +2475,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                       <Coins className="w-4 h-4" />
                       Gold You'll Receive:
                     </span>
-                    <span className="text-xl font-bold text-purple-700 dark:text-purple-300">
+                    <span className="text-xl font-bold text-foreground">
                       {inputMode === 'gold' 
                         ? parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
                         : ((parseFloat(amount) || 0) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
@@ -2509,7 +2509,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
                         <DollarSign className="w-4 h-4" />
                         Total to Pay:
                       </span>
-                      <span className="text-lg font-bold text-emerald-700 dark:text-emerald-300">
+                      <span className="text-lg font-bold text-foreground">
                         ${(inputMode === 'gold' 
                           ? (parseFloat(goldAmount) * goldPrice.pricePerGram) + calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram)
                           : parseFloat(amount) + calculateFee(parseFloat(amount) || 0)

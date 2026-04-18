@@ -1114,7 +1114,7 @@ export default function FinaBridge() {
                 <div className="space-y-1 mb-2">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">USD Value:</span>
-                    <span className={`text-2xl font-bold ${role === 'importer' ? 'text-purple-500' : 'text-blue-500'}`}>
+                    <span className="text-2xl font-bold text-foreground">
                       ${(parseFloat(role === 'importer' ? (wallet?.lockedGoldGrams || '0') : ((wallet as any)?.incomingLockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>

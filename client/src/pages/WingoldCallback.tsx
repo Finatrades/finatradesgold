@@ -162,7 +162,7 @@ export default function WingoldCallback() {
             <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
               <AlertCircle className="h-10 w-10 text-amber-600 dark:text-amber-400" />
             </div>
-            <CardTitle className="text-2xl text-amber-700 dark:text-amber-300">Payment Cancelled</CardTitle>
+            <CardTitle className="text-2xl text-foreground">Payment Cancelled</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-center text-muted-foreground">

@@ -1704,7 +1704,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center"><Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div>
-                      <div className="flex-1"><p className="text-xs text-muted-foreground">Current LC Stage</p><p className="font-bold text-purple-700 dark:text-purple-300">{currentLcStage}</p></div>
+                      <div className="flex-1"><p className="text-xs text-muted-foreground">Current LC Stage</p><p className="font-bold text-foreground">{currentLcStage}</p></div>
                       <p className="text-xs text-muted-foreground">Stage {validCurrentIndex + 1} of {LC_STAGES.length}</p>
                     </div>
                   </div>

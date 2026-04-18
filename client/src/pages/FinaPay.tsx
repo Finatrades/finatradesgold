@@ -460,7 +460,7 @@ export default function FinaPay() {
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Locked Assets</p>
-                      <p className="text-xl font-bold text-purple-500 mb-0.5">0.0000 g</p>
+                      <p className="text-xl font-bold text-foreground mb-0.5">0.0000 g</p>
                       <p className="text-xs text-purple-500/70">≈ $0.00</p>
                       <p className="text-[10px] text-muted-foreground mt-1.5">
                         <Lock className="w-2.5 h-2.5 inline mr-1" />
@@ -475,7 +475,7 @@ export default function FinaPay() {
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Value</p>
-                      <p className="text-xl font-bold text-purple-500 mb-0.5">
+                      <p className="text-xl font-bold text-foreground mb-0.5">
                         {goldGrams.toFixed(4)} g
                       </p>
                       <p className="text-xs text-muted-foreground">≈ ${totalAvailableUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
@@ -496,7 +496,7 @@ export default function FinaPay() {
                         Live
                       </span>
                     </div>
-                    <p className="text-xl font-bold text-amber-700 dark:text-amber-300 mb-0.5">
+                    <p className="text-xl font-bold text-foreground mb-0.5">
                       ${currentGoldPriceUsdPerGram.toFixed(2)}
                       <span className="text-xs font-normal text-muted-foreground ml-1">/ g</span>
                     </p>
@@ -526,7 +526,7 @@ export default function FinaPay() {
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Volume</p>
-                      <p className="text-xl font-bold text-amber-700 dark:text-amber-300" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
+                      <p className="text-xl font-bold text-foreground" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
                       <p className="text-[10px] text-muted-foreground mt-1">Gold transacted</p>
                     </div>
                   </div>

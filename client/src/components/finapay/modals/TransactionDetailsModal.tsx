@@ -391,7 +391,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
             <SectionCard title="Counterparty">
               <div className="py-3 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                  {desc.companyName ? <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" /> : <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{initials(isSend ? desc.recipientName : desc.senderName)}</span>}
+                  {desc.companyName ? <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" /> : <span className="text-sm font-bold text-foreground">{initials(isSend ? desc.recipientName : desc.senderName)}</span>}
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{isSend ? (desc.recipientName || 'Recipient') : (desc.senderName || 'Sender')}</p>

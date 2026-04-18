@@ -745,14 +745,14 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
               <div className="rounded-xl border border-blue-100 bg-blue-50 dark:bg-blue-950/20/50 p-3.5 space-y-2">
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Goods</p>
+                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wide mb-1.5">Goods</p>
                   <ReviewRow label="Product" value={goodsName} />
                   {description && <ReviewRow label="Description" value={description} />}
                   {quantity && <ReviewRow label="Quantity" value={`${quantity} ${quantityUnit}`} />}
                 </div>
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Finance</p>
+                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wide mb-1.5">Finance</p>
                   <ReviewRow label="Trade Value" value={`$${parseFloat(tradeValueUsd).toLocaleString()} USD`} />
                   <ReviewRow label="Settlement Gold" value={`${settlementGrams.toFixed(3)}g`} highlight />
                   <ReviewRow label="Gold Price" value={isPriceLocked ? `$${goldPrice.toFixed(2)}/g (Locked)` : `$${goldPrice.toFixed(2)}/g (Floating)`} />
@@ -760,7 +760,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 </div>
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Exporter</p>
+                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wide mb-1.5">Exporter</p>
                   {suggestExporter ? (
                     <ReviewRow label="Finding" value="Finatrades will suggest exporters" />
                   ) : (
@@ -774,7 +774,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Logistics</p>
+                  <p className="text-[10px] font-bold text-foreground uppercase tracking-wide mb-1.5">Logistics</p>
                   <ReviewRow label="Transport" value={modeOfTransport} />
                   <ReviewRow label="Incoterms" value={incoterms} />
                   {portOfLoading && <ReviewRow label="Port of Loading" value={portOfLoading} />}
