@@ -689,9 +689,12 @@ input[type="number"] {
   background-clip: text;
 }
 
-/* Hynex-style premium glass card */
+/* Hynex-style premium glass card
+   IMPORTANT: background is scoped via :not([class*="bg-"]) so that any
+   <Card className="bg-gradient-to-* ..."> override is preserved. Without
+   this, hynex-card's background shorthand would kill custom gradients,
+   making white-text-on-dark-card heroes render invisibly on a white card. */
 .hynex-card {
-  background: var(--card);
   border: 1px solid #EAECF0;
   border-radius: 20px;
   box-shadow:
@@ -701,6 +704,9 @@ input[type="number"] {
     0 12px 24px -8px rgba(16, 24, 40, 0.10),
     0 24px 48px -16px rgba(16, 24, 40, 0.08);
   transition: transform 260ms cubic-bezier(.2,.7,.2,1), box-shadow 260ms ease, border-color 220ms ease;
+}
+.hynex-card:not([class*="bg-gradient"]):not([class*="bg-linear"]):not([class*="bg-["]):not([class*="bg-zinc"]):not([class*="bg-slate"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="bg-white"]):not([class*="bg-black"]):not([class*="bg-purple"]):not([class*="bg-violet"]):not([class*="bg-pink"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]):not([class*="bg-yellow"]):not([class*="bg-red"]):not([class*="bg-orange"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-rose"]):not([class*="bg-indigo"]):not([class*="bg-fuchsia"]):not([class*="bg-sky"]):not([class*="bg-lime"]):not([class*="bg-muted"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-accent"]):not([class*="bg-destructive"]):not([class*="bg-popover"]) {
+  background: var(--card);
 }
 .hynex-card:hover {
   transform: translateY(-3px);
@@ -713,9 +719,6 @@ input[type="number"] {
     0 36px 72px -16px rgba(16, 24, 40, 0.12);
 }
 .dark .hynex-card {
-  background:
-    radial-gradient(120% 80% at 50% -20%, rgba(255,255,255,0.06) 0%, transparent 55%),
-    linear-gradient(180deg, #18181F 0%, #14141B 100%);
   border-color: rgba(255,255,255,0.06);
   box-shadow:
     0 1px 0 0 rgba(255,255,255,0.06) inset,
@@ -723,6 +726,11 @@ input[type="number"] {
     0 8px 16px -8px rgba(0,0,0,0.5),
     0 24px 48px -16px rgba(0,0,0,0.6),
     0 40px 80px -24px rgba(0,0,0,0.55);
+}
+.dark .hynex-card:not([class*="bg-gradient"]):not([class*="bg-linear"]):not([class*="bg-["]):not([class*="bg-zinc"]):not([class*="bg-slate"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="bg-white"]):not([class*="bg-black"]):not([class*="bg-purple"]):not([class*="bg-violet"]):not([class*="bg-pink"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]):not([class*="bg-yellow"]):not([class*="bg-red"]):not([class*="bg-orange"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-rose"]):not([class*="bg-indigo"]):not([class*="bg-fuchsia"]):not([class*="bg-sky"]):not([class*="bg-lime"]):not([class*="bg-muted"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-accent"]):not([class*="bg-destructive"]):not([class*="bg-popover"]) {
+  background:
+    radial-gradient(120% 80% at 50% -20%, rgba(255,255,255,0.06) 0%, transparent 55%),
+    linear-gradient(180deg, #18181F 0%, #14141B 100%);
 }
 .dark .hynex-card:hover {
   transform: translateY(-3px);
