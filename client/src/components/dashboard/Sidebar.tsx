@@ -22,6 +22,7 @@ import {
   PanelLeftOpen,
   ChevronDown,
   Sparkles,
+  Briefcase,
   Zap,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
@@ -255,36 +256,37 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           {/* ── FOOTER ── */}
           <div className={`shrink-0 ${collapsed ? 'p-2' : 'p-3'} border-t border-border/40 space-y-2`}>
 
-            {/* Upgrade to Pro card (expanded only) */}
+            {/* Upgrade to Business card (expanded only) */}
             <div className={collapsed ? 'lg:hidden' : ''}>
               <div
                 className="relative overflow-hidden rounded-2xl p-3.5"
                 style={{
-                  background: 'linear-gradient(135deg, rgba(16,185,129,0.10) 0%, rgba(34,211,238,0.08) 50%, rgba(124,58,237,0.10) 100%)',
+                  background: 'linear-gradient(135deg, rgba(124,58,237,0.10) 0%, rgba(212,175,55,0.10) 55%, rgba(124,58,237,0.08) 100%)',
                   border: '1px solid hsl(var(--border) / 0.6)',
                 }}
-                data-testid="card-upgrade-pro"
+                data-testid="card-upgrade-business"
               >
-                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(34,211,238,0.25), transparent 70%)' }} />
+                <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(212,175,55,0.28), transparent 70%)' }} />
                 <div className="relative flex items-start gap-2.5 mb-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-400 to-cyan-500 flex items-center justify-center shrink-0 shadow-md shadow-emerald-500/20">
-                    <Sparkles className="w-4 h-4 text-white" />
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-violet-500 to-amber-500 flex items-center justify-center shrink-0 shadow-md shadow-violet-500/20">
+                    <Briefcase className="w-4 h-4 text-white" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[13px] font-bold text-foreground leading-tight">Upgrade to Pro</p>
+                    <p className="text-[13px] font-bold text-foreground leading-tight">Upgrade to Business</p>
+                    <p className="text-[10.5px] font-semibold text-muted-foreground mt-0.5 uppercase tracking-wider">For traders & importers</p>
                   </div>
                 </div>
                 <p className="relative text-[11px] leading-snug text-muted-foreground mb-3">
-                  Unlock priority gold pricing, deeper insights, and premium support.
+                  Unlock trade finance, higher BNSL limits, multi-user access, and dedicated relationship support.
                 </p>
                 <div className="relative flex items-center gap-2">
                   <Link href="/upgrade">
-                    <a className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ background: 'linear-gradient(135deg,#10b981,#06b6d4)', boxShadow: '0 2px 8px rgba(16,185,129,0.30)' }} data-testid="link-upgrade-pro">
+                    <a className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-bold text-white" style={{ background: 'linear-gradient(135deg,#7c3aed,#d4af37)', boxShadow: '0 2px 8px rgba(124,58,237,0.30)' }} data-testid="link-upgrade-business">
                       <Zap className="w-3 h-3" /> Upgrade
                     </a>
                   </Link>
                   <Link href="/help">
-                    <a className="text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors" data-testid="link-learn-more-pro">
+                    <a className="text-[11px] font-semibold text-muted-foreground hover:text-foreground transition-colors" data-testid="link-learn-more-business">
                       Learn More
                     </a>
                   </Link>
