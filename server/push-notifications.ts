@@ -309,9 +309,14 @@ export async function sendTradePushNotification(
   event: TradePushEvent,
   data: Record<string, string>
 ): Promise<{ sent: boolean; tokens: number }> {
-  const payloadGenerator = TRADE_PUSH_MESSAGES[event];
-  if (!payloadGenerator) {
+  // SECURITY: Use hasOwn to prevent prototype-pollution lookup (e.g. event === '__proto__')
+  if (!Object.prototype.hasOwnProperty.call(TRADE_PUSH_MESSAGES, event)) {
     console.error(`[Push] Unknown trade event: ${event}`);
+    return { sent: false, tokens: 0 };
+  }
+  const payloadGenerator = TRADE_PUSH_MESSAGES[event];
+  if (typeof payloadGenerator !== 'function') {
+    console.error(`[Push] Invalid trade event handler: ${event}`);
     return { sent: false, tokens: 0 };
   }
 
@@ -343,9 +348,14 @@ export async function sendFinancialPushNotification(
   event: FinancialPushEvent,
   data: Record<string, string>
 ): Promise<{ sent: boolean; tokens: number }> {
-  const payloadGenerator = FINANCIAL_PUSH_MESSAGES[event];
-  if (!payloadGenerator) {
+  // SECURITY: Use hasOwn to prevent prototype-pollution lookup
+  if (!Object.prototype.hasOwnProperty.call(FINANCIAL_PUSH_MESSAGES, event)) {
     console.error(`[Push] Unknown financial event: ${event}`);
+    return { sent: false, tokens: 0 };
+  }
+  const payloadGenerator = FINANCIAL_PUSH_MESSAGES[event];
+  if (typeof payloadGenerator !== 'function') {
+    console.error(`[Push] Invalid financial event handler: ${event}`);
     return { sent: false, tokens: 0 };
   }
 

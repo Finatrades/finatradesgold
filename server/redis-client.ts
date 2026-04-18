@@ -150,8 +150,10 @@ export async function cacheDelPattern(pattern: string): Promise<void> {
     }
   }
 
+  // SECURITY: Replace ALL wildcards (was only first), prevents key-injection scans
+  const safePrefix = pattern.replace(/\*/g, '');
   for (const key of inMemoryCache.keys()) {
-    if (key.includes(pattern.replace('*', ''))) {
+    if (key.includes(safePrefix)) {
       inMemoryCache.delete(key);
     }
   }

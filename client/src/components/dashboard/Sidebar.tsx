@@ -110,8 +110,13 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
     const active = isActive(item.href);
     const isDanger = item.variant === 'danger';
 
+    // SECURITY: Validate href is a safe internal path (blocks javascript:, data:, vbscript: URIs)
+    const safeHref = typeof item.href === 'string' && item.href.startsWith('/') && !item.href.startsWith('//')
+      ? item.href
+      : '/';
+
     const content = (
-      <Link key={item.href} href={item.href}>
+      <Link key={safeHref} href={safeHref}>
         <div
           className={`group relative flex items-center gap-2.5 ${collapsed ? 'lg:justify-center lg:px-2' : 'pl-7 pr-3'} py-2 rounded-lg cursor-pointer transition-all ${
             active

@@ -157,7 +157,13 @@ async function backup(source: 'prod' | 'dev' | 'backup') {
   await ensureBackupDir();
   
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-  const backupFile = path.join(BACKUP_DIR, `backup_${source}_${timestamp}.sql`);
+  // SECURITY: Sanitize `source` to prevent path traversal (../../etc/passwd etc)
+  const safeSource = String(source).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 64);
+  const backupFile = path.resolve(path.join(BACKUP_DIR, `backup_${safeSource}_${timestamp}.sql`));
+  if (!backupFile.startsWith(path.resolve(BACKUP_DIR) + path.sep)) {
+    console.error('❌ Refusing to write backup outside intended directory');
+    process.exit(1);
+  }
 
   console.log(`Tables to backup: ${tables}`);
   console.log(`Output file: ${backupFile}`);

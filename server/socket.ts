@@ -80,10 +80,38 @@ export function emitNotification(userId: string, notification: {
 }
 
 export function setupSocketIO(httpServer: HttpServer) {
+  // SECURITY: Strict CORS allowlist — prevents cross-origin socket hijacking
+  const allowedOrigins = (() => {
+    const list = new Set<string>();
+    if (process.env.APP_URL) list.add(process.env.APP_URL.replace(/\/$/, ''));
+    if (process.env.CLIENT_URL) list.add(process.env.CLIENT_URL.replace(/\/$/, ''));
+    if (process.env.WINGOLD_ALLOWED_ORIGINS) {
+      process.env.WINGOLD_ALLOWED_ORIGINS.split(',').forEach((o) => list.add(o.trim().replace(/\/$/, '')));
+    }
+    if (process.env.REPLIT_DOMAINS) {
+      process.env.REPLIT_DOMAINS.split(',').forEach((d) => list.add(`https://${d.trim()}`));
+    }
+    list.add('https://finatrades.com');
+    list.add('https://www.finatrades.com');
+    list.add('https://app.finatrades.com');
+    return Array.from(list);
+  })();
+
   const io = new Server(httpServer, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
+      origin: (origin, cb) => {
+        // Allow same-origin/no-origin requests (mobile apps, curl, server-to-server)
+        if (!origin) return cb(null, true);
+        // In dev, allow localhost and Replit dev URLs
+        if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1|.*\.replit\.dev|.*\.repl\.co)/.test(origin)) {
+          return cb(null, true);
+        }
+        if (allowedOrigins.includes(origin)) return cb(null, true);
+        console.warn(`[Socket] Blocked CORS origin: ${origin}`);
+        return cb(new Error('Not allowed by CORS'));
+      },
+      methods: ["GET", "POST"],
+      credentials: true,
     }
   });
 
