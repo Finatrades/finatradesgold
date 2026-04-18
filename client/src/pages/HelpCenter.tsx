@@ -615,6 +615,7 @@ export default function HelpCenter() {
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('finapay');
+  const [activeTab, setActiveTab] = useState('manual');
   const [activeManualSection, setActiveManualSection] = useState('wallet');
   const [ticketSubject, setTicketSubject] = useState('');
   const [ticketMessage, setTicketMessage] = useState('');
@@ -701,7 +702,7 @@ export default function HelpCenter() {
               className={`p-4 cursor-pointer transition-all hover:border-primary ${
                 activeCategory === cat.id ? 'border-primary bg-primary/5' : ''
               }`}
-              onClick={() => setActiveCategory(cat.id)}
+              onClick={() => { setActiveCategory(cat.id); setActiveTab('faq'); }}
               data-testid={`category-${cat.id}`}
             >
               <div className="flex flex-col items-center text-center gap-2">
@@ -716,7 +717,7 @@ export default function HelpCenter() {
           ))}
         </div>
 
-        <Tabs defaultValue="manual" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-4 mb-6">
             <TabsTrigger value="manual" className="flex items-center gap-2" data-testid="tab-manual">
               <FileText className="w-4 h-4" /> User Manual
