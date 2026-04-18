@@ -14,6 +14,7 @@ import BNSL from "@/pages/BNSL";
 import FinaBridge from "@/pages/FinaBridge";
 import Register from "@/pages/Register";
 import KYC from "@/pages/KYC";
+import UpgradeToBusiness from "@/pages/UpgradeToBusiness";
 import Login from "@/pages/Login";
 import ForgotPassword from "@/pages/ForgotPassword";
 import ResetPassword from "@/pages/ResetPassword";
@@ -238,6 +239,7 @@ function Router() {
       <Route path="/reset-password" component={ResetPassword} />
       <Route path="/verify-certificate" component={VerifyCertificate} />
       <Route path="/kyc" component={KYC} />
+      <ProtectedRoute path="/upgrade" component={UpgradeToBusiness} />
       <Route path="/wingold/callback" component={WingoldCallback} />
       
       {/* User Dashboard Routes */}
