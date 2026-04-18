@@ -691,7 +691,7 @@ input[type="number"] {
 
 /* Hynex-style premium glass card */
 .hynex-card {
-  background: hsl(var(--card));
+  background: var(--card);
   border: 1px solid #EAECF0;
   border-radius: 20px;
   box-shadow:
@@ -746,7 +746,7 @@ input[type="number"] {
   font-weight: 500;
   background: #FFFFFF;
   border: 1px solid #EAECF0;
-  color: hsl(var(--foreground));
+  color: var(--foreground);
   box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
   transition: border-color 180ms ease, box-shadow 180ms ease, background 180ms ease;
   cursor: pointer;
@@ -1503,12 +1503,12 @@ input[type="number"] {
    DU Design System — Premium Dashboard Tokens
    ═══════════════════════════════════════════════ */
 .du-stage {
-  --du-bg-canvas: hsl(var(--background));
-  --du-surface-1: hsl(var(--card));
-  --du-surface-2: hsl(var(--muted));
-  --du-text-primary: hsl(var(--foreground));
-  --du-text-muted: hsl(var(--muted-foreground));
-  --du-border: hsl(var(--border));
+  --du-bg-canvas: var(--background);
+  --du-surface-1: var(--card);
+  --du-surface-2: var(--muted);
+  --du-text-primary: var(--foreground);
+  --du-text-muted: var(--muted-foreground);
+  --du-border: var(--border);
   --du-accent-primary: #7c3aed;
   --du-accent-gold: #d4af37;
 }
@@ -1656,7 +1656,7 @@ input[type="number"] {
    Replaces the rainbow text-{color}-{500-700} pattern.
    ============================================================ */
 .kpi-value {
-  color: hsl(var(--foreground));
+  color: var(--foreground);
   font-feature-settings: "tnum" 1, "lnum" 1;
   font-variant-numeric: tabular-nums lining-nums;
   letter-spacing: -0.02em;
@@ -1668,7 +1668,7 @@ input[type="number"] {
 .kpi-value-sm { font-size: 1.25rem; }
 
 .kpi-label {
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   font-size: 0.6875rem;
   font-weight: 600;
   text-transform: uppercase;
@@ -1676,7 +1676,7 @@ input[type="number"] {
 }
 
 .kpi-sub {
-  color: hsl(var(--muted-foreground));
+  color: var(--muted-foreground);
   font-size: 0.8125rem;
   font-weight: 500;
   font-feature-settings: "tnum" 1;
@@ -1689,4 +1689,4 @@ input[type="number"] {
 .dark .kpi-negative { color: #f87171; }
 
 /* Optional: branded accent (use sparingly for hero metric only) */
-.kpi-accent { color: hsl(var(--primary)); }
+.kpi-accent { color: var(--primary); }
