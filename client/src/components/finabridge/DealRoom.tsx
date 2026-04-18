@@ -207,7 +207,7 @@ function getRoleColor(role: string) {
   if (role === 'importer') return 'bg-blue-50 dark:bg-blue-950/200';
   if (role === 'exporter') return 'bg-green-50 dark:bg-green-950/200';
   if (role === 'admin') return 'bg-purple-50 dark:bg-purple-950/200';
-  return 'bg-gray-500';
+  return 'bg-gray-50 dark:bg-gray-900/400';
 }
 
 // ============================================================================

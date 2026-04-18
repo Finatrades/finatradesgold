@@ -778,7 +778,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
           
           {/* Unit Toggle */}
           <div className="flex justify-center">
-            <div className="inline-flex bg-slate-100 rounded-full p-1">
+            <div className="inline-flex bg-slate-100 dark:bg-slate-800/60 rounded-full p-1">
               <button
                 type="button"
                 onClick={() => {
@@ -1460,7 +1460,7 @@ export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
             <div className="space-y-4">
               {/* Unit Toggle */}
               <div className="flex justify-center">
-                <div className="inline-flex bg-slate-100 rounded-full p-1">
+                <div className="inline-flex bg-slate-100 dark:bg-slate-800/60 rounded-full p-1">
                   <button
                     type="button"
                     data-testid="toggle-usd"

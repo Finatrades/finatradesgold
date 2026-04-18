@@ -200,8 +200,8 @@ export default function InternalTransferModal({
           {!isDone && (
             <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100 mb-4">
               <Weight className="w-3 h-3 text-slate-400" />
-              <span className="text-[11px] text-slate-500">Available:</span>
-              <span className="text-[11px] font-extrabold text-slate-700">{availableGoldGrams.toFixed(4)}g</span>
+              <span className="text-[11px] text-slate-500 dark:text-slate-400">Available:</span>
+              <span className="text-[11px] font-extrabold text-slate-700 dark:text-slate-200">{availableGoldGrams.toFixed(4)}g</span>
               <span className="text-[10px] text-slate-400 ml-1">≈ ${(availableGoldGrams * currentGoldPrice).toFixed(2)}</span>
             </div>
           )}
@@ -213,10 +213,10 @@ export default function InternalTransferModal({
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <div>
-                <p className="font-extrabold text-slate-800 text-[16px]">Transfer Complete!</p>
-                <p className="text-[12px] text-slate-500 mt-1">
-                  <span className="font-bold text-slate-700">{amountNum.toFixed(4)}g</span> sent to{' '}
-                  <span className="font-bold text-slate-700">{selected?.label}</span>
+                <p className="font-extrabold text-slate-800 dark:text-slate-100 text-[16px]">Transfer Complete!</p>
+                <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
+                  <span className="font-bold text-slate-700 dark:text-slate-200">{amountNum.toFixed(4)}g</span> sent to{' '}
+                  <span className="font-bold text-slate-700 dark:text-slate-200">{selected?.label}</span>
                 </p>
               </div>
               <Button onClick={handleClose} className="w-full bg-violet-700 hover:bg-violet-800 text-[13px] h-10">
@@ -228,7 +228,7 @@ export default function InternalTransferModal({
           {/* STEP 1: Pick destination */}
           {!isDone && step === 1 && (
             <div className="space-y-3">
-              <p className="text-[11px] font-semibold text-slate-500 mb-1">Select destination wallet</p>
+              <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 mb-1">Select destination wallet</p>
               {visibleWallets.map(wallet => (
                 <button
                   key={wallet.id}
@@ -244,7 +244,7 @@ export default function InternalTransferModal({
                     {wallet.icon}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className={`text-[12px] font-bold ${selectedWallet === wallet.id ? wallet.color : 'text-slate-800'}`}>
+                    <p className={`text-[12px] font-bold ${selectedWallet === wallet.id ? wallet.color : 'text-slate-800 dark:text-slate-100'}`}>
                       {wallet.label}
                     </p>
                     <p className="text-[10px] text-slate-400 mt-0.5">{wallet.sublabel}</p>
@@ -278,13 +278,13 @@ export default function InternalTransferModal({
                 </div>
                 <div>
                   <p className={`text-[12px] font-bold ${selected.color}`}>{selected.label}</p>
-                  <p className="text-[10px] text-slate-500">{selected.sublabel}</p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400">{selected.sublabel}</p>
                 </div>
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[11px] font-semibold text-slate-600">Amount (grams)</Label>
+                  <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Amount (grams)</Label>
                   <button
                     onClick={() => setAmount(availableGoldGrams.toFixed(6))}
                     className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold hover:underline"
@@ -311,7 +311,7 @@ export default function InternalTransferModal({
                 {amountNum > 0 && (
                   <div className="flex items-center justify-between px-2">
                     <span className="text-[10px] text-slate-400">≈ USD value</span>
-                    <span className="text-[11px] font-bold text-slate-700">${usdValue.toFixed(2)}</span>
+                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-200">${usdValue.toFixed(2)}</span>
                   </div>
                 )}
 

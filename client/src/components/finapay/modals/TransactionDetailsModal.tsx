@@ -292,7 +292,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       case 'Send': return 'text-purple-500 bg-purple-50 dark:bg-purple-950/200/10 border-purple-500/20';
       case 'Receive': return 'text-blue-500 bg-blue-50 dark:bg-blue-950/200/10 border-blue-500/20';
       case 'Deposit': return 'text-green-500 bg-green-50 dark:bg-green-950/200/10 border-green-500/20';
-      default: return 'text-muted-foreground bg-gray-500/10 border-gray-500/20';
+      default: return 'text-muted-foreground bg-gray-50 dark:bg-gray-900/400/10 border-gray-500/20';
     }
   };
 
@@ -301,7 +301,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
       case 'Completed': return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/20';
       case 'Pending': return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
       case 'Failed': return 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/20';
-      case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
+      case 'Declined': return 'bg-gray-50 dark:bg-gray-900/400/10 text-muted-foreground border-gray-500/20';
       default: return 'bg-muted/50 text-muted-foreground border-border';
     }
   };

@@ -64,7 +64,7 @@ export default function WhyFinatrades() {
               data-testid={`card-differentiator-${index}`}
             >
               <div className="mb-4 p-3 rounded-xl bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] w-fit group-hover:scale-110 transition-transform">
-                <item.icon className="w-6 h-6 text-slate-900" />
+                <item.icon className="w-6 h-6 text-slate-900 dark:text-slate-50" />
               </div>
               <h3 className="text-lg font-bold mb-2 text-white group-hover:text-[#D4AF37] transition-colors" data-testid={`text-differentiator-title-${index}`}>
                 {item.title}

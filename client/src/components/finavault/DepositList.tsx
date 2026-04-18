@@ -58,7 +58,7 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
         colorClass = 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
         break;
       default:
-        colorClass = 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
+        colorClass = 'bg-gray-50 dark:bg-gray-900/400/10 text-muted-foreground border-gray-500/20';
     }
 
     return (

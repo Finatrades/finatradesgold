@@ -175,7 +175,7 @@ export default function VerifyCertificate() {
     if (type.includes('REVOKED')) return 'bg-red-50 dark:bg-red-950/200';
     if (type.includes('CERTIFICATE ISSUED')) return 'bg-primary';
     if (type.includes('LOCK')) return 'bg-purple-50 dark:bg-purple-950/200';
-    return 'bg-gray-500';
+    return 'bg-gray-50 dark:bg-gray-900/400';
   };
 
   const getEventLabel = (eventType: string) => {

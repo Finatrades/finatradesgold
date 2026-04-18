@@ -89,7 +89,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
       case 'Stored in Vault': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20';
       case 'Rejected': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
       case 'Cancelled': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
-      default: return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
+      default: return 'bg-gray-50 dark:bg-gray-900/400/10 text-muted-foreground border-gray-500/20';
     }
   };
 

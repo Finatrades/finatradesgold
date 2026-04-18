@@ -49,7 +49,7 @@ interface GoalProgress {
 const statusColors: Record<string, string> = {
   active: 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
   completed: 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/30',
-  cancelled: 'bg-gray-500/10 text-muted-foreground border-gray-500/30'
+  cancelled: 'bg-gray-50 dark:bg-gray-900/400/10 text-muted-foreground border-gray-500/30'
 };
 
 export default function SavingsGoalsPage() {

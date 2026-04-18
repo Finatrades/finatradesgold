@@ -109,10 +109,10 @@ export default function BNSLRiskDisclosure() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 dark:border-slate-800/40 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800/40 mb-6"
           >
-            <Scale className="w-4 h-4 text-slate-600" />
-            <span className="text-sm font-medium text-slate-700">Transparency First</span>
+            <Scale className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+            <span className="text-sm font-medium text-slate-700 dark:text-slate-200">Transparency First</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -166,8 +166,8 @@ export default function BNSLRiskDisclosure() {
                   data-testid={`button-risk-${risk.id}`}
                 >
                   <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-slate-100">
-                      <AlertCircle className="w-5 h-5 text-slate-600" />
+                    <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800/60">
+                      <AlertCircle className="w-5 h-5 text-slate-600 dark:text-slate-300" />
                     </div>
                     <div>
                       <h4 className="font-semibold text-foreground">{risk.title}</h4>

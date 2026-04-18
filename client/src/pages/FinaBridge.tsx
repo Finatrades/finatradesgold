@@ -3014,7 +3014,7 @@ export default function FinaBridge() {
                         {viewingProposal.shippingMethod === 'Sea' && <Ship className="w-4 h-4 text-blue-500" />}
                         {viewingProposal.shippingMethod === 'Air' && <Plane className="w-4 h-4 text-sky-500" />}
                         {viewingProposal.shippingMethod === 'Road' && <Truck className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />}
-                        {viewingProposal.shippingMethod === 'Rail' && <Train className="w-4 h-4 text-slate-600" />}
+                        {viewingProposal.shippingMethod === 'Rail' && <Train className="w-4 h-4 text-slate-600 dark:text-slate-300" />}
                         {viewingProposal.shippingMethod || 'Not specified'}
                       </p>
                     </div>

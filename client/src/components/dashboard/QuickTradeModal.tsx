@@ -279,10 +279,10 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <div>
-                <p className="font-extrabold text-slate-800 text-[16px]">Trade Request Created!</p>
+                <p className="font-extrabold text-slate-800 dark:text-slate-100 text-[16px]">Trade Request Created!</p>
                 {createdTradeRef && (
-                  <p className="text-[12px] text-slate-500 mt-1">
-                    Ref: <span className="font-bold text-slate-700">{createdTradeRef}</span>
+                  <p className="text-[12px] text-slate-500 dark:text-slate-400 mt-1">
+                    Ref: <span className="font-bold text-slate-700 dark:text-slate-200">{createdTradeRef}</span>
                   </p>
                 )}
                 <p className="text-[12px] text-slate-400 mt-2">
@@ -307,12 +307,12 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Package className="w-4 h-4 text-blue-700 dark:text-blue-300" />
-                <h3 className="font-bold text-slate-800 text-[13px]">What are you trading?</h3>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-[13px]">What are you trading?</h3>
               </div>
 
               {/* Goods Name */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Goods / Product Name *</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Goods / Product Name *</Label>
                 <Input
                   placeholder="e.g. Electronics, Textiles, Crude Oil"
                   value={goodsName}
@@ -324,7 +324,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Description */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                   Description <span className="text-slate-400 font-normal">(optional)</span>
                 </Label>
                 <textarea
@@ -339,7 +339,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Quantity + Unit */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
                   Quantity <span className="text-slate-400 font-normal">(optional)</span>
                 </Label>
                 <div className="flex gap-2">
@@ -363,7 +363,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Trade Value */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Trade Value (USD) *</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Trade Value (USD) *</Label>
                 <div className="relative">
                   <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
@@ -385,7 +385,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                         ? <Lock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                         : <Unlock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                       }
-                      <span className="text-[11px] font-semibold text-slate-700">Lock Gold Price</span>
+                      <span className="text-[11px] font-semibold text-slate-700 dark:text-slate-200">Lock Gold Price</span>
                     </div>
                     <Switch
                       checked={isPriceLocked}
@@ -428,7 +428,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                     {/* FinaBridge balance line */}
                     <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100">
                       <Wallet className="w-3 h-3 text-slate-400" />
-                      <span className="text-[10px] text-slate-500">FinaBridge Wallet:</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">FinaBridge Wallet:</span>
                       {balanceLoading ? (
                         <Loader2 className="w-3 h-3 animate-spin text-slate-400" />
                       ) : (
@@ -475,17 +475,17 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Users className="w-4 h-4 text-blue-700 dark:text-blue-300" />
-                <h3 className="font-bold text-slate-800 text-[13px]">Exporter Preference</h3>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-[13px]">Exporter Preference</h3>
               </div>
 
               {/* Toggle */}
               <div className={`p-3 rounded-xl border-2 transition-all ${suggestExporter ? 'border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20/60' : 'border-slate-200 dark:border-slate-800/40 bg-slate-50 dark:bg-slate-950/20'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Globe className={`w-4 h-4 ${suggestExporter ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
+                    <Globe className={`w-4 h-4 ${suggestExporter ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400'}`} />
                     <div>
-                      <p className="text-[12px] font-bold text-slate-800">Let Finatrades find exporters</p>
-                      <p className="text-[10px] text-slate-500 mt-0.5">
+                      <p className="text-[12px] font-bold text-slate-800 dark:text-slate-100">Let Finatrades find exporters</p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {suggestExporter
                           ? 'Finatrades will match your request with verified exporters.'
                           : "I'll provide my own exporter details below."}
@@ -508,7 +508,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   </p>
 
                   <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-slate-600">Company Name *</Label>
+                    <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Company Name *</Label>
                     <div className="relative">
                       <Building2 className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
@@ -523,7 +523,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-slate-600">Contact Name</Label>
+                      <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Contact Name</Label>
                       <Input
                         placeholder="John Smith"
                         value={exporterContactName}
@@ -533,7 +533,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-slate-600">Phone</Label>
+                      <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Phone</Label>
                       <div className="relative">
                         <Phone className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <Input
@@ -548,7 +548,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-slate-600">Email *</Label>
+                    <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Email *</Label>
                     <div className="relative">
                       <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                       <Input
@@ -564,7 +564,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-slate-600">Quote Price (USD) *</Label>
+                      <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Quote Price (USD) *</Label>
                       <div className="relative">
                         <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <Input
@@ -578,7 +578,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                       </div>
                     </div>
                     <div className="space-y-1">
-                      <Label className="text-[11px] font-semibold text-slate-600">Timeline (Days) *</Label>
+                      <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Timeline (Days) *</Label>
                       <div className="relative">
                         <Clock className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                         <Input
@@ -594,7 +594,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   </div>
 
                   <div className="space-y-1">
-                    <Label className="text-[11px] font-semibold text-slate-600">Notes / Terms <span className="text-slate-400 font-normal">(optional)</span></Label>
+                    <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Notes / Terms <span className="text-slate-400 font-normal">(optional)</span></Label>
                     <textarea
                       placeholder="Additional terms or notes..."
                       value={proposalNotes}
@@ -628,14 +628,14 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Ship className="w-4 h-4 text-blue-700 dark:text-blue-300" />
-                <h3 className="font-bold text-slate-800 text-[13px]">Shipping & Payment</h3>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-[13px]">Shipping & Payment</h3>
                 <span className="text-[10px] text-slate-400">(optional fields)</span>
               </div>
 
               {/* Mode + Incoterms */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <Label className="text-[11px] font-semibold text-slate-600">Transport Mode</Label>
+                  <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Transport Mode</Label>
                   <select
                     value={modeOfTransport}
                     onChange={e => setModeOfTransport(e.target.value)}
@@ -646,7 +646,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   </select>
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-[11px] font-semibold text-slate-600">Incoterms</Label>
+                  <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Incoterms</Label>
                   <select
                     value={incoterms}
                     onChange={e => setIncoterms(e.target.value)}
@@ -660,7 +660,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Port of Loading */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Port of Loading</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Port of Loading</Label>
                 <div className="relative">
                   <Anchor className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
@@ -675,7 +675,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Port of Discharge / Destination */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Port of Discharge / Destination</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Port of Discharge / Destination</Label>
                 <div className="relative">
                   <MapPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
@@ -690,7 +690,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Ship Date */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Expected Shipment Date</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Expected Shipment Date</Label>
                 <div className="relative">
                   <Calendar className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
                   <Input
@@ -705,7 +705,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Payment Terms */}
               <div className="space-y-1">
-                <Label className="text-[11px] font-semibold text-slate-600">Payment Terms</Label>
+                <Label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">Payment Terms</Label>
                 <select
                   value={paymentTerms}
                   onChange={e => setPaymentTerms(e.target.value)}
@@ -738,7 +738,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
                 <Landmark className="w-4 h-4 text-blue-700 dark:text-blue-300" />
-                <h3 className="font-bold text-slate-800 text-[13px]">Review & Submit</h3>
+                <h3 className="font-bold text-slate-800 dark:text-slate-100 text-[13px]">Review & Submit</h3>
               </div>
 
               {/* Summary card */}
@@ -818,8 +818,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 function ReviewRow({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div className="flex items-center justify-between py-0.5">
-      <span className="text-[11px] text-slate-500">{label}</span>
-      <span className={`text-[12px] font-bold ${highlight ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800'}`}>{value}</span>
+      <span className="text-[11px] text-slate-500 dark:text-slate-400">{label}</span>
+      <span className={`text-[12px] font-bold ${highlight ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800 dark:text-slate-100'}`}>{value}</span>
     </div>
   );
 }

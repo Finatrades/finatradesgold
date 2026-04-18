@@ -129,7 +129,7 @@ export default function BNSLFinalCTA() {
               whileHover={{ scale: 1.02, boxShadow: '0 20px 40px rgba(245, 158, 11, 0.4)' }}
               whileTap={{ scale: 0.98 }}
               onClick={() => setLocation('/register')}
-              className="px-10 py-5 rounded-2xl bg-gradient-to-r from-purple-500 via-yellow-500 to-purple-500 text-slate-900 font-bold text-lg shadow-xl shadow-purple-500/30 flex items-center gap-3 group"
+              className="px-10 py-5 rounded-2xl bg-gradient-to-r from-purple-500 via-yellow-500 to-purple-500 text-slate-900 dark:text-slate-50 font-bold text-lg shadow-xl shadow-purple-500/30 flex items-center gap-3 group"
               data-testid="button-start-investing-final"
             >
               <Zap className="w-5 h-5" />
