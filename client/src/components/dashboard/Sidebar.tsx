@@ -62,16 +62,16 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
   });
 
   const mainItems: MenuItem[] = [
-    { icon: <LayoutDashboard className="w-4 h-4" />, label: 'Overview', href: '/dashboard' },
-    { icon: <Wallet className="w-4 h-4" />, label: 'Gold Wallet', href: '/finapay' },
-    { icon: <Database className="w-4 h-4" />, label: 'Gold Storage', href: '/finavault' },
-    { icon: <TrendingUp className="w-4 h-4" />, label: 'Buy Now, Sell Later', href: '/bnsl' },
-    { icon: <History className="w-4 h-4" />, label: 'Transactions', href: '/transactions' },
+    { icon: <LayoutDashboard className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Overview', href: '/dashboard' },
+    { icon: <Wallet className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Gold Wallet', href: '/finapay' },
+    { icon: <Database className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Gold Storage', href: '/finavault' },
+    { icon: <TrendingUp className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Buy Now, Sell Later', href: '/bnsl' },
+    { icon: <History className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Transactions', href: '/transactions' },
   ];
 
   if (user?.kycStatus === 'Not Started' || user?.kycStatus === 'Rejected') {
     mainItems.splice(1, 0, {
-      icon: <ShieldCheck className="w-4 h-4" />,
+      icon: <ShieldCheck className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />,
       label: 'Verify Identity',
       href: '/kyc',
       variant: 'danger',
@@ -79,22 +79,22 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
   }
 
   const businessItems: MenuItem[] = accountType === 'business' ? [
-    { icon: <BarChart3 className="w-4 h-4" />, label: 'Trade Finance', href: '/finabridge' },
-    { icon: <FileText className="w-4 h-4" />, label: 'Trade Requests', href: '/finabridge/requests' },
-    { icon: <Send className="w-4 h-4" />, label: 'Proposals', href: '/finabridge/proposals' },
-    { icon: <History className="w-4 h-4" />, label: 'Trade History', href: '/finabridge/history' },
+    { icon: <BarChart3 className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Trade Finance', href: '/finabridge' },
+    { icon: <FileText className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Trade Requests', href: '/finabridge/requests' },
+    { icon: <Send className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Proposals', href: '/finabridge/proposals' },
+    { icon: <History className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Trade History', href: '/finabridge/history' },
   ] : [];
 
   const featureItems: MenuItem[] = [
-    { icon: <CreditCard className="w-4 h-4" />, label: 'FinaCard', href: '/finacard' },
-    { icon: <Gift className="w-4 h-4" />, label: 'Referral', href: '/referral' },
+    { icon: <CreditCard className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'FinaCard', href: '/finacard' },
+    { icon: <Gift className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Referral', href: '/referral' },
   ];
 
   const toolItems: MenuItem[] = [
-    { icon: <User className="w-4 h-4" />, label: 'Profile', href: '/profile' },
-    { icon: <Shield className="w-4 h-4" />, label: 'Security', href: '/security' },
-    { icon: <Settings className="w-4 h-4" />, label: 'Settings', href: '/settings' },
-    { icon: <HelpCircle className="w-4 h-4" />, label: 'Help Center', href: '/help' },
+    { icon: <User className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Profile', href: '/profile' },
+    { icon: <Shield className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Security', href: '/security' },
+    { icon: <Settings className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Settings', href: '/settings' },
+    { icon: <HelpCircle className={collapsed ? "w-[22px] h-[22px]" : "w-4 h-4"} />, label: 'Help Center', href: '/help' },
   ];
 
   const sections: MenuSection[] = [
@@ -182,9 +182,9 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
       <aside
         className={`fixed top-3 left-3 bottom-3 ${sidebarWidth} z-50 transition-all duration-300 lg:translate-x-0 ${
           isOpen ? 'translate-x-0' : '-translate-x-[110%]'
-        } ${collapsed ? 'bg-transparent border-0 shadow-none' : 'hynex-card'} overflow-hidden`}
+        } hynex-card overflow-hidden`}
         data-testid="sidebar"
-        style={collapsed ? { background: 'transparent', boxShadow: 'none', border: 'none' } : { borderRadius: 24 }}
+        style={{ borderRadius: collapsed ? 18 : 24 }}
       >
         <div className="flex flex-col h-full">
 
