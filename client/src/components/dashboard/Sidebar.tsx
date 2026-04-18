@@ -190,17 +190,25 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
         <div className="flex flex-col h-full">
 
           {/* ── HEADER: logo + collapse toggle ── */}
-          <div className={`h-16 flex items-center ${collapsed ? 'lg:justify-center lg:px-2' : 'justify-between px-4'} border-b border-border/40 shrink-0`}>
+          <div className={`relative ${collapsed ? 'h-16' : 'h-20'} flex items-center justify-center border-b border-border/40 shrink-0 px-4`}>
             <Link href="/">
-              <div className="flex items-center cursor-pointer" data-testid="sidebar-logo">
-                <img src={finatradesLogo} alt="Finatrades" className={`h-12 w-auto object-contain ${collapsed ? 'lg:hidden' : ''}`} />
-                <img src={faviconIcon} alt="Finatrades" className={`w-9 h-9 rounded-lg object-contain hidden ${collapsed ? 'lg:block' : ''}`} />
+              <div className="flex items-center justify-center cursor-pointer" data-testid="sidebar-logo">
+                <img
+                  src={finatradesLogo}
+                  alt="Finatrades"
+                  className={`w-auto object-contain transition-all dark:brightness-0 dark:invert ${collapsed ? 'lg:hidden h-14' : 'h-16'}`}
+                />
+                <img
+                  src={faviconIcon}
+                  alt="Finatrades"
+                  className={`rounded-lg object-contain hidden dark:brightness-0 dark:invert ${collapsed ? 'lg:block w-11 h-11' : ''}`}
+                />
               </div>
             </Link>
 
             {/* Mobile close */}
             <button
-              className="lg:hidden p-2 text-muted-foreground hover:text-foreground"
+              className="lg:hidden absolute right-3 top-1/2 -translate-y-1/2 p-2 text-muted-foreground hover:text-foreground"
               onClick={() => setIsOpen(false)}
               aria-label="Close sidebar"
             >
@@ -210,7 +218,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
             {/* Desktop collapse arrow */}
             <button
               onClick={() => setCollapsed(!collapsed)}
-              className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all ${collapsed ? 'lg:hidden' : ''}`}
+              className={`hidden lg:flex absolute right-3 top-1/2 -translate-y-1/2 items-center justify-center w-7 h-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all ${collapsed ? 'lg:hidden' : ''}`}
               aria-label="Collapse sidebar"
               data-testid="button-collapse-sidebar"
             >
