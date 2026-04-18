@@ -247,24 +247,24 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
 
         {step === 'submitted' ? (
           <div className="py-8 text-center space-y-4">
-            <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-              <CheckCircle2 className="w-8 h-8 text-green-600" />
+            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+              <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
             </div>
-            <h3 className="text-lg font-bold text-green-700">Withdrawal Request Submitted</h3>
+            <h3 className="text-lg font-bold text-green-700 dark:text-green-300">Withdrawal Request Submitted</h3>
             {referenceNumber && (
               <p className="text-sm text-muted-foreground font-mono">Ref: {referenceNumber}</p>
             )}
             <p className="text-sm text-muted-foreground">
               Your withdrawal request is under review. You'll be notified once it's processed.
             </p>
-            <Button onClick={handleClose} className="bg-orange-500 hover:bg-orange-600 text-white w-full">
+            <Button onClick={handleClose} className="bg-orange-50 dark:bg-orange-950/200 hover:bg-orange-600 text-white w-full">
               Done
             </Button>
           </div>
         ) : step === 'confirm' ? (
           <div className="space-y-4">
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
-              <h4 className="font-semibold text-orange-800">Confirm Withdrawal</h4>
+            <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-orange-800 dark:text-orange-200">Confirm Withdrawal</h4>
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gold Amount</span>
@@ -278,13 +278,13 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                   <span className="text-muted-foreground">Gross Value</span>
                   <span className="font-medium">${grossUsd.toFixed(2)}</span>
                 </div>
-                <div className="flex justify-between text-orange-700">
+                <div className="flex justify-between text-orange-700 dark:text-orange-300">
                   <span>Fee ({cashoutFeePercent}%)</span>
                   <span>−${feeUsd.toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between border-t pt-2 font-bold text-base">
                   <span>Net Payout</span>
-                  <span className="text-green-700">${netUsd.toFixed(2)}</span>
+                  <span className="text-green-700 dark:text-green-300">${netUsd.toFixed(2)}</span>
                 </div>
               </div>
               <div className="pt-2 border-t space-y-1 text-sm">
@@ -313,7 +313,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                       </div>
                     )}
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                      <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-800/40">
                         <ShieldCheck className="w-3 h-3" /> KYC Name Verified
                       </span>
                     </div>
@@ -338,7 +338,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
               </div>
             </div>
             {tab === 'crypto' && (
-              <div className="flex gap-2 bg-red-50 border border-red-200 rounded-lg p-3 text-xs text-red-800">
+              <div className="flex gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg p-3 text-xs text-red-800 dark:text-red-200">
                 <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                 <span>
                   Crypto withdrawals are sent at your own risk. Finatrades is not liable for incorrect wallet addresses or network mismatches. Double-check all details before confirming.
@@ -355,7 +355,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                 Back
               </Button>
               <Button
-                className="flex-1 bg-orange-500 hover:bg-orange-600 text-white"
+                className="flex-1 bg-orange-50 dark:bg-orange-950/200 hover:bg-orange-600 text-white"
                 onClick={handleSubmit}
                 disabled={submitting}
                 data-testid="button-confirm-withdraw"
@@ -368,10 +368,10 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
         ) : (
           <div className="space-y-5">
             {/* Balance info */}
-            <div className="bg-orange-50 border border-orange-100 rounded-xl p-3 flex items-center justify-between">
+            <div className="bg-orange-50 dark:bg-orange-950/20 border border-orange-100 rounded-xl p-3 flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Available Gold Balance</p>
-                <p className="text-lg font-bold text-orange-700">
+                <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
                   {balanceLoading ? <Loader2 className="w-4 h-4 animate-spin inline" /> : `${availableGrams.toFixed(4)} g`}
                 </p>
                 <p className="text-xs text-muted-foreground">≈ ${(availableGrams * goldPricePerGram).toFixed(2)}</p>
@@ -389,14 +389,14 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                 <div className="flex gap-1 text-xs">
                   <button
                     type="button"
-                    className={`px-2 py-0.5 rounded border ${inputMode === 'grams' ? 'bg-orange-500 text-white border-orange-500' : 'border-border text-muted-foreground'}`}
+                    className={`px-2 py-0.5 rounded border ${inputMode === 'grams' ? 'bg-orange-50 dark:bg-orange-950/200 text-white border-orange-500' : 'border-border text-muted-foreground'}`}
                     onClick={() => { setInputMode('grams'); setInputValue(''); }}
                   >
                     Grams
                   </button>
                   <button
                     type="button"
-                    className={`px-2 py-0.5 rounded border ${inputMode === 'usd' ? 'bg-orange-500 text-white border-orange-500' : 'border-border text-muted-foreground'}`}
+                    className={`px-2 py-0.5 rounded border ${inputMode === 'usd' ? 'bg-orange-50 dark:bg-orange-950/200 text-white border-orange-500' : 'border-border text-muted-foreground'}`}
                     onClick={() => { setInputMode('usd'); setInputValue(''); }}
                   >
                     USD
@@ -420,12 +420,12 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
               </div>
               {grams > 0 && (
                 <p className="text-xs text-muted-foreground">
-                  ≈ {inputMode === 'grams' ? `$${grossUsd.toFixed(2)} USD` : `${grams.toFixed(4)} g`} &nbsp;·&nbsp; Net after {cashoutFeePercent}% fee: <span className="text-green-600 font-medium">${netUsd.toFixed(2)}</span>
+                  ≈ {inputMode === 'grams' ? `$${grossUsd.toFixed(2)} USD` : `${grams.toFixed(4)} g`} &nbsp;·&nbsp; Net after {cashoutFeePercent}% fee: <span className="text-green-600 dark:text-green-400 font-medium">${netUsd.toFixed(2)}</span>
                 </p>
               )}
               <button
                 type="button"
-                className="text-xs text-orange-600 hover:underline"
+                className="text-xs text-orange-600 dark:text-orange-400 hover:underline"
                 onClick={() => {
                   setInputMode('grams');
                   setInputValue(availableGrams.toFixed(4));
@@ -493,11 +493,11 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                         <div className="flex items-center justify-between">
                           <span className="font-medium">{selectedBankAccount.bankName}</span>
                           {kycNameMatch ? (
-                            <span className="flex items-center gap-1 text-xs text-green-700 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">
+                            <span className="flex items-center gap-1 text-xs text-green-700 dark:text-green-300 bg-green-50 dark:bg-green-950/20 px-2 py-0.5 rounded-full border border-green-200 dark:border-green-800/40">
                               <ShieldCheck className="w-3 h-3" /> KYC Match
                             </span>
                           ) : (
-                            <span className="flex items-center gap-1 text-xs text-red-700 bg-red-50 px-2 py-0.5 rounded-full border border-red-200">
+                            <span className="flex items-center gap-1 text-xs text-red-700 dark:text-red-300 bg-red-50 dark:bg-red-950/20 px-2 py-0.5 rounded-full border border-red-200 dark:border-red-800/40">
                               <ShieldAlert className="w-3 h-3" /> Name Mismatch
                             </span>
                           )}
@@ -510,7 +510,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                           {selectedBankAccount.bankCountry && <><span>Country</span><span className="text-foreground">{selectedBankAccount.bankCountry}</span></>}
                         </div>
                         {!kycNameMatch && (
-                          <div className="flex gap-2 bg-red-50 border border-red-200 rounded-lg p-2 text-xs text-red-800 mt-1">
+                          <div className="flex gap-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg p-2 text-xs text-red-800 dark:text-red-200 mt-1">
                             <AlertTriangle className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                             <span>
                               Account holder name <strong>"{selectedBankAccount.accountHolderName}"</strong> does not match your KYC name <strong>"{kycFullName}"</strong>. Bank withdrawals require an exact name match for AML compliance. Please use an account registered under your KYC name.
@@ -520,7 +520,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                       </div>
                     )}
 
-                    <div className="flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs text-blue-800">
+                    <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 rounded-lg p-3 text-xs text-blue-800 dark:text-blue-200">
                       <Info className="w-4 h-4 shrink-0 mt-0.5" />
                       <span>Bank withdrawals require the account holder name to exactly match your KYC-verified name for AML compliance.</span>
                     </div>
@@ -565,7 +565,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
                     data-testid="input-wallet-address"
                   />
                 </div>
-                <div className="flex gap-2 bg-amber-50 border border-amber-200 rounded-lg p-3 text-xs text-amber-800">
+                <div className="flex gap-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 text-xs text-amber-800 dark:text-amber-200">
                   <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>
                     Crypto withdrawals are irreversible. Ensure the address and network are correct. Finatrades is not liable for lost funds due to incorrect wallet addresses or network selections.
@@ -600,7 +600,7 @@ export default function WithdrawGoldModal({ isOpen, onClose }: WithdrawGoldModal
             </div>
 
             <Button
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white"
+              className="w-full bg-orange-50 dark:bg-orange-950/200 hover:bg-orange-600 text-white"
               onClick={handleProceed}
               disabled={submitting || (tab === 'bank' && selectedBankAccount !== null && !kycNameMatch)}
               data-testid="button-proceed-withdraw"

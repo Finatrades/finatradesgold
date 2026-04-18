@@ -187,10 +187,10 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   const getStrengthColor = (index: number) => {
     if (strengthScore === 0) return 'bg-muted';
     if (index >= strengthScore) return 'bg-muted';
-    if (strengthScore <= 1) return 'bg-red-500';
+    if (strengthScore <= 1) return 'bg-red-50 dark:bg-red-950/200';
     if (strengthScore === 2) return 'bg-orange-400';
     if (strengthScore === 3) return 'bg-yellow-400';
-    return 'bg-green-500';
+    return 'bg-green-50 dark:bg-green-950/200';
   };
 
   const getStrengthLabel = () => {
@@ -204,8 +204,8 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
   const getStrengthLabelColor = () => {
     if (strengthScore <= 1) return 'text-red-500';
     if (strengthScore === 2) return 'text-orange-500';
-    if (strengthScore === 3) return 'text-yellow-600';
-    return 'text-green-600';
+    if (strengthScore === 3) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
   };
 
   const validateField = (name: string, value: string) => {
@@ -556,16 +556,16 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs">
-                    <span className={passwordStrength.length ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={passwordStrength.length ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                       {passwordStrength.length ? '✓' : '○'} 8+ characters
                     </span>
-                    <span className={passwordStrength.uppercase ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={passwordStrength.uppercase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                       {passwordStrength.uppercase ? '✓' : '○'} Uppercase letter
                     </span>
-                    <span className={passwordStrength.number ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={passwordStrength.number ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                       {passwordStrength.number ? '✓' : '○'} Number
                     </span>
-                    <span className={passwordStrength.special ? 'text-green-600' : 'text-muted-foreground'}>
+                    <span className={passwordStrength.special ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'}>
                       {passwordStrength.special ? '✓' : '○'} Special character
                     </span>
                   </div>
@@ -594,7 +594,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                 <p className="text-red-500 text-xs mt-1" data-testid="error-confirm-password">{fieldErrors.confirmPassword}</p>
               )}
               {!fieldErrors.confirmPassword && formData.confirmPassword && formData.confirmPassword === formData.password && (
-                <p className="text-green-600 text-xs mt-1">Passwords match</p>
+                <p className="text-green-600 dark:text-green-400 text-xs mt-1">Passwords match</p>
               )}
             </div>
 
@@ -610,7 +610,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
                 data-testid="input-referral-code"
               />
               {referralCode && (
-                <p className="text-xs text-green-600 mt-1">Referral code applied</p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-1">Referral code applied</p>
               )}
             </div>
 
@@ -628,7 +628,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
 
             <Button
               type="submit"
-              className="w-full bg-purple-500 hover:bg-purple-600 text-white py-6 gap-2"
+              className="w-full bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600 text-white py-6 gap-2"
               data-testid="button-next-photo"
             >
               <span className="font-bold">Next: Take Your Selfie</span>
@@ -753,7 +753,7 @@ function DesktopRegister({ initialReferralCode, domainMode }: { initialReferralC
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="w-full bg-purple-500 hover:bg-purple-600 text-white py-6"
+              className="w-full bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600 text-white py-6"
               data-testid="button-submit"
             >
               {isSubmitting ? 'Creating Account...' : <span className="font-bold">Create Account</span>}

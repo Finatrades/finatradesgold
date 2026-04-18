@@ -47,8 +47,8 @@ interface GoalProgress {
 }
 
 const statusColors: Record<string, string> = {
-  active: 'bg-purple-500/10 text-purple-600 border-purple-500/30',
-  completed: 'bg-green-500/10 text-green-600 border-green-500/30',
+  active: 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-600 dark:text-purple-400 border-purple-500/30',
+  completed: 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/30',
   cancelled: 'bg-gray-500/10 text-muted-foreground border-gray-500/30'
 };
 
@@ -279,7 +279,7 @@ export default function SavingsGoalsPage() {
                 data-testid={`button-complete-${goal.id}`}
                 onClick={() => updateMutation.mutate({ id: goal.id, data: { status: 'completed' } })}
                 disabled={updateMutation.isPending}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                className="text-green-600 dark:text-green-400 hover:text-green-700 dark:text-green-300 hover:bg-green-50 dark:bg-green-950/20"
               >
                 <CheckCircle2 className="w-4 h-4 mr-1" />
                 Complete
@@ -312,7 +312,7 @@ export default function SavingsGoalsPage() {
                   setSelectedGoal(goal);
                   setShowDeleteConfirm(true);
                 }}
-                className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                className="text-red-600 dark:text-red-400 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-950/20"
               >
                 <Trash2 className="w-4 h-4 mr-1" />
                 Delete
@@ -321,7 +321,7 @@ export default function SavingsGoalsPage() {
           )}
 
           {goal.status === 'completed' && goal.completedAt && (
-            <p className="text-sm text-green-600">
+            <p className="text-sm text-green-600 dark:text-green-400">
               Completed on {format(new Date(goal.completedAt), 'PPP')}
             </p>
           )}
@@ -393,12 +393,12 @@ export default function SavingsGoalsPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <Card className="bg-red-50 border-red-200">
+          <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40">
             <CardContent className="p-6 flex items-center gap-4">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
-                <h3 className="font-semibold text-red-800">Failed to load savings goals</h3>
-                <p className="text-red-600">Please try again later.</p>
+                <h3 className="font-semibold text-red-800 dark:text-red-200">Failed to load savings goals</h3>
+                <p className="text-red-600 dark:text-red-400">Please try again later.</p>
               </div>
             </CardContent>
           </Card>
@@ -610,7 +610,7 @@ export default function SavingsGoalsPage() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <Trash2 className="w-5 h-5" />
               Delete Goal
             </DialogTitle>

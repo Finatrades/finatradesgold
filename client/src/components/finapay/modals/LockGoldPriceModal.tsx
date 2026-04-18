@@ -63,7 +63,7 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
       <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <Lock className="w-5 h-5 text-amber-600" />
+            <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             Lock Gold at Current Price
           </DialogTitle>
           <DialogDescription>
@@ -72,12 +72,12 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
         </DialogHeader>
 
         <div className="space-y-5 py-2">
-          <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
             <div className="flex items-center gap-2 mb-1">
-              <span className="font-semibold text-amber-700">LGPW</span>
+              <span className="font-semibold text-amber-700 dark:text-amber-300">LGPW</span>
               <span className="mx-1 text-muted-foreground">→</span>
-              <span className="font-semibold text-purple-700">FPGW</span>
-              <span className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-lg">Lock Price</span>
+              <span className="font-semibold text-purple-700 dark:text-purple-300">FPGW</span>
+              <span className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 px-1.5 py-0.5 rounded-lg">Lock Price</span>
             </div>
             <p className="text-xs text-muted-foreground">
               Lock at current price: <strong>${balance.goldPricePerGram.toFixed(2)}/g</strong>
@@ -102,23 +102,23 @@ export default function LockGoldPriceModal({ isOpen, onClose, userId }: LockGold
           </div>
 
           {transferAmount && parseFloat(transferAmount) > 0 && (
-            <div className="p-3 rounded-xl bg-amber-50 border border-amber-200">
-              <p className="text-sm font-semibold text-amber-800 mb-1">Price Lock Summary</p>
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200 mb-1">Price Lock Summary</p>
               <div className="space-y-1">
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-700">Gold to lock:</span>
-                  <span className="font-semibold text-amber-800">{parseFloat(transferAmount).toFixed(6)} g</span>
+                  <span className="text-amber-700 dark:text-amber-300">Gold to lock:</span>
+                  <span className="font-semibold text-amber-800 dark:text-amber-200">{parseFloat(transferAmount).toFixed(6)} g</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-700">Lock price:</span>
-                  <span className="font-semibold text-amber-800">${balance.goldPricePerGram.toFixed(2)}/g</span>
+                  <span className="text-amber-700 dark:text-amber-300">Lock price:</span>
+                  <span className="font-semibold text-amber-800 dark:text-amber-200">${balance.goldPricePerGram.toFixed(2)}/g</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-amber-200 pt-1 mt-1">
-                  <span className="text-amber-700 font-semibold">Locked USD value:</span>
-                  <span className="font-bold text-amber-800">${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}</span>
+                <div className="flex justify-between text-sm border-t border-amber-200 dark:border-amber-800/40 pt-1 mt-1">
+                  <span className="text-amber-700 dark:text-amber-300 font-semibold">Locked USD value:</span>
+                  <span className="font-bold text-amber-800 dark:text-amber-200">${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}</span>
                 </div>
               </div>
-              <p className="text-xs text-amber-600 mt-2">This USD value will be preserved regardless of future gold price movements.</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">This USD value will be preserved regardless of future gold price movements.</p>
             </div>
           )}
 

@@ -29,7 +29,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
           <div className="p-6 space-y-8">
             <section>
               <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                <Building2 className="w-5 h-5 text-purple-600" />
+                <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 About Finatrades Finance SA
               </h3>
               
@@ -47,7 +47,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                     <Globe className="w-5 h-5 text-purple-500 mt-0.5" />
                     <div>
                       <p className="text-sm text-muted-foreground">Website</p>
-                      <p className="font-medium text-purple-600">https://finatrades.com</p>
+                      <p className="font-medium text-purple-600 dark:text-purple-400">https://finatrades.com</p>
                     </div>
                   </div>
                   <div className="flex items-start gap-3">
@@ -79,7 +79,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                         href="https://search.gleif.org/#/record/894500AF89I6QWOX2V69/record" 
                         target="_blank" 
                         rel="noopener noreferrer"
-                        className="font-medium text-purple-600 hover:text-purple-700"
+                        className="font-medium text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:text-purple-300"
                       >
                         894500AF89I6QWOX2V69
                       </a>
@@ -112,7 +112,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
 
             <section>
               <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                <BadgeCheck className="w-5 h-5 text-purple-600" />
+                <BadgeCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 License Confirmation
               </h3>
               
@@ -136,7 +136,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
 
             <section>
               <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                <Shield className="w-5 h-5 text-purple-600" />
+                <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 Anti-Money Laundering (AML)
               </h3>
               
@@ -182,7 +182,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
 
             <section>
               <h3 className="text-xl font-bold text-foreground mb-4 flex items-center gap-2">
-                <Mail className="w-5 h-5 text-purple-600" />
+                <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 Compliance Contact
               </h3>
               
@@ -190,7 +190,7 @@ export default function RegulatoryModal({ open, onOpenChange }: RegulatoryModalP
                 <p className="text-foreground/85 mb-4">
                   For compliance-related inquiries, please use the contact form on our website's Contact Us page.
                 </p>
-                <a href="mailto:support@finatrades.com" className="text-purple-600 font-medium hover:underline">
+                <a href="mailto:support@finatrades.com" className="text-purple-600 dark:text-purple-400 font-medium hover:underline">
                   support@finatrades.com
                 </a>
               </div>

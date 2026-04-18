@@ -110,7 +110,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
       <div className="space-y-4">
         <div className="flex justify-end">
-          <span className="text-sm text-purple-600 font-medium cursor-pointer active:opacity-70" onClick={() => handleGramsChange(safeBalance.toString())}>
+          <span className="text-sm text-purple-600 dark:text-purple-400 font-medium cursor-pointer active:opacity-70" onClick={() => handleGramsChange(safeBalance.toString())}>
             Max Available: {safeBalance.toFixed(3)} g
           </span>
         </div>
@@ -125,7 +125,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
               value={grams}
               onChange={(e) => handleGramsChange(e.target.value)}
             />
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 font-semibold">
+            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-purple-600 dark:text-purple-400 font-semibold">
               g
             </div>
           </div>
@@ -154,14 +154,14 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         </div>
 
         {numericGrams > safeBalance && (
-          <div className="flex items-center gap-2 text-red-600 text-sm bg-red-50 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-xl">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>Insufficient gold balance. You only have {safeBalance.toFixed(4)}g available.</span>
           </div>
         )}
 
         {isBelowMinimum && (
-          <div className="flex items-center gap-2 text-purple-600 text-sm bg-purple-50 p-3 rounded-xl">
+          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 text-sm bg-purple-50 dark:bg-purple-950/20 p-3 rounded-xl">
             <AlertCircle className="w-5 h-5 flex-shrink-0" />
             <span>Minimum trade amount is ${minTradeAmount}</span>
           </div>
@@ -172,7 +172,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
         <Label className="text-foreground/85 font-medium">Payout Method</Label>
         <RadioGroup value={method} onValueChange={setMethod} className="space-y-3">
           <div className="flex items-center space-x-3 bg-card shadow-sm p-4 rounded-xl border border-border mobile-list-item">
-            <RadioGroupItem value="bank" id="bank" className="border-purple-300 text-purple-600" />
+            <RadioGroupItem value="bank" id="bank" className="border-purple-300 text-purple-600 dark:text-purple-400" />
             <Label htmlFor="bank" className="flex-1 flex items-center cursor-pointer">
               <Building className="w-5 h-5 mr-3 text-muted-foreground" />
               <span className="flex-1 font-medium">Bank Transfer</span>
@@ -180,7 +180,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
             </Label>
           </div>
           <div className="flex items-center space-x-3 bg-card shadow-sm p-4 rounded-xl border border-border mobile-list-item">
-            <RadioGroupItem value="crypto" id="crypto" className="border-purple-300 text-purple-600" />
+            <RadioGroupItem value="crypto" id="crypto" className="border-purple-300 text-purple-600 dark:text-purple-400" />
             <Label htmlFor="crypto" className="flex-1 flex items-center cursor-pointer">
               <Wallet className="w-5 h-5 mr-3 text-muted-foreground" />
               <span className="flex-1 font-medium">Crypto Payout</span>
@@ -212,7 +212,7 @@ export default function SellGoldModal({ isOpen, onClose, goldPrice, walletBalanc
 
   const confirmButton = (
     <Button 
-      className="w-full h-14 bg-red-500 text-white hover:bg-red-600 font-bold text-base rounded-xl shadow-lg"
+      className="w-full h-14 bg-red-50 dark:bg-red-950/200 text-white hover:bg-red-600 font-bold text-base rounded-xl shadow-lg"
       disabled={numericGrams <= 0 || numericGrams > safeBalance || isBelowMinimum || isLoading}
       onClick={handleConfirm}
     >

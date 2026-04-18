@@ -327,7 +327,7 @@ export default function FinaPay() {
               onClick={() => isKycApproved ? setActiveModal('deposit') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-green-200 bg-green-50 text-green-700 hover:bg-green-500 hover:text-white hover:border-green-500 hover:shadow-md' 
+                  ? 'border-green-200 dark:border-green-800/40 bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 hover:bg-green-50 dark:bg-green-950/200 hover:text-white hover:border-green-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-add-funds"
@@ -341,7 +341,7 @@ export default function FinaPay() {
               onClick={() => isKycApproved ? setActiveModal('buyWingold') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-500 hover:text-white hover:border-amber-500 hover:shadow-md' 
+                  ? 'border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:bg-amber-950/200 hover:text-white hover:border-amber-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-buy-gold"
@@ -355,7 +355,7 @@ export default function FinaPay() {
               onClick={() => isKycApproved ? setActiveModal('withdraw') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 hover:shadow-md' 
+                  ? 'border-orange-200 dark:border-orange-800/40 bg-orange-50 dark:bg-orange-950/20 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:bg-orange-950/200 hover:text-white hover:border-orange-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-withdraw-gold"
@@ -372,7 +372,7 @@ export default function FinaPay() {
               onClick={() => isKycApproved ? setActiveModal('send') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-500 hover:text-white hover:border-blue-500 hover:shadow-md' 
+                  ? 'border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:bg-blue-950/200 hover:text-white hover:border-blue-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-send-funds"
@@ -386,7 +386,7 @@ export default function FinaPay() {
               onClick={() => isKycApproved ? setActiveModal('request') : handleKycRequired()}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-500 hover:text-white hover:border-teal-500 hover:shadow-md' 
+                  ? 'border-teal-200 dark:border-teal-800/40 bg-teal-50 dark:bg-teal-950/20 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:bg-teal-950/200 hover:text-white hover:border-teal-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-request-funds"
@@ -409,7 +409,7 @@ export default function FinaPay() {
               }}
               className={`whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-medium border transition-all flex items-center ${
                 isKycApproved 
-                  ? 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-500 hover:text-white hover:border-violet-500 hover:shadow-md' 
+                  ? 'border-violet-200 dark:border-violet-800/40 bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:bg-violet-950/200 hover:text-white hover:border-violet-500 hover:shadow-md' 
                   : 'border-border bg-muted/40 text-muted-foreground/70 cursor-not-allowed'
               }`}
               data-testid="button-lock-gold-price"
@@ -428,8 +428,8 @@ export default function FinaPay() {
             {/* LEFT PANEL — Digital Gold Payments summary */}
             <div id="finapay-wallet-section" className={`hynex-card p-6 transition-all duration-500 flex flex-col ${highlightSection ? 'ring-2 ring-primary ring-offset-2' : ''}`}>
               <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-purple-100 rounded-lg shrink-0">
-                  <WalletIcon className="w-5 h-5 text-fuchsia-600" />
+                <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg shrink-0">
+                  <WalletIcon className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
                 </div>
                 <div>
                   <h2 className="text-sm font-bold text-foreground" data-testid="text-finapay-title">{getContent('hero', 'title', 'Digital Gold Payments')}</h2>
@@ -491,19 +491,19 @@ export default function FinaPay() {
                   <div className="relative z-10">
                     <div className="flex items-center justify-between mb-1">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Live Gold Rate</p>
-                      <span className="text-[10px] font-semibold bg-green-100 text-green-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                      <span className="text-[10px] font-semibold bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse inline-block" />
                         Live
                       </span>
                     </div>
-                    <p className="text-xl font-bold text-amber-700 mb-0.5">
+                    <p className="text-xl font-bold text-amber-700 dark:text-amber-300 mb-0.5">
                       ${currentGoldPriceUsdPerGram.toFixed(2)}
                       <span className="text-xs font-normal text-muted-foreground ml-1">/ g</span>
                     </p>
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-xs text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67).toFixed(2)}/g</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67).toFixed(2)}/g</p>
                       <span className="text-muted-foreground/40 text-[10px]">•</span>
-                      <p className="text-xs text-amber-700/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67 * 31.1035).toFixed(0)}/troy oz</p>
+                      <p className="text-xs text-amber-700 dark:text-amber-300/70">≈ AED {(currentGoldPriceUsdPerGram * 3.67 * 31.1035).toFixed(0)}/troy oz</p>
                     </div>
                   </div>
                 </div>
@@ -516,7 +516,7 @@ export default function FinaPay() {
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Completed Txns</p>
-                      <p className="text-xl font-bold text-green-600" data-testid="text-completed-tx-count">{completedTxCount}</p>
+                      <p className="text-xl font-bold text-green-600 dark:text-green-400" data-testid="text-completed-tx-count">{completedTxCount}</p>
                       <p className="text-[10px] text-muted-foreground mt-1">All-time</p>
                     </div>
                   </div>
@@ -526,7 +526,7 @@ export default function FinaPay() {
                     </div>
                     <div className="relative z-10">
                       <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Total Volume</p>
-                      <p className="text-xl font-bold text-amber-700" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
+                      <p className="text-xl font-bold text-amber-700 dark:text-amber-300" data-testid="text-total-volume">{totalGoldVolume.toFixed(2)} g</p>
                       <p className="text-[10px] text-muted-foreground mt-1">Gold transacted</p>
                     </div>
                   </div>
@@ -547,17 +547,17 @@ export default function FinaPay() {
 
         {/* KYC Warning Banner */}
         {!isKycApproved && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center gap-3">
             <div className="flex items-center gap-3 flex-1">
-              <div className="p-2 bg-amber-100 rounded-full shrink-0">
-                <ShieldAlert className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-full shrink-0">
+                <ShieldAlert className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="min-w-0">
-                <h4 className="font-semibold text-amber-800">KYC Verification Required</h4>
-                <p className="text-sm text-amber-700">Complete your identity verification to access all FinaPay features.</p>
+                <h4 className="font-semibold text-amber-800 dark:text-amber-200">KYC Verification Required</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300">Complete your identity verification to access all FinaPay features.</p>
               </div>
             </div>
-            <Button onClick={() => setLocation('/kyc')} className="bg-amber-500 hover:bg-amber-600 text-white w-full sm:w-auto shrink-0">
+            <Button onClick={() => setLocation('/kyc')} className="bg-amber-50 dark:bg-amber-950/200 hover:bg-amber-600 text-white w-full sm:w-auto shrink-0">
               Verify Now
             </Button>
           </div>
@@ -576,7 +576,7 @@ export default function FinaPay() {
               <AlertCircle className="w-12 h-12 mx-auto mb-4 text-muted-foreground/40" />
               <h4 className="text-lg font-semibold mb-2">No Transactions Yet</h4>
               <p className="text-muted-foreground mb-4">Your transaction history will appear here.</p>
-              <Button onClick={() => setActiveModal('buyWingold')} className="bg-purple-500 hover:bg-fuchsia-600">
+              <Button onClick={() => setActiveModal('buyWingold')} className="bg-purple-50 dark:bg-purple-950/200 hover:bg-fuchsia-600">
                 Make Your First Purchase
               </Button>
             </div>
@@ -617,13 +617,13 @@ export default function FinaPay() {
               <DialogTitle className="text-xl font-bold flex items-center gap-2">
                 {depositCallbackStatus === 'success' && (
                   <>
-                    <CheckCircle2 className="w-6 h-6 text-green-600" />
+                    <CheckCircle2 className="w-6 h-6 text-green-600 dark:text-green-400" />
                     <span>Deposit Successful</span>
                   </>
                 )}
                 {depositCallbackStatus === 'cancelled' && (
                   <>
-                    <XCircle className="w-6 h-6 text-red-600" />
+                    <XCircle className="w-6 h-6 text-red-600 dark:text-red-400" />
                     <span>Deposit Cancelled</span>
                   </>
                 )}
@@ -644,12 +644,12 @@ export default function FinaPay() {
             <div className="py-6">
               {depositCallbackStatus === 'success' && (
                 <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto">
-                    <CheckCircle2 className="w-10 h-10 text-green-600" />
+                  <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto">
+                    <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
                   </div>
                   {depositCallbackDetails?.amount && (
                     <div>
-                      <p className="text-3xl font-bold text-green-600">{depositCallbackDetails.amount}</p>
+                      <p className="text-3xl font-bold text-green-600 dark:text-green-400">{depositCallbackDetails.amount}</p>
                       <p className="text-sm text-muted-foreground mt-1">has been added to your wallet</p>
                     </div>
                   )}
@@ -661,8 +661,8 @@ export default function FinaPay() {
               
               {depositCallbackStatus === 'cancelled' && (
                 <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto">
-                    <XCircle className="w-10 h-10 text-red-600" />
+                  <div className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto">
+                    <XCircle className="w-10 h-10 text-red-600 dark:text-red-400" />
                   </div>
                   <p className="text-sm text-muted-foreground">
                     The payment was not completed. No funds have been deducted from your card.

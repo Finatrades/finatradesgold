@@ -122,8 +122,8 @@ export default function AboutSection() {
   return (
     <section className="py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100/20 blur-[120px] rounded-full" />
+        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100 dark:bg-purple-900/30/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100 dark:bg-pink-900/30/20 blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -188,9 +188,9 @@ export default function AboutSection() {
               transition={{ delay: (index + 2) * 0.1, duration: 0.5 }}
               className="group"
             >
-              <div className="bg-card rounded-2xl p-6 h-full shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200">
+              <div className="bg-card rounded-2xl p-6 h-full shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 dark:border-purple-800/40">
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-300">
-                  <feature.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
+                  <feature.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-lg font-semibold text-foreground mb-2">
                   {feature.title}

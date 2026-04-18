@@ -146,8 +146,8 @@ export default function NotificationCenter() {
   };
 
   const getPriorityDot = (priority: string) => {
-    if (priority === 'high') return 'bg-red-500';
-    if (priority === 'medium') return 'bg-yellow-500';
+    if (priority === 'high') return 'bg-red-50 dark:bg-red-950/200';
+    if (priority === 'medium') return 'bg-yellow-50 dark:bg-yellow-950/200';
     return null;
   };
 

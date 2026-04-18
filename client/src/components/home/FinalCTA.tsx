@@ -11,8 +11,8 @@ export default function FinalCTA() {
   return (
     <section className="py-24 relative overflow-hidden bg-gradient-to-br from-purple-50/50 via-white to-purple-50/30">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-purple-100/50 blur-[150px] rounded-full" />
-        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-purple-100/50 blur-[120px] rounded-full" />
+        <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-purple-100 dark:bg-purple-900/30/50 blur-[150px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/50 blur-[120px] rounded-full" />
       </div>
       
       <div className="container mx-auto px-6 relative z-10">
@@ -23,8 +23,8 @@ export default function FinalCTA() {
           className="max-w-4xl mx-auto text-center"
         >
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-600/20 mb-8">
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-600">Start Today</span>
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Start Today</span>
           </div>
           
           <h2 className="text-3xl lg:text-5xl font-bold mb-6 text-foreground">

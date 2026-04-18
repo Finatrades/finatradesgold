@@ -128,7 +128,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
         
         {currentRole === 'Importer' && tradeCase.status === 'Approved – Ready to Release' && (
            <Button 
-             className="bg-green-500 hover:bg-green-600 text-white font-bold animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.3)]"
+             className="bg-green-50 dark:bg-green-950/200 hover:bg-green-600 text-white font-bold animate-pulse shadow-[0_0_20px_rgba(34,197,94,0.3)]"
              onClick={handleRelease}
            >
              <CheckCircle2 className="w-5 h-5 mr-2" /> Release Settlement to Exporter
@@ -249,7 +249,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                             </div>
                             <div className={`p-4 rounded-xl text-sm leading-relaxed shadow-sm ${
                               isMe ? 'bg-secondary text-white rounded-tr-none' : 
-                              isAdmin ? 'bg-red-50 text-red-900 border border-red-100 rounded-tl-none' :
+                              isAdmin ? 'bg-red-50 dark:bg-red-950/20 text-red-900 border border-red-100 rounded-tl-none' :
                               'bg-card border border-border text-foreground rounded-tl-none'
                             }`}>
                               {msg.content}
@@ -338,7 +338,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                        const isUploaded = documents.some(d => d.type === doc || (doc === 'Other' && !['Certificate of Origin', 'Inspection / Quality Certificate', 'Bill of Lading (B/L)', 'Commercial Invoice', 'Packing List', 'Insurance Certificate', 'Agreements / Contract Copy'].includes(d.type)));
                        return (
                          <div key={i} className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted transition-colors">
-                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isUploaded ? 'bg-green-500 border-green-500' : 'border-border bg-background'}`}>
+                           <div className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 ${isUploaded ? 'bg-green-50 dark:bg-green-950/200 border-green-500' : 'border-border bg-background'}`}>
                              {isUploaded && <CheckCircle2 className="w-3 h-3 text-white" />}
                            </div>
                            <span className={isUploaded ? 'text-foreground font-medium' : 'text-muted-foreground'}>{doc}</span>
@@ -371,7 +371,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                 {documents.map(doc => (
                   <div key={doc.id} className="flex items-center justify-between p-4 bg-background rounded-lg border border-border hover:border-muted-foreground/30 transition-all shadow-sm">
                     <div className="flex items-center gap-4">
-                      <div className="p-3 bg-blue-500/10 rounded text-blue-500">
+                      <div className="p-3 bg-blue-50 dark:bg-blue-950/200/10 rounded text-blue-500">
                         <FileText className="w-6 h-6" />
                       </div>
                       <div>
@@ -381,7 +381,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                     </div>
                     <div className="flex items-center gap-4">
                       {doc.digitalSignatureStatus === 'Signed' ? (
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 flex gap-1">
+                        <Badge variant="outline" className="bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20 flex gap-1">
                           <ShieldCheck className="w-3 h-3" /> Signed
                         </Badge>
                       ) : (
@@ -414,8 +414,8 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                    <div key={step.id} className="relative flex gap-6 items-start">
                      {/* Status Indicator */}
                      <div className={`relative z-10 w-12 h-12 rounded-full border-4 border-background flex items-center justify-center shrink-0 shadow-sm
-                       ${step.status === 'Approved' ? 'bg-green-500 text-white' : 
-                         step.status === 'In Review' ? 'bg-yellow-500 text-white' : 'bg-muted text-muted-foreground border-border'}`}
+                       ${step.status === 'Approved' ? 'bg-green-50 dark:bg-green-950/200 text-white' : 
+                         step.status === 'In Review' ? 'bg-yellow-50 dark:bg-yellow-950/200 text-white' : 'bg-muted text-muted-foreground border-border'}`}
                      >
                        {step.status === 'Approved' ? <CheckCircle2 className="w-6 h-6" /> : <Clock className="w-6 h-6" />}
                      </div>
@@ -427,19 +427,19 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                              <p className="text-sm text-muted-foreground">Assigned to: {step.role}</p>
                            </div>
                            <Badge variant="outline" className={`
-                             ${step.status === 'Approved' ? 'text-green-600 border-green-500/20 bg-green-500/10' : 'text-muted-foreground border-border bg-background'}
+                             ${step.status === 'Approved' ? 'text-green-600 dark:text-green-400 border-green-500/20 bg-green-50 dark:bg-green-950/200/10' : 'text-muted-foreground border-border bg-background'}
                            `}>{step.status}</Badge>
                         </div>
                         
                         {step.status === 'Approved' && (
-                          <p className="text-xs text-green-600 mt-2">
+                          <p className="text-xs text-green-600 dark:text-green-400 mt-2">
                             Approved by {step.approverName} on {new Date(step.decisionAt!).toLocaleDateString()}
                           </p>
                         )}
 
                         {step.status === 'Pending' && currentRole === step.role && (
                            <div className="mt-4 flex gap-2">
-                             <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white" onClick={() => handleApproveStep(step.id)}>Approve</Button>
+                             <Button size="sm" className="bg-green-50 dark:bg-green-950/200 hover:bg-green-600 text-white" onClick={() => handleApproveStep(step.id)}>Approve</Button>
                              <Button size="sm" variant="destructive">Reject</Button>
                            </div>
                         )}

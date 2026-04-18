@@ -35,27 +35,27 @@ export default function DepositList({ requests, onSelectRequest, onNewRequest }:
     
     switch (status) {
       case 'Submitted':
-        colorClass = 'bg-blue-500/10 text-blue-500 border-blue-500/20';
+        colorClass = 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500 border-blue-500/20';
         break;
       case 'Under Review':
-        colorClass = 'bg-purple-500/10 text-purple-500 border-purple-500/20';
+        colorClass = 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500 border-purple-500/20';
         break;
       case 'Approved – Awaiting Delivery':
       case 'Approved':
-        colorClass = 'bg-green-500/10 text-green-500 border-green-500/20';
+        colorClass = 'bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20';
         break;
       case 'Received at Vault':
-        colorClass = 'bg-teal-500/10 text-teal-500 border-teal-500/20';
+        colorClass = 'bg-teal-50 dark:bg-teal-950/200/10 text-teal-500 border-teal-500/20';
         break;
       case 'Received':
-        colorClass = 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
+        colorClass = 'bg-emerald-50 dark:bg-emerald-950/200/10 text-emerald-500 border-emerald-500/20';
         break;
       case 'Transferred':
-        colorClass = 'bg-purple-500/10 text-purple-500 border-purple-500/20';
+        colorClass = 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500 border-purple-500/20';
         break;
       case 'Rejected':
       case 'Cancelled':
-        colorClass = 'bg-red-500/10 text-red-500 border-red-500/20';
+        colorClass = 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
         break;
       default:
         colorClass = 'bg-gray-500/10 text-muted-foreground border-gray-500/20';

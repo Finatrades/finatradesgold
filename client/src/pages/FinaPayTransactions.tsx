@@ -69,19 +69,19 @@ export default function FinaPayTransactions() {
 
   const getColor = (type: string) => {
     switch (type) {
-      case 'Buy': return 'bg-green-500/10 text-green-500';
-      case 'Sell': return 'bg-red-500/10 text-red-500';
-      case 'Send': return 'bg-purple-500/10 text-purple-500';
-      case 'Receive': return 'bg-blue-500/10 text-blue-500';
+      case 'Buy': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500';
+      case 'Sell': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500';
+      case 'Send': return 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500';
+      case 'Receive': return 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500';
       default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
     switch(status) {
-      case 'Completed': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'Pending': return 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20';
-      case 'Failed': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'Completed': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20';
+      case 'Pending': return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-500 border-yellow-500/20';
+      case 'Failed': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
       case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
       default: return 'bg-card/5 text-white/60';
     }

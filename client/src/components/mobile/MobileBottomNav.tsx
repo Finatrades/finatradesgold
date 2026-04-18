@@ -76,14 +76,14 @@ export default function MobileBottomNav({ onQuickActionClick }: MobileBottomNavP
               whileTap={{ scale: 0.92 }}
               onClick={() => setLocation(item.path)}
               className={`flex flex-col items-center justify-center min-w-[64px] min-h-[48px] py-1.5 rounded-xl transition-colors touch-target ${
-                active ? 'text-purple-600' : 'text-muted-foreground'
+                active ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'
               }`}
               data-testid={`button-nav-${item.label.toLowerCase()}`}
             >
-              <div className={`p-2 rounded-xl transition-all ${active ? 'bg-purple-100' : ''}`}>
+              <div className={`p-2 rounded-xl transition-all ${active ? 'bg-purple-100 dark:bg-purple-900/30' : ''}`}>
                 {item.icon}
               </div>
-              <span className={`text-[11px] mt-0.5 font-semibold ${active ? 'text-purple-600' : 'text-muted-foreground'}`}>
+              <span className={`text-[11px] mt-0.5 font-semibold ${active ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'}`}>
                 {item.label}
               </span>
               {active && (

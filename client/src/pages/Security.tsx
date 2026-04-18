@@ -433,7 +433,7 @@ export default function Security() {
                   <CardTitle className="flex items-center gap-2">
                     Two-Factor Authentication
                     {mfaEnabled && (
-                      <Badge className="bg-green-100 text-green-700 border-none">
+                      <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-none">
                         <CheckCircle2 className="w-3 h-3 mr-1" /> Enabled
                       </Badge>
                     )}
@@ -472,11 +472,11 @@ export default function Security() {
             </div>
             
             {mfaEnabled && (
-              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-100">
-                <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-100">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-sm text-green-800">Protection Active</h4>
-                  <p className="text-sm text-green-700">
+                  <h4 className="font-medium text-sm text-green-800 dark:text-green-200">Protection Active</h4>
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Your account is protected with two-factor authentication via {mfaMethod === 'totp' ? 'authenticator app' : 'email'}.
                   </p>
                 </div>
@@ -484,11 +484,11 @@ export default function Security() {
             )}
             
             {!mfaEnabled && (
-              <div className="flex items-start gap-3 p-4 bg-yellow-50 rounded-lg border border-yellow-100">
-                <AlertCircle className="w-5 h-5 text-yellow-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-100">
+                <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                 <div>
-                  <h4 className="font-medium text-sm text-yellow-800">Recommended</h4>
-                  <p className="text-sm text-yellow-700">
+                  <h4 className="font-medium text-sm text-yellow-800 dark:text-yellow-200">Recommended</h4>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300">
                     Enable two-factor authentication to protect your account from unauthorized access and secure your gold assets.
                   </p>
                 </div>
@@ -525,13 +525,13 @@ export default function Security() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-500/20 to-yellow-500/20 flex items-center justify-center">
-                  <KeyRound className="w-6 h-6 text-amber-600" />
+                  <KeyRound className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
                   <CardTitle className="flex items-center gap-2">
                     Transaction PIN
                     {pinStatus.hasPin && (
-                      <Badge className="bg-green-100 text-green-700 border-none">
+                      <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-none">
                         <CheckCircle2 className="w-3 h-3 mr-1" /> Active
                       </Badge>
                     )}
@@ -563,14 +563,14 @@ export default function Security() {
             </div>
             
             {pinStatus.hasPin ? (
-              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-lg border border-green-100">
-                <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-100">
+                <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm text-green-800">Transaction PIN Active</h4>
-                  <p className="text-sm text-green-700">
+                  <h4 className="font-medium text-sm text-green-800 dark:text-green-200">Transaction PIN Active</h4>
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Your transactions are protected with a 6-digit PIN.
                     {pinStatus.isLocked && pinStatus.lockedUntil && (
-                      <span className="block mt-1 text-red-600">
+                      <span className="block mt-1 text-red-600 dark:text-red-400">
                         PIN is currently locked until {new Date(pinStatus.lockedUntil).toLocaleTimeString()}.
                       </span>
                     )}
@@ -586,11 +586,11 @@ export default function Security() {
                 </Button>
               </div>
             ) : (
-              <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
-                <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-100">
+                <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5" />
                 <div className="flex-1">
-                  <h4 className="font-medium text-sm text-amber-800">PIN Not Set</h4>
-                  <p className="text-sm text-amber-700">
+                  <h4 className="font-medium text-sm text-amber-800 dark:text-amber-200">PIN Not Set</h4>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
                     Set up a transaction PIN to add an extra layer of security for your financial operations.
                   </p>
                 </div>
@@ -610,9 +610,9 @@ export default function Security() {
         <BiometricSettings />
 
         {/* Danger Zone - Account Deletion Request */}
-        <Card className="border-red-200">
+        <Card className="border-red-200 dark:border-red-800/40">
           <CardHeader>
-            <CardTitle className="text-red-600 flex items-center gap-2">
+            <CardTitle className="text-red-600 dark:text-red-400 flex items-center gap-2">
               <AlertTriangle className="w-5 h-5" />
               Danger Zone
             </CardTitle>
@@ -626,11 +626,11 @@ export default function Security() {
             ) : deletionRequest ? (
               // Show existing request status
               <div className="space-y-4">
-                <div className="p-4 border border-red-200 rounded-lg bg-red-50">
+                <div className="p-4 border border-red-200 dark:border-red-800/40 rounded-lg bg-red-50 dark:bg-red-950/20">
                   <div className="flex items-start justify-between">
                     <div className="space-y-2">
                       <div className="flex items-center gap-2">
-                        <p className="font-medium text-red-700">Deletion Request Submitted</p>
+                        <p className="font-medium text-red-700 dark:text-red-300">Deletion Request Submitted</p>
                         <Badge 
                           variant={deletionRequest.status === 'Approved' ? 'destructive' : deletionRequest.status === 'Pending' ? 'outline' : 'secondary'}
                           data-testid="badge-deletion-status"
@@ -638,7 +638,7 @@ export default function Security() {
                           {deletionRequest.status}
                         </Badge>
                       </div>
-                      <div className="text-sm space-y-1 text-red-600">
+                      <div className="text-sm space-y-1 text-red-600 dark:text-red-400">
                         <p className="flex items-center gap-2">
                           <Clock className="w-4 h-4" />
                           Scheduled deletion: {new Date(deletionRequest.scheduledDeletionDate).toLocaleDateString()}
@@ -688,17 +688,17 @@ export default function Security() {
                   </p>
                 )}
                 {deletionRequest.status === 'Approved' && (
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-amber-600 dark:text-amber-400">
                     Your request has been approved. Your account will be deleted on the scheduled date unless you cancel the request.
                   </p>
                 )}
               </div>
             ) : (
               // Show form to request deletion
-              <div className="flex items-center justify-between p-4 border border-red-200 rounded-lg bg-red-50">
+              <div className="flex items-center justify-between p-4 border border-red-200 dark:border-red-800/40 rounded-lg bg-red-50 dark:bg-red-950/20">
                 <div>
-                  <p className="font-medium text-red-700">Request Account Deletion</p>
-                  <p className="text-sm text-red-600">Submit a request to delete your account. Requires admin approval and has a 30-day grace period.</p>
+                  <p className="font-medium text-red-700 dark:text-red-300">Request Account Deletion</p>
+                  <p className="text-sm text-red-600 dark:text-red-400">Submit a request to delete your account. Requires admin approval and has a 30-day grace period.</p>
                 </div>
                 <Button 
                   variant="destructive" 
@@ -720,7 +720,7 @@ export default function Security() {
         }}>
           <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-red-600">
+              <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
                 <AlertTriangle className="w-5 h-5" />
                 Request Account Deletion
               </DialogTitle>
@@ -730,7 +730,7 @@ export default function Security() {
             </DialogHeader>
             
             <div className="space-y-4 py-4">
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg text-sm text-amber-800">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg text-sm text-amber-800 dark:text-amber-200">
                 <p className="font-medium mb-1">Important:</p>
                 <ul className="list-disc list-inside space-y-1">
                   <li>Your request will be reviewed by an admin</li>

@@ -15,7 +15,7 @@ export default function PremiumHeroSection() {
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-200/30 blur-[150px] rounded-full" />
         <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-200/20 blur-[120px] rounded-full" />
-        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100/30 blur-[100px] rounded-full" />
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/30 blur-[100px] rounded-full" />
       </div>
 
       <div className="container mx-auto px-6 relative z-10">
@@ -34,12 +34,12 @@ export default function PremiumHeroSection() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border shadow-sm mb-8">
               {accountType === 'personal' ? (
                 <>
-                  <User className="w-4 h-4 text-purple-600" />
+                  <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span className="text-sm font-medium text-foreground">Personal Account</span>
                 </>
               ) : (
                 <>
-                  <Building2 className="w-4 h-4 text-purple-600" />
+                  <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   <span className="text-sm font-medium text-foreground">Business Account</span>
                 </>
               )}
@@ -104,7 +104,7 @@ export default function PremiumHeroSection() {
             </div>
             
             <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 shadow-2xl overflow-hidden">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 blur-2xl rounded-full" />
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 dark:bg-purple-950/200/20 blur-2xl rounded-full" />
               
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-2">

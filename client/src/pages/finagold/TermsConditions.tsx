@@ -146,8 +146,8 @@ function TermsContent() {
 
             <section className="mb-12">
               <h2 className="text-2xl font-bold mb-6 text-[#0D0D0D]">4. Gold Certificates & Risk Disclosure</h2>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-6 mb-6">
-                <p className="text-red-800 font-semibold mb-2">YOU EXPRESSLY ACKNOWLEDGE AND ACCEPT THE FOLLOWING INHERENT AND SIGNIFICANT RISKS:</p>
+              <div className="bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-xl p-6 mb-6">
+                <p className="text-red-800 dark:text-red-200 font-semibold mb-2">YOU EXPRESSLY ACKNOWLEDGE AND ACCEPT THE FOLLOWING INHERENT AND SIGNIFICANT RISKS:</p>
               </div>
               
               <div className="space-y-4">

@@ -74,7 +74,7 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
         <div className="flex items-center justify-between mb-4">
           <h3 className="font-semibold text-foreground text-sm">Recent Activity</h3>
           <Link href="/activity">
-            <span className="text-purple-600 text-xs font-medium flex items-center">
+            <span className="text-purple-600 dark:text-purple-400 text-xs font-medium flex items-center">
               View All <ChevronRight className="w-3 h-3 ml-0.5" />
             </span>
           </Link>
@@ -99,7 +99,7 @@ export default function MobileRecentActivity({ transactions, goldPrice, maxItems
       <div className="flex items-center justify-between p-4 border-b border-gray-50">
         <h3 className="font-bold text-foreground text-base">Recent Activity</h3>
         <Link href="/activity">
-          <span className="text-purple-600 text-sm font-semibold flex items-center touch-target px-2 py-1 rounded-lg active:bg-purple-50">
+          <span className="text-purple-600 dark:text-purple-400 text-sm font-semibold flex items-center touch-target px-2 py-1 rounded-lg active:bg-purple-50 dark:bg-purple-950/20">
             View All <ChevronRight className="w-4 h-4 ml-0.5" />
           </span>
         </Link>

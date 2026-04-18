@@ -80,8 +80,8 @@ export default function ProductSuite() {
   return (
     <section id="products" className="py-24 bg-gradient-to-br from-purple-50/30 via-white to-purple-50/20 relative">
       <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100/40 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-purple-100/40 blur-[100px] rounded-full" />
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/40 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-purple-100 dark:bg-purple-900/30/40 blur-[100px] rounded-full" />
       </div>
       
       <div className="container mx-auto px-6 relative z-10">
@@ -91,7 +91,7 @@ export default function ProductSuite() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold tracking-widest text-purple-600 uppercase mb-4 block">
+          <span className="text-sm font-semibold tracking-widest text-purple-600 dark:text-purple-400 uppercase mb-4 block">
             {accountType === 'business' ? 'BUSINESS ECOSYSTEM' : 'PERSONAL ECOSYSTEM'}
           </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4 text-foreground">
@@ -114,7 +114,7 @@ export default function ProductSuite() {
               <div className="h-full p-8 rounded-3xl bg-card border border-border/60 shadow-sm hover:shadow-xl transition-all duration-300" data-testid={`card-product-${product.id}`}>
                 <div className="mb-6 relative">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/10 to-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-                    <product.icon className="w-8 h-8 text-purple-600" strokeWidth={1.5} />
+                    <product.icon className="w-8 h-8 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
                   </div>
                 </div>
                 

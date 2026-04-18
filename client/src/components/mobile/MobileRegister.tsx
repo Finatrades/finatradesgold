@@ -171,10 +171,10 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   const getStrengthColor = (index: number) => {
     if (strengthScore === 0) return 'bg-muted';
     if (index >= strengthScore) return 'bg-muted';
-    if (strengthScore <= 1) return 'bg-red-500';
+    if (strengthScore <= 1) return 'bg-red-50 dark:bg-red-950/200';
     if (strengthScore === 2) return 'bg-orange-400';
     if (strengthScore === 3) return 'bg-yellow-400';
-    return 'bg-green-500';
+    return 'bg-green-50 dark:bg-green-950/200';
   };
 
   const getStrengthLabel = () => {
@@ -188,8 +188,8 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
   const getStrengthLabelColor = () => {
     if (strengthScore <= 1) return 'text-red-500';
     if (strengthScore === 2) return 'text-orange-500';
-    if (strengthScore === 3) return 'text-yellow-600';
-    return 'text-green-600';
+    if (strengthScore === 3) return 'text-yellow-600 dark:text-yellow-400';
+    return 'text-green-600 dark:text-green-400';
   };
 
   const validateField = (name: string, value: string) => {
@@ -529,16 +529,16 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
                     )}
                   </div>
                   <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.length ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.length ? 'opacity-100' : 'opacity-40'}`} /> 8+ characters
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.uppercase ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.uppercase ? 'opacity-100' : 'opacity-40'}`} /> Uppercase
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.number ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.number ? 'opacity-100' : 'opacity-40'}`} /> Number
                     </span>
-                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs flex items-center gap-1 ${passwordStrength.special ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground/70'}`}>
                       <Check className={`w-3 h-3 ${passwordStrength.special ? 'opacity-100' : 'opacity-40'}`} /> Special char
                     </span>
                   </div>
@@ -566,7 +566,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
               />
               {fieldErrors.confirmPassword && <p className="text-red-500 text-xs mt-1" data-testid="error-confirm-password">{fieldErrors.confirmPassword}</p>}
               {!fieldErrors.confirmPassword && formData.confirmPassword && formData.confirmPassword === formData.password && (
-                <p className="text-green-600 text-xs mt-1">Passwords match</p>
+                <p className="text-green-600 dark:text-green-400 text-xs mt-1">Passwords match</p>
               )}
             </div>
           </motion.div>
@@ -703,9 +703,9 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
             />
             <Label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
               I agree to the{' '}
-              <Link href="/finagold/terms" className="text-purple-600 font-medium">Terms of Service</Link>
+              <Link href="/finagold/terms" className="text-purple-600 dark:text-purple-400 font-medium">Terms of Service</Link>
               {' '}and{' '}
-              <Link href="/finagold/privacy" className="text-purple-600 font-medium">Privacy Policy</Link>
+              <Link href="/finagold/privacy" className="text-purple-600 dark:text-purple-400 font-medium">Privacy Policy</Link>
             </Label>
           </motion.div>
 
@@ -736,7 +736,7 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
 
             <p className="text-center text-sm text-muted-foreground">
               Already have an account?{' '}
-              <Link href="/sign-in" className="text-purple-600 font-medium">Sign In</Link>
+              <Link href="/sign-in" className="text-purple-600 dark:text-purple-400 font-medium">Sign In</Link>
             </p>
           </motion.div>
           </form>

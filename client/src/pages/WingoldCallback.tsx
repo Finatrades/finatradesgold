@@ -91,7 +91,7 @@ export default function WingoldCallback() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white" data-testid="wingold-callback-loading">
         <Card className="w-full max-w-md">
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <Loader2 className="h-12 w-12 animate-spin text-purple-600 mb-4" />
+            <Loader2 className="h-12 w-12 animate-spin text-purple-600 dark:text-purple-400 mb-4" />
             <p className="text-muted-foreground">Processing your order...</p>
           </CardContent>
         </Card>
@@ -104,10 +104,10 @@ export default function WingoldCallback() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white p-4" data-testid="wingold-callback-success">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 flex items-center justify-center">
-              <CheckCircle2 className="h-10 w-10 text-green-600" />
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
             </div>
-            <CardTitle className="text-2xl text-green-700">Payment Successful!</CardTitle>
+            <CardTitle className="text-2xl text-green-700 dark:text-green-300">Payment Successful!</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-center text-muted-foreground">
@@ -128,7 +128,7 @@ export default function WingoldCallback() {
                 )}
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Gold Amount</span>
-                  <span className="font-medium text-amber-600">{orderDetails.grams}g</span>
+                  <span className="font-medium text-amber-600 dark:text-amber-400">{orderDetails.grams}g</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">Total Paid</span>
@@ -159,10 +159,10 @@ export default function WingoldCallback() {
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white p-4" data-testid="wingold-callback-cancelled">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
-              <AlertCircle className="h-10 w-10 text-amber-600" />
+            <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <AlertCircle className="h-10 w-10 text-amber-600 dark:text-amber-400" />
             </div>
-            <CardTitle className="text-2xl text-amber-700">Payment Cancelled</CardTitle>
+            <CardTitle className="text-2xl text-amber-700 dark:text-amber-300">Payment Cancelled</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <p className="text-center text-muted-foreground">
@@ -197,10 +197,10 @@ export default function WingoldCallback() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-white p-4" data-testid="wingold-callback-failed">
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
-          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 flex items-center justify-center">
-            <XCircle className="h-10 w-10 text-red-600" />
+          <div className="mx-auto mb-4 h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <XCircle className="h-10 w-10 text-red-600 dark:text-red-400" />
           </div>
-          <CardTitle className="text-2xl text-red-700">Payment Failed</CardTitle>
+          <CardTitle className="text-2xl text-red-700 dark:text-red-300">Payment Failed</CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <p className="text-center text-muted-foreground">

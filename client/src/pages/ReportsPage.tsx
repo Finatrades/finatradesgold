@@ -59,10 +59,10 @@ const reportTypeLabels: Record<string, string> = {
 };
 
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
-  pending: { icon: <Clock className="h-4 w-4" />, color: 'bg-yellow-100 text-yellow-700 border-yellow-200', label: 'Pending' },
-  generating: { icon: <Loader2 className="h-4 w-4 animate-spin" />, color: 'bg-blue-100 text-blue-700 border-blue-200', label: 'Generating' },
-  completed: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-100 text-green-700 border-green-200', label: 'Completed' },
-  failed: { icon: <XCircle className="h-4 w-4" />, color: 'bg-red-100 text-red-700 border-red-200', label: 'Failed' },
+  pending: { icon: <Clock className="h-4 w-4" />, color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/40', label: 'Pending' },
+  generating: { icon: <Loader2 className="h-4 w-4 animate-spin" />, color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/40', label: 'Generating' },
+  completed: { icon: <CheckCircle2 className="h-4 w-4" />, color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/40', label: 'Completed' },
+  failed: { icon: <XCircle className="h-4 w-4" />, color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40', label: 'Failed' },
 };
 
 function formatFileSize(bytes?: number | null): string {
@@ -207,7 +207,7 @@ export default function ReportsPage() {
         <Card className="border-purple-100 shadow-md">
           <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-100">
             <CardTitle className="flex items-center gap-2 text-lg">
-              <FileText className="h-5 w-5 text-purple-600" />
+              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               Generate New Report
             </CardTitle>
             <CardDescription>
@@ -332,7 +332,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5 text-purple-600" />
+              <FileText className="h-5 w-5 text-purple-600 dark:text-purple-400" />
               Report History
             </CardTitle>
             <CardDescription>
@@ -342,7 +342,7 @@ export default function ReportsPage() {
           <CardContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                <Loader2 className="h-8 w-8 animate-spin text-purple-600 dark:text-purple-400" />
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -375,12 +375,12 @@ export default function ReportsPage() {
                       <div className="flex items-start gap-4">
                         <div className={cn(
                           "p-2 rounded-lg",
-                          report.format === 'pdf' ? 'bg-red-100' : 'bg-green-100'
+                          report.format === 'pdf' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-green-100 dark:bg-green-900/30'
                         )}>
                           {report.format === 'pdf' ? (
-                            <FileType className="h-5 w-5 text-red-600" />
+                            <FileType className="h-5 w-5 text-red-600 dark:text-red-400" />
                           ) : (
-                            <FileSpreadsheet className="h-5 w-5 text-green-600" />
+                            <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />
                           )}
                         </div>
                         <div className="space-y-1">
@@ -395,7 +395,7 @@ export default function ReportsPage() {
                               </span>
                             </Badge>
                             {isExpired && report.status === 'completed' && (
-                              <Badge variant="secondary" className="text-orange-600">
+                              <Badge variant="secondary" className="text-orange-600 dark:text-orange-400">
                                 Expired
                               </Badge>
                             )}

@@ -668,7 +668,7 @@ export default function BNSL() {
                  label="Active Plans" 
                  value={activePlansCount.toString()} 
                  icon={Briefcase} 
-                 accentColor="text-blue-600"
+                 accentColor="text-blue-600 dark:text-blue-400"
                />
                <BnslStatsCard 
                  label="Deferred Base Value" 
@@ -692,7 +692,7 @@ export default function BNSL() {
                  value={`$${totalDailyMargin.toFixed(2)}`} 
                  subValue="Earning daily, paid quarterly"
                  icon={Coins} 
-                 accentColor="text-fuchsia-600"
+                 accentColor="text-fuchsia-600 dark:text-fuchsia-400"
                  tooltip="Amount of margin accruing today across all active plans."
                />
                <BnslStatsCard 
@@ -700,7 +700,7 @@ export default function BNSL() {
                  value={`$${unpaidAccruedMargin.toFixed(2)}`} 
                  subValue="Pending next quarterly payout"
                  icon={TrendingUp} 
-                 accentColor="text-purple-600"
+                 accentColor="text-purple-600 dark:text-purple-400"
                  tooltip="Total margin earned but not yet paid out."
                />
                <BnslStatsCard 
@@ -708,7 +708,7 @@ export default function BNSL() {
                  value={nextPayout ? `$${nextPayout.amount.toLocaleString()}` : 'None'} 
                  subValue={nextPayout ? new Date(nextPayout.date).toLocaleDateString() : ''}
                  icon={Calendar} 
-                 accentColor="text-green-600"
+                 accentColor="text-green-600 dark:text-green-400"
                />
             </div>
           </>
@@ -767,7 +767,7 @@ export default function BNSL() {
                </div>
             </TabsContent>
 
-            <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50' : ''}`}>
+            <TabsContent value="create" id="bnsl-create-section" className={`mt-0 animate-in fade-in slide-in-from-bottom-2 transition-all duration-500 ${highlightCreate ? 'ring-2 ring-primary ring-offset-2 rounded-lg bg-purple-50 dark:bg-purple-950/20' : ''}`}>
                <CreateBnslPlan 
                  bnslWalletBalance={bnslWalletBalance} 
                  currentGoldPrice={currentGoldPrice}

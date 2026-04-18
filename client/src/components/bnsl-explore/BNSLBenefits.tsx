@@ -132,8 +132,8 @@ export default function BNSLBenefits() {
     <section className="py-24 bg-gradient-to-b from-gray-50 via-white to-gray-50 relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-40 -left-20 w-96 h-96 rounded-full bg-blue-100/30 blur-3xl" />
-        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-purple-100/30 blur-3xl" />
+        <div className="absolute top-40 -left-20 w-96 h-96 rounded-full bg-blue-100 dark:bg-blue-900/30/30 blur-3xl" />
+        <div className="absolute bottom-20 right-0 w-80 h-80 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -148,10 +148,10 @@ export default function BNSLBenefits() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-200 dark:border-emerald-800/40/50 mb-6"
           >
-            <Gift className="w-4 h-4 text-emerald-600" />
-            <span className="text-sm font-medium text-emerald-800">Why Choose BNSL</span>
+            <Gift className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">Why Choose BNSL</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">

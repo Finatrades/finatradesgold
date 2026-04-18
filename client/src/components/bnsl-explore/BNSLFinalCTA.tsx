@@ -34,7 +34,7 @@ export default function BNSLFinalCTA() {
             opacity: [0.3, 0.5, 0.3],
           }}
           transition={{ duration: 8, repeat: Infinity }}
-          className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-purple-500/20 blur-3xl"
+          className="absolute top-0 left-1/4 w-96 h-96 rounded-full bg-purple-50 dark:bg-purple-950/200/20 blur-3xl"
         />
         <motion.div
           animate={{
@@ -42,7 +42,7 @@ export default function BNSLFinalCTA() {
             opacity: [0.2, 0.4, 0.2],
           }}
           transition={{ duration: 10, repeat: Infinity }}
-          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-purple-500/20 blur-3xl"
+          className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-purple-50 dark:bg-purple-950/200/20 blur-3xl"
         />
 
         {/* Grid Pattern */}
@@ -198,7 +198,7 @@ export default function BNSLFinalCTA() {
                   bottom: `${i * 15}px`,
                 }}
               >
-                <Coins className="w-4 h-4 text-fuchsia-800" />
+                <Coins className="w-4 h-4 text-fuchsia-800 dark:text-fuchsia-200" />
               </motion.div>
             ))}
           </div>
@@ -222,7 +222,7 @@ export default function BNSLFinalCTA() {
                   bottom: `${i * 20}px`,
                 }}
               >
-                <Coins className="w-3 h-3 text-fuchsia-700" />
+                <Coins className="w-3 h-3 text-fuchsia-700 dark:text-fuchsia-300" />
               </motion.div>
             ))}
           </div>

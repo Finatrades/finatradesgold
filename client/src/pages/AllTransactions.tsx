@@ -156,10 +156,10 @@ export default function AllTransactions() {
 
   const getModuleColor = (module: string) => {
     switch (module) {
-      case 'finapay': return 'bg-blue-100 text-blue-700';
-      case 'finavault': return 'bg-purple-100 text-fuchsia-700';
-      case 'bnsl': return 'bg-purple-100 text-purple-700';
-      case 'finabridge': return 'bg-green-100 text-green-700';
+      case 'finapay': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'finavault': return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
+      case 'bnsl': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'finabridge': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       default: return 'bg-muted text-foreground/85';
     }
   };
@@ -184,13 +184,13 @@ export default function AllTransactions() {
   const getStatusBadge = (status: string) => {
     switch (status.toUpperCase()) {
       case 'COMPLETED':
-        return <Badge className="bg-green-100 text-green-700"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300"><CheckCircle2 className="w-3 h-3 mr-1" /> Completed</Badge>;
       case 'PENDING':
-        return <Badge className="bg-purple-100 text-fuchsia-700"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
+        return <Badge className="bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300"><Clock className="w-3 h-3 mr-1" /> Pending</Badge>;
       case 'LOCKED':
-        return <Badge className="bg-blue-100 text-blue-700"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300"><Lock className="w-3 h-3 mr-1" /> Locked</Badge>;
       case 'FAILED':
-        return <Badge className="bg-red-100 text-red-700"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
+        return <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300"><XCircle className="w-3 h-3 mr-1" /> Failed</Badge>;
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
@@ -199,11 +199,11 @@ export default function AllTransactions() {
   const getSyncStatusIndicator = () => {
     switch (syncStatus) {
       case 'syncing':
-        return <span className="flex items-center gap-1.5 text-xs text-blue-600"><RefreshCw className="w-3 h-3 animate-spin" /> Syncing...</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-blue-600 dark:text-blue-400"><RefreshCw className="w-3 h-3 animate-spin" /> Syncing...</span>;
       case 'error':
-        return <span className="flex items-center gap-1.5 text-xs text-red-600"><AlertCircle className="w-3 h-3" /> Error</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-red-600 dark:text-red-400"><AlertCircle className="w-3 h-3" /> Error</span>;
       default:
-        return <span className="flex items-center gap-1.5 text-xs text-green-600"><CheckCircle2 className="w-3 h-3" /> Updated {format(lastUpdated, 'HH:mm:ss')}</span>;
+        return <span className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400"><CheckCircle2 className="w-3 h-3" /> Updated {format(lastUpdated, 'HH:mm:ss')}</span>;
     }
   };
 
@@ -232,7 +232,7 @@ export default function AllTransactions() {
       
       return (
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs bg-red-50 text-red-600 border-red-200">
+          <Badge variant="outline" className="text-xs bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/40">
             <ArrowUpRight className="w-3 h-3 mr-0.5" />
             Sent
           </Badge>
@@ -256,7 +256,7 @@ export default function AllTransactions() {
       
       return (
         <div className="flex items-center gap-1.5">
-          <Badge variant="outline" className="text-xs bg-green-50 text-green-600 border-green-200">
+          <Badge variant="outline" className="text-xs bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/40">
             <ArrowDownLeft className="w-3 h-3 mr-0.5" />
             Received
           </Badge>
@@ -424,12 +424,12 @@ export default function AllTransactions() {
                     >
                       <div className="flex items-start gap-3">
                         <div className={`p-2 rounded-full shrink-0 ${
-                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-muted' : 'bg-purple-100'
+                          isSwap ? 'bg-purple-100 dark:bg-purple-900/30' : isCredit ? 'bg-green-100 dark:bg-green-900/30' : isDebit ? 'bg-muted' : 'bg-purple-100 dark:bg-purple-900/30'
                         }`}>
                           {isSwap ? (
-                            <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                            <ArrowLeftRight className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                           ) : isCredit ? (
-                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
                           ) : isDebit ? (
                             <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                           ) : (
@@ -448,9 +448,9 @@ export default function AllTransactions() {
                             </div>
                             <div className="text-right shrink-0">
                               {isSwap ? (
-                                <p className="font-semibold text-amber-600 text-sm">{goldAmount.toFixed(4)}g</p>
+                                <p className="font-semibold text-amber-600 dark:text-amber-400 text-sm">{goldAmount.toFixed(4)}g</p>
                               ) : isCredit && goldAmount > 0 ? (
-                                <p className="font-semibold text-green-600 text-sm">+{goldAmount.toFixed(4)}g</p>
+                                <p className="font-semibold text-green-600 dark:text-green-400 text-sm">+{goldAmount.toFixed(4)}g</p>
                               ) : isDebit && goldAmount > 0 ? (
                                 <p className="font-semibold text-foreground text-sm">-{goldAmount.toFixed(4)}g</p>
                               ) : (
@@ -490,12 +490,12 @@ export default function AllTransactions() {
                       {/* DESCRIPTION Column */}
                       <div className="col-span-3 flex items-center gap-3">
                         <div className={`p-2 rounded-full ${
-                          isSwap ? 'bg-purple-100' : isCredit ? 'bg-green-100' : isDebit ? 'bg-muted' : 'bg-purple-100'
+                          isSwap ? 'bg-purple-100 dark:bg-purple-900/30' : isCredit ? 'bg-green-100 dark:bg-green-900/30' : isDebit ? 'bg-muted' : 'bg-purple-100 dark:bg-purple-900/30'
                         }`}>
                           {isSwap ? (
-                            <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                            <ArrowLeftRight className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                           ) : isCredit ? (
-                            <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                            <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
                           ) : isDebit ? (
                             <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                           ) : (
@@ -525,7 +525,7 @@ export default function AllTransactions() {
                       <div className="col-span-2 text-right">
                         {isSwap ? (
                           <>
-                            <p className="font-semibold text-amber-600">{goldAmount.toFixed(4)} g</p>
+                            <p className="font-semibold text-amber-600 dark:text-amber-400">{goldAmount.toFixed(4)} g</p>
                             <p className="text-xs text-muted-foreground">{swapDebitWallet}</p>
                           </>
                         ) : isDebit && goldAmount > 0 ? (
@@ -544,12 +544,12 @@ export default function AllTransactions() {
                       <div className="col-span-2 text-right">
                         {isSwap ? (
                           <>
-                            <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
+                            <p className="font-semibold text-green-600 dark:text-green-400">{goldAmount.toFixed(4)} g</p>
                             <p className="text-xs text-muted-foreground">{swapCreditWallet}</p>
                           </>
                         ) : isCredit && goldAmount > 0 ? (
                           <>
-                            <p className="font-semibold text-green-600">{goldAmount.toFixed(4)} g</p>
+                            <p className="font-semibold text-green-600 dark:text-green-400">{goldAmount.toFixed(4)} g</p>
                             {usdAmount > 0 && (
                               <p className="text-xs text-muted-foreground">${usdAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                             )}
@@ -600,13 +600,13 @@ export default function AllTransactions() {
                         {isSwap ? (
                           <div className="space-y-3 mt-2">
                             {/* Reference + Header */}
-                            <div className={`p-3 rounded-lg border ${isToFGPW ? 'bg-amber-50 border-amber-200' : 'bg-blue-50 border-blue-200'}`}>
+                            <div className={`p-3 rounded-lg border ${isToFGPW ? 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40' : 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40'}`}>
                               <div className="flex items-center gap-2 mb-2">
-                                <ArrowLeftRight className={`w-4 h-4 ${isToFGPW ? 'text-amber-600' : 'text-blue-600'}`} />
-                                <span className={`font-semibold text-sm ${isToFGPW ? 'text-amber-700' : 'text-blue-700'}`}>
+                                <ArrowLeftRight className={`w-4 h-4 ${isToFGPW ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'}`} />
+                                <span className={`font-semibold text-sm ${isToFGPW ? 'text-amber-700 dark:text-amber-300' : 'text-blue-700 dark:text-blue-300'}`}>
                                   {isToFGPW ? 'Price Protection Activated' : 'Price Protection Removed'}
                                 </span>
-                                <Badge className={`text-xs ${isToFGPW ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>
+                                <Badge className={`text-xs ${isToFGPW ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'}`}>
                                   {isToFGPW ? 'LGPW → FGPW' : 'FGPW → LGPW'}
                                 </Badge>
                               </div>
@@ -619,17 +619,17 @@ export default function AllTransactions() {
                             </div>
 
                             {/* Debit (source wallet) */}
-                            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg">
                               <div className="flex items-center gap-2 mb-2">
-                                <ArrowUpRight className="w-4 h-4 text-red-600" />
-                                <span className="font-semibold text-red-700">
+                                <ArrowUpRight className="w-4 h-4 text-red-600 dark:text-red-400" />
+                                <span className="font-semibold text-red-700 dark:text-red-300">
                                   {isToFGPW ? 'Removed from Live Price Wallet (LGPW)' : 'Removed from Fixed Price Wallet (FGPW)'}
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
-                                  <p className="font-semibold text-red-600">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
+                                  <p className="font-semibold text-red-600 dark:text-red-400">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-muted-foreground">{isToFGPW ? 'Market Price' : 'Protected Price'}</p>
@@ -643,29 +643,29 @@ export default function AllTransactions() {
                             </div>
 
                             {/* Credit (destination wallet) */}
-                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                            <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg">
                               <div className="flex items-center gap-2 mb-2">
-                                <ArrowDownLeft className="w-4 h-4 text-green-600" />
-                                <span className="font-semibold text-green-700">
+                                <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                <span className="font-semibold text-green-700 dark:text-green-300">
                                   {isToFGPW ? 'Credited to Fixed Price Wallet (FGPW)' : 'Returned to Live Price Wallet (LGPW)'}
                                 </span>
                               </div>
                               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                                 <div>
                                   <p className="text-xs text-muted-foreground">Gold Amount</p>
-                                  <p className="font-semibold text-green-600">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
+                                  <p className="font-semibold text-green-600 dark:text-green-400">{tx.grams ? parseFloat(tx.grams).toFixed(4) : '0'}g</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-muted-foreground">{isToFGPW ? 'Protected Price' : 'Market Price'}</p>
-                                  <p className="font-semibold text-amber-600">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
+                                  <p className="font-semibold text-amber-600 dark:text-amber-400">${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g</p>
                                 </div>
                                 <div>
                                   <p className="text-xs text-muted-foreground">{isToFGPW ? 'Protected Value' : 'Market Value'}</p>
-                                  <p className="font-semibold text-amber-600">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
+                                  <p className="font-semibold text-amber-600 dark:text-amber-400">${tx.usd ? parseFloat(tx.usd).toFixed(2) : '0'}</p>
                                 </div>
                               </div>
                               {isToFGPW && (
-                                <p className="text-xs text-amber-600 mt-2">Gold locked at ${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g — protected from market fluctuation.</p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">Gold locked at ${tx.usdPerGram ? parseFloat(tx.usdPerGram).toFixed(2) : '0'}/g — protected from market fluctuation.</p>
                               )}
                             </div>
                           </div>
@@ -692,8 +692,8 @@ export default function AllTransactions() {
                                 variant="outline" 
                                 className={`text-xs ${
                                   (tx.goldWalletType || 'LGPW') === 'LGPW' 
-                                    ? 'bg-blue-50 text-blue-600 border-blue-200' 
-                                    : 'bg-amber-50 text-amber-600 border-amber-200'
+                                    ? 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40' 
+                                    : 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40'
                                 }`}
                               >
                                 {tx.goldWalletType === 'FGPW' ? 'FGPW (Fixed Price)' : 'LGPW (Market Price)'}
@@ -738,9 +738,9 @@ export default function AllTransactions() {
               </div>
 
               {selectedTx.status === 'Pending' && !selectedTx.grams && selectedTx.usd && (
-                <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 text-sm">
-                  <p className="font-medium text-fuchsia-800 mb-1">Important Notice:</p>
-                  <p className="text-fuchsia-700 text-xs leading-relaxed">
+                <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 text-sm">
+                  <p className="font-medium text-fuchsia-800 dark:text-fuchsia-200 mb-1">Important Notice:</p>
+                  <p className="text-fuchsia-700 dark:text-fuchsia-300 text-xs leading-relaxed">
                     Gold price shown is tentative. Final rate will be recalculated upon fund receipt. 
                     After verification, gold will be deposited to your FinaPay wallet at the final confirmed rate.
                   </p>
@@ -751,18 +751,18 @@ export default function AllTransactions() {
                 {selectedTx.grams ? (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Gold Amount</p>
-                    <p className="font-semibold text-fuchsia-600">{parseFloat(selectedTx.grams).toFixed(6)}g</p>
+                    <p className="font-semibold text-fuchsia-600 dark:text-fuchsia-400">{parseFloat(selectedTx.grams).toFixed(6)}g</p>
                   </div>
                 ) : selectedTx.usd && currentGoldPrice > 0 ? (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Gold Amount (Est.)</p>
-                    <p className="font-semibold text-fuchsia-600">~{(parseFloat(selectedTx.usd) / currentGoldPrice).toFixed(4)}g</p>
+                    <p className="font-semibold text-fuchsia-600 dark:text-fuchsia-400">~{(parseFloat(selectedTx.usd) / currentGoldPrice).toFixed(4)}g</p>
                   </div>
                 ) : null}
                 {selectedTx.usd && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">USD Value</p>
-                    <p className="font-semibold text-green-600">${parseFloat(selectedTx.usd).toFixed(2)}</p>
+                    <p className="font-semibold text-green-600 dark:text-green-400">${parseFloat(selectedTx.usd).toFixed(2)}</p>
                   </div>
                 )}
                 {selectedTx.usdPerGram && (

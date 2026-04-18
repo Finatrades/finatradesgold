@@ -121,10 +121,10 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           className={`group relative flex items-center gap-2.5 ${collapsed ? 'lg:justify-center lg:px-2' : 'pl-7 pr-3'} py-2 rounded-lg cursor-pointer transition-all ${
             active
               ? isDanger
-                ? 'bg-red-500/15 text-red-500'
+                ? 'bg-red-50 dark:bg-red-950/200/15 text-red-500'
                 : 'bg-primary/10 text-foreground'
               : isDanger
-                ? 'text-red-500 hover:bg-red-500/10'
+                ? 'text-red-500 hover:bg-red-50 dark:bg-red-950/200/10'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
           }`}
           onClick={() => setIsOpen(false)}
@@ -306,7 +306,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                 </div>
                 <button
                   onClick={logout}
-                  className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                  className="p-1.5 rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:bg-red-950/200/10 transition-colors"
                   aria-label="Log out"
                   data-testid="button-logout"
                 >
@@ -335,7 +335,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                   <TooltipTrigger asChild>
                     <button
                       onClick={logout}
-                      className="w-full flex items-center justify-center p-2.5 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                      className="w-full flex items-center justify-center p-2.5 rounded-xl text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:bg-red-950/200/10 transition-colors"
                       aria-label="Log out"
                       data-testid="button-logout-collapsed"
                     >

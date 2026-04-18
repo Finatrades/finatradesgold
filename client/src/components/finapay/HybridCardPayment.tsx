@@ -619,7 +619,7 @@ export default function HybridCardPayment({ amount, goldWalletType = 'LGPW', onS
             </div>
 
             {error && (
-              <p className="text-sm text-amber-600 mt-3 text-center">{error}</p>
+              <p className="text-sm text-amber-600 dark:text-amber-400 mt-3 text-center">{error}</p>
             )}
 
             <p className="text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1">

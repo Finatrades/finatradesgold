@@ -143,7 +143,7 @@ export default function BNSLPlanComparison() {
           transition={{ duration: 100, repeat: Infinity, ease: 'linear' }}
           className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full border border-dashed border-purple-100/50"
         />
-        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-purple-100/20 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-96 h-96 rounded-full bg-purple-100 dark:bg-purple-900/30/20 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -158,10 +158,10 @@ export default function BNSLPlanComparison() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-200 dark:border-purple-800/40/50 mb-6"
           >
-            <Sparkles className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-800">Choose Your Plan</span>
+            <Sparkles className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Choose Your Plan</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -245,7 +245,7 @@ export default function BNSLPlanComparison() {
                     className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium mb-4 ${
                       isSelected
                         ? 'bg-card/20 text-white'
-                        : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 border border-emerald-200/50'
+                        : 'bg-gradient-to-r from-emerald-50 to-teal-50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/40/50'
                     }`}
                   >
                     <TrendingUp className="w-3.5 h-3.5" />

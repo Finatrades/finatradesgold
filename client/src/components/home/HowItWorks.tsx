@@ -39,8 +39,8 @@ export default function HowItWorks() {
   return (
     <section id="how-it-works" className="py-24 bg-gradient-to-br from-white via-purple-50/20 to-purple-50/20 relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-purple-100/30 blur-[120px] rounded-full" />
+        <div className="absolute top-1/4 right-0 w-[500px] h-[500px] bg-purple-100 dark:bg-purple-900/30/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/30 blur-[120px] rounded-full" />
       </div>
       
       <div className="container mx-auto px-6 relative z-10">
@@ -50,7 +50,7 @@ export default function HowItWorks() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-sm font-semibold text-purple-600 uppercase tracking-wider mb-6">
+          <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-purple-600/10 border border-purple-500/20 text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-6">
             {accountType === 'business' ? 'ENTERPRISE WORKFLOW' : 'PERSONAL WORKFLOW'}
           </span>
           <h2 className="text-3xl lg:text-5xl font-bold mb-4">
@@ -106,7 +106,7 @@ export default function HowItWorks() {
                 
                 <div className="relative z-10 hidden lg:flex items-center justify-center flex-shrink-0">
                   <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-600/10 to-purple-500/10 border border-purple-600/20 flex items-center justify-center relative">
-                    <step.icon className="w-7 h-7 text-purple-600" strokeWidth={1.5} />
+                    <step.icon className="w-7 h-7 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
                     <span className="absolute -bottom-2 -right-2 w-6 h-6 rounded-full bg-gradient-to-br from-purple-600 to-purple-500 text-white text-xs font-bold flex items-center justify-center">
                       {step.number}
                     </span>

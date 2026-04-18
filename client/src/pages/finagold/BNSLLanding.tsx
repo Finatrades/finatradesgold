@@ -240,7 +240,7 @@ function AnimatedVaultSequence() {
                 transition={{ duration: 0.8, ease: 'easeOut' }}
                 className="absolute top-0 left-1/2 -translate-x-1/2 z-20"
               >
-                <div className="w-16 h-8 rounded bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 shadow-xl border-2 border-amber-200/50"
+                <div className="w-16 h-8 rounded bg-gradient-to-b from-amber-300 via-yellow-400 to-amber-500 shadow-xl border-2 border-amber-200 dark:border-amber-800/40/50"
                   style={{
                     boxShadow: '0 4px 20px rgba(251, 191, 36, 0.5), 0 2px 8px rgba(0,0,0,0.3)'
                   }}
@@ -263,13 +263,13 @@ function AnimatedVaultSequence() {
             animate={{ rotate: phase === 'locking' ? 360 : 0 }}
             transition={{ duration: 0.5 }}
           >
-            <Lock className="w-4 h-4 text-amber-600" />
+            <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
           </motion.div>
           <motion.span
             key={phase}
             initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            className="text-amber-800 text-sm font-medium"
+            className="text-amber-800 dark:text-amber-200 text-sm font-medium"
           >
             {phaseLabels[phase]}
           </motion.span>
@@ -299,8 +299,8 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       <FloatingParticles count={30} />
       
-      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100/40 blur-[150px]" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100/30 blur-[120px]" />
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100 dark:bg-purple-900/30/40 blur-[150px]" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100 dark:bg-pink-900/30/30 blur-[120px]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -314,12 +314,12 @@ function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50"
             >
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center">
                 <Coins className="w-3 h-3 text-white" />
               </div>
-              <span className="text-sm font-medium text-purple-700">Buy 'N' SeLL Gold Plans</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Buy 'N' SeLL Gold Plans</span>
             </motion.div>
 
             <motion.div
@@ -393,7 +393,7 @@ function HeroSection() {
               </Link>
               <a
                 href="#how-it-works"
-                className="flex items-center gap-2 border border-purple-300 text-purple-700 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all"
+                className="flex items-center gap-2 border border-purple-300 text-purple-700 dark:text-purple-300 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all"
               >
                 View How It Works
                 <ChevronDown className="w-5 h-5" />
@@ -442,8 +442,8 @@ function HowItWorksSection() {
   return (
     <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-3xl" />
       </div>
       
       <div ref={ref} className="relative max-w-5xl mx-auto px-6">
@@ -453,9 +453,9 @@ function HowItWorksSection() {
           viewport={{ once: true }}
           className="text-center mb-20"
         >
-          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 mb-6">
-            <div className="w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
-            <span className="text-purple-700 text-sm font-medium">Step-by-Step Guide</span>
+          <motion.div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50 mb-6">
+            <div className="w-2 h-2 rounded-full bg-purple-50 dark:bg-purple-950/200 animate-pulse" />
+            <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">Step-by-Step Guide</span>
           </motion.div>
           
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -549,7 +549,7 @@ function HowItWorksSection() {
                       }`}
                     >
                       <step.icon className={`w-5 h-5 lg:w-7 lg:h-7 transition-colors duration-500 ${
-                        isActive || isCompleted ? 'text-purple-600' : 'text-muted-foreground/70'
+                        isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'
                       }`} />
                     </motion.div>
 
@@ -566,7 +566,7 @@ function HowItWorksSection() {
                           : 'bg-card border border-border/60 shadow-sm'
                       }`}
                     >
-                      <span className={`text-xs lg:text-sm font-bold ${isActive ? 'text-purple-600' : 'text-muted-foreground/70'}`}>
+                      <span className={`text-xs lg:text-sm font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'}`}>
                         Step {step.number}
                       </span>
                       <h3 className={`text-base lg:text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -642,8 +642,8 @@ function CalculatorSection() {
   return (
     <section id="calculator" className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-3xl" />
         <div
           className="absolute inset-0 opacity-[0.015]"
           style={{
@@ -664,10 +664,10 @@ function CalculatorSection() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50 mb-6"
           >
-            <Lock className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-semibold text-purple-800">BNSL Gold Buy Back Planner</span>
+            <Lock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">BNSL Gold Buy Back Planner</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -690,7 +690,7 @@ function CalculatorSection() {
           >
             <div className="flex items-center gap-3 mb-6">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100">
-                <Sparkles className="w-5 h-5 text-purple-600" />
+                <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
                 <h3 className="font-bold text-foreground text-lg">BNSL Gold Buy Back Planner</h3>
@@ -732,8 +732,8 @@ function CalculatorSection() {
               <div className="pt-2 border-t border-border/60">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-foreground/85">Locked-In Gold Price (per gram)</span>
-                  <span className="text-xs font-medium text-purple-600 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                  <span className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse"></span>
                     Live Price
                   </span>
                 </div>
@@ -748,7 +748,7 @@ function CalculatorSection() {
                 </div>
                 <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
                   <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
-                  <span className="text-yellow-600">Live market price — locked at plan start</span>
+                  <span className="text-yellow-600 dark:text-yellow-400">Live market price — locked at plan start</span>
                 </div>
               </div>
 
@@ -783,7 +783,7 @@ function CalculatorSection() {
                     </span>
                     <span className="text-muted-foreground font-medium">per annum</span>
                   </div>
-                  <p className="text-sm text-purple-700 mt-1">
+                  <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
                     Fixed rate for {tenure}-month plan
                   </p>
                 </div>
@@ -799,7 +799,7 @@ function CalculatorSection() {
           >
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2.5 rounded-xl bg-gradient-to-br from-green-100 to-emerald-100">
-                <BarChart3 className="w-5 h-5 text-green-600" />
+                <BarChart3 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <h3 className="font-bold text-foreground text-lg">Gold Buy Back Projection</h3>
@@ -811,8 +811,8 @@ function CalculatorSection() {
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">BNSL Plan Value</span>
-                  <div className="p-1 lg:p-1.5 rounded-lg bg-purple-100">
-                    <Lock className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-purple-600" />
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                    <Lock className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
                 <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.planValue)}</p>
@@ -824,15 +824,15 @@ function CalculatorSection() {
                   <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
                   <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500" />
                 </div>
-                <p className="text-lg sm:text-xl lg:text-3xl font-black text-green-600 truncate">+{formatCurrency(calculations.guaranteedMargin)}</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-green-600 dark:text-green-400 truncate">+{formatCurrency(calculations.guaranteedMargin)}</p>
                 <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Guaranteed margin on buy back</p>
               </div>
 
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Gold Value at Maturity *</span>
-                  <div className="p-1 lg:p-1.5 rounded-lg bg-blue-100">
-                    <BarChart3 className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-blue-600" />
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
+                    <BarChart3 className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
                 <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.totalValueAtMaturity)}</p>
@@ -842,8 +842,8 @@ function CalculatorSection() {
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quarterly Paid Margin *</span>
-                  <div className="p-1 lg:p-1.5 rounded-lg bg-orange-100">
-                    <Sparkles className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-orange-600" />
+                  <div className="p-1 lg:p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
+                    <Sparkles className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
                 <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.quarterlyMargin)}</p>
@@ -921,8 +921,8 @@ function PlanComparisonSection() {
   return (
     <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
-        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+        <div className="absolute top-20 right-10 w-72 h-72 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
+        <div className="absolute bottom-20 left-10 w-96 h-96 rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-3xl" />
       </div>
 
       <div className="relative max-w-6xl mx-auto px-6">
@@ -932,7 +932,7 @@ function PlanComparisonSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             Plan Options
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -956,7 +956,7 @@ function PlanComparisonSection() {
               className={`relative bg-card p-8 rounded-3xl border transition-all duration-300 shadow-lg ${
                 plan.featured
                   ? 'border-purple-300 shadow-purple-100'
-                  : 'border-border/60 hover:border-purple-200'
+                  : 'border-border/60 hover:border-purple-200 dark:border-purple-800/40'
               }`}
             >
               {plan.featured && (
@@ -975,9 +975,9 @@ function PlanComparisonSection() {
                 <div className={`w-24 h-24 rounded-full flex items-center justify-center border-4 ${
                   plan.featured 
                     ? 'border-purple-400 bg-gradient-to-br from-purple-50 to-pink-50' 
-                    : 'border-purple-200 bg-purple-50'
+                    : 'border-purple-200 dark:border-purple-800/40 bg-purple-50 dark:bg-purple-950/20'
                 }`}>
-                  <span className={`text-4xl font-bold ${plan.featured ? 'text-purple-600' : 'text-purple-500'}`}>
+                  <span className={`text-4xl font-bold ${plan.featured ? 'text-purple-600 dark:text-purple-400' : 'text-purple-500'}`}>
                     {plan.tenure}
                   </span>
                 </div>
@@ -1014,7 +1014,7 @@ function PlanComparisonSection() {
               <ul className="space-y-3 mb-8">
                 {plan.features.map((feature, j) => (
                   <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
-                    <div className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 flex-shrink-0" />
+                    <div className="w-1.5 h-1.5 rounded-full bg-purple-50 dark:bg-purple-950/200 mt-1.5 flex-shrink-0" />
                     {feature}
                   </li>
                 ))}
@@ -1027,7 +1027,7 @@ function PlanComparisonSection() {
                   className={`w-full py-3.5 rounded-xl text-center font-semibold transition-all flex items-center justify-center gap-2 ${
                     plan.featured
                       ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
-                      : 'border-2 border-purple-200 text-purple-600 hover:bg-purple-50'
+                      : 'border-2 border-purple-200 dark:border-purple-800/40 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-950/20'
                   }`}
                   data-testid={`btn-select-${plan.tenure}`}
                 >
@@ -1070,8 +1070,8 @@ function BenefitsSection() {
   return (
     <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-10 left-1/4 w-96 h-96 rounded-full bg-purple-100/20 blur-3xl" />
-        <div className="absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-pink-100/20 blur-3xl" />
+        <div className="absolute top-10 left-1/4 w-96 h-96 rounded-full bg-purple-100 dark:bg-purple-900/30/20 blur-3xl" />
+        <div className="absolute bottom-10 right-1/4 w-72 h-72 rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-3xl" />
       </div>
 
       <div className="relative max-w-6xl mx-auto px-6">
@@ -1081,7 +1081,7 @@ function BenefitsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             Key Benefits
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -1101,10 +1101,10 @@ function BenefitsSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -4 }}
-              className="bg-card p-6 rounded-2xl border border-border/60 shadow-lg hover:shadow-xl hover:border-purple-200 transition-all"
+              className="bg-card p-6 rounded-2xl border border-border/60 shadow-lg hover:shadow-xl hover:border-purple-200 dark:border-purple-800/40 transition-all"
             >
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-5">
-                <benefit.icon className="w-6 h-6 text-purple-600" />
+                <benefit.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">{benefit.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
@@ -1130,8 +1130,8 @@ function FAQSection() {
   return (
     <section className="relative py-32 bg-gradient-to-b from-[#F8F9FC] via-white to-[#FAFBFF] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-pink-100/20 blur-3xl" />
+        <div className="absolute top-20 left-10 w-72 h-72 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-3xl" />
       </div>
 
       <div className="relative max-w-3xl mx-auto px-6">
@@ -1141,7 +1141,7 @@ function FAQSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             FAQ
           </span>
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -1161,7 +1161,7 @@ function FAQSection() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.05 }}
-              className="bg-card border border-border/60 rounded-xl overflow-hidden hover:border-purple-200 shadow-sm hover:shadow-md transition-all"
+              className="bg-card border border-border/60 rounded-xl overflow-hidden hover:border-purple-200 dark:border-purple-800/40 shadow-sm hover:shadow-md transition-all"
             >
               <button
                 onClick={() => setOpenIndex(openIndex === i ? null : i)}
@@ -1170,7 +1170,7 @@ function FAQSection() {
               >
                 <span className="font-medium text-foreground">{faq.q}</span>
                 {openIndex === i ? (
-                  <ChevronUp className="w-5 h-5 text-purple-600" />
+                  <ChevronUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 ) : (
                   <ChevronDown className="w-5 h-5 text-muted-foreground/70" />
                 )}
@@ -1212,11 +1212,11 @@ function RiskDisclosureSection() {
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200"
+          className="p-8 rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 dark:border-amber-800/40"
         >
           <div className="flex items-start gap-4 mb-6">
-            <div className="p-2 rounded-lg bg-amber-100">
-              <AlertTriangle className="w-6 h-6 text-amber-600 shrink-0" />
+            <div className="p-2 rounded-lg bg-amber-100 dark:bg-amber-900/30">
+              <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
             </div>
             <div>
               <h3 className="text-xl font-semibold text-foreground mb-2">Important Risk Disclosures</h3>
@@ -1227,7 +1227,7 @@ function RiskDisclosureSection() {
           <ul className="space-y-3">
             {risks.map((risk, i) => (
               <li key={i} className="flex items-start gap-3 text-foreground/85">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-2 shrink-0" />
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-50 dark:bg-amber-950/200 mt-2 shrink-0" />
                 {risk}
               </li>
             ))}
@@ -1247,7 +1247,7 @@ function TermsSection() {
         <div className="relative max-w-4xl mx-auto px-6 text-center">
           <button
             onClick={() => setShowModal(true)}
-            className="inline-flex items-center gap-2 text-purple-600 hover:text-purple-700 transition-colors"
+            className="inline-flex items-center gap-2 text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:text-purple-300 transition-colors"
             data-testid="btn-view-terms"
           >
             <FileText className="w-5 h-5" />
@@ -1281,22 +1281,22 @@ function TermsSection() {
               </div>
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 <div className="prose prose-sm max-w-none">
-                  <h4 className="text-purple-600 font-semibold">1. Plan Overview</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold">1. Plan Overview</h4>
                   <p className="text-muted-foreground">The BNSL (Buy Now Sell Later) Plan is a structured gold holding program that allows participants to lock physical gold at a fixed price and receive quarterly payouts in additional gold units.</p>
                   
-                  <h4 className="text-purple-600 font-semibold mt-4">2. Locked-In Price</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">2. Locked-In Price</h4>
                   <p className="text-muted-foreground">The Locked-In Price is established at the time of plan activation and remains fixed for the entire duration. All calculations, payouts, and settlements are based on this price.</p>
                   
-                  <h4 className="text-purple-600 font-semibold mt-4">3. Quarterly Payouts</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">3. Quarterly Payouts</h4>
                   <p className="text-muted-foreground">Payouts are distributed every three months based on the indicative annual profit rate divided into quarterly installments. All payouts are made in gold units, not fiat currency.</p>
                   
-                  <h4 className="text-purple-600 font-semibold mt-4">4. Early Termination</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">4. Early Termination</h4>
                   <p className="text-muted-foreground">Early exit from the plan results in penalties, forfeiture of all future payouts, and settlement at current market price rather than the Locked-In Price.</p>
                   
-                  <h4 className="text-purple-600 font-semibold mt-4">5. Settlement</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">5. Settlement</h4>
                   <p className="text-muted-foreground">At maturity, your original gold principal plus accumulated payouts are settled in-kind to your Finatrades wallet within 3 business days.</p>
                   
-                  <h4 className="text-purple-600 font-semibold mt-4">6. Risk Acknowledgment</h4>
+                  <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">6. Risk Acknowledgment</h4>
                   <p className="text-muted-foreground">By participating, you acknowledge that projections are indicative, returns are not guaranteed, and the plan is subject to counterparty performance.</p>
                 </div>
               </div>
@@ -1312,8 +1312,8 @@ function FinalCTASection() {
   return (
     <section className="relative py-32 bg-gradient-to-b from-[#FAFBFF] via-purple-50/30 to-[#F8F9FC] overflow-hidden">
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-purple-100/40 blur-3xl" />
-        <div className="absolute bottom-20 right-1/4 w-[500px] h-[500px] rounded-full bg-pink-100/30 blur-3xl" />
+        <div className="absolute top-20 left-1/4 w-96 h-96 rounded-full bg-purple-100 dark:bg-purple-900/30/40 blur-3xl" />
+        <div className="absolute bottom-20 right-1/4 w-[500px] h-[500px] rounded-full bg-pink-100 dark:bg-pink-900/30/30 blur-3xl" />
       </div>
       
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1353,7 +1353,7 @@ function FinalCTASection() {
               Start BNSL Plan
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </Link>
-            <a href="/finagold#contact" className="flex items-center gap-2 border-2 border-purple-200 text-purple-600 px-10 py-5 rounded-full text-lg font-semibold hover:bg-purple-50 hover:border-purple-300 transition-all">
+            <a href="/finagold#contact" className="flex items-center gap-2 border-2 border-purple-200 dark:border-purple-800/40 text-purple-600 dark:text-purple-400 px-10 py-5 rounded-full text-lg font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-300 transition-all">
               Speak with Support
             </a>
           </motion.div>

@@ -300,7 +300,7 @@ export default function MobileLogin() {
                 <div className="flex justify-between items-center">
                   <Label htmlFor="password" className="text-foreground/85 font-medium">Password</Label>
                   <Link href="/forgot-password">
-                    <span className="text-xs text-purple-600 hover:text-purple-700 cursor-pointer font-medium">Forgot password?</span>
+                    <span className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:text-purple-300 cursor-pointer font-medium">Forgot password?</span>
                   </Link>
                 </div>
                 <div className="relative">
@@ -363,10 +363,10 @@ export default function MobileLogin() {
                     variant="outline"
                     onClick={handleBiometricLogin}
                     disabled={biometricLoading}
-                    className="w-full h-14 text-base font-medium border-2 border-border rounded-2xl hover:bg-muted/40 hover:border-purple-200 transition-all"
+                    className="w-full h-14 text-base font-medium border-2 border-border rounded-2xl hover:bg-muted/40 hover:border-purple-200 dark:border-purple-800/40 transition-all"
                     data-testid="button-biometric-login"
                   >
-                    <Fingerprint className="w-5 h-5 mr-2 text-purple-600" />
+                    <Fingerprint className="w-5 h-5 mr-2 text-purple-600 dark:text-purple-400" />
                     {biometricLoading ? "Authenticating..." : `Sign in with ${biometryType}`}
                   </Button>
                   <p className="text-xs text-center text-muted-foreground/70">
@@ -379,7 +379,7 @@ export default function MobileLogin() {
             <div className="mt-6 pt-6 border-t border-border/60 text-center text-sm">
               <span className="text-muted-foreground">Don't have an account? </span>
               <Link href="/register">
-                <span className="text-purple-600 font-semibold hover:text-purple-700 cursor-pointer">Create Account</span>
+                <span className="text-purple-600 dark:text-purple-400 font-semibold hover:text-purple-700 dark:text-purple-300 cursor-pointer">Create Account</span>
               </Link>
             </div>
           </div>

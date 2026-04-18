@@ -582,16 +582,16 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                   <div className="flex items-center gap-2">
                     <Badge variant="outline" className={`px-3 py-1 ${
                       certificate.fromGoldWalletType === 'FGPW' 
-                        ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
-                        : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                        ? 'border-blue-500 text-blue-400 bg-blue-50 dark:bg-blue-950/200/10' 
+                        : 'border-amber-500 text-amber-400 bg-amber-50 dark:bg-amber-950/200/10'
                     }`}>
                       {certificate.fromGoldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                     </Badge>
                     <ArrowRight className="w-4 h-4 text-white/60" />
                     <Badge variant="outline" className={`px-3 py-1 ${
                       certificate.toGoldWalletType === 'FGPW' 
-                        ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
-                        : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                        ? 'border-blue-500 text-blue-400 bg-blue-50 dark:bg-blue-950/200/10' 
+                        : 'border-amber-500 text-amber-400 bg-amber-50 dark:bg-amber-950/200/10'
                     }`}>
                       {certificate.toGoldWalletType === 'FGPW' ? '🔒 Fixed' : '📈 Market'}
                     </Badge>
@@ -606,8 +606,8 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
                 <div className="flex flex-col items-center gap-1">
                   <Badge variant="outline" className={`px-3 py-1 ${
                     certificate.goldWalletType === 'FGPW' 
-                      ? 'border-blue-500 text-blue-400 bg-blue-500/10' 
-                      : 'border-amber-500 text-amber-400 bg-amber-500/10'
+                      ? 'border-blue-500 text-blue-400 bg-blue-50 dark:bg-blue-950/200/10' 
+                      : 'border-amber-500 text-amber-400 bg-amber-50 dark:bg-amber-950/200/10'
                   }`}>
                     {certificate.goldWalletType === 'FGPW' ? '🔒 FGPW - Fixed Price Gold' : '📈 LGPW - Live Gold Price'}
                   </Badge>
@@ -621,7 +621,7 @@ export function CertificateDetailModal({ certificate, open, onOpenChange }: Cert
             </div>
             
             {hasPartialSurrender && (
-              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3 mt-4 text-sm">
+              <div className="bg-amber-50 dark:bg-amber-950/200/10 border border-amber-500/30 rounded-lg p-3 mt-4 text-sm">
                 <p className="text-amber-400">
                   Partial Surrender: {(originalGrams - remainingGrams).toFixed(4)}g converted to FGPW
                 </p>
@@ -988,10 +988,10 @@ export default function CertificatesView() {
   const statusBadge = (status: string) => {
     const s = status?.toLowerCase();
     if (s === 'active') return <Badge className="text-[10px] bg-green-600 text-white border-0">Active</Badge>;
-    if (s === 'locked') return <Badge className="text-[10px] bg-amber-500 text-white border-0">Locked</Badge>;
+    if (s === 'locked') return <Badge className="text-[10px] bg-amber-50 dark:bg-amber-950/200 text-white border-0">Locked</Badge>;
     if (s === 'released') return <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground border-0">Released</Badge>;
-    if (s === 'transferred') return <Badge className="text-[10px] bg-blue-500 text-white border-0">Transferred</Badge>;
-    if (s === 'superseded' || s === 'updated') return <Badge variant="secondary" className="text-[10px] bg-red-100 text-red-600 border-0">Superseded</Badge>;
+    if (s === 'transferred') return <Badge className="text-[10px] bg-blue-50 dark:bg-blue-950/200 text-white border-0">Transferred</Badge>;
+    if (s === 'superseded' || s === 'updated') return <Badge variant="secondary" className="text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-0">Superseded</Badge>;
     if (s === 'cancelled') return <Badge variant="secondary" className="text-[10px] bg-muted text-muted-foreground border-0">Cancelled</Badge>;
     return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
   };
@@ -1016,9 +1016,9 @@ export default function CertificatesView() {
       : cert.type === 'Trade Release' ? 'Trade Release'
       : cert.type;
 
-    const iconBg = isBnsl ? 'bg-indigo-100' : isStorage ? 'bg-muted' : isConv ? 'bg-amber-100' : isTrans ? 'bg-orange-100' : isTrade ? 'bg-teal-100' : 'bg-purple-100';
-    const iconColor = isBnsl ? 'text-indigo-600' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-600' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-600' : 'text-fuchsia-600';
-    const labelColor = isBnsl ? 'text-indigo-700' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-700' : isTrans ? 'text-orange-600' : isTrade ? 'text-teal-700' : 'text-fuchsia-600';
+    const iconBg = isBnsl ? 'bg-indigo-100 dark:bg-indigo-900/30' : isStorage ? 'bg-muted' : isConv ? 'bg-amber-100 dark:bg-amber-900/30' : isTrans ? 'bg-orange-100 dark:bg-orange-900/30' : isTrade ? 'bg-teal-100 dark:bg-teal-900/30' : 'bg-purple-100 dark:bg-purple-900/30';
+    const iconColor = isBnsl ? 'text-indigo-600 dark:text-indigo-400' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-600 dark:text-amber-400' : isTrans ? 'text-orange-600 dark:text-orange-400' : isTrade ? 'text-teal-600 dark:text-teal-400' : 'text-fuchsia-600 dark:text-fuchsia-400';
+    const labelColor = isBnsl ? 'text-indigo-700 dark:text-indigo-300' : isStorage ? 'text-muted-foreground' : isConv ? 'text-amber-700 dark:text-amber-300' : isTrans ? 'text-orange-600 dark:text-orange-400' : isTrade ? 'text-teal-700 dark:text-teal-300' : 'text-fuchsia-600 dark:text-fuchsia-400';
 
     const expiresAt = cert.expiresAt ? new Date(cert.expiresAt) : null;
     const daysLeft = expiresAt ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24))) : null;
@@ -1031,7 +1031,7 @@ export default function CertificatesView() {
     return (
       <div
         key={cert.id}
-        className={`${compact ? 'p-3' : 'p-4'} rounded-xl border hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3 ${isCurrent ? 'bg-card border-purple-200 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-card' : 'opacity-70 bg-muted/40'} ${compact ? 'border-border/60' : ''}`}
+        className={`${compact ? 'p-3' : 'p-4'} rounded-xl border hover:bg-muted/40 cursor-pointer transition-colors flex items-center gap-3 ${isCurrent ? 'bg-card border-purple-200 dark:border-purple-800/40 ring-1 ring-purple-100' : cert.status === 'Active' ? 'bg-card' : 'opacity-70 bg-muted/40'} ${compact ? 'border-border/60' : ''}`}
         onClick={() => openCertificate(cert)}
         data-testid={`certificate-card-${cert.id}`}
       >
@@ -1046,10 +1046,10 @@ export default function CertificatesView() {
             <span className={`font-semibold ${compact ? 'text-xs' : 'text-sm'} ${compact ? 'text-muted-foreground' : labelColor}`}>{label}</span>
             {statusBadge(cert.status)}
             {isCurrent && (
-              <Badge className="text-[10px] bg-purple-100 text-purple-700 border border-purple-300">Current</Badge>
+              <Badge className="text-[10px] bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300">Current</Badge>
             )}
             {isBnsl && daysLeft !== null && daysLeft <= 30 && (
-              <Badge variant="outline" className="text-[10px] border-orange-400 text-orange-600 bg-orange-50">
+              <Badge variant="outline" className="text-[10px] border-orange-400 text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/20">
                 {daysLeft === 0 ? 'Matured' : `${daysLeft}d left`}
               </Badge>
             )}
@@ -1062,7 +1062,7 @@ export default function CertificatesView() {
             <p className="text-muted-foreground text-xs truncate mt-0.5">{cert.certificateNumber}</p>
           )}
           {isBnsl && planName && (
-            <p className="text-xs text-indigo-600 mt-0.5 font-medium">{planName}{expectedReturn && <span className="text-green-600 ml-2">{expectedReturn}</span>}</p>
+            <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-0.5 font-medium">{planName}{expectedReturn && <span className="text-green-600 dark:text-green-400 ml-2">{expectedReturn}</span>}</p>
           )}
           {isBnsl && expiresAt && (
             <p className="text-xs text-indigo-400 mt-0.5">
@@ -1070,7 +1070,7 @@ export default function CertificatesView() {
             </p>
           )}
           {isTrade && cert.tradeCase && (
-            <p className="text-xs text-teal-600 mt-0.5">Case #{cert.tradeCase.caseNumber} · {cert.tradeCase.commodityType}</p>
+            <p className="text-xs text-teal-600 dark:text-teal-400 mt-0.5">Case #{cert.tradeCase.caseNumber} · {cert.tradeCase.commodityType}</p>
           )}
           {/* Linked cert relationship badge */}
           {linkedCert && (
@@ -1133,7 +1133,7 @@ export default function CertificatesView() {
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="text-base flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-purple-600" /> Ownership Certificates
+                <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" /> Ownership Certificates
               </CardTitle>
               <p className="text-muted-foreground text-xs mt-0.5">Proof of gold ownership — Digital and Physical</p>
             </div>
@@ -1148,7 +1148,7 @@ export default function CertificatesView() {
                 <Printer className="w-4 h-4 mr-2" />
                 {isPrinting ? 'Generating...' : 'Print All'}
               </Button>
-              <Badge variant="outline" className="text-fuchsia-600 border-purple-500">
+              <Badge variant="outline" className="text-fuchsia-600 dark:text-fuchsia-400 border-purple-500">
                 {activeCertificates.length} Active
               </Badge>
             </div>

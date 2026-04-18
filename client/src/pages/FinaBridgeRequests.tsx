@@ -79,13 +79,13 @@ export default function FinaBridgeRequests() {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'approved':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       case 'pending':
       case 'open':
-        return 'bg-purple-100 text-fuchsia-700';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
       case 'rejected':
       case 'cancelled':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       default:
         return 'bg-muted text-muted-foreground';
     }

@@ -291,7 +291,7 @@ export default function FinaCard() {
     return (
       <DashboardLayout>
         <div className="max-w-5xl mx-auto flex items-center justify-center min-h-[400px]">
-          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400" />
         </div>
       </DashboardLayout>
     );
@@ -355,12 +355,12 @@ export default function FinaCard() {
           </motion.div>
 
           {cardStatus === 'cancelled' && activeCard?.adminNotes && (
-            <Card className="p-5 border-red-200 bg-red-50 rounded-2xl" data-testid="card-cancelled-reason">
+            <Card className="p-5 border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20 rounded-2xl" data-testid="card-cancelled-reason">
               <div className="flex items-start gap-3">
                 <XCircle className="w-5 h-5 text-red-500 mt-0.5 shrink-0" />
                 <div>
-                  <p className="font-semibold text-red-800 text-sm">Previous Application Rejected</p>
-                  <p className="text-red-600 text-sm mt-1">{activeCard.adminNotes}</p>
+                  <p className="font-semibold text-red-800 dark:text-red-200 text-sm">Previous Application Rejected</p>
+                  <p className="text-red-600 dark:text-red-400 text-sm mt-1">{activeCard.adminNotes}</p>
                   <p className="text-red-400 text-xs mt-2">You may apply again with updated information.</p>
                 </div>
               </div>
@@ -386,7 +386,7 @@ export default function FinaCard() {
                 transition={{ repeat: Infinity, duration: 2, ease: 'easeInOut' }}
                 className="w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-amber-100 to-yellow-200 flex items-center justify-center mb-6"
               >
-                <Clock className="w-10 h-10 text-amber-600" />
+                <Clock className="w-10 h-10 text-amber-600 dark:text-amber-400" />
               </motion.div>
               <h2 className="text-2xl font-bold text-foreground mb-2" data-testid="text-application-title">
                 {cardStatus === 'applied' ? 'Application Submitted' : 'Under Review'}
@@ -399,7 +399,7 @@ export default function FinaCard() {
 
               <div className="flex items-center justify-center gap-2 mb-6">
                 <div className="flex items-center gap-1">
-                  <div className="w-3 h-3 rounded-full bg-green-500" />
+                  <div className="w-3 h-3 rounded-full bg-green-50 dark:bg-green-950/200" />
                   <span className="text-xs text-muted-foreground">Submitted</span>
                 </div>
                 <div className="w-12 h-0.5 bg-muted relative overflow-hidden">
@@ -439,9 +439,9 @@ export default function FinaCard() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.5 }}
           >
-            <Card className="p-8 text-center rounded-2xl border-green-200 bg-gradient-to-b from-green-50 to-white" data-testid="card-activate-finacard">
-              <div className="w-20 h-20 mx-auto rounded-full bg-green-100 flex items-center justify-center mb-6">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+            <Card className="p-8 text-center rounded-2xl border-green-200 dark:border-green-800/40 bg-gradient-to-b from-green-50 to-white" data-testid="card-activate-finacard">
+              <div className="w-20 h-20 mx-auto rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mb-6">
+                <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
               <h2 className="text-2xl font-bold text-foreground mb-2">Your Card is Approved!</h2>
               <p className="text-muted-foreground max-w-md mx-auto mb-2">
@@ -475,16 +475,16 @@ export default function FinaCard() {
     return (
       <DashboardLayout>
         <div className="max-w-2xl mx-auto space-y-6 pb-12">
-          <Card className="p-8 text-center rounded-2xl border-blue-200 bg-blue-50" data-testid="card-frozen-finacard">
-            <div className="w-20 h-20 mx-auto rounded-full bg-blue-100 flex items-center justify-center mb-6">
-              <Snowflake className="w-10 h-10 text-blue-600" />
+          <Card className="p-8 text-center rounded-2xl border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20" data-testid="card-frozen-finacard">
+            <div className="w-20 h-20 mx-auto rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center mb-6">
+              <Snowflake className="w-10 h-10 text-blue-600 dark:text-blue-400" />
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-2">Card Frozen</h2>
             <p className="text-muted-foreground max-w-md mx-auto mb-4">
               Your FinaCard has been temporarily frozen. Spending is disabled until the card is unfrozen.
             </p>
             {activeCard.frozenReason && (
-              <p className="text-sm text-blue-700 bg-blue-100 rounded-lg p-3 inline-block" data-testid="text-frozen-reason">
+              <p className="text-sm text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 rounded-lg p-3 inline-block" data-testid="text-frozen-reason">
                 Reason: {activeCard.frozenReason}
               </p>
             )}
@@ -579,17 +579,17 @@ export default function FinaCard() {
             </div>
 
             <div className="grid grid-cols-3 gap-3">
-              <Card className="p-3 text-center bg-blue-50 border-blue-200">
-                <Globe className="w-5 h-5 mx-auto text-blue-600 mb-1" />
-                <p className="text-[10px] font-medium text-blue-700">40M+ Merchants</p>
+              <Card className="p-3 text-center bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40">
+                <Globe className="w-5 h-5 mx-auto text-blue-600 dark:text-blue-400 mb-1" />
+                <p className="text-[10px] font-medium text-blue-700 dark:text-blue-300">40M+ Merchants</p>
               </Card>
-              <Card className="p-3 text-center bg-green-50 border-green-200">
-                <Shield className="w-5 h-5 mx-auto text-green-600 mb-1" />
-                <p className="text-[10px] font-medium text-green-700">Bank-Grade Security</p>
+              <Card className="p-3 text-center bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/40">
+                <Shield className="w-5 h-5 mx-auto text-green-600 dark:text-green-400 mb-1" />
+                <p className="text-[10px] font-medium text-green-700 dark:text-green-300">Bank-Grade Security</p>
               </Card>
-              <Card className="p-3 text-center bg-purple-50 border-purple-200">
-                <Sparkles className="w-5 h-5 mx-auto text-purple-600 mb-1" />
-                <p className="text-[10px] font-medium text-purple-700">0% FX Fee</p>
+              <Card className="p-3 text-center bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40">
+                <Sparkles className="w-5 h-5 mx-auto text-purple-600 dark:text-purple-400 mb-1" />
+                <p className="text-[10px] font-medium text-purple-700 dark:text-purple-300">0% FX Fee</p>
               </Card>
             </div>
           </div>
@@ -597,7 +597,7 @@ export default function FinaCard() {
 
         <Card className="p-6 rounded-2xl" data-testid="card-simulate-spending">
           <h3 className="font-bold text-lg text-foreground mb-4 flex items-center gap-2">
-            <ShoppingBag className="w-5 h-5 text-purple-600" />
+            <ShoppingBag className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             Simulate Spending
           </h3>
           <div className="grid md:grid-cols-2 gap-6">
@@ -677,7 +677,7 @@ export default function FinaCard() {
                   </div>
                   <div className="border-t border-border pt-3 flex justify-between">
                     <span className="text-foreground/85 font-medium">Gold to Deduct</span>
-                    <span className="font-bold text-purple-700" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
+                    <span className="font-bold text-purple-700 dark:text-purple-300" data-testid="text-spend-gold-preview">{spendGoldPreview.toFixed(4)}g</span>
                   </div>
                   {spendGoldPreview > finacardGrams && (
                     <p className="text-xs text-red-500 font-medium" data-testid="text-insufficient-balance">
@@ -728,8 +728,8 @@ export default function FinaCard() {
                 return (
                   <div key={s.id} className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors" data-testid={`row-spending-${s.id}`}>
                     <div className="flex items-center gap-3">
-                      <div className="w-9 h-9 rounded-full bg-purple-100 flex items-center justify-center">
-                        <CategoryIcon className="w-4 h-4 text-purple-600" />
+                      <div className="w-9 h-9 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                        <CategoryIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
                         <p className="font-medium text-sm text-foreground" data-testid={`text-merchant-${s.id}`}>{s.merchantName}</p>
@@ -740,7 +740,7 @@ export default function FinaCard() {
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-semibold text-sm text-red-600" data-testid={`text-spend-amount-${s.id}`}>
+                      <p className="font-semibold text-sm text-red-600 dark:text-red-400" data-testid={`text-spend-amount-${s.id}`}>
                         -{Number(s.goldGramsDeducted).toFixed(4)}g
                       </p>
                       <p className="text-xs text-muted-foreground/70">
@@ -773,11 +773,11 @@ export default function FinaCard() {
               {transfers.map((t) => (
                 <div key={t.id} className="flex items-center justify-between p-4 hover:bg-muted/40 transition-colors" data-testid={`row-transfer-${t.id}`}>
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${t.type === 'fund' ? 'bg-emerald-100' : 'bg-orange-100'}`}>
+                    <div className={`w-9 h-9 rounded-full flex items-center justify-center ${t.type === 'fund' ? 'bg-emerald-100 dark:bg-emerald-900/30' : 'bg-orange-100 dark:bg-orange-900/30'}`}>
                       {t.type === 'fund' ? (
-                        <ArrowDownToLine className="w-4 h-4 text-emerald-600" />
+                        <ArrowDownToLine className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       ) : (
-                        <ArrowUpFromLine className="w-4 h-4 text-orange-600" />
+                        <ArrowUpFromLine className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                       )}
                     </div>
                     <div>
@@ -790,7 +790,7 @@ export default function FinaCard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className={`font-semibold text-sm ${t.type === 'fund' ? 'text-emerald-600' : 'text-orange-600'}`}>
+                    <p className={`font-semibold text-sm ${t.type === 'fund' ? 'text-emerald-600 dark:text-emerald-400' : 'text-orange-600 dark:text-orange-400'}`}>
                       {t.type === 'fund' ? '+' : '-'}{Number(t.goldGrams).toFixed(4)}g
                     </p>
                     {t.usdEquivalent && (
@@ -807,7 +807,7 @@ export default function FinaCard() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ArrowDownToLine className="w-5 h-5 text-emerald-600" />
+                <ArrowDownToLine className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                 Fund FinaCard
               </DialogTitle>
               <DialogDescription>
@@ -830,7 +830,7 @@ export default function FinaCard() {
                 <div className="flex justify-between mt-1.5">
                   <p className="text-xs text-muted-foreground/70">Available: {walletGrams.toFixed(4)}g</p>
                   <button
-                    className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:text-purple-200 font-medium"
                     onClick={() => setFundAmount(walletGrams.toFixed(6))}
                     data-testid="button-fund-max"
                   >
@@ -869,7 +869,7 @@ export default function FinaCard() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <ArrowUpFromLine className="w-5 h-5 text-orange-600" />
+                <ArrowUpFromLine className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                 Return Gold to Wallet
               </DialogTitle>
               <DialogDescription>
@@ -892,7 +892,7 @@ export default function FinaCard() {
                 <div className="flex justify-between mt-1.5">
                   <p className="text-xs text-muted-foreground/70">FinaCard Balance: {finacardGrams.toFixed(4)}g</p>
                   <button
-                    className="text-xs text-purple-600 hover:text-purple-800 font-medium"
+                    className="text-xs text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:text-purple-200 font-medium"
                     onClick={() => setWithdrawAmount(finacardGrams.toFixed(6))}
                     data-testid="button-withdraw-max"
                   >

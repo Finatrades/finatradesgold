@@ -39,11 +39,11 @@ export default function BnslPlanList({ plans, onViewPlan, onJoinPlan }: BnslPlan
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Active': return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'Maturing': return 'bg-teal-500/10 text-teal-600 border-teal-500/20';
+      case 'Active': return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/20';
+      case 'Maturing': return 'bg-teal-50 dark:bg-teal-950/200/10 text-teal-600 dark:text-teal-400 border-teal-500/20';
       case 'Completed': return 'bg-secondary/10 text-secondary border-secondary/20';
-      case 'Early Terminated': return 'bg-red-500/10 text-red-600 border-red-500/20';
-      default: return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
+      case 'Early Terminated': return 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/20';
+      default: return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
     }
   };
 

@@ -61,9 +61,9 @@ const relationshipOptions = [
 ];
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
-  verified: 'bg-green-500/10 text-green-600 border-green-500/30',
-  rejected: 'bg-red-500/10 text-red-600 border-red-500/30'
+  pending: 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
+  verified: 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/30',
+  rejected: 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/30'
 };
 
 export default function BeneficiariesPage() {
@@ -285,7 +285,7 @@ export default function BeneficiariesPage() {
               <div className="flex items-center gap-2">
                 <h3 className="font-semibold text-foreground">{beneficiary.fullName}</h3>
                 {beneficiary.isPrimary && (
-                  <Badge variant="outline" className="border-yellow-500 text-yellow-600">
+                  <Badge variant="outline" className="border-yellow-500 text-yellow-600 dark:text-yellow-400">
                     Primary
                   </Badge>
                 )}
@@ -346,7 +346,7 @@ export default function BeneficiariesPage() {
               setSelectedBeneficiary(beneficiary);
               setShowDeleteConfirm(true);
             }}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            className="text-red-600 dark:text-red-400 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-950/20"
           >
             <Trash2 className="w-4 h-4 mr-1" />
             Remove
@@ -400,7 +400,7 @@ export default function BeneficiariesPage() {
                 </div>
                 <Progress value={totalAllocation} className="h-3" />
                 {totalAllocation > 100 && (
-                  <div className="flex items-center gap-2 mt-2 text-red-600 text-sm">
+                  <div className="flex items-center gap-2 mt-2 text-red-600 dark:text-red-400 text-sm">
                     <AlertTriangle className="w-4 h-4" />
                     <span>Allocation exceeds 100%!</span>
                   </div>
@@ -413,7 +413,7 @@ export default function BeneficiariesPage() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm text-muted-foreground">Remaining</p>
-                  <p className={`text-3xl font-bold ${remainingAllocation < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  <p className={`text-3xl font-bold ${remainingAllocation < 0 ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}>
                     {remainingAllocation.toFixed(2)}%
                   </p>
                 </div>
@@ -428,12 +428,12 @@ export default function BeneficiariesPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <Card className="bg-red-50 border-red-200">
+          <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40">
             <CardContent className="p-6 flex items-center gap-4">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
-                <h3 className="font-semibold text-red-800">Failed to load beneficiaries</h3>
-                <p className="text-red-600">Please try again later.</p>
+                <h3 className="font-semibold text-red-800 dark:text-red-200">Failed to load beneficiaries</h3>
+                <p className="text-red-600 dark:text-red-400">Please try again later.</p>
               </div>
             </CardContent>
           </Card>
@@ -730,7 +730,7 @@ export default function BeneficiariesPage() {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <Trash2 className="w-5 h-5" />
               Remove Beneficiary
             </DialogTitle>

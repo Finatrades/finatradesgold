@@ -63,7 +63,7 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
             </button>
           ) : (
             <Avatar 
-              className="w-11 h-11 cursor-pointer border-2 border-purple-200 touch-target"
+              className="w-11 h-11 cursor-pointer border-2 border-purple-200 dark:border-purple-800/40 touch-target"
               onClick={() => setLocation('/profile')}
             >
               <AvatarImage src={(user as any)?.profilePhoto || ''} />
@@ -76,7 +76,7 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
           <div>
             <h1 className="text-lg font-bold text-foreground">{getPageTitle()}</h1>
             {!showBack && goldPrice > 0 && (
-              <p className="text-[10px] text-green-600 font-medium">Gold: ${goldPrice.toFixed(2)}/g</p>
+              <p className="text-[10px] text-green-600 dark:text-green-400 font-medium">Gold: ${goldPrice.toFixed(2)}/g</p>
             )}
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
             data-testid="button-mobile-notifications"
           >
             <Bell className="w-5 h-5 text-foreground/85" />
-            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white"></span>
+            <span className="absolute top-2 right-2 w-2.5 h-2.5 bg-red-50 dark:bg-red-950/200 rounded-full border-2 border-white"></span>
           </button>
           
           <button

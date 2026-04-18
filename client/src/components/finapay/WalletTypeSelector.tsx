@@ -55,7 +55,7 @@ export default function WalletTypeSelector({
             flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
             transition-all duration-200 touch-target
             ${value === 'LGPW' 
-              ? 'bg-card text-purple-600 shadow-sm' 
+              ? 'bg-card text-purple-600 dark:text-purple-400 shadow-sm' 
               : 'text-muted-foreground hover:text-foreground/85'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}
@@ -74,7 +74,7 @@ export default function WalletTypeSelector({
             flex-1 flex items-center justify-center gap-2 py-3 px-4 rounded-lg font-semibold text-sm
             transition-all duration-200 touch-target
             ${value === 'FGPW' 
-              ? 'bg-card text-amber-600 shadow-sm' 
+              ? 'bg-card text-amber-600 dark:text-amber-400 shadow-sm' 
               : 'text-muted-foreground hover:text-foreground/85'
             }
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}

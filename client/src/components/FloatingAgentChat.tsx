@@ -477,8 +477,8 @@ function FloatingAgentChatContent() {
                 data-testid="button-open-chat"
               >
                 <MessageCircle className="w-6 h-6 text-white" />
-                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 rounded-full border-2 border-white">
-                  <div className="absolute inset-0 rounded-full bg-green-500 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
+                <div className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 bg-green-50 dark:bg-green-950/200 rounded-full border-2 border-white">
+                  <div className="absolute inset-0 rounded-full bg-green-50 dark:bg-green-950/200 animate-ping opacity-75" style={{ animationDuration: '2s' }} />
                 </div>
               </motion.button>
             </div>
@@ -550,7 +550,7 @@ function FloatingAgentChatContent() {
                       onClick={() => agent.active ? switchAgent(agent) : setComingSoonAgent(agent)}
                       className={`flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all ${
                         currentAgent.name === agent.name
-                          ? 'bg-violet-50 border border-violet-200'
+                          ? 'bg-violet-50 dark:bg-violet-950/20 border border-violet-200 dark:border-violet-800/40'
                           : 'bg-card hover:bg-muted/40 border border-border/60'
                       }`}
                       data-testid={`agent-option-${agent.name.toLowerCase()}`}
@@ -597,7 +597,7 @@ function FloatingAgentChatContent() {
                     {quickChips.map((chip) => (
                       <button
                         key={chip.label}
-                        className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
+                        className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-950/20 hover:bg-violet-100 dark:bg-violet-900/30 transition-colors"
                         disabled
                         data-testid={`chip-${chip.label.toLowerCase().replace(/\s+/g, '-')}`}
                       >
@@ -689,7 +689,7 @@ function FloatingAgentChatContent() {
                                       <button
                                         key={actionIdx}
                                         onClick={() => handleQuickAction(action)}
-                                        className="text-xs px-3 py-1.5 rounded-full bg-violet-50 text-violet-700 hover:bg-violet-100 transition-colors border border-violet-200"
+                                        className="text-xs px-3 py-1.5 rounded-full bg-violet-50 dark:bg-violet-950/20 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:bg-violet-900/30 transition-colors border border-violet-200 dark:border-violet-800/40"
                                         data-testid={`quick-action-${actionIdx}`}
                                       >
                                         {action}
@@ -711,7 +711,7 @@ function FloatingAgentChatContent() {
                           <button
                             key={chip.label}
                             onClick={() => handleChipClick(chip.label)}
-                            className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 text-violet-700 bg-card hover:bg-violet-50 transition-colors shadow-sm"
+                            className="px-3 py-1.5 text-xs font-medium rounded-full border border-violet-200 dark:border-violet-800/40 text-violet-700 dark:text-violet-300 bg-card hover:bg-violet-50 dark:bg-violet-950/20 transition-colors shadow-sm"
                             data-testid={`chip-${chip.label.toLowerCase().replace(/\s+/g, '-')}`}
                           >
                             {chip.icon} {chip.label}
@@ -794,7 +794,7 @@ function FloatingAgentChatContent() {
                   Coming Soon
                 </span>
                 <h3 className="text-xl font-bold text-foreground mb-1">{comingSoonAgent.name}</h3>
-                <p className="text-violet-600 text-sm mb-3">{comingSoonAgent.role}</p>
+                <p className="text-violet-600 dark:text-violet-400 text-sm mb-3">{comingSoonAgent.role}</p>
                 <p className="text-muted-foreground text-sm mb-6">
                   {comingSoonAgent.name} is currently under development and will be available soon with advanced capabilities for {comingSoonAgent.role.toLowerCase()}.
                 </p>

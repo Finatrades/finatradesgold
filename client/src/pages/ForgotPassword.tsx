@@ -45,8 +45,8 @@ export default function ForgotPassword() {
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Check Your Email</h1>
               <p className="text-muted-foreground">We've sent password reset instructions to:</p>

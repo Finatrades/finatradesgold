@@ -26,16 +26,16 @@ interface TransactionsTableProps {
 const getStatusBadge = (status: string) => {
   const s = status?.toLowerCase() || '';
   if (s === 'completed' || s === 'complete') {
-    return <Badge className="bg-green-100 text-green-700 border-0 text-xs px-2 py-0.5">Completed</Badge>;
+    return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-0 text-xs px-2 py-0.5">Completed</Badge>;
   }
   if (s === 'pending' || s === 'under review') {
-    return <Badge className="bg-yellow-100 text-yellow-700 border-0 text-xs px-2 py-0.5">Pending</Badge>;
+    return <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-0 text-xs px-2 py-0.5">Pending</Badge>;
   }
   if (s === 'locked') {
     return <Badge className="bg-muted text-foreground/85 border-0 text-xs px-2 py-0.5">Locked</Badge>;
   }
   if (s === 'failed' || s === 'rejected') {
-    return <Badge className="bg-red-100 text-red-700 border-0 text-xs px-2 py-0.5">Failed</Badge>;
+    return <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-0 text-xs px-2 py-0.5">Failed</Badge>;
   }
   return <Badge className="bg-muted text-muted-foreground border-0 text-xs px-2 py-0.5">{status}</Badge>;
 };
@@ -134,7 +134,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[20px] font-bold text-foreground">Recent Transactions</h3>
         <Link href="/transactions">
-          <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-transactions">
+          <Button variant="ghost" size="sm" className="text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:text-violet-300 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-transactions">
             View All
           </Button>
         </Link>
@@ -189,12 +189,12 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 data-testid={`transaction-row-${tx.id}`}
               >
                 <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                  isPpSwap ? 'bg-green-100' : isCredit ? 'bg-green-100' : 'bg-muted'
+                  isPpSwap ? 'bg-green-100 dark:bg-green-900/30' : isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-muted'
                 }`}>
                   {isPpSwap ? (
-                    <ShieldCheck className="w-4 h-4 text-green-600" />
+                    <ShieldCheck className="w-4 h-4 text-green-600 dark:text-green-400" />
                   ) : isCredit ? (
-                    <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                    <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
                   ) : (
                     <ArrowUpRight className="w-4 h-4 text-muted-foreground" />
                   )}
@@ -212,7 +212,7 @@ export default function TransactionsTable({ transactions = [], goldPrice = 85 }:
                 <div className="text-right shrink-0">
                   {goldAmount > 0 ? (
                     <p className={`text-[14px] font-semibold ${
-                      isPpSwap ? 'text-muted-foreground' : isCredit ? 'text-green-600' : 'text-foreground'
+                      isPpSwap ? 'text-muted-foreground' : isCredit ? 'text-green-600 dark:text-green-400' : 'text-foreground'
                     }`}>
                       {isCredit ? '+' : isDebit ? '-' : ''}{goldAmount.toFixed(2)}g
                     </p>

@@ -74,8 +74,8 @@ export default function Hero() {
             >
               <div className="p-6 border-b border-border/60 flex items-center justify-between sticky top-0 bg-card z-10">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-red-600" />
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-foreground">Trusted & Regulated</h3>
@@ -130,11 +130,11 @@ export default function Hero() {
                 {/* License Confirmation */}
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
-                    <div className="px-2 py-1 bg-red-100 rounded text-red-700 text-xs font-semibold">FINMA</div>
+                    <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300 text-xs font-semibold">FINMA</div>
                     <h4 className="font-semibold text-foreground text-base">License Confirmation</h4>
                   </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
-                    <p className="text-xs text-purple-800 font-medium mb-2">SO-FIT Member No.: 1186</p>
+                  <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4">
+                    <p className="text-xs text-purple-800 dark:text-purple-200 font-medium mb-2">SO-FIT Member No.: 1186</p>
                     <p className="text-sm text-foreground/85 leading-relaxed">
                       Finatrades Finance SA ("Finatrades") is an authorized member of d'Organisme de Surveillance pour Intermédiaires Financiers & Trustees (SO-FIT), and as such is subject to supervision by SO-FIT, a supervisory body officially recognized by the Swiss Financial Market Supervisory Authority (FINMA).
                     </p>
@@ -160,7 +160,7 @@ export default function Hero() {
                       { title: 'Risk-Based Approach', desc: 'Application of the Wolfsberg Principles and international best practices.' },
                     ].map((item, i) => (
                       <div key={i} className="flex items-start gap-3">
-                        <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
+                        <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                         <div>
                           <p className="text-sm font-medium text-foreground">{item.title}</p>
                           <p className="text-xs text-muted-foreground">{item.desc}</p>

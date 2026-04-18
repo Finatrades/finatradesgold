@@ -61,7 +61,7 @@ export default function EarlyTerminationSimulator({
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="bg-card border-border text-foreground w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-red-600">
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2 text-red-600 dark:text-red-400">
             <AlertTriangle className="w-6 h-6" />
             Early Termination Simulator
           </DialogTitle>
@@ -118,9 +118,9 @@ export default function EarlyTerminationSimulator({
             </div>
           </div>
 
-          <div className="p-4 bg-red-500/5 border border-red-500/20 rounded-lg text-center">
+          <div className="p-4 bg-red-50 dark:bg-red-950/200/5 border border-red-500/20 rounded-lg text-center">
              <p className="text-sm text-muted-foreground mb-2">Estimated Gold Returned</p>
-             <h3 className="text-3xl font-bold text-red-600 mb-1">
+             <h3 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-1">
                {finalGoldGrams.toFixed(3)} <span className="text-lg text-muted-foreground">g</span>
              </h3>
              <p className="text-red-500 text-sm">
@@ -128,7 +128,7 @@ export default function EarlyTerminationSimulator({
              </p>
           </div>
 
-          <Alert className="bg-red-500/5 border-red-500/20 text-red-600">
+          <Alert className="bg-red-50 dark:bg-red-950/200/5 border-red-500/20 text-red-600 dark:text-red-400">
             <AlertTriangle className="h-4 w-4" />
             <AlertTitle>Warning</AlertTitle>
             <AlertDescription>

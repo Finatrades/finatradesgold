@@ -110,7 +110,7 @@ export default function WhoItsFor() {
 
                 <div className="flex items-center justify-between pt-4 border-t border-[#8A2BE2]/10">
                   <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    <div className="w-2 h-2 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse" />
                     <span className="text-muted-foreground text-sm">Vault Verified</span>
                   </div>
                   <span className="text-[#8A2BE2] text-sm font-medium">View Certificates →</span>

@@ -79,11 +79,11 @@ export default function BNSLHistory() {
     const transferActions = ['FinaPay_To_BNSL', 'BNSL_To_FinaPay'];
     
     if (creditActions.includes(action)) {
-      return <ArrowDownRight className="w-5 h-5 text-green-600" />;
+      return <ArrowDownRight className="w-5 h-5 text-green-600 dark:text-green-400" />;
     } else if (debitActions.includes(action)) {
-      return <ArrowUpRight className="w-5 h-5 text-red-600" />;
+      return <ArrowUpRight className="w-5 h-5 text-red-600 dark:text-red-400" />;
     } else if (transferActions.includes(action)) {
-      return <ArrowLeftRight className="w-5 h-5 text-blue-600" />;
+      return <ArrowLeftRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
     }
     return <TrendingUp className="w-5 h-5 text-muted-foreground" />;
   };
@@ -124,14 +124,14 @@ export default function BNSLHistory() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       case 'completed':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
       case 'pending':
       case 'pending approval':
-        return 'bg-purple-100 text-fuchsia-700';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
       case 'early terminated':
-        return 'bg-orange-100 text-orange-700';
+        return 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -151,7 +151,7 @@ export default function BNSLHistory() {
         </div>
 
         {wallet && (
-          <Card className="bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-200">
+          <Card className="bg-gradient-to-r from-purple-50 to-fuchsia-50 border-purple-200 dark:border-purple-800/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -165,7 +165,7 @@ export default function BNSLHistory() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground mb-1">Locked in Plans</p>
-                  <p className="text-xl font-semibold text-fuchsia-600">
+                  <p className="text-xl font-semibold text-fuchsia-600 dark:text-fuchsia-400">
                     {parseFloat(wallet.lockedGoldGrams || '0').toFixed(4)}g
                   </p>
                 </div>
@@ -250,7 +250,7 @@ export default function BNSLHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100' : 'bg-red-100'
+                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -266,7 +266,7 @@ export default function BNSLHistory() {
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
                                 {isDebit ? (
-                                  <span className="text-red-600 font-medium">
+                                  <span className="text-red-600 dark:text-red-400 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
                                 ) : (
@@ -275,7 +275,7 @@ export default function BNSLHistory() {
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
                                 {isCredit ? (
-                                  <span className="text-green-600 font-medium">
+                                  <span className="text-green-600 dark:text-green-400 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
                                 ) : (
@@ -350,8 +350,8 @@ export default function BNSLHistory() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center flex-shrink-0">
-                                  <TrendingUp className="w-4 h-4 text-purple-600" />
+                                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                                  <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
                                   <div className="font-medium text-foreground text-sm">
@@ -369,7 +369,7 @@ export default function BNSLHistory() {
                               </span>
                             </td>
                             <td className="py-3 px-4 text-right font-mono">
-                              <span className="text-green-600 font-medium">
+                              <span className="text-green-600 dark:text-green-400 font-medium">
                                 {parseFloat(plan.agreedMarginAnnualPercent).toFixed(2)}%
                               </span>
                             </td>

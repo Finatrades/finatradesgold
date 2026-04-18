@@ -160,7 +160,7 @@ export default function Referral() {
 
           <Card className="p-5 bg-gradient-to-br from-secondary/10 to-secondary/5 border-secondary/20" data-testid="card-total-referrals">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <Users className="w-6 h-6 text-primary" />
               </div>
               <div>
@@ -172,8 +172,8 @@ export default function Referral() {
 
           <Card className="p-5 bg-gradient-to-br from-green-500/10 to-green-500/5 border-green-500/20" data-testid="card-completed">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-green-500/20 flex items-center justify-center">
-                <Award className="w-6 h-6 text-green-600" />
+              <div className="w-12 h-12 rounded-xl bg-green-50 dark:bg-green-950/200/20 flex items-center justify-center">
+                <Award className="w-6 h-6 text-green-600 dark:text-green-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Completed</p>
@@ -184,8 +184,8 @@ export default function Referral() {
 
           <Card className="p-5 bg-gradient-to-br from-blue-500/10 to-blue-500/5 border-blue-500/20" data-testid="card-remaining">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                <Clock className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 rounded-xl bg-blue-50 dark:bg-blue-950/200/20 flex items-center justify-center">
+                <Clock className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Remaining</p>
@@ -298,7 +298,7 @@ export default function Referral() {
                     onClick={handleShare}
                     data-testid="button-share-native"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center mr-3">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mr-3">
                       <MessageSquare className="w-5 h-5 text-primary" />
                     </div>
                     <div className="flex-1">
@@ -318,7 +318,7 @@ export default function Referral() {
                     }}
                     data-testid="button-share-email"
                   >
-                    <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center mr-3">
+                    <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/200/10 flex items-center justify-center mr-3">
                       <Mail className="w-5 h-5 text-blue-500" />
                     </div>
                     <div className="flex-1">
@@ -352,7 +352,7 @@ export default function Referral() {
                     </div>
                   </div>
                   <div className="flex items-start gap-4">
-                    <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">3</div>
+                    <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-950/200 text-white flex items-center justify-center font-bold shrink-0">3</div>
                     <div>
                       <h4 className="font-semibold mb-1">Both Earn Rewards</h4>
                       <p className="text-sm text-muted-foreground">You get {rewardPerReferralGrams.toFixed(3)}g gold, they get ${data?.stats.refereeBonusUsd || 5} bonus</p>
@@ -398,7 +398,7 @@ export default function Referral() {
                         </div>
                         <div className="flex items-center gap-3">
                           {ref.status === 'Completed' && (
-                            <span className="text-sm font-medium text-green-600">
+                            <span className="text-sm font-medium text-green-600 dark:text-green-400">
                               +{parseFloat(ref.rewardAmount || '0').toFixed(3)}g
                             </span>
                           )}
@@ -473,7 +473,7 @@ export default function Referral() {
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                           <Gift className="w-4 h-4 text-primary" />
                         </div>
                         <span className="font-medium">Friend gets</span>
@@ -483,7 +483,7 @@ export default function Referral() {
 
                     <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
                       <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 rounded-full bg-green-500/20 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-full bg-green-50 dark:bg-green-950/200/20 flex items-center justify-center">
                           <Check className="w-4 h-4 text-green-500" />
                         </div>
                         <span className="font-medium">Reward triggers</span>

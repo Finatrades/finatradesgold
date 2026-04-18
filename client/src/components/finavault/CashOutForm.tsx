@@ -183,8 +183,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                            Max: {inputMode === 'grams' ? `${vaultBalance.toFixed(3)}g` : `$${(vaultBalance * goldPriceUsd).toFixed(2)}`}
                          </span>
                          <div className="flex bg-muted rounded-lg p-1">
-                           <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
-                           <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
+                           <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
+                           <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
                          </div>
                        </div>
                     </div>
@@ -206,19 +206,19 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     </div>
                     {/* Show calculated equivalent */}
                     {numericInput > 0 && goldPriceUsd > 0 && (
-                      <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 animate-in fade-in">
+                      <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 animate-in fade-in">
                         <div className="flex justify-between items-center">
-                          <span className="text-purple-700 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
-                          <span className="text-lg font-bold text-purple-700">{inputMode === 'grams' ? `$${grossAmount.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
+                          <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
+                          <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{inputMode === 'grams' ? `$${grossAmount.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
                         </div>
                       </div>
                     )}
                     
                     {/* Insufficient Balance Warning */}
                     {grams > vaultBalance && (
-                      <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex gap-2 items-center animate-in fade-in slide-in-from-top-2">
-                        <AlertCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
-                        <span className="text-sm text-red-700">
+                      <div className="p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg flex gap-2 items-center animate-in fade-in slide-in-from-top-2">
+                        <AlertCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0" />
+                        <span className="text-sm text-red-700 dark:text-red-300">
                           Insufficient balance. You only have <strong>{vaultBalance.toFixed(3)}g</strong> available.
                         </span>
                       </div>
@@ -231,11 +231,11 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                            <span className="text-muted-foreground text-sm">Estimated Value</span>
                            <span className="text-xl font-bold text-primary">${grossAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="p-4 bg-green-50 border border-green-200 rounded-lg flex justify-between items-center">
-                           <span className="text-green-700 text-sm font-medium">Remaining Balance After Withdrawal</span>
+                        <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg flex justify-between items-center">
+                           <span className="text-green-700 dark:text-green-300 text-sm font-medium">Remaining Balance After Withdrawal</span>
                            <div className="text-right">
-                             <span className="text-lg font-bold text-green-700">{(vaultBalance - grams).toFixed(4)}g</span>
-                             <span className="text-sm text-green-600 ml-2">≈ ${((vaultBalance - grams) * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                             <span className="text-lg font-bold text-green-700 dark:text-green-300">{(vaultBalance - grams).toFixed(4)}g</span>
+                             <span className="text-sm text-green-600 dark:text-green-400 ml-2">≈ ${((vaultBalance - grams) * goldPriceUsd).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                            </div>
                         </div>
                       </div>
@@ -383,9 +383,9 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     />
                   </div>
 
-                  <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg flex gap-3 items-start">
-                    <Clock className="w-5 h-5 text-fuchsia-600 flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-fuchsia-800">
+                  <div className="p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg flex gap-3 items-start">
+                    <Clock className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-fuchsia-800 dark:text-fuchsia-200">
                       <p className="font-medium">Admin Approval Required</p>
                       <p className="text-xs mt-1 opacity-80">Your withdrawal request will be reviewed by our team before processing.</p>
                     </div>
@@ -418,7 +418,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                    <CardTitle className="text-lg font-medium text-foreground">Confirm Withdrawal Request</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg text-fuchsia-700 text-sm flex gap-3">
+                  <div className="p-4 bg-purple-50 dark:bg-purple-950/200/10 border border-purple-500/20 rounded-lg text-fuchsia-700 dark:text-fuchsia-300 text-sm flex gap-3">
                     <AlertCircle className="w-5 h-5 flex-shrink-0" />
                     <p>You are requesting to withdraw {grams}g of gold via {withdrawalMethod}. This request will be reviewed by our admin team.</p>
                   </div>
@@ -448,7 +448,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
                     <Separator className="bg-border" />
                     <div className="flex justify-between items-end">
                       <span className="text-foreground font-semibold">Net Payout</span>
-                      <span className="text-2xl font-bold text-green-600">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-2xl font-bold text-green-600 dark:text-green-400">${netAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                   </div>
 
@@ -510,8 +510,8 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               animate={{ opacity: 1, scale: 1 }}
               className="text-center py-12"
             >
-              <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <CheckCircle2 className="w-10 h-10 text-green-600" />
+              <div className="w-20 h-20 bg-green-50 dark:bg-green-950/200/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
               </div>
               <h3 className="text-2xl font-bold text-foreground mb-2">Request Submitted!</h3>
               <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
@@ -535,7 +535,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
 
       {/* Right Column: Market Info */}
       <div className="space-y-6">
-        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200 backdrop-blur-sm sticky top-24">
+        <Card className="bg-gradient-to-br from-purple-50 to-violet-50 border-purple-200 dark:border-purple-800/40 backdrop-blur-sm sticky top-24">
           <CardHeader>
             <CardTitle className="text-lg font-bold text-primary">Market Snapshot</CardTitle>
           </CardHeader>
@@ -544,9 +544,9 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               <p className="text-muted-foreground text-xs uppercase tracking-wider mb-1">Live Gold Price</p>
               <div className="flex items-baseline gap-2">
                 <span className="text-3xl font-bold text-foreground">${goldPriceUsd.toFixed(2)}</span>
-                <span className="text-sm text-green-600 font-medium">/ gram</span>
+                <span className="text-sm text-green-600 dark:text-green-400 font-medium">/ gram</span>
               </div>
-              <p className={`text-xs mt-1 flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`text-xs mt-1 flex items-center gap-1 ${priceChange24h >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 <TrendingUp className={`w-3 h-3 ${priceChange24h < 0 ? 'rotate-180' : ''}`} />
                 {priceChange24h >= 0 ? '+' : ''}{priceChange24h.toFixed(1)}% (24h)
               </p>
@@ -565,7 +565,7 @@ export default function CashOutForm({ vaultBalance = 0 }: CashOutFormProps) {
               </div>
             </div>
 
-            <div className="p-3 bg-purple-100 rounded text-xs text-muted-foreground leading-relaxed">
+            <div className="p-3 bg-purple-100 dark:bg-purple-900/30 rounded text-xs text-muted-foreground leading-relaxed">
               <AlertCircle className="w-3 h-3 inline mr-1 mb-0.5" />
               All withdrawal requests require admin approval. Processing times vary by method.
             </div>

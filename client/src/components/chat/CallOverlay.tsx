@@ -142,12 +142,12 @@ export function CallOverlay({ callerName = 'User', isVisible }: CallOverlayProps
             <div className="flex items-center gap-2 bg-black/50 px-3 py-2 rounded-full">
               {isConnected ? (
                 <>
-                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+                  <span className="w-2 h-2 bg-green-50 dark:bg-green-950/200 rounded-full animate-pulse" />
                   <span className="text-white text-sm">{formatDuration(activeCall.callDuration)}</span>
                 </>
               ) : (
                 <>
-                  <span className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse" />
+                  <span className="w-2 h-2 bg-yellow-50 dark:bg-yellow-950/200 rounded-full animate-pulse" />
                   <span className="text-white text-sm">
                     {activeCall.status === 'ringing' ? 'Ringing' : 'Connecting'}
                   </span>

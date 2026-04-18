@@ -354,9 +354,9 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
           {/* Left Panel - Disclaimer Content */}
           <div className="flex-1 overflow-y-auto border-r border-border p-4 bg-card">
             <div className="space-y-3 text-sm text-foreground/85">
-              <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-start gap-3 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg">
                 <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" />
-                <p className="font-medium text-red-800 text-sm">
+                <p className="font-medium text-red-800 dark:text-red-200 text-sm">
                   The trading of illegal, prohibited, or restricted products and commodities is strictly forbidden.
                 </p>
               </div>
@@ -379,7 +379,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
                     {[
                       'Iran', 'North Korea', 'Syria', 'Cuba', 'Sudan', 'Russia', 'Belarus', 'Venezuela', 'Crimea'
                     ].map((country) => (
-                      <span key={country} className="px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full font-medium">
+                      <span key={country} className="px-1.5 py-0.5 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 text-[10px] rounded-full font-medium">
                         {country}
                       </span>
                     ))}
@@ -387,9 +387,9 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
                   </div>
                 </div>
 
-                <div className="p-3 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="p-3 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800/40">
                   <h4 className="font-semibold text-fuchsia-900 mb-1 text-sm">Dynamic Updates</h4>
-                  <p className="text-xs text-fuchsia-800">
+                  <p className="text-xs text-fuchsia-800 dark:text-fuchsia-200">
                     Finatrades may expand or modify the restricted jurisdictions list without notice.
                   </p>
                 </div>
@@ -426,7 +426,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
               <Button
                 variant="outline"
                 onClick={() => setShowFullTerms(true)}
-                className="w-full border-purple-300 text-purple-600 hover:bg-purple-50 mt-2"
+                className="w-full border-purple-300 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-950/20 mt-2"
                 data-testid="button-view-full-terms"
               >
                 <FileText className="w-4 h-4 mr-2" />
@@ -438,12 +438,12 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
           {/* Right Panel - Role Selection & Accept */}
           <div className="w-full md:w-[380px] flex-shrink-0 overflow-y-auto p-4 bg-muted/40 flex flex-col">
             <div className="space-y-4 flex-1">
-              <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
                 <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
                   <Ship className="w-5 h-5" />
                   Select Your Role
                 </h4>
-                <p className="text-xs text-blue-700 mb-3">
+                <p className="text-xs text-blue-700 dark:text-blue-300 mb-3">
                   Indicate your primary role in trade operations:
                 </p>
                 <RadioGroup 
@@ -455,7 +455,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
                     <RadioGroupItem value="importer" id="role-importer" data-testid="radio-role-importer" />
                     <Label htmlFor="role-importer" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <Package className="w-4 h-4 text-blue-600" />
+                        <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                         <span className="font-medium text-foreground">Importer</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">Buy goods and pay suppliers</p>
@@ -465,7 +465,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
                     <RadioGroupItem value="exporter" id="role-exporter" data-testid="radio-role-exporter" />
                     <Label htmlFor="role-exporter" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <Ship className="w-4 h-4 text-green-600" />
+                        <Ship className="w-4 h-4 text-green-600 dark:text-green-400" />
                         <span className="font-medium text-foreground">Exporter</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">Sell goods and receive payments</p>
@@ -475,7 +475,7 @@ export default function FinaBridgeDisclaimerModal({ open, onAccept, onClose }: F
                     <RadioGroupItem value="both" id="role-both" data-testid="radio-role-both" />
                     <Label htmlFor="role-both" className="flex-1 cursor-pointer">
                       <div className="flex items-center gap-2">
-                        <ArrowLeftRight className="w-4 h-4 text-purple-600" />
+                        <ArrowLeftRight className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         <span className="font-medium text-foreground">Both</span>
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">Operate as importer and exporter</p>

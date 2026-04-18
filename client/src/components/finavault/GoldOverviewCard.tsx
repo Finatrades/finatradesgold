@@ -56,15 +56,15 @@ function Tile({ icon, label, sub, grams, goldPricePerGram, accent, bg, border, p
         <div className={`w-7 h-7 rounded-xl flex items-center justify-center ${accent}`}>
           {icon}
         </div>
-        <span className={`text-xs font-semibold ${primary ? 'text-amber-800' : 'text-muted-foreground'}`}>{label}</span>
+        <span className={`text-xs font-semibold ${primary ? 'text-amber-800 dark:text-amber-200' : 'text-muted-foreground'}`}>{label}</span>
       </div>
-      <p className={`font-bold ${primary ? 'text-2xl text-amber-700' : 'text-lg text-foreground'}`}>
+      <p className={`font-bold ${primary ? 'text-2xl text-amber-700 dark:text-amber-300' : 'text-lg text-foreground'}`}>
         {fmt(grams)}<span className="text-sm font-medium ml-0.5">g</span>
       </p>
-      <p className={`text-xs ${primary ? 'text-amber-600' : 'text-muted-foreground'}`}>
+      <p className={`text-xs ${primary ? 'text-amber-600 dark:text-amber-400' : 'text-muted-foreground'}`}>
         ≈ ${usd(grams, goldPricePerGram)} USD
       </p>
-      <p className={`text-[10px] leading-snug mt-0.5 ${primary ? 'text-amber-700/80' : 'text-muted-foreground'}`}>{sub}</p>
+      <p className={`text-[10px] leading-snug mt-0.5 ${primary ? 'text-amber-700 dark:text-amber-300/80' : 'text-muted-foreground'}`}>{sub}</p>
     </div>
   );
 }
@@ -95,48 +95,48 @@ export default function GoldOverviewCard({ ownership, goldPricePerGram }: GoldOv
 
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <Tile
-          icon={<Banknote className="w-4 h-4 text-amber-600" />}
+          icon={<Banknote className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
           label="Available to Spend"
           sub="Send, trade, or lock a price today"
           grams={mpgw}
           goldPricePerGram={goldPricePerGram}
-          accent="bg-amber-100"
-          bg="bg-amber-50"
-          border="border-amber-200"
+          accent="bg-amber-100 dark:bg-amber-900/30"
+          bg="bg-amber-50 dark:bg-amber-950/20"
+          border="border-amber-200 dark:border-amber-800/40"
           primary
           testId="tile-available-to-spend"
         />
         <Tile
-          icon={<Lock className="w-4 h-4 text-blue-600" />}
+          icon={<Lock className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
           label="Price-Locked"
           sub="Protected from drops, convertible back"
           grams={fpgw}
           goldPricePerGram={goldPricePerGram}
-          accent="bg-blue-100"
-          bg="bg-blue-50"
-          border="border-blue-200"
+          accent="bg-blue-100 dark:bg-blue-900/30"
+          bg="bg-blue-50 dark:bg-blue-950/20"
+          border="border-blue-200 dark:border-blue-800/40"
           testId="tile-price-locked"
         />
         <Tile
-          icon={<TrendingUp className="w-4 h-4 text-indigo-600" />}
+          icon={<TrendingUp className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
           label="In BNSL Plans"
           sub="Earning returns, releases at maturity"
           grams={bnsl}
           goldPricePerGram={goldPricePerGram}
-          accent="bg-indigo-100"
-          bg="bg-indigo-50"
-          border="border-indigo-200"
+          accent="bg-indigo-100 dark:bg-indigo-900/30"
+          bg="bg-indigo-50 dark:bg-indigo-950/20"
+          border="border-indigo-200 dark:border-indigo-800/40"
           testId="tile-bnsl-plans"
         />
         <Tile
-          icon={<Briefcase className="w-4 h-4 text-teal-600" />}
+          icon={<Briefcase className="w-4 h-4 text-teal-600 dark:text-teal-400" />}
           label="Trade Collateral"
           sub="Tied to active trade deals"
           grams={trade}
           goldPricePerGram={goldPricePerGram}
-          accent="bg-teal-100"
-          bg="bg-teal-50"
-          border="border-teal-200"
+          accent="bg-teal-100 dark:bg-teal-900/30"
+          bg="bg-teal-50 dark:bg-teal-950/20"
+          border="border-teal-200 dark:border-teal-800/40"
           testId="tile-trade-collateral"
         />
         <Tile

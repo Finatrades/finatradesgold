@@ -878,17 +878,17 @@ export default function FinaBridge() {
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'Draft': return 'bg-muted text-foreground/85';
-      case 'Open': return 'bg-blue-100 text-blue-700';
-      case 'Proposal Review': return 'bg-purple-100 text-fuchsia-700';
-      case 'Awaiting Importer': return 'bg-indigo-100 text-indigo-700';
-      case 'Active Trade': return 'bg-green-100 text-green-700';
-      case 'Completed': return 'bg-emerald-100 text-emerald-700';
-      case 'Cancelled': return 'bg-red-100 text-red-700';
-      case 'Submitted': return 'bg-blue-100 text-blue-700';
-      case 'Shortlisted': return 'bg-purple-100 text-fuchsia-700';
-      case 'Forwarded': return 'bg-indigo-100 text-indigo-700';
-      case 'Accepted': return 'bg-green-100 text-green-700';
-      case 'Rejected': return 'bg-red-100 text-red-700';
+      case 'Open': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'Proposal Review': return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
+      case 'Awaiting Importer': return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
+      case 'Active Trade': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      case 'Completed': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+      case 'Cancelled': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+      case 'Submitted': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
+      case 'Shortlisted': return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
+      case 'Forwarded': return 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300';
+      case 'Accepted': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      case 'Rejected': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       case 'Declined': return 'bg-muted text-foreground/85';
       default: return 'bg-muted text-foreground/85';
     }
@@ -929,7 +929,7 @@ export default function FinaBridge() {
                 <div className="flex flex-col items-center min-w-[60px] group">
                   <div title={stage.hint} className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 transition-colors ${
                     isCompleted
-                      ? 'bg-green-500 border-green-500 text-white'
+                      ? 'bg-green-50 dark:bg-green-950/200 border-green-500 text-white'
                       : isActive
                       ? 'bg-primary border-primary text-white ring-2 ring-primary/20'
                       : 'bg-card border-border text-muted-foreground/50'
@@ -937,7 +937,7 @@ export default function FinaBridge() {
                     {isCompleted ? <Check className="w-3 h-3" /> : <span>{idx + 1}</span>}
                   </div>
                   <span className={`text-[9px] mt-1 font-medium leading-tight text-center max-w-[56px] ${
-                    isActive ? 'text-primary' : isCompleted ? 'text-green-600' : 'text-muted-foreground/50'
+                    isActive ? 'text-primary' : isCompleted ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground/50'
                   }`}>
                     {stage.label}
                   </span>
@@ -996,7 +996,7 @@ export default function FinaBridge() {
         
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-purple-100 rounded-lg border border-purple-200 text-primary">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg border border-purple-200 dark:border-purple-800/40 text-primary">
               <BarChart3 className="w-6 h-6" />
             </div>
             <div>
@@ -1061,12 +1061,12 @@ export default function FinaBridge() {
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <BarChart3 className="w-5 h-5 text-fuchsia-600" />
+              <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
               </div>
               <h2 className="text-lg font-bold text-foreground">FinaBridge Wallet</h2>
             </div>
-            <Button size="sm" className="bg-purple-500 hover:bg-fuchsia-600 text-white" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
+            <Button size="sm" className="bg-purple-50 dark:bg-purple-950/200 hover:bg-fuchsia-600 text-white" onClick={() => setShowFundDialog(true)} data-testid="button-fund-wallet">
               <ArrowLeftRight className="w-4 h-4 mr-2" />
               Transfer from FinaPay
             </Button>
@@ -1091,7 +1091,7 @@ export default function FinaBridge() {
                   </div>
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">Gold Backing:</span>
-                    <span className="text-lg font-semibold text-fuchsia-600">
+                    <span className="text-lg font-semibold text-fuchsia-600 dark:text-fuchsia-400">
                       {parseFloat(wallet?.availableGoldGrams || '0').toFixed(4)} g
                     </span>
                   </div>
@@ -1142,7 +1142,7 @@ export default function FinaBridge() {
                 <div className="space-y-1 mb-2">
                   <div className="flex items-baseline gap-2">
                     <span className="text-xs text-muted-foreground">USD Value:</span>
-                    <span className="text-2xl font-bold text-green-600">
+                    <span className="text-2xl font-bold text-green-600 dark:text-green-400">
                       ${((parseFloat(wallet?.availableGoldGrams || '0') + parseFloat(wallet?.lockedGoldGrams || '0') + parseFloat((wallet as any)?.incomingLockedGoldGrams || '0')) * currentGoldPriceUsdPerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </span>
                   </div>
@@ -1163,15 +1163,15 @@ export default function FinaBridge() {
         </div>
 
         {role === 'importer' && wallet && parseFloat(wallet.availableGoldGrams) === 0 && (
-          <div className="flex items-start gap-3 p-4 bg-amber-50 border border-amber-200 rounded-xl" data-testid="banner-low-balance">
+          <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-xl" data-testid="banner-low-balance">
             <AlertCircle className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-amber-800">Fund your FinaBridge wallet first</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">Fund your FinaBridge wallet first</p>
+              <p className="text-xs text-amber-700 dark:text-amber-300 mt-0.5">
                 Your FinaBridge wallet has a zero balance. Transfer gold from your FinaPay wallet before creating a trade request — the settlement amount will be locked in escrow when you accept an exporter's proposal.
               </p>
             </div>
-            <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 hover:bg-amber-100 flex-shrink-0" onClick={() => setShowFundDialog(true)} data-testid="button-banner-fund">
+            <Button size="sm" variant="outline" className="border-amber-300 text-amber-800 dark:text-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 flex-shrink-0" onClick={() => setShowFundDialog(true)} data-testid="button-banner-fund">
               <ArrowLeftRight className="w-3.5 h-3.5 mr-1.5" /> Fund Now
             </Button>
           </div>
@@ -1222,18 +1222,18 @@ export default function FinaBridge() {
                     <Card key={request.id} className={`bg-card border transition-colors ${request.status === 'Awaiting Importer' ? 'border-indigo-300 ring-2 ring-indigo-100' : 'hover:border-secondary/50'}`} data-testid={`card-request-${request.id}`}>
                       <CardContent className="p-4">
                         {request.status === 'Awaiting Importer' && (
-                          <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-indigo-50 border border-indigo-200 rounded-lg" data-testid={`banner-awaiting-${request.id}`}>
-                            <Bell className="w-3.5 h-3.5 text-indigo-600 flex-shrink-0" />
-                            <p className="text-xs font-semibold text-indigo-700">Action required — proposals have been forwarded to you for review.</p>
-                            <Button size="sm" variant="link" className="text-indigo-700 p-0 h-auto text-xs ml-auto font-semibold" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }}>
+                          <div className="flex items-center gap-2 px-3 py-2 mb-3 bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/40 rounded-lg" data-testid={`banner-awaiting-${request.id}`}>
+                            <Bell className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400 flex-shrink-0" />
+                            <p className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Action required — proposals have been forwarded to you for review.</p>
+                            <Button size="sm" variant="link" className="text-indigo-700 dark:text-indigo-300 p-0 h-auto text-xs ml-auto font-semibold" onClick={() => { setSelectedRequest(request); fetchForwardedProposals(request.id); setActiveTab('proposals'); }}>
                               Review now <ChevronRight className="w-3 h-3 ml-0.5" />
                             </Button>
                           </div>
                         )}
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-lg ${request.status === 'Active Trade' ? 'bg-green-100' : 'bg-secondary/10'}`}>
-                              <Package className={`w-5 h-5 ${request.status === 'Active Trade' ? 'text-green-600' : 'text-primary'}`} />
+                            <div className={`p-2 rounded-lg ${request.status === 'Active Trade' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-secondary/10'}`}>
+                              <Package className={`w-5 h-5 ${request.status === 'Active Trade' ? 'text-green-600 dark:text-green-400' : 'text-primary'}`} />
                             </div>
                             <div>
                               <h3 className="font-bold">{request.tradeRefId}</h3>
@@ -1246,7 +1246,7 @@ export default function FinaBridge() {
                               <p className="font-bold">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
                               <p className="text-xs text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold</p>
                               {request.isPriceLocked && (
-                                <p className="text-xs text-purple-600 flex items-center justify-end gap-1 mt-0.5">
+                                <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center justify-end gap-1 mt-0.5">
                                   <Lock className="w-3 h-3" />
                                   ${request.goldPriceUsdPerGram ? parseFloat(request.goldPriceUsdPerGram).toFixed(2) : ''}/g locked
                                 </p>
@@ -1288,14 +1288,14 @@ export default function FinaBridge() {
                         className="w-3.5 h-3.5"
                         data-testid="checkbox-suggest-exporter"
                       />
-                      <label htmlFor="suggestExporter" className="text-xs font-medium text-red-600">
+                      <label htmlFor="suggestExporter" className="text-xs font-medium text-red-600 dark:text-red-400">
                         Suggest matching exporters (allow Finatrades to find exporters for me)
                       </label>
                     </div>
 
                     {!requestForm.suggestExporter && (
-                      <div className="p-3 border rounded-lg bg-purple-50/50 border-purple-200">
-                        <h4 className="font-medium mb-2 flex items-center gap-2 text-purple-800 text-sm">
+                      <div className="p-3 border rounded-lg bg-purple-50 dark:bg-purple-950/20/50 border-purple-200 dark:border-purple-800/40">
+                        <h4 className="font-medium mb-2 flex items-center gap-2 text-purple-800 dark:text-purple-200 text-sm">
                           <Send className="w-4 h-4" />
                           My Exporter Details & Proposal
                         </h4>
@@ -1380,7 +1380,7 @@ export default function FinaBridge() {
                         </div>
 
                         <div className="mt-3 pt-2 border-t">
-                          <h4 className="font-medium mb-2 text-purple-800 text-sm">Required Exporter Documents</h4>
+                          <h4 className="font-medium mb-2 text-purple-800 dark:text-purple-200 text-sm">Required Exporter Documents</h4>
                           <p className="text-xs text-muted-foreground mb-2">Exporter should upload all necessary documents</p>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                             {[
@@ -1448,7 +1448,7 @@ export default function FinaBridge() {
                                     <button
                                       type="button"
                                       onClick={() => setUploadedFiles(uploadedFiles.filter((_, i) => i !== idx))}
-                                      className="text-red-500 hover:text-red-700"
+                                      className="text-red-500 hover:text-red-700 dark:text-red-300"
                                     >
                                       ×
                                     </button>
@@ -1461,8 +1461,8 @@ export default function FinaBridge() {
                       </div>
                     )}
 
-                    <div className="p-3 border rounded-lg bg-blue-50/50 border-blue-200">
-                      <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-800 text-sm">
+                    <div className="p-3 border rounded-lg bg-blue-50 dark:bg-blue-950/20/50 border-blue-200 dark:border-blue-800/40">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-blue-800 dark:text-blue-200 text-sm">
                         <CreditCard className="w-4 h-4" />
                         Trade Finance Type & Payment
                       </h4>
@@ -1524,8 +1524,8 @@ export default function FinaBridge() {
                           <div
                             className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
                               supportingDocument
-                                ? 'border-green-400 bg-green-50/50'
-                                : 'border-blue-300 bg-blue-50/30 hover:bg-blue-50/60'
+                                ? 'border-green-400 bg-green-50 dark:bg-green-950/20/50'
+                                : 'border-blue-300 bg-blue-50 dark:bg-blue-950/20/30 hover:bg-blue-50 dark:bg-blue-950/20/60'
                             }`}
                             onClick={() => document.getElementById('supporting-doc-input')?.click()}
                             data-testid="zone-document-upload"
@@ -1556,7 +1556,7 @@ export default function FinaBridge() {
                             />
                             {supportingDocument ? (
                               <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2 text-sm text-green-700">
+                                <div className="flex items-center gap-2 text-sm text-green-700 dark:text-green-300">
                                   <span>✓</span>
                                   <span>{supportingDocument.name}</span>
                                   <span className="text-muted-foreground">({(supportingDocument.size / 1024).toFixed(0)} KB)</span>
@@ -1572,7 +1572,7 @@ export default function FinaBridge() {
                               </div>
                             ) : (
                               <div>
-                                <p className="text-sm text-blue-700">Click to upload supporting document</p>
+                                <p className="text-sm text-blue-700 dark:text-blue-300">Click to upload supporting document</p>
                                 <p className="text-xs text-muted-foreground mt-1">
                                   Required for{' '}
                                   {paymentInstrumentType === 'LC' ? 'Letter of Credit' : paymentInstrumentType === 'POL' ? 'Purchase Order Letter' : 'Warehouse Receipt'}
@@ -1587,8 +1587,8 @@ export default function FinaBridge() {
                       )}
                     </div>
 
-                    <div className="p-3 border rounded-lg bg-green-50/50 border-green-200">
-                      <h4 className="font-medium mb-2 flex items-center gap-2 text-green-800 text-sm">
+                    <div className="p-3 border rounded-lg bg-green-50 dark:bg-green-950/20/50 border-green-200 dark:border-green-800/40">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-green-800 dark:text-green-200 text-sm">
                         <Package className="w-4 h-4" />
                         Trade Details & Gold Settlement
                       </h4>
@@ -1663,7 +1663,7 @@ export default function FinaBridge() {
                           />
                           <p className="text-[10px] text-muted-foreground">
                             {requestForm.isPriceLocked && requestForm.goldPriceUsdPerGram ? (
-                              <>Locked: <span className="text-purple-600 font-medium">${parseFloat(requestForm.goldPriceUsdPerGram).toFixed(2)}/g</span></>
+                              <>Locked: <span className="text-purple-600 dark:text-purple-400 font-medium">${parseFloat(requestForm.goldPriceUsdPerGram).toFixed(2)}/g</span></>
                             ) : (
                               <>Gold price: ${currentGoldPriceUsdPerGram.toFixed(2)}/g</>
                             )}
@@ -1679,7 +1679,7 @@ export default function FinaBridge() {
                             className={`w-full p-2 text-sm border rounded-lg bg-muted/40 cursor-not-allowed ${
                               requestForm.settlementGoldGrams && 
                               parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
-                                ? 'border-red-400 bg-red-50/50'
+                                ? 'border-red-400 bg-red-50 dark:bg-red-950/20/50'
                                 : ''
                             }`}
                             placeholder="0.000"
@@ -1690,23 +1690,23 @@ export default function FinaBridge() {
                               FinaBridge: <span className={`font-medium ${
                                 requestForm.settlementGoldGrams && 
                                 parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0')
-                                  ? 'text-red-600'
-                                  : 'text-green-600'
+                                  ? 'text-red-600 dark:text-red-400'
+                                  : 'text-green-600 dark:text-green-400'
                               }`}>{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>
                             </span>
                             <span className="text-muted-foreground">
-                              FinaPay: <span className="font-medium text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
+                              FinaPay: <span className="font-medium text-blue-600 dark:text-blue-400">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</span>
                             </span>
                           </div>
                           
                           {/* Price Lock Toggle */}
-                          <div className="mt-1.5 p-2 bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200 rounded-lg">
+                          <div className="mt-1.5 p-2 bg-gradient-to-r from-purple-50 to-amber-50 border border-purple-200 dark:border-purple-800/40 rounded-lg">
                             <div className="flex items-center justify-between mb-1">
                               <div className="flex items-center gap-1.5">
                                 {requestForm.isPriceLocked ? (
-                                  <Lock className="w-3 h-3 text-purple-600" />
+                                  <Lock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
                                 ) : (
-                                  <Unlock className="w-3 h-3 text-amber-600" />
+                                  <Unlock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                                 )}
                                 <span className="text-xs font-medium">Lock Gold Price</span>
                               </div>
@@ -1723,13 +1723,13 @@ export default function FinaBridge() {
                                 className="scale-75"
                               />
                             </div>
-                            <div className={`text-[10px] p-1.5 rounded ${requestForm.isPriceLocked ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                            <div className={`text-[10px] p-1.5 rounded ${requestForm.isPriceLocked ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'}`}>
                               {requestForm.isPriceLocked ? (
                                 <div className="flex items-start gap-1">
                                   <Shield className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                   <div>
                                     <span className="font-medium">Locked at ${currentGoldPriceUsdPerGram.toFixed(2)}/g</span>
-                                    <p className="text-purple-600">Protected from price fluctuations.</p>
+                                    <p className="text-purple-600 dark:text-purple-400">Protected from price fluctuations.</p>
                                   </div>
                                 </div>
                               ) : (
@@ -1737,7 +1737,7 @@ export default function FinaBridge() {
                                   <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
                                   <div>
                                     <span className="font-medium">Floating Price (Market Rate)</span>
-                                    <p className="text-amber-600">Price recalculated at each stage.</p>
+                                    <p className="text-amber-600 dark:text-amber-400">Price recalculated at each stage.</p>
                                   </div>
                                 </div>
                               )}
@@ -1746,12 +1746,12 @@ export default function FinaBridge() {
                           
                           {requestForm.settlementGoldGrams && 
                            parseFloat(requestForm.settlementGoldGrams) > parseFloat(wallet?.availableGoldGrams || '0') && (
-                            <div className="mt-1.5 p-2 bg-purple-50 border border-purple-300 rounded-lg">
+                            <div className="mt-1.5 p-2 bg-purple-50 dark:bg-purple-950/20 border border-purple-300 rounded-lg">
                               <div className="flex items-start gap-1.5">
-                                <Wallet className="w-3 h-3 text-fuchsia-600 mt-0.5 flex-shrink-0" />
+                                <Wallet className="w-3 h-3 text-fuchsia-600 dark:text-fuchsia-400 mt-0.5 flex-shrink-0" />
                                 <div className="flex-1">
-                                  <p className="text-fuchsia-800 text-xs font-medium">Insufficient Balance</p>
-                                  <p className="text-fuchsia-700 text-[10px]">
+                                  <p className="text-fuchsia-800 dark:text-fuchsia-200 text-xs font-medium">Insufficient Balance</p>
+                                  <p className="text-fuchsia-700 dark:text-fuchsia-300 text-[10px]">
                                     Need <span className="font-bold">{parseFloat(requestForm.settlementGoldGrams).toFixed(3)}g</span>, have{' '}
                                     <span className="font-bold">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</span>.
                                     Transfer <span className="font-bold">
@@ -1779,8 +1779,8 @@ export default function FinaBridge() {
                           {requestForm.settlementGoldGrams && 
                            parseFloat(requestForm.settlementGoldGrams) <= parseFloat(wallet?.availableGoldGrams || '0') &&
                            parseFloat(requestForm.settlementGoldGrams) > 0 && (
-                            <div className="mt-1 p-1.5 bg-green-50 border border-green-200 rounded">
-                              <p className="text-green-700 text-[10px] flex items-center gap-1">
+                            <div className="mt-1 p-1.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded">
+                              <p className="text-green-700 dark:text-green-300 text-[10px] flex items-center gap-1">
                                 <Check className="w-2.5 h-2.5" />
                                 Sufficient balance in FinaBridge
                               </p>
@@ -1788,7 +1788,7 @@ export default function FinaBridge() {
                           )}
                           
                           {insufficientFundsError && (
-                            <div className="mt-1 p-2 bg-red-50 border border-red-200 rounded text-red-700 text-xs">
+                            <div className="mt-1 p-2 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded text-red-700 dark:text-red-300 text-xs">
                               {insufficientFundsError}
                             </div>
                           )}
@@ -1807,8 +1807,8 @@ export default function FinaBridge() {
                       </div>
                     </div>
 
-                    <div className="p-3 border rounded-lg bg-indigo-50/50 border-indigo-200">
-                      <h4 className="font-medium mb-2 flex items-center gap-2 text-indigo-800 text-sm">
+                    <div className="p-3 border rounded-lg bg-indigo-50 dark:bg-indigo-950/20/50 border-indigo-200 dark:border-indigo-800/40">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-indigo-800 dark:text-indigo-200 text-sm">
                         <Truck className="w-4 h-4" />
                         Shipping & Logistics
                       </h4>
@@ -1913,8 +1913,8 @@ export default function FinaBridge() {
                       </div>
                     </div>
 
-                    <div className="p-3 border rounded-lg bg-teal-50/50 border-teal-200">
-                      <h4 className="font-medium mb-2 flex items-center gap-2 text-teal-800 text-sm">
+                    <div className="p-3 border rounded-lg bg-teal-50 dark:bg-teal-950/20/50 border-teal-200 dark:border-teal-800/40">
+                      <h4 className="font-medium mb-2 flex items-center gap-2 text-teal-800 dark:text-teal-200 text-sm">
                         <Shield className="w-4 h-4" />
                         Insurance (Optional)
                       </h4>
@@ -2215,7 +2215,7 @@ export default function FinaBridge() {
                             <p className="font-bold text-xl text-primary">${parseFloat(request.tradeValueUsd).toLocaleString()}</p>
                             <p className="text-sm text-muted-foreground">{parseFloat(request.settlementGoldGrams).toFixed(3)}g gold settlement</p>
                             {request.isPriceLocked && (
-                              <p className="text-xs text-purple-600 flex items-center justify-end gap-1 mt-0.5">
+                              <p className="text-xs text-purple-600 dark:text-purple-400 flex items-center justify-end gap-1 mt-0.5">
                                 <Lock className="w-3 h-3" />
                                 Price locked at ${request.goldPriceUsdPerGram ? parseFloat(request.goldPriceUsdPerGram).toFixed(2) : ''}/g
                               </p>
@@ -2242,8 +2242,8 @@ export default function FinaBridge() {
                           </div>
                         </div>
                         
-                        <div className="p-4 my-4 bg-blue-50/50 border border-blue-100 rounded-lg">
-                          <h4 className="text-sm font-medium text-blue-800 mb-3 flex items-center gap-2">
+                        <div className="p-4 my-4 bg-blue-50 dark:bg-blue-950/20/50 border border-blue-100 rounded-lg">
+                          <h4 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-3 flex items-center gap-2">
                             <Truck className="w-4 h-4" /> Shipping & Logistics
                           </h4>
                           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -2266,13 +2266,13 @@ export default function FinaBridge() {
                           </div>
                           <div className="flex gap-6 mt-3 pt-3 border-t border-blue-100">
                             <div className="flex items-center gap-2">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.partialShipment ? 'bg-green-500 text-white' : 'bg-muted'}`}>
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.partialShipment ? 'bg-green-50 dark:bg-green-950/200 text-white' : 'bg-muted'}`}>
                                 {request.partialShipment ? '✓' : '✗'}
                               </span>
                               <span className="text-sm">Partial Shipment</span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.transshipment ? 'bg-green-500 text-white' : 'bg-muted'}`}>
+                              <span className={`w-4 h-4 rounded-full flex items-center justify-center text-xs ${request.transshipment ? 'bg-green-50 dark:bg-green-950/200 text-white' : 'bg-muted'}`}>
                                 {request.transshipment ? '✓' : '✗'}
                               </span>
                               <span className="text-sm">Transshipment</span>
@@ -2281,8 +2281,8 @@ export default function FinaBridge() {
                         </div>
                         
                         {(request.insuranceCoverage || request.insuranceProvider) && (
-                          <div className="p-4 mb-4 bg-purple-50/50 border border-purple-100 rounded-lg">
-                            <h4 className="text-sm font-medium text-purple-800 mb-3 flex items-center gap-2">
+                          <div className="p-4 mb-4 bg-purple-50 dark:bg-purple-950/20/50 border border-purple-100 rounded-lg">
+                            <h4 className="text-sm font-medium text-purple-800 dark:text-purple-200 mb-3 flex items-center gap-2">
                               <Shield className="w-4 h-4" /> Insurance
                             </h4>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -2353,8 +2353,8 @@ export default function FinaBridge() {
                       <CardContent className="p-4">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-4">
-                            <div className={`p-2 rounded-lg ${proposal.status === 'Modification Requested' ? 'bg-purple-100' : 'bg-secondary/10'}`}>
-                              <Send className={`w-5 h-5 ${proposal.status === 'Modification Requested' ? 'text-fuchsia-600' : 'text-primary'}`} />
+                            <div className={`p-2 rounded-lg ${proposal.status === 'Modification Requested' ? 'bg-purple-100 dark:bg-purple-900/30' : 'bg-secondary/10'}`}>
+                              <Send className={`w-5 h-5 ${proposal.status === 'Modification Requested' ? 'text-fuchsia-600 dark:text-fuchsia-400' : 'text-primary'}`} />
                             </div>
                             <div>
                               <h3 className="font-bold">{proposal.tradeRequest?.tradeRefId}</h3>
@@ -2400,13 +2400,13 @@ export default function FinaBridge() {
                           </div>
                         </div>
                         {proposal.status === 'Modification Requested' && (proposal.modificationRequest || (proposal.requestedDocuments && proposal.requestedDocuments.length > 0)) && (
-                          <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
-                            <p className="text-xs font-medium text-fuchsia-800">Admin Requested Changes:</p>
+                          <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg space-y-3">
+                            <p className="text-xs font-medium text-fuchsia-800 dark:text-fuchsia-200">Admin Requested Changes:</p>
                             
                             {proposal.requestedDocuments && proposal.requestedDocuments.length > 0 && (
                               <div>
-                                <p className="text-xs font-medium text-fuchsia-700 mb-1">Required Documents:</p>
-                                <ul className="text-sm text-fuchsia-700 space-y-1">
+                                <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Required Documents:</p>
+                                <ul className="text-sm text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
                                   {proposal.requestedDocuments.map((doc: string, idx: number) => (
                                     <li key={idx} className="flex items-center gap-2">
                                       <span className="w-4 h-4 rounded border border-fuchsia-400 flex items-center justify-center text-xs">
@@ -2431,15 +2431,15 @@ export default function FinaBridge() {
                             
                             {proposal.customDocumentNotes && (
                               <div>
-                                <p className="text-xs font-medium text-fuchsia-700 mb-1">Document Notes:</p>
-                                <p className="text-sm text-fuchsia-700">{proposal.customDocumentNotes}</p>
+                                <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Document Notes:</p>
+                                <p className="text-sm text-fuchsia-700 dark:text-fuchsia-300">{proposal.customDocumentNotes}</p>
                               </div>
                             )}
                             
                             {proposal.modificationRequest && (
                               <div>
-                                <p className="text-xs font-medium text-fuchsia-700 mb-1">Additional Instructions:</p>
-                                <p className="text-sm text-fuchsia-700">{proposal.modificationRequest}</p>
+                                <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Additional Instructions:</p>
+                                <p className="text-sm text-fuchsia-700 dark:text-fuchsia-300">{proposal.modificationRequest}</p>
                               </div>
                             )}
                           </div>
@@ -2491,8 +2491,8 @@ export default function FinaBridge() {
             </DialogHeader>
             <form onSubmit={handleSubmitProposal} className="space-y-6">
               
-              <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <h4 className="font-medium text-blue-800 mb-3">Company Information</h4>
+              <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-lg">
+                <h4 className="font-medium text-blue-800 dark:text-blue-200 mb-3">Company Information</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Company Name *</label>
@@ -2555,8 +2555,8 @@ export default function FinaBridge() {
                 </div>
               </div>
 
-              <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-3">Pricing & Terms</h4>
+              <div className="p-4 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg">
+                <h4 className="font-medium text-green-800 dark:text-green-200 mb-3">Pricing & Terms</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Quote Price (USD) *</label>
@@ -2612,8 +2612,8 @@ export default function FinaBridge() {
                 </div>
               </div>
 
-              <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                <h4 className="font-medium text-purple-800 mb-3">Shipping Details</h4>
+              <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg">
+                <h4 className="font-medium text-purple-800 dark:text-purple-200 mb-3">Shipping Details</h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-sm font-medium">Port of Loading *</label>
@@ -2728,7 +2728,7 @@ export default function FinaBridge() {
                           <button
                             type="button"
                             onClick={() => setProposalFiles(proposalFiles.filter((_, i) => i !== idx))}
-                            className="text-red-500 hover:text-red-700 ml-1"
+                            className="text-red-500 hover:text-red-700 dark:text-red-300 ml-1"
                           >
                             ×
                           </button>
@@ -2761,13 +2761,13 @@ export default function FinaBridge() {
               </p>
             </DialogHeader>
             {(editingProposal?.modificationRequest || (editingProposal?.requestedDocuments && editingProposal.requestedDocuments.length > 0)) && (
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg space-y-3">
-                <p className="text-xs font-medium text-fuchsia-800">Admin Requested Changes:</p>
+              <div className="p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg space-y-3">
+                <p className="text-xs font-medium text-fuchsia-800 dark:text-fuchsia-200">Admin Requested Changes:</p>
                 
                 {editingProposal.requestedDocuments && editingProposal.requestedDocuments.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-fuchsia-700 mb-1">Required Documents:</p>
-                    <ul className="text-sm text-fuchsia-700 space-y-1">
+                    <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Required Documents:</p>
+                    <ul className="text-sm text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
                       {editingProposal.requestedDocuments.map((doc: string, idx: number) => (
                         <li key={idx} className="flex items-center gap-2">
                           <span className="w-4 h-4 rounded border border-fuchsia-400 flex items-center justify-center text-xs">
@@ -2792,15 +2792,15 @@ export default function FinaBridge() {
                 
                 {editingProposal.customDocumentNotes && (
                   <div>
-                    <p className="text-xs font-medium text-fuchsia-700 mb-1">Document Notes:</p>
-                    <p className="text-sm text-fuchsia-700">{editingProposal.customDocumentNotes}</p>
+                    <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Document Notes:</p>
+                    <p className="text-sm text-fuchsia-700 dark:text-fuchsia-300">{editingProposal.customDocumentNotes}</p>
                   </div>
                 )}
                 
                 {editingProposal.modificationRequest && (
                   <div>
-                    <p className="text-xs font-medium text-fuchsia-700 mb-1">Additional Instructions:</p>
-                    <p className="text-sm text-fuchsia-700">{editingProposal.modificationRequest}</p>
+                    <p className="text-xs font-medium text-fuchsia-700 dark:text-fuchsia-300 mb-1">Additional Instructions:</p>
+                    <p className="text-sm text-fuchsia-700 dark:text-fuchsia-300">{editingProposal.modificationRequest}</p>
                   </div>
                 )}
               </div>
@@ -2916,11 +2916,11 @@ export default function FinaBridge() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-3 bg-muted/50 rounded-lg">
                 <div>
                   <p className="text-xs text-muted-foreground">FinaPay Balance</p>
-                  <p className="font-semibold text-blue-600">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
+                  <p className="font-semibold text-blue-600 dark:text-blue-400">{parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g</p>
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground">FinaBridge Balance</p>
-                  <p className="font-semibold text-green-600">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</p>
+                  <p className="font-semibold text-green-600 dark:text-green-400">{parseFloat(wallet?.availableGoldGrams || '0').toFixed(3)}g</p>
                 </div>
               </div>
               
@@ -2932,13 +2932,13 @@ export default function FinaBridge() {
                   max={parseFloat(mainWallet?.goldGrams || '0')}
                   value={fundAmount}
                   onChange={(e) => setFundAmount(e.target.value)}
-                  className={`w-full p-3 border rounded-lg ${parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0') ? 'border-red-500 bg-red-50' : ''}`}
+                  className={`w-full p-3 border rounded-lg ${parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0') ? 'border-red-500 bg-red-50 dark:bg-red-950/20' : ''}`}
                   placeholder="0.000"
                   required
                   data-testid="input-fund-amount"
                 />
                 {parseFloat(fundAmount || '0') > parseFloat(mainWallet?.goldGrams || '0') ? (
-                  <p className="text-xs text-red-600 font-medium">
+                  <p className="text-xs text-red-600 dark:text-red-400 font-medium">
                     Insufficient balance. You only have {parseFloat(mainWallet?.goldGrams || '0').toFixed(3)}g available in your FinaPay wallet.
                   </p>
                 ) : (
@@ -3013,7 +3013,7 @@ export default function FinaBridge() {
                       <p className="font-medium flex items-center gap-1">
                         {viewingProposal.shippingMethod === 'Sea' && <Ship className="w-4 h-4 text-blue-500" />}
                         {viewingProposal.shippingMethod === 'Air' && <Plane className="w-4 h-4 text-sky-500" />}
-                        {viewingProposal.shippingMethod === 'Road' && <Truck className="w-4 h-4 text-fuchsia-600" />}
+                        {viewingProposal.shippingMethod === 'Road' && <Truck className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />}
                         {viewingProposal.shippingMethod === 'Rail' && <Train className="w-4 h-4 text-slate-600" />}
                         {viewingProposal.shippingMethod || 'Not specified'}
                       </p>

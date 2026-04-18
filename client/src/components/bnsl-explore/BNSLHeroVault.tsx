@@ -80,7 +80,7 @@ export default function BNSLHeroVault() {
             }}
           >
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-300 to-yellow-500 shadow-lg shadow-purple-200/50 flex items-center justify-center">
-              <Coins className="w-4 h-4 text-fuchsia-800" />
+              <Coins className="w-4 h-4 text-fuchsia-800 dark:text-fuchsia-200" />
             </div>
           </motion.div>
         ))}
@@ -109,10 +109,10 @@ export default function BNSLHeroVault() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50 shadow-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200 dark:border-purple-800/40/50 shadow-sm"
             >
-              <Sparkles className="w-4 h-4 text-fuchsia-600" />
-              <span className="text-sm font-medium text-fuchsia-800">
+              <Sparkles className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />
+              <span className="text-sm font-medium text-fuchsia-800 dark:text-fuchsia-200">
                 Trusted by 50,000+ Gold Investors
               </span>
             </motion.div>
@@ -152,7 +152,7 @@ export default function BNSLHeroVault() {
                   className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-card/80 backdrop-blur-sm border border-border/60 shadow-sm"
                 >
                   <div className="p-2 rounded-xl bg-gradient-to-br from-purple-100 to-yellow-100">
-                    <stat.icon className="w-5 h-5 text-fuchsia-600" />
+                    <stat.icon className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
                   </div>
                   <div>
                     <p className="text-xl font-bold text-foreground">{stat.value}</p>
@@ -182,7 +182,7 @@ export default function BNSLHeroVault() {
                 className="px-8 py-4 rounded-2xl bg-card border-2 border-border text-foreground/85 font-semibold text-lg flex items-center gap-2 hover:border-purple-300 transition-colors"
                 data-testid="button-watch-demo"
               >
-                <Play className="w-5 h-5 text-fuchsia-600" />
+                <Play className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
                 Watch Demo
               </motion.button>
             </div>

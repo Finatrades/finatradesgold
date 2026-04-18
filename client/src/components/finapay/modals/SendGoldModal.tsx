@@ -414,7 +414,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
       </Tabs>
 
       {searchError && (
-        <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+        <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
           <AlertCircle className="w-4 h-4" />
           {searchError}
         </div>
@@ -422,10 +422,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
       {notFoundEmail && !inviteSent && (
         <div className="space-y-3">
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+          <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
-                <UserPlus className="w-5 h-5 text-purple-600" />
+              <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
+                <UserPlus className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground text-sm">New User</p>
@@ -441,8 +441,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
                 <div className="flex bg-muted rounded-md p-0.5">
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
                 </div>
               </div>
             </div>
@@ -467,7 +467,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </Button>
             </div>
             {numericInput > 0 && (
-              <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
             )}
             {numericAmount > availableGoldValueUsd && (
               <p className="text-xs text-red-500">Insufficient funds</p>
@@ -517,8 +517,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             />
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
-            <h4 className="font-semibold text-purple-700 text-sm mb-3">Transfer Summary</h4>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4">
+            <h4 className="font-semibold text-purple-700 dark:text-purple-300 text-sm mb-3">Transfer Summary</h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">To:</span>
@@ -526,7 +526,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Amount:</span>
-                <span className="font-bold text-purple-700">${numericAmount.toFixed(2)}</span>
+                <span className="font-bold text-purple-700 dark:text-purple-300">${numericAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Gold:</span>
@@ -534,17 +534,17 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Status:</span>
-                <span className="text-purple-600 font-medium">Pending Claim</span>
+                <span className="text-purple-600 dark:text-purple-400 font-medium">Pending Claim</span>
               </div>
             </div>
           </div>
 
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3">
             <div className="flex items-start gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-amber-700 text-xs">24-Hour Window</p>
-                <p className="text-amber-600 text-xs mt-0.5">
+                <p className="font-medium text-amber-700 dark:text-amber-300 text-xs">24-Hour Window</p>
+                <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
                   Gold debited now. Refunded if unclaimed.
                 </p>
               </div>
@@ -570,16 +570,16 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
       {inviteSent && (
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg p-4 text-center">
             <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-2" />
-            <h3 className="font-semibold text-green-700 text-lg">Gold Sent!</h3>
+            <h3 className="font-semibold text-green-700 dark:text-green-300 text-lg">Gold Sent!</h3>
             <p className="text-sm text-muted-foreground mt-1">
               {(numericAmount / currentGoldPrice).toFixed(4)}g (${numericAmount.toFixed(2)}) sent to
             </p>
             <p className="font-medium text-foreground">{notFoundEmail}</p>
           </div>
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-center">
-            <p className="text-amber-700">
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 text-sm text-center">
+            <p className="text-amber-700 dark:text-amber-300">
               They have <strong>24 hours</strong> to register and claim. If unclaimed, gold refunds automatically.
             </p>
           </div>
@@ -588,20 +588,20 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
       {foundUser && (
         <div className="space-y-4">
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+          <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg p-4">
             <div className="flex items-center gap-3">
               <Avatar className="w-12 h-12 border-2 border-green-300">
                 {foundUser.profilePhotoUrl && (
                   <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
                 )}
-                <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-bold">
                   {foundUser.firstName[0]}{foundUser.lastName[0]}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="font-semibold text-foreground truncate">{foundUser.firstName} {foundUser.lastName}</p>
                 <p className="text-xs text-muted-foreground truncate">{foundUser.email}</p>
-                <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+                <p className="text-xs text-green-600 dark:text-green-400 font-mono">{foundUser.finatradesId}</p>
               </div>
               <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
             </div>
@@ -613,8 +613,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
                 <div className="flex bg-muted rounded-md p-0.5">
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
                 </div>
               </div>
             </div>
@@ -638,10 +638,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
               </Button>
             </div>
             {numericInput > 0 && (
-              <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+              <p className="text-xs text-purple-600 dark:text-purple-400">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
             )}
             {numericAmount > availableGoldValueUsd && (
-              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
+              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
                 <AlertCircle className="w-4 h-4 flex-shrink-0" />
                 <span>Insufficient funds. Your gold balance is ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
               </div>
@@ -690,22 +690,22 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             />
           </div>
 
-          <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-            <div className="flex items-center gap-2 text-purple-700 font-semibold">
+          <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4 space-y-4">
+            <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold">
               <Send className="w-4 h-4" />
               <span>Send Summary</span>
             </div>
 
             <div className="space-y-3 text-sm">
-              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+              <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                 <span className="text-muted-foreground">Send Amount:</span>
                 <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+              <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                 <span className="text-muted-foreground">Transaction Fee:</span>
-                <span className="font-semibold text-green-600">$0.00</span>
+                <span className="font-semibold text-green-600 dark:text-green-400">$0.00</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+              <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                 <span className="text-muted-foreground font-medium">Recipient Receives:</span>
                 <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
               </div>
@@ -793,7 +793,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
   const successContent = foundUser && (
     <div className="space-y-6 py-4 text-center">
       <div className="flex justify-center">
-        <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+        <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
           <CheckCircle2 className="w-10 h-10 text-green-500" />
         </div>
       </div>
@@ -1048,7 +1048,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
             </Tabs>
 
             {searchError && (
-              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-lg">
+              <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-lg">
                 <AlertCircle className="w-4 h-4" />
                 {searchError}
               </div>
@@ -1059,10 +1059,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                 {/* Left Panel - Form */}
                 <div className="space-y-3">
                   {/* Recipient Info */}
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+                  <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
-                        <UserPlus className="w-5 h-5 text-purple-600" />
+                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center border-2 border-purple-300 flex-shrink-0">
+                        <UserPlus className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-foreground text-sm">New User</p>
@@ -1079,8 +1079,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
                         <div className="flex bg-muted rounded-md p-0.5">
-                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
-                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
                         </div>
                       </div>
                     </div>
@@ -1105,7 +1105,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </Button>
                     </div>
                     {numericInput > 0 && (
-                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
                     )}
                     {numericAmount > availableGoldValueUsd && (
                       <p className="text-xs text-red-500">Insufficient funds</p>
@@ -1162,8 +1162,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                 {/* Right Panel - Summary */}
                 <div className="space-y-3">
                   {/* Summary Card */}
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-lg p-4">
-                    <h4 className="font-semibold text-purple-700 text-sm mb-3">Transfer Summary</h4>
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4">
+                    <h4 className="font-semibold text-purple-700 dark:text-purple-300 text-sm mb-3">Transfer Summary</h4>
                     <div className="space-y-2 text-sm">
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">To:</span>
@@ -1171,7 +1171,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Amount:</span>
-                        <span className="font-bold text-purple-700">${numericAmount.toFixed(2)}</span>
+                        <span className="font-bold text-purple-700 dark:text-purple-300">${numericAmount.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Gold:</span>
@@ -1179,18 +1179,18 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </div>
                       <div className="flex justify-between">
                         <span className="text-muted-foreground">Status:</span>
-                        <span className="text-purple-600 font-medium">Pending Claim</span>
+                        <span className="text-purple-600 dark:text-purple-400 font-medium">Pending Claim</span>
                       </div>
                     </div>
                   </div>
 
                   {/* 24h Notice */}
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+                  <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3">
                     <div className="flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                      <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                       <div>
-                        <p className="font-medium text-amber-700 text-xs">24-Hour Window</p>
-                        <p className="text-amber-600 text-xs mt-0.5">
+                        <p className="font-medium text-amber-700 dark:text-amber-300 text-xs">24-Hour Window</p>
+                        <p className="text-amber-600 dark:text-amber-400 text-xs mt-0.5">
                           Gold debited now. Refunded if unclaimed.
                         </p>
                       </div>
@@ -1261,16 +1261,16 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
             {inviteSent && (
               <div className="space-y-4">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+                <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg p-4 text-center">
                   <CheckCircle2 className="w-12 h-12 text-green-500 mx-auto mb-2" />
-                  <h3 className="font-semibold text-green-700 text-lg">Gold Sent!</h3>
+                  <h3 className="font-semibold text-green-700 dark:text-green-300 text-lg">Gold Sent!</h3>
                   <p className="text-sm text-muted-foreground mt-1">
                     {(numericAmount / currentGoldPrice).toFixed(4)}g (${numericAmount.toFixed(2)}) sent to
                   </p>
                   <p className="font-medium text-foreground">{notFoundEmail}</p>
                 </div>
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-center">
-                  <p className="text-amber-700">
+                <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg p-3 text-sm text-center">
+                  <p className="text-amber-700 dark:text-amber-300">
                     They have <strong>24 hours</strong> to register and claim. If unclaimed, gold refunds automatically.
                   </p>
                 </div>
@@ -1307,20 +1307,20 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                 {/* Left Panel - Recipient & Payment Details */}
                 <div className="space-y-4">
                   {/* Recipient Info */}
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg p-4">
                     <div className="flex items-center gap-3">
                       <Avatar className="w-12 h-12 border-2 border-green-300">
                         {foundUser.profilePhotoUrl && (
                           <AvatarImage src={foundUser.profilePhotoUrl} alt={`${foundUser.firstName} ${foundUser.lastName}`} />
                         )}
-                        <AvatarFallback className="bg-green-100 text-green-700 font-bold">
+                        <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 font-bold">
                           {foundUser.firstName[0]}{foundUser.lastName[0]}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-foreground truncate">{foundUser.firstName} {foundUser.lastName}</p>
                         <p className="text-xs text-muted-foreground truncate">{foundUser.email}</p>
-                        <p className="text-xs text-green-600 font-mono">{foundUser.finatradesId}</p>
+                        <p className="text-xs text-green-600 dark:text-green-400 font-mono">{foundUser.finatradesId}</p>
                       </div>
                       <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                     </div>
@@ -1332,8 +1332,8 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">Bal: ${availableGoldValueUsd.toFixed(2)}</span>
                         <div className="flex bg-muted rounded-md p-0.5">
-                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
-                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                          <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
+                          <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
                         </div>
                       </div>
                     </div>
@@ -1357,10 +1357,10 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                       </Button>
                     </div>
                     {numericInput > 0 && (
-                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
                     )}
                     {numericAmount > availableGoldValueUsd && (
-                      <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md">
+                      <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-2 rounded-md">
                         <AlertCircle className="w-4 h-4 flex-shrink-0" />
                         <span>Insufficient funds. Your gold balance is ${availableGoldValueUsd.toFixed(2)} ({goldBalance.toFixed(4)}g)</span>
                       </div>
@@ -1415,22 +1415,22 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
 
                 {/* Right Panel - Send Summary */}
                 <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-purple-700 font-semibold">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold">
                       <Send className="w-4 h-4" />
                       <span>Send Summary</span>
                     </div>
 
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground">Send Amount:</span>
                         <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground">Transaction Fee:</span>
-                        <span className="font-semibold text-green-600">$0.00</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">$0.00</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground font-medium">Recipient Receives:</span>
                         <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
                       </div>
@@ -1470,7 +1470,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
                           {foundUser.profilePhotoUrl && (
                             <AvatarImage src={foundUser.profilePhotoUrl} alt={foundUser.firstName} />
                           )}
-                          <AvatarFallback className="bg-green-100 text-green-700 text-xs font-bold">
+                          <AvatarFallback className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-bold">
                             {foundUser.firstName[0]}{foundUser.lastName[0]}
                           </AvatarFallback>
                         </Avatar>
@@ -1575,7 +1575,7 @@ export default function SendGoldModal({ isOpen, onClose, walletBalance, goldBala
         {step === 'success' && foundUser && (
           <div className="space-y-6 py-4 text-center">
             <div className="flex justify-center">
-              <div className="w-20 h-20 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="w-20 h-20 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                 <CheckCircle2 className="w-10 h-10 text-green-500" />
               </div>
             </div>

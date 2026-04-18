@@ -447,16 +447,16 @@ export default function VaultActivityList() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'Buy': return 'bg-green-100 text-green-700';
-      case 'Sell': return 'bg-red-100 text-red-700';
-      case 'Send': return 'bg-purple-100 text-purple-700';
-      case 'Receive': return 'bg-purple-100 text-purple-700';
-      case 'Deposit': return 'bg-emerald-100 text-emerald-700';
-      case 'Withdrawal': return 'bg-purple-100 text-fuchsia-700';
-      case 'Swap': return 'bg-amber-100 text-amber-700';
+      case 'Buy': return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
+      case 'Sell': return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
+      case 'Send': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'Receive': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'Deposit': return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300';
+      case 'Withdrawal': return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
+      case 'Swap': return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
       case 'Vault Deposit': return 'bg-[#D4AF37]/20 text-[#B8860B]';
-      case 'Vault Withdrawal': return 'bg-purple-100 text-purple-700';
-      case 'Bank Deposit': return 'bg-blue-100 text-blue-700';
+      case 'Vault Withdrawal': return 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300';
+      case 'Bank Deposit': return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
       default: return 'bg-muted text-foreground/85';
     }
   };
@@ -472,13 +472,13 @@ export default function VaultActivityList() {
   const getStatusBadge = (status: string, rejectionReason?: string | null) => {
     switch (status) {
       case 'Completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200 text-xs px-2.5 py-1 rounded-full font-medium">Completed</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/40 text-xs px-2.5 py-1 rounded-full font-medium">Completed</Badge>;
       case 'Pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2.5 py-1 rounded-full font-medium">Pending</Badge>;
+        return <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/40 text-xs px-2.5 py-1 rounded-full font-medium">Pending</Badge>;
       case 'Cancelled':
         return (
           <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
+            <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
             {rejectionReason && (
               <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
             )}
@@ -487,7 +487,7 @@ export default function VaultActivityList() {
       case 'Rejected':
         return (
           <div className="flex items-center gap-1">
-            <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
+            <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40 text-xs px-2.5 py-1 rounded-full font-medium">Rejected</Badge>
             {rejectionReason && (
               <span className="text-xs text-red-500" title={rejectionReason}>ⓘ</span>
             )}
@@ -939,18 +939,18 @@ export default function VaultActivityList() {
             <span className={`font-medium ${isNested ? 'text-sm text-muted-foreground' : ''}`}>{getDisplayName(tx)}</span>
             {tx.type === 'Swap' ? (
               tx.description?.includes('LGPW to FGPW') ? (
-                <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 border-amber-300">
+                <Badge variant="outline" className="text-xs bg-gradient-to-r from-blue-100 to-amber-100 text-amber-700 dark:text-amber-300 border-amber-300">
                   LGPW → FGPW
                 </Badge>
               ) : tx.description?.includes('FGPW to LGPW') ? (
-                <Badge variant="outline" className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 border-blue-300">
+                <Badge variant="outline" className="text-xs bg-gradient-to-r from-amber-100 to-blue-100 text-blue-700 dark:text-blue-300 border-blue-300">
                   FGPW → LGPW
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-xs bg-amber-100 text-amber-700 border-amber-300">Swap</Badge>
+                <Badge variant="outline" className="text-xs bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300">Swap</Badge>
               )
             ) : tx.goldWalletType && (
-              <Badge variant="outline" className={`text-xs ${tx.goldWalletType === 'LGPW' ? 'bg-blue-100 text-blue-700 border-blue-300' : 'bg-amber-100 text-amber-700 border-amber-300'}`}>
+              <Badge variant="outline" className={`text-xs ${tx.goldWalletType === 'LGPW' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300'}`}>
                 {tx.goldWalletType}
               </Badge>
             )}
@@ -970,13 +970,13 @@ export default function VaultActivityList() {
         <div className="text-left sm:text-right">
           {tx.type === 'Swap' && tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
             <>
-              <p className="font-bold text-amber-600">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              <p className="font-bold text-amber-600 dark:text-amber-400">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               {tx.goldPriceUsdPerGram && (
                 <p className="text-xs sm:text-sm text-amber-500 font-medium whitespace-nowrap">
                   {(tx.description?.includes('LGPW to FGPW') || tx.description?.includes('LGPW To FGPW')) ? (
-                    <span className="bg-amber-100 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
+                    <span className="bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 rounded text-xs mr-1">Locked</span>
                   ) : (
-                    <span className="bg-blue-100 text-blue-700 px-1 py-0.5 rounded text-xs mr-1">Rate</span>
+                    <span className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1 py-0.5 rounded text-xs mr-1">Rate</span>
                   )}
                   ${parseFloat(tx.goldPriceUsdPerGram).toFixed(2)}/g
                 </p>
@@ -984,31 +984,31 @@ export default function VaultActivityList() {
             </>
           ) : tx.type === 'Deposit' && tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
             <>
-              <p className="font-bold text-green-600">+${parseFloat(tx.amountUsd).toFixed(2)}</p>
+              <p className="font-bold text-green-600 dark:text-green-400">+${parseFloat(tx.amountUsd).toFixed(2)}</p>
               {tx.amountGold && parseFloat(tx.amountGold) > 0 && (
-                <p className="text-xs sm:text-sm text-fuchsia-600 font-medium">{parseFloat(tx.amountGold).toFixed(4)}g</p>
+                <p className="text-xs sm:text-sm text-fuchsia-600 dark:text-fuchsia-400 font-medium">{parseFloat(tx.amountGold).toFixed(4)}g</p>
               )}
             </>
           ) : tx.type === 'Bank Deposit' && tx.isExpectedValue && tx.amountGold ? (
             <>
-              <p className="font-bold text-green-600">~{parseFloat(tx.amountGold).toFixed(4)}g</p>
-              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
+              <p className="font-bold text-green-600 dark:text-green-400">~{parseFloat(tx.amountGold).toFixed(4)}g</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium"><span className="bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 rounded">Awaiting Approval</span></p>
               {tx.amountUsd && <p className="text-xs text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
             </>
           ) : tx.type === 'Bank Deposit' && !tx.amountGold && tx.amountUsd ? (
             <>
-              <p className="font-bold text-green-600">${parseFloat(tx.amountUsd).toFixed(2)}</p>
-              <p className="text-xs text-amber-600 font-medium"><span className="bg-amber-100 px-1 py-0.5 rounded">Awaiting Approval</span></p>
+              <p className="font-bold text-green-600 dark:text-green-400">${parseFloat(tx.amountUsd).toFixed(2)}</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 font-medium"><span className="bg-amber-100 dark:bg-amber-900/30 px-1 py-0.5 rounded">Awaiting Approval</span></p>
             </>
           ) : tx.amountGold && parseFloat(tx.amountGold) > 0 ? (
             <>
-              <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+              <p className={`font-bold ${isGoldIncoming(tx.type) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                 {isGoldIncoming(tx.type) ? '+' : '-'}{parseFloat(tx.amountGold).toFixed(4)}g
               </p>
               {tx.amountUsd && <p className="text-xs sm:text-sm text-muted-foreground">${parseFloat(tx.amountUsd).toFixed(2)}</p>}
             </>
           ) : tx.amountUsd && parseFloat(tx.amountUsd) > 0 ? (
-            <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600' : 'text-red-600'}`}>
+            <p className={`font-bold ${isUsdIncoming(tx.type) ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
               {isUsdIncoming(tx.type) ? '+' : '-'}${parseFloat(tx.amountUsd).toFixed(2)}
             </p>
           ) : (
@@ -1139,7 +1139,7 @@ export default function VaultActivityList() {
 
             const isCredit = isGoldIncoming(selectedTx.type);
             const amountSign = isConversion ? '' : isCredit ? '+' : '-';
-            const amountClass = isConversion ? 'text-amber-600' : isCredit ? 'text-green-600' : 'text-red-600';
+            const amountClass = isConversion ? 'text-amber-600 dark:text-amber-400' : isCredit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
             const vaultSectionCard = (title: string, children: React.ReactNode) => (
               <div className="rounded-xl border border-border bg-muted/20 overflow-hidden">
@@ -1339,7 +1339,7 @@ export default function VaultActivityList() {
                     <span className="font-mono text-xs bg-muted px-2 py-0.5 rounded">{selectedTx.referenceId || selectedTx.id.slice(0, 16) + '…'}</span>
                   ))}
                   {selectedTx.rejectionReason && vaultInfoRow('Rejection Reason', (
-                    <span className="text-red-600 text-xs">{selectedTx.rejectionReason}</span>
+                    <span className="text-red-600 dark:text-red-400 text-xs">{selectedTx.rejectionReason}</span>
                   ))}
                 </>)}
 

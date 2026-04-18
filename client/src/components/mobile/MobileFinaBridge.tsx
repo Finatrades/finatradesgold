@@ -58,14 +58,14 @@ const getStatusColor = (status: string) => {
     case 'active':
     case 'approved':
     case 'completed':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
     case 'pending':
     case 'submitted':
     case 'under_review':
-      return 'bg-amber-100 text-amber-700';
+      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
     case 'rejected':
     case 'cancelled':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
     default:
       return 'bg-muted text-foreground/85';
   }
@@ -209,8 +209,8 @@ export default function MobileFinaBridge() {
           className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Package className="w-4 h-4 text-blue-600" />
-            <span className="text-xs font-medium text-blue-700">Active Trades</span>
+            <Package className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Active Trades</span>
           </div>
           <p className="text-2xl font-bold text-blue-900">{activeRequests.length}</p>
         </motion.div>
@@ -222,8 +222,8 @@ export default function MobileFinaBridge() {
           className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100"
         >
           <div className="flex items-center gap-2 mb-2">
-            <FileText className="w-4 h-4 text-amber-600" />
-            <span className="text-xs font-medium text-amber-700">Pending Proposals</span>
+            <FileText className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+            <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Pending Proposals</span>
           </div>
           <p className="text-2xl font-bold text-amber-900">{pendingProposals.length}</p>
         </motion.div>
@@ -235,8 +235,8 @@ export default function MobileFinaBridge() {
           className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Unlock className="w-4 h-4 text-green-600" />
-            <span className="text-xs font-medium text-green-700">Available Gold</span>
+            <Unlock className="w-4 h-4 text-green-600 dark:text-green-400" />
+            <span className="text-xs font-medium text-green-700 dark:text-green-300">Available Gold</span>
           </div>
           <p className="text-2xl font-bold text-green-900">{showBalance ? `${availableGold.toFixed(2)}g` : '••••'}</p>
         </motion.div>
@@ -248,8 +248,8 @@ export default function MobileFinaBridge() {
           className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-4 border border-purple-100"
         >
           <div className="flex items-center gap-2 mb-2">
-            <Lock className="w-4 h-4 text-purple-600" />
-            <span className="text-xs font-medium text-purple-700">Locked in Trades</span>
+            <Lock className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Locked in Trades</span>
           </div>
           <p className="text-2xl font-bold text-purple-900">{showBalance ? `${lockedGold.toFixed(2)}g` : '••••'}</p>
         </motion.div>
@@ -322,8 +322,8 @@ export default function MobileFinaBridge() {
                   data-testid={`trade-item-${trade.id}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                      <TransportIcon className="w-5 h-5 text-indigo-600" />
+                    <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/30 flex items-center justify-center">
+                      <TransportIcon className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                     </div>
                     <div>
                       <p className="font-medium text-sm text-foreground">{trade.goodsName}</p>
@@ -367,8 +367,8 @@ export default function MobileFinaBridge() {
                 data-testid={`proposal-item-${proposal.id}`}
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                    <FileText className="w-5 h-5 text-amber-600" />
+                  <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                    <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="font-medium text-sm text-foreground">

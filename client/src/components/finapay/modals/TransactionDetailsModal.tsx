@@ -284,23 +284,23 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
   };
 
   const getColor = (type: string) => {
-    if (isConversion) return 'text-amber-500 bg-amber-500/10 border-amber-500/20';
-    if (isBnsl) return 'text-indigo-500 bg-indigo-500/10 border-indigo-500/20';
+    if (isConversion) return 'text-amber-500 bg-amber-50 dark:bg-amber-950/200/10 border-amber-500/20';
+    if (isBnsl) return 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/200/10 border-indigo-500/20';
     switch (type) {
-      case 'Buy': return 'text-green-500 bg-green-500/10 border-green-500/20';
-      case 'Sell': return 'text-red-500 bg-red-500/10 border-red-500/20';
-      case 'Send': return 'text-purple-500 bg-purple-500/10 border-purple-500/20';
-      case 'Receive': return 'text-blue-500 bg-blue-500/10 border-blue-500/20';
-      case 'Deposit': return 'text-green-500 bg-green-500/10 border-green-500/20';
+      case 'Buy': return 'text-green-500 bg-green-50 dark:bg-green-950/200/10 border-green-500/20';
+      case 'Sell': return 'text-red-500 bg-red-50 dark:bg-red-950/200/10 border-red-500/20';
+      case 'Send': return 'text-purple-500 bg-purple-50 dark:bg-purple-950/200/10 border-purple-500/20';
+      case 'Receive': return 'text-blue-500 bg-blue-50 dark:bg-blue-950/200/10 border-blue-500/20';
+      case 'Deposit': return 'text-green-500 bg-green-50 dark:bg-green-950/200/10 border-green-500/20';
       default: return 'text-muted-foreground bg-gray-500/10 border-gray-500/20';
     }
   };
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'Completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
-      case 'Pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-      case 'Failed': return 'bg-red-500/10 text-red-600 border-red-500/20';
+      case 'Completed': return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/20';
+      case 'Pending': return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
+      case 'Failed': return 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/20';
       case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
       default: return 'bg-muted/50 text-muted-foreground border-border';
     }
@@ -308,7 +308,7 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
 
   const isCredit = transaction.type === 'Buy' || transaction.type === 'Receive' || transaction.type === 'Deposit';
   const amountSign = isConversion ? '' : isCredit ? '+' : '-';
-  const amountClass = isConversion ? 'text-amber-600' : isCredit ? 'text-green-600' : 'text-red-600';
+  const amountClass = isConversion ? 'text-amber-600 dark:text-amber-400' : isCredit ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -390,8 +390,8 @@ export default function TransactionDetailsModal({ isOpen, onClose, transaction, 
           {(isSend || isReceive) && (
             <SectionCard title="Counterparty">
               <div className="py-3 flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                  {desc.companyName ? <Building2 className="w-5 h-5 text-purple-600" /> : <span className="text-sm font-bold text-purple-600">{initials(isSend ? desc.recipientName : desc.senderName)}</span>}
+                <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                  {desc.companyName ? <Building2 className="w-5 h-5 text-purple-600 dark:text-purple-400" /> : <span className="text-sm font-bold text-purple-600 dark:text-purple-400">{initials(isSend ? desc.recipientName : desc.senderName)}</span>}
                 </div>
                 <div className="min-w-0">
                   <p className="font-medium text-sm truncate">{isSend ? (desc.recipientName || 'Recipient') : (desc.senderName || 'Sender')}</p>

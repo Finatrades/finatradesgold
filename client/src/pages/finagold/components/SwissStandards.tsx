@@ -10,8 +10,8 @@ export default function SwissStandards() {
   return (
     <section className="py-12 lg:py-28 bg-gradient-to-b from-[#F8FAFC] to-[#FAFBFF] relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-50/50 blur-[150px] rounded-full" />
-        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-50/30 blur-[120px] rounded-full" />
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-50 dark:bg-purple-950/20/50 blur-[150px] rounded-full" />
+        <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-pink-50 dark:bg-pink-950/20/30 blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-7xl mx-auto px-6 relative z-10">
@@ -21,14 +21,14 @@ export default function SwissStandards() {
           viewport={{ once: true }}
           className="text-center max-w-4xl mx-auto"
         >
-          <span className="inline-block text-base font-semibold text-purple-600 uppercase tracking-[0.25em] mb-8">
+          <span className="inline-block text-base font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-[0.25em] mb-8">
             BUILT ON
           </span>
           
           <h2 className="text-4xl lg:text-6xl font-bold mb-8 flex items-center justify-center gap-4 flex-wrap">
             <Plus className="w-12 h-12 text-red-500" strokeWidth={3} />
             <span className="text-foreground">Swiss Financial </span>
-            <span className="text-purple-600">Standards</span>
+            <span className="text-purple-600 dark:text-purple-400">Standards</span>
           </h2>
           
           <p className="text-muted-foreground text-xl mb-10 max-w-3xl mx-auto leading-relaxed">
@@ -38,7 +38,7 @@ export default function SwissStandards() {
           <Button
             variant="outline"
             onClick={() => setShowModal(true)}
-            className="rounded-full px-10 py-4 text-lg border-purple-200 text-purple-600 hover:bg-purple-50 hover:border-purple-300 transition-all duration-300"
+            className="rounded-full px-10 py-4 text-lg border-purple-200 dark:border-purple-800/40 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-300 transition-all duration-300"
           >
             View Regulatory Information
           </Button>

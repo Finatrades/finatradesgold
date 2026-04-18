@@ -492,7 +492,7 @@ function AnimatedBridge() {
       </svg>
       
       <div className="absolute left-4 bottom-4 flex items-center gap-2">
-        <Building2 className="w-6 h-6 text-purple-600" />
+        <Building2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
         <span className="text-xs text-muted-foreground">Exporter</span>
       </div>
       <div className="absolute right-4 bottom-4 flex items-center gap-2">
@@ -509,8 +509,8 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       <FloatingParticles count={30} />
       
-      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100/40 blur-[150px]" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100/30 blur-[120px]" />
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100 dark:bg-purple-900/30/40 blur-[150px]" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100 dark:bg-pink-900/30/30 blur-[120px]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -524,12 +524,12 @@ function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50"
             >
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center">
                 <RefreshCw className="w-3 h-3 text-white" />
               </div>
-              <span className="text-sm font-medium text-purple-700">FinaBridge Trade Platform</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">FinaBridge Trade Platform</span>
             </motion.div>
 
             <motion.div
@@ -600,7 +600,7 @@ function HeroSection() {
                 Get Started
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <a href="/finagold#contact" className="flex items-center gap-2 border border-purple-300 text-purple-700 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all">
+              <a href="/finagold#contact" className="flex items-center gap-2 border border-purple-300 text-purple-700 dark:text-purple-300 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all">
                 <MessageSquare className="w-5 h-5" />
                 Contact Sales
               </a>
@@ -728,8 +728,8 @@ function HeroSection() {
                 {/* Labels */}
                 <div className="absolute left-[6%] top-1/2 -translate-y-1/2 text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 rounded-lg bg-purple-100 border border-purple-200 flex items-center justify-center">
-                      <Building2 className="w-4 h-4 text-purple-600" />
+                    <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 flex items-center justify-center">
+                      <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                   </div>
                 </div>
@@ -744,17 +744,17 @@ function HeroSection() {
                 
                 <div className="absolute right-[6%] top-1/2 -translate-y-1/2 text-center">
                   <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 rounded-lg bg-pink-100 border border-pink-200 flex items-center justify-center">
-                      <Building2 className="w-4 h-4 text-pink-600" />
+                    <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/40 flex items-center justify-center">
+                      <Building2 className="w-4 h-4 text-pink-600 dark:text-pink-400" />
                     </div>
                   </div>
                 </div>
 
                 {/* Labels below nodes */}
                 <div className="absolute bottom-2 left-0 right-0 flex justify-between px-4">
-                  <span className="text-purple-600 text-xs font-medium">Importer</span>
+                  <span className="text-purple-600 dark:text-purple-400 text-xs font-medium">Importer</span>
                   <span className="text-muted-foreground text-xs font-medium">FinaBridge</span>
-                  <span className="text-pink-600 text-xs font-medium">Exporter</span>
+                  <span className="text-pink-600 dark:text-pink-400 text-xs font-medium">Exporter</span>
                 </div>
               </div>
             </div>
@@ -776,7 +776,7 @@ function WhatIsFinaBridgeSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider">
+            <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider">
               Understanding the Platform
             </span>
             
@@ -817,8 +817,8 @@ function WhatIsFinaBridgeSection() {
             <div className="relative p-8 rounded-3xl bg-card border border-border/60 shadow-xl">
               <div className="flex items-center justify-between mb-8">
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center">
-                    <Building2 className="w-7 h-7 text-purple-600" />
+                  <div className="w-14 h-14 rounded-xl bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 flex items-center justify-center">
+                    <Building2 className="w-7 h-7 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-sm font-semibold text-foreground">Importer</span>
                   <span className="text-xs text-muted-foreground">Buyer</span>
@@ -850,15 +850,15 @@ function WhatIsFinaBridgeSection() {
                     whileInView={{ opacity: 1, scale: 1 }}
                     viewport={{ once: true }}
                     transition={{ delay: 0.8 }}
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-purple-100 border border-purple-200 text-xs font-medium text-purple-700"
+                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-800/40 text-xs font-medium text-purple-700 dark:text-purple-300"
                   >
                     Worth of Gold
                   </motion.div>
                 </div>
                 
                 <div className="flex flex-col items-center gap-2">
-                  <div className="w-14 h-14 rounded-xl bg-pink-100 border border-pink-200 flex items-center justify-center">
-                    <Building2 className="w-7 h-7 text-pink-600" />
+                  <div className="w-14 h-14 rounded-xl bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/40 flex items-center justify-center">
+                    <Building2 className="w-7 h-7 text-pink-600 dark:text-pink-400" />
                   </div>
                   <span className="text-sm font-semibold text-foreground">Exporter</span>
                   <span className="text-xs text-muted-foreground">Seller</span>
@@ -867,15 +867,15 @@ function WhatIsFinaBridgeSection() {
               
               <div className="flex justify-between mt-8 pt-6 border-t border-border/60">
                 <div className="text-center">
-                  <div className="text-purple-600 font-semibold text-sm">Documentation</div>
+                  <div className="text-purple-600 dark:text-purple-400 font-semibold text-sm">Documentation</div>
                   <div className="text-muted-foreground text-xs">Verified</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-pink-600 font-semibold text-sm">Value Anchor</div>
+                  <div className="text-pink-600 dark:text-pink-400 font-semibold text-sm">Value Anchor</div>
                   <div className="text-muted-foreground text-xs">Stable</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-purple-600 font-semibold text-sm">Settlement</div>
+                  <div className="text-purple-600 dark:text-purple-400 font-semibold text-sm">Settlement</div>
                   <div className="text-muted-foreground text-xs">Trusted</div>
                 </div>
               </div>
@@ -911,7 +911,7 @@ function WhyUseFinaBridgeSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <span className="text-sm font-semibold text-purple-600 uppercase tracking-wider mb-4 block">
+          <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             Trade with Confidence
           </span>
           <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -947,11 +947,11 @@ function WhyUseFinaBridgeSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-purple-200 hover:shadow-md transition-all"
+                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-purple-200 dark:border-purple-800/40 hover:shadow-md transition-all"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-                    <benefit.icon className="w-4 h-4 text-purple-600" />
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                    <benefit.icon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground text-sm">{benefit.title}</h4>
@@ -985,11 +985,11 @@ function WhyUseFinaBridgeSection() {
                 whileInView={{ opacity: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.1 }}
-                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-pink-200 hover:shadow-md transition-all"
+                className="p-4 rounded-xl bg-card border border-border/60 shadow-sm hover:border-pink-200 dark:border-pink-800/40 hover:shadow-md transition-all"
               >
                 <div className="flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-pink-100 flex items-center justify-center shrink-0">
-                    <benefit.icon className="w-4 h-4 text-pink-600" />
+                  <div className="w-8 h-8 rounded-lg bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center shrink-0">
+                    <benefit.icon className="w-4 h-4 text-pink-600 dark:text-pink-400" />
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground text-sm">{benefit.title}</h4>
@@ -1024,11 +1024,11 @@ function RiskManagementSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-100 border border-pink-200">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-pink-100 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800/40">
               <div className="w-6 h-6 rounded-full bg-pink-200 flex items-center justify-center">
-                <Shield className="w-3 h-3 text-pink-600" />
+                <Shield className="w-3 h-3 text-pink-600 dark:text-pink-400" />
               </div>
-              <span className="text-sm font-semibold text-pink-700 uppercase tracking-wider">
+              <span className="text-sm font-semibold text-pink-700 dark:text-pink-300 uppercase tracking-wider">
                 Important Positioning
               </span>
             </div>
@@ -1051,7 +1051,7 @@ function RiskManagementSection() {
             </p>
             
             <p className="text-foreground/85">
-              We <span className="text-purple-600 font-semibold">reduce</span> trade risk; we do not <strong>remove</strong> it entirely.
+              We <span className="text-purple-600 dark:text-purple-400 font-semibold">reduce</span> trade risk; we do not <strong>remove</strong> it entirely.
             </p>
             
             <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 rounded-full" />
@@ -1078,8 +1078,8 @@ function RiskManagementSection() {
                     transition={{ delay: 0.3 + i * 0.1 }}
                     className="flex items-center gap-3 p-3 rounded-xl bg-muted/40 border border-border/60"
                   >
-                    <div className="w-6 h-6 rounded-lg bg-purple-100 flex items-center justify-center shrink-0">
-                      <CheckCircle className="w-4 h-4 text-purple-600" />
+                    <div className="w-6 h-6 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                      <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     </div>
                     <span className="text-foreground/85 text-sm">{feature}</span>
                   </motion.div>
@@ -1139,14 +1139,14 @@ function ValuePillarsSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(147, 51, 234, 0.15)' }}
-              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all group"
+              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all group"
             >
               <motion.div
                 animate={{ rotate: [0, 5, 0, -5, 0] }}
                 transition={{ duration: 4, repeat: Infinity, delay: i * 0.5 }}
                 className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-4 group-hover:from-purple-200 group-hover:to-pink-200 transition-colors"
               >
-                <pillar.icon className="w-8 h-8 text-purple-600" />
+                <pillar.icon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </motion.div>
               <h3 className="text-lg font-semibold text-foreground mb-2">{pillar.title}</h3>
               <p className="text-sm text-muted-foreground">{pillar.description}</p>
@@ -1202,11 +1202,11 @@ function FeaturesShowcaseSection() {
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="flex-1 p-8 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all"
+                className="flex-1 p-8 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all"
               >
                 <div className="flex items-start gap-4">
                   <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
-                    <feature.icon className="w-7 h-7 text-purple-600" />
+                    <feature.icon className="w-7 h-7 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <h3 className="text-xl font-semibold text-foreground mb-2">{feature.title}</h3>
@@ -1251,7 +1251,7 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: -50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-blue-200 shadow-lg"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-blue-200 dark:border-blue-800/40 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
               <Building2 className="w-8 h-8 text-blue-500" />
@@ -1285,10 +1285,10 @@ function DealRoomSection() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.5 + i * 0.15 }}
-                  className="p-4 rounded-xl bg-card border border-purple-200 shadow-lg flex items-center justify-between"
+                  className="p-4 rounded-xl bg-card border border-purple-200 dark:border-purple-800/40 shadow-lg flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="w-5 h-5 text-purple-600" />
+                    <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     <span className="text-foreground text-sm">{doc}</span>
                   </div>
                   <motion.div
@@ -1314,7 +1314,7 @@ function DealRoomSection() {
             initial={{ opacity: 0, x: 50 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-green-200 shadow-lg"
+            className="w-full lg:w-64 p-6 rounded-2xl bg-card border border-green-200 dark:border-green-800/40 shadow-lg"
           >
             <div className="flex items-center gap-3 mb-4">
               <Building2 className="w-8 h-8 text-green-500" />
@@ -1400,10 +1400,10 @@ function GlobalTradeMapSection() {
                 className="absolute inset-0 w-6 h-6 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-300/40"
               />
               <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg shadow-purple-500/50">
-                <Ship className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600" />
+                <Ship className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 text-purple-700 shadow-sm">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 shadow-sm">
                   {hub.name}
                 </span>
               </div>
@@ -1479,11 +1479,11 @@ function DocumentManagementSection() {
                 whileInView={{ opacity: 1, y: 0, rotateX: 0 }}
                 transition={{ delay: i * 0.1 }}
                 whileHover={{ y: -4, rotateY: 3 }}
-                className="p-5 rounded-xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all flex items-center justify-between"
+                className="p-5 rounded-xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all flex items-center justify-between"
               >
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <FileText className="w-6 h-6 text-purple-600" />
+                    <FileText className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-foreground font-medium">{doc.name}</span>
                 </div>
@@ -1492,8 +1492,8 @@ function DocumentManagementSection() {
                   transition={{ duration: 2, repeat: Infinity }}
                   className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm ${
                     doc.status === 'Verified' 
-                      ? 'bg-green-100 text-green-600' 
-                      : 'bg-yellow-100 text-yellow-600'
+                      ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' 
+                      : 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-400'
                   }`}
                 >
                   <CheckCircle className="w-4 h-4" />
@@ -1570,7 +1570,7 @@ function SecuritySection() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute inset-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-300 flex items-center justify-center"
               >
-                <Shield className="w-20 h-20 text-purple-600" />
+                <Shield className="w-20 h-20 text-purple-600 dark:text-purple-400" />
               </motion.div>
             </motion.div>
           </motion.div>
@@ -1602,7 +1602,7 @@ function SecuritySection() {
                   className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-lg"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-purple-600" />
+                    <CheckCircle className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-foreground font-medium">{feature}</span>
                 </motion.div>
@@ -1638,7 +1638,7 @@ function GoldSettlementSection() {
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          className="p-8 rounded-2xl bg-card border border-purple-200 shadow-lg"
+          className="p-8 rounded-2xl bg-card border border-purple-200 dark:border-purple-800/40 shadow-lg"
         >
           <div className="grid md:grid-cols-3 gap-8 items-center">
             <div className="text-center">
@@ -1659,7 +1659,7 @@ function GoldSettlementSection() {
                 className="flex items-center gap-2"
               >
                 <div className="w-16 h-px bg-gradient-to-r from-transparent to-purple-500" />
-                <Zap className="w-6 h-6 text-purple-600" />
+                <Zap className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 <div className="w-16 h-px bg-gradient-to-r from-pink-500 to-transparent" />
               </motion.div>
               <p className="text-muted-foreground text-sm">Instant Settlement</p>
@@ -1669,7 +1669,7 @@ function GoldSettlementSection() {
               <motion.div
                 animate={{ scale: [1, 1.05, 1] }}
                 transition={{ duration: 2, repeat: Infinity }}
-                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-green-100 border-2 border-green-300 flex items-center justify-center"
+                className="w-24 h-24 mx-auto mb-4 rounded-xl bg-green-100 dark:bg-green-900/30 border-2 border-green-300 flex items-center justify-center"
               >
                 <CheckCircle className="w-12 h-12 text-green-500" />
               </motion.div>
@@ -1691,7 +1691,7 @@ function FinalCTASection() {
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
           transition={{ duration: 5, repeat: Infinity }}
-          className="w-[700px] h-[700px] rounded-full bg-purple-100/30 blur-[120px]"
+          className="w-[700px] h-[700px] rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-[120px]"
         />
       </div>
 
@@ -1746,7 +1746,7 @@ function FinaBridgeContent() {
             className="max-w-lg text-center"
           >
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mx-auto mb-6">
-              <Building2 className="w-10 h-10 text-purple-600" />
+              <Building2 className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             </div>
             <h1 className="text-3xl font-bold text-foreground mb-4">
               FinaBridge is for{' '}

@@ -216,8 +216,8 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                     <div className="flex justify-between items-center">
                       <Label>Amount</Label>
                       <div className="flex bg-muted rounded-md p-0.5">
-                        <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
-                        <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                        <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
+                        <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-2 py-0.5 text-xs rounded ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
                       </div>
                     </div>
                     <div className="relative">
@@ -232,7 +232,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
                       />
                     </div>
                     {numericInput > 0 && (
-                      <p className="text-xs text-purple-600">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">{inputMode === 'usd' ? `≈ ${gramsAmount.toFixed(4)}g` : `≈ $${numericAmount.toFixed(2)}`}</p>
                     )}
                   </div>
 
@@ -295,22 +295,22 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
 
                 {/* Right Panel - Request Summary */}
                 <div className="space-y-4">
-                  <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 rounded-lg p-4 space-y-4">
-                    <div className="flex items-center gap-2 text-purple-700 font-semibold">
+                  <div className="bg-gradient-to-br from-purple-50 to-purple-50 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4 space-y-4">
+                    <div className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-semibold">
                       <ArrowDownLeft className="w-4 h-4" />
                       <span>Request Summary</span>
                     </div>
 
                     <div className="space-y-3 text-sm">
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground">Request Amount:</span>
                         <span className="font-semibold text-foreground">${numericAmount.toFixed(2)}</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground">Transaction Fee:</span>
-                        <span className="font-semibold text-green-600">$0.00</span>
+                        <span className="font-semibold text-green-600 dark:text-green-400">$0.00</span>
                       </div>
-                      <div className="flex justify-between items-center py-2 border-b border-purple-200/50">
+                      <div className="flex justify-between items-center py-2 border-b border-purple-200 dark:border-purple-800/40/50">
                         <span className="text-muted-foreground font-medium">You'll Receive:</span>
                         <span className="font-bold text-foreground">${numericAmount.toFixed(2)}</span>
                       </div>
@@ -453,7 +453,7 @@ export default function RequestGoldModal({ isOpen, onClose, onConfirm }: Request
         {step === 'success' && (
           <div className="space-y-6 py-4 text-center">
             <div className="flex justify-center">
-              <div className="w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-purple-500" />
               </div>
             </div>

@@ -192,12 +192,12 @@ export default function PriceAlertsPage() {
               <Card 
                 key={alert.id} 
                 data-testid={`card-alert-${alert.id}`}
-                className={`transition-all ${alert.triggeredAt ? 'border-green-500/50 bg-green-500/5' : ''} ${!alert.isActive ? 'opacity-60' : ''}`}
+                className={`transition-all ${alert.triggeredAt ? 'border-green-500/50 bg-green-50 dark:bg-green-950/200/5' : ''} ${!alert.isActive ? 'opacity-60' : ''}`}
               >
                 <CardContent className="p-4 md:p-6">
                   <div className="flex flex-col md:flex-row md:items-center gap-4">
                     <div className="flex items-center gap-3 flex-1">
-                      <div className={`p-2 rounded-full ${alert.direction === 'above' ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
+                      <div className={`p-2 rounded-full ${alert.direction === 'above' ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'}`}>
                         {alert.direction === 'above' ? <ArrowUp className="h-5 w-5" /> : <ArrowDown className="h-5 w-5" />}
                       </div>
                       <div className="flex-1">
@@ -209,12 +209,12 @@ export default function PriceAlertsPage() {
                             {alert.direction === 'above' ? 'Above' : 'Below'}
                           </Badge>
                           {alert.triggeredAt ? (
-                            <Badge variant="outline" className="border-green-500 text-green-600">
+                            <Badge variant="outline" className="border-green-500 text-green-600 dark:text-green-400">
                               <CheckCircle2 className="h-3 w-3 mr-1" />
                               Triggered
                             </Badge>
                           ) : alert.isActive ? (
-                            <Badge variant="outline" className="border-purple-500 text-purple-600">
+                            <Badge variant="outline" className="border-purple-500 text-purple-600 dark:text-purple-400">
                               Active
                             </Badge>
                           ) : (
@@ -234,7 +234,7 @@ export default function PriceAlertsPage() {
                           {alert.triggeredAt && (
                             <>
                               <span>•</span>
-                              <span className="text-green-600">Triggered: {formatDate(alert.triggeredAt)}</span>
+                              <span className="text-green-600 dark:text-green-400">Triggered: {formatDate(alert.triggeredAt)}</span>
                             </>
                           )}
                         </div>
@@ -250,7 +250,7 @@ export default function PriceAlertsPage() {
                         title={alert.isActive ? 'Deactivate' : 'Activate'}
                       >
                         {alert.isActive ? (
-                          <ToggleRight className="h-5 w-5 text-purple-600" />
+                          <ToggleRight className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                         ) : (
                           <ToggleLeft className="h-5 w-5 text-muted-foreground/70" />
                         )}
@@ -277,7 +277,7 @@ export default function PriceAlertsPage() {
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5 text-purple-600" />
+                <Bell className="h-5 w-5 text-purple-600 dark:text-purple-400" />
                 Create Price Alert
               </DialogTitle>
               <DialogDescription>

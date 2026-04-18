@@ -9,21 +9,21 @@ interface GoldBackedDisclosureProps {
 export default function GoldBackedDisclosure({ variant = 'compact', className = '' }: GoldBackedDisclosureProps) {
   if (variant === 'full') {
     return (
-      <div className={`bg-purple-50 border border-purple-200 rounded-lg p-4 ${className}`}>
+      <div className={`bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4 ${className}`}>
         <div className="flex items-start gap-3">
-          <div className="p-2 bg-purple-100 rounded-lg">
-            <Shield className="w-5 h-5 text-fuchsia-600" />
+          <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+            <Shield className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
           </div>
           <div className="flex-1">
             <h4 className="font-semibold text-foreground mb-1">Gold-Backed Balance Disclosure</h4>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              <strong className="text-amber-700">USD is an equivalent value. Your real balance is gold.</strong> Your balance represents 
+              <strong className="text-amber-700 dark:text-amber-300">USD is an equivalent value. Your real balance is gold.</strong> Your balance represents 
               physical gold that you legally own, digitally recorded by 
-              <span className="font-medium text-fuchsia-600"> Finatrades</span> and physically stored by 
-              <span className="font-medium text-fuchsia-600"> Wingold & Metals DMCC</span>. The USD value is calculated 
+              <span className="font-medium text-fuchsia-600 dark:text-fuchsia-400"> Finatrades</span> and physically stored by 
+              <span className="font-medium text-fuchsia-600 dark:text-fuchsia-400"> Wingold & Metals DMCC</span>. The USD value is calculated 
               dynamically based on the current gold price.
             </p>
-            <div className="mt-3 pt-3 border-t border-purple-200">
+            <div className="mt-3 pt-3 border-t border-purple-200 dark:border-purple-800/40">
               <p className="text-xs text-muted-foreground">
                 <strong>Certificate Responsibility:</strong>
               </p>
@@ -39,10 +39,10 @@ export default function GoldBackedDisclosure({ variant = 'compact', className = 
   }
 
   return (
-    <div className={`flex items-center gap-2 text-xs text-muted-foreground bg-amber-50 px-3 py-2 rounded-lg border border-amber-200 ${className}`}>
-      <Info className="w-3.5 h-3.5 text-amber-600 flex-shrink-0" />
+    <div className={`flex items-center gap-2 text-xs text-muted-foreground bg-amber-50 dark:bg-amber-950/20 px-3 py-2 rounded-lg border border-amber-200 dark:border-amber-800/40 ${className}`}>
+      <Info className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
       <span>
-        <strong className="text-amber-700">USD is an equivalent value. Your real balance is gold.</strong>
+        <strong className="text-amber-700 dark:text-amber-300">USD is an equivalent value. Your real balance is gold.</strong>
         {' '}The USD value shown is calculated at the current gold price and may change.
       </span>
     </div>

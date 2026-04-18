@@ -17,15 +17,15 @@ import { BnslPlan } from '@/types/bnsl';
 const getStatusColor = (status: string) => {
   switch (status.toLowerCase()) {
     case 'active':
-      return 'bg-green-100 text-green-700';
+      return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
     case 'pending':
     case 'pending_activation':
-      return 'bg-amber-100 text-amber-700';
+      return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
     case 'completed':
-      return 'bg-blue-100 text-blue-700';
+      return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
     case 'early terminated':
     case 'early_terminated':
-      return 'bg-red-100 text-red-700';
+      return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
     default:
       return 'bg-muted text-foreground/85';
   }
@@ -149,8 +149,8 @@ export default function MobileBNSL() {
             className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-2xl p-4 border border-green-100"
           >
             <div className="flex items-center gap-2 mb-2">
-              <CheckCircle className="w-4 h-4 text-green-600" />
-              <span className="text-xs font-medium text-green-700">Active Plans</span>
+              <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span className="text-xs font-medium text-green-700 dark:text-green-300">Active Plans</span>
             </div>
             <p className="text-2xl font-bold text-green-900">{activePlans.length}</p>
           </motion.div>
@@ -162,8 +162,8 @@ export default function MobileBNSL() {
             className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-4 border border-amber-100"
           >
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-4 h-4 text-amber-600" />
-              <span className="text-xs font-medium text-amber-700">Pending</span>
+              <Clock className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+              <span className="text-xs font-medium text-amber-700 dark:text-amber-300">Pending</span>
             </div>
             <p className="text-2xl font-bold text-amber-900">{pendingPlans.length}</p>
           </motion.div>
@@ -175,8 +175,8 @@ export default function MobileBNSL() {
             className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl p-4 border border-blue-100"
           >
             <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-4 h-4 text-blue-600" />
-              <span className="text-xs font-medium text-blue-700">Completed</span>
+              <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-xs font-medium text-blue-700 dark:text-blue-300">Completed</span>
             </div>
             <p className="text-2xl font-bold text-blue-900">{completedPlans.length}</p>
           </motion.div>
@@ -188,8 +188,8 @@ export default function MobileBNSL() {
             className="bg-gradient-to-br from-purple-50 to-violet-50 rounded-2xl p-4 border border-purple-100"
           >
             <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-4 h-4 text-purple-600" />
-              <span className="text-xs font-medium text-purple-700">Expected Returns</span>
+              <TrendingUp className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300">Expected Returns</span>
             </div>
             <p className="text-xl font-bold text-purple-900">
               {showBalance ? `$${totalExpectedReturns.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '••••'}
@@ -255,14 +255,14 @@ export default function MobileBNSL() {
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
                       <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                        plan.status === 'Active' ? 'bg-green-100' :
-                        plan.status === 'Pending Activation' ? 'bg-amber-100' :
-                        plan.status === 'Completed' ? 'bg-blue-100' : 'bg-muted'
+                        plan.status === 'Active' ? 'bg-green-100 dark:bg-green-900/30' :
+                        plan.status === 'Pending Activation' ? 'bg-amber-100 dark:bg-amber-900/30' :
+                        plan.status === 'Completed' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-muted'
                       }`}>
                         <Coins className={`w-5 h-5 ${
-                          plan.status === 'Active' ? 'text-green-600' :
-                          plan.status === 'Pending Activation' ? 'text-amber-600' :
-                          plan.status === 'Completed' ? 'text-blue-600' : 'text-muted-foreground'
+                          plan.status === 'Active' ? 'text-green-600 dark:text-green-400' :
+                          plan.status === 'Pending Activation' ? 'text-amber-600 dark:text-amber-400' :
+                          plan.status === 'Completed' ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
                         }`} />
                       </div>
                       <div>
@@ -291,7 +291,7 @@ export default function MobileBNSL() {
                           <Calendar className="w-3 h-3" />
                           Matures: {maturityDate.toLocaleDateString()}
                         </span>
-                        <span className="font-medium text-green-600">
+                        <span className="font-medium text-green-600 dark:text-green-400">
                           +${expectedReturn.toLocaleString(undefined, { maximumFractionDigits: 0 })}
                         </span>
                       </div>

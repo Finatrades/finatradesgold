@@ -25,15 +25,15 @@ import { Badge } from '@/components/ui/badge';
 import { formatDistanceToNow } from 'date-fns';
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }> = {
-  SUBMITTED: { bg: 'bg-blue-100', text: 'text-blue-700', label: 'Submitted' },
-  UNDER_REVIEW: { bg: 'bg-yellow-100', text: 'text-yellow-700', label: 'Under Review' },
-  RECEIVED: { bg: 'bg-teal-100', text: 'text-teal-700', label: 'Received' },
-  INSPECTION: { bg: 'bg-purple-100', text: 'text-purple-700', label: 'Inspection' },
-  NEGOTIATION: { bg: 'bg-orange-100', text: 'text-orange-700', label: 'Negotiation' },
-  AGREED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Credit Pending' },
-  READY_FOR_PAYMENT: { bg: 'bg-indigo-100', text: 'text-indigo-700', label: 'Ready' },
-  APPROVED: { bg: 'bg-green-100', text: 'text-green-700', label: 'Approved' },
-  REJECTED: { bg: 'bg-red-100', text: 'text-red-700', label: 'Rejected' },
+  SUBMITTED: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300', label: 'Submitted' },
+  UNDER_REVIEW: { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-700 dark:text-yellow-300', label: 'Under Review' },
+  RECEIVED: { bg: 'bg-teal-100 dark:bg-teal-900/30', text: 'text-teal-700 dark:text-teal-300', label: 'Received' },
+  INSPECTION: { bg: 'bg-purple-100 dark:bg-purple-900/30', text: 'text-purple-700 dark:text-purple-300', label: 'Inspection' },
+  NEGOTIATION: { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-700 dark:text-orange-300', label: 'Negotiation' },
+  AGREED: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', label: 'Credit Pending' },
+  READY_FOR_PAYMENT: { bg: 'bg-indigo-100 dark:bg-indigo-900/30', text: 'text-indigo-700 dark:text-indigo-300', label: 'Ready' },
+  APPROVED: { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-700 dark:text-green-300', label: 'Approved' },
+  REJECTED: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300', label: 'Rejected' },
   CANCELLED: { bg: 'bg-muted', text: 'text-foreground/85', label: 'Cancelled' },
 };
 
@@ -56,13 +56,13 @@ function DepositStatusTimeline({ deposit }: { deposit: any }) {
     const isPending = currentIndex < index;
     
     if (isRejected && step === currentStatus) {
-      return { icon: <XCircle className="w-4 h-4" />, color: 'bg-red-500 text-white', lineColor: 'bg-red-300' };
+      return { icon: <XCircle className="w-4 h-4" />, color: 'bg-red-50 dark:bg-red-950/200 text-white', lineColor: 'bg-red-300' };
     }
     if (isCompleted) {
-      return { icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-500 text-white', lineColor: 'bg-green-400' };
+      return { icon: <CheckCircle className="w-4 h-4" />, color: 'bg-green-50 dark:bg-green-950/200 text-white', lineColor: 'bg-green-400' };
     }
     if (isCurrent) {
-      return { icon: <Loader2 className="w-4 h-4 animate-spin" />, color: 'bg-purple-500 text-white', lineColor: 'bg-gray-300' };
+      return { icon: <Loader2 className="w-4 h-4 animate-spin" />, color: 'bg-purple-50 dark:bg-purple-950/200 text-white', lineColor: 'bg-gray-300' };
     }
     return { icon: <Clock className="w-4 h-4" />, color: 'bg-muted text-muted-foreground/70', lineColor: 'bg-muted' };
   };
@@ -91,7 +91,7 @@ function DepositStatusTimeline({ deposit }: { deposit: any }) {
       </div>
       {isRejected && (
         <div className="mt-3 px-2">
-          <div className="flex items-center gap-2 text-red-600 text-sm">
+          <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
             <XCircle className="w-4 h-4" />
             <span className="font-medium">{currentStatus === 'REJECTED' ? 'Rejected' : 'Cancelled'}</span>
           </div>
@@ -257,14 +257,14 @@ function MyPhysicalDeposits() {
                         {deposit.finalCreditedGrams ? (
                           <>
                             {' • '}
-                            <span className="text-green-600 font-medium">
+                            <span className="text-green-600 dark:text-green-400 font-medium">
                               {parseFloat(deposit.finalCreditedGrams).toFixed(4)} g credited
                             </span>
                           </>
                         ) : deposit.inspectionSummary?.creditedGrams ? (
                           <>
                             {' • '}
-                            <span className="text-amber-600 font-medium">
+                            <span className="text-amber-600 dark:text-amber-400 font-medium">
                               {parseFloat(deposit.inspectionSummary.creditedGrams).toFixed(4)} g (pending approval)
                             </span>
                           </>
@@ -276,18 +276,18 @@ function MyPhysicalDeposits() {
                     </div>
                     <div className="text-right">
                       {deposit.status === 'NEGOTIATION' && (
-                        <Button size="sm" variant="outline" className="border-orange-300 text-orange-600">
+                        <Button size="sm" variant="outline" className="border-orange-300 text-orange-600 dark:text-orange-400">
                           View Offer
                         </Button>
                       )}
                       {deposit.status === 'READY_FOR_PAYMENT' && (
-                        <div className="flex items-center gap-1 text-indigo-600">
+                        <div className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
                           <Clock className="w-4 h-4" />
                           <span className="text-sm font-medium">Pending</span>
                         </div>
                       )}
                       {deposit.status === 'APPROVED' && (
-                        <div className="flex items-center gap-1 text-green-600">
+                        <div className="flex items-center gap-1 text-green-600 dark:text-green-400">
                           <CheckCircle className="w-4 h-4" />
                           <span className="text-sm font-medium">Credited</span>
                         </div>
@@ -348,13 +348,13 @@ function MyPhysicalDeposits() {
                 {selectedDeposit.finalCreditedGrams && (
                   <div>
                     <p className="text-xs text-muted-foreground">Credited Weight</p>
-                    <p className="font-semibold text-green-600">{parseFloat(selectedDeposit.finalCreditedGrams).toFixed(4)} g</p>
+                    <p className="font-semibold text-green-600 dark:text-green-400">{parseFloat(selectedDeposit.finalCreditedGrams).toFixed(4)} g</p>
                   </div>
                 )}
                 {selectedDeposit.goldPriceAtSubmission && (
                   <div>
                     <p className="text-xs text-muted-foreground">Price at Submission</p>
-                    <p className="font-medium text-purple-600">${parseFloat(selectedDeposit.goldPriceAtSubmission).toFixed(2)}/g</p>
+                    <p className="font-medium text-purple-600 dark:text-purple-400">${parseFloat(selectedDeposit.goldPriceAtSubmission).toFixed(2)}/g</p>
                   </div>
                 )}
               </div>
@@ -387,8 +387,8 @@ function MyPhysicalDeposits() {
 
               {/* Courier/Pickup Details */}
               {selectedDeposit.deliveryMethod !== 'PERSONAL_DROPOFF' && (selectedDeposit.pickupContactName || selectedDeposit.pickupAddress) && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <p className="text-xs text-blue-700 font-semibold mb-2">Pickup Details</p>
+                <div className="bg-blue-50 dark:bg-blue-950/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800/40">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-semibold mb-2">Pickup Details</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     {selectedDeposit.pickupContactName && (
                       <div><span className="text-muted-foreground">Contact:</span> <span className="font-medium">{selectedDeposit.pickupContactName}</span></div>
@@ -403,7 +403,7 @@ function MyPhysicalDeposits() {
                       <div><span className="text-muted-foreground">Preferred:</span> <span className="font-medium">{new Date(selectedDeposit.preferredDatetime).toLocaleString()}</span></div>
                     )}
                     {selectedDeposit.scheduledDatetime && (
-                      <div><span className="text-muted-foreground">Scheduled:</span> <span className="font-medium text-green-600">{new Date(selectedDeposit.scheduledDatetime).toLocaleString()}</span></div>
+                      <div><span className="text-muted-foreground">Scheduled:</span> <span className="font-medium text-green-600 dark:text-green-400">{new Date(selectedDeposit.scheduledDatetime).toLocaleString()}</span></div>
                     )}
                   </div>
                 </div>
@@ -415,12 +415,12 @@ function MyPhysicalDeposits() {
                   <p className="text-xs text-muted-foreground mb-2">Your Documents</p>
                   <div className="flex flex-wrap gap-2">
                     {selectedDeposit.invoiceUrl && (
-                      <a href={toProxyUrl(selectedDeposit.invoiceUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 text-purple-700 rounded-md text-sm hover:bg-purple-200">
+                      <a href={toProxyUrl(selectedDeposit.invoiceUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-md text-sm hover:bg-purple-200">
                         <FileText className="w-4 h-4" /> Invoice
                       </a>
                     )}
                     {selectedDeposit.assayCertificateUrl && (
-                      <a href={toProxyUrl(selectedDeposit.assayCertificateUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-md text-sm hover:bg-green-200">
+                      <a href={toProxyUrl(selectedDeposit.assayCertificateUrl) || '#'} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 px-3 py-1.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-md text-sm hover:bg-green-200">
                         <FileText className="w-4 h-4" /> Assay Certificate
                       </a>
                     )}
@@ -502,8 +502,8 @@ function MyPhysicalDeposits() {
 
               {/* Inspection Results (if available) */}
               {selectedDeposit.inspection && (
-                <div className="bg-green-50 p-4 rounded-lg border border-green-200">
-                  <p className="text-xs font-semibold text-green-700 mb-2">Inspection Results</p>
+                <div className="bg-green-50 dark:bg-green-950/20 p-4 rounded-lg border border-green-200 dark:border-green-800/40">
+                  <p className="text-xs font-semibold text-green-700 dark:text-green-300 mb-2">Inspection Results</p>
                   <div className="grid grid-cols-2 gap-2 text-sm">
                     {selectedDeposit.inspection.grossWeightGrams && (
                       <div><span className="text-muted-foreground">Gross:</span> <span className="font-medium">{selectedDeposit.inspection.grossWeightGrams}g</span></div>
@@ -512,7 +512,7 @@ function MyPhysicalDeposits() {
                       <div><span className="text-muted-foreground">Net:</span> <span className="font-medium">{selectedDeposit.inspection.netWeightGrams}g</span></div>
                     )}
                     {selectedDeposit.inspection.creditedGrams && (
-                      <div><span className="text-muted-foreground">Credited:</span> <span className="font-bold text-green-600">{selectedDeposit.inspection.creditedGrams}g</span></div>
+                      <div><span className="text-muted-foreground">Credited:</span> <span className="font-bold text-green-600 dark:text-green-400">{selectedDeposit.inspection.creditedGrams}g</span></div>
                     )}
                     {selectedDeposit.inspection.purityResult && (
                       <div><span className="text-muted-foreground">Purity:</span> <span className="font-medium">{selectedDeposit.inspection.purityResult}</span></div>
@@ -523,24 +523,24 @@ function MyPhysicalDeposits() {
 
               {/* Admin Notes */}
               {selectedDeposit.adminNotes && (
-                <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
-                  <p className="text-xs text-amber-700 font-semibold mb-1">Notes from Admin</p>
+                <div className="bg-amber-50 dark:bg-amber-950/20 p-3 rounded-lg border border-amber-200 dark:border-amber-800/40">
+                  <p className="text-xs text-amber-700 dark:text-amber-300 font-semibold mb-1">Notes from Admin</p>
                   <p className="text-sm">{selectedDeposit.adminNotes}</p>
                 </div>
               )}
 
               {/* Negotiation Section - Chat-like UI */}
               {(selectedDeposit.status === 'NEGOTIATION' || selectedDeposit.status === 'AGREED' || selectedDeposit.usdCounterFromAdmin || selectedDeposit.usdEstimateFromUser) && (
-                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-200 shadow-sm">
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 p-4 rounded-xl border border-orange-200 dark:border-orange-800/40 shadow-sm">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${selectedDeposit.status === 'AGREED' ? 'bg-green-500' : 'bg-orange-500 animate-pulse'}`} />
-                      <p className="text-sm font-semibold text-orange-800">
+                      <div className={`w-3 h-3 rounded-full ${selectedDeposit.status === 'AGREED' ? 'bg-green-50 dark:bg-green-950/200' : 'bg-orange-50 dark:bg-orange-950/200 animate-pulse'}`} />
+                      <p className="text-sm font-semibold text-orange-800 dark:text-orange-200">
                         {selectedDeposit.status === 'AGREED' ? 'Credit Pending - Awaiting Admin Approval' : 'Negotiation in Progress'}
                       </p>
                     </div>
                     {selectedDeposit.usdAgreedValue && (
-                      <Badge className="bg-green-100 text-green-700 border-green-300">
+                      <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-300">
                         Final: ${parseFloat(selectedDeposit.usdAgreedValue).toLocaleString()}
                       </Badge>
                     )}
@@ -551,8 +551,8 @@ function MyPhysicalDeposits() {
                     <div className="space-y-3">
                       {selectedDeposit.usdEstimateFromUser && (
                         <div className="flex justify-end">
-                          <div className="bg-blue-100 text-blue-800 px-3 py-2 rounded-lg rounded-br-none max-w-[80%]">
-                            <p className="text-xs text-blue-600 mb-1">Your initial estimate</p>
+                          <div className="bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 px-3 py-2 rounded-lg rounded-br-none max-w-[80%]">
+                            <p className="text-xs text-blue-600 dark:text-blue-400 mb-1">Your initial estimate</p>
                             <p className="font-semibold">${parseFloat(selectedDeposit.usdEstimateFromUser).toLocaleString()}</p>
                           </div>
                         </div>
@@ -561,10 +561,10 @@ function MyPhysicalDeposits() {
                         <div key={idx} className={`flex ${msg.senderRole === 'admin' ? 'justify-start' : 'justify-end'}`}>
                           <div className={`px-3 py-2 rounded-lg max-w-[80%] ${
                             msg.senderRole === 'admin' 
-                              ? 'bg-purple-100 text-purple-800 rounded-bl-none' 
-                              : 'bg-blue-100 text-blue-800 rounded-br-none'
+                              ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 rounded-bl-none' 
+                              : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200 rounded-br-none'
                           }`}>
-                            <p className={`text-xs mb-1 ${msg.senderRole === 'admin' ? 'text-purple-600' : 'text-blue-600'}`}>
+                            <p className={`text-xs mb-1 ${msg.senderRole === 'admin' ? 'text-purple-600 dark:text-purple-400' : 'text-blue-600 dark:text-blue-400'}`}>
                               {msg.senderRole === 'admin' ? 'Finatrades' : 'You'} • {msg.messageType?.replace(/_/g, ' ')}
                             </p>
                             {msg.proposedUsd && (
@@ -578,8 +578,8 @@ function MyPhysicalDeposits() {
                       ))}
                       {selectedDeposit.usdCounterFromAdmin && !selectedDeposit.negotiations?.length && (
                         <div className="flex justify-start">
-                          <div className="bg-purple-100 text-purple-800 px-3 py-2 rounded-lg rounded-bl-none max-w-[80%]">
-                            <p className="text-xs text-purple-600 mb-1">Finatrades offer</p>
+                          <div className="bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-200 px-3 py-2 rounded-lg rounded-bl-none max-w-[80%]">
+                            <p className="text-xs text-purple-600 dark:text-purple-400 mb-1">Finatrades offer</p>
                             <p className="font-semibold">${parseFloat(selectedDeposit.usdCounterFromAdmin).toLocaleString()}</p>
                           </div>
                         </div>
@@ -602,13 +602,13 @@ function MyPhysicalDeposits() {
                       <div className="grid grid-cols-2 gap-3 mb-4">
                         <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Offered Gold</p>
-                          <p className="text-lg font-bold text-purple-700">
+                          <p className="text-lg font-bold text-purple-700 dark:text-purple-300">
                             {offeredGrams ? `${parseFloat(offeredGrams).toLocaleString()} g` : '--'}
                           </p>
                         </div>
                         <div className="bg-card/80 p-3 rounded-lg border border-orange-100">
                           <p className="text-xs text-muted-foreground">Total Fees</p>
-                          <p className="text-lg font-bold text-orange-700">
+                          <p className="text-lg font-bold text-orange-700 dark:text-orange-300">
                             {offeredFees ? `$${parseFloat(offeredFees).toLocaleString()}` : '--'}
                           </p>
                         </div>
@@ -638,7 +638,7 @@ function MyPhysicalDeposits() {
                             </Button>
                             <Button 
                               variant="outline"
-                              className="flex-1 border-red-300 text-red-600 hover:bg-red-50 h-12"
+                              className="flex-1 border-red-300 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/20 h-12"
                               onClick={() => handleRespond('REJECT')}
                               disabled={isResponding}
                               data-testid="button-reject-offer"
@@ -659,8 +659,8 @@ function MyPhysicalDeposits() {
 
               {/* Rejection Reason */}
               {selectedDeposit.status === 'REJECTED' && selectedDeposit.rejectionReason && (
-                <div className="bg-red-50 p-4 rounded-lg border border-red-200">
-                  <p className="text-sm font-semibold text-red-700 mb-2">Rejection Reason</p>
+                <div className="bg-red-50 dark:bg-red-950/20 p-4 rounded-lg border border-red-200 dark:border-red-800/40">
+                  <p className="text-sm font-semibold text-red-700 dark:text-red-300 mb-2">Rejection Reason</p>
                   <p className="text-sm">{selectedDeposit.rejectionReason}</p>
                 </div>
               )}
@@ -1201,7 +1201,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'deposit-gold' 
                   ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white shadow-md' 
-                  : 'bg-card border border-green-200 text-green-700 hover:bg-green-50'
+                  : 'bg-card border border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-300 hover:bg-green-50 dark:bg-green-950/20'
               } disabled:opacity-50`}
               data-testid="tab-deposit-gold"
             >
@@ -1220,7 +1220,7 @@ export default function FinaVault() {
               className={`rounded-full px-4 py-2 text-sm font-medium transition-all ${
                 activeTab === 'my-deposits' 
                   ? 'bg-gradient-to-r from-blue-500 to-cyan-500 text-white shadow-md' 
-                  : 'bg-card border border-blue-200 text-blue-700 hover:bg-blue-50'
+                  : 'bg-card border border-blue-200 dark:border-blue-800/40 text-blue-700 dark:text-blue-300 hover:bg-blue-50 dark:bg-blue-950/20'
               } disabled:opacity-50`}
               data-testid="tab-my-deposits"
             >
@@ -1236,7 +1236,7 @@ export default function FinaVault() {
                 setWithdrawGoldOpen(true);
               }}
               disabled={user?.kycStatus !== 'Approved'}
-              className="rounded-full px-4 py-2 text-sm font-medium transition-all bg-card border border-orange-200 text-orange-700 hover:bg-orange-500 hover:text-white hover:border-orange-500 disabled:opacity-50"
+              className="rounded-full px-4 py-2 text-sm font-medium transition-all bg-card border border-orange-200 dark:border-orange-800/40 text-orange-700 dark:text-orange-300 hover:bg-orange-50 dark:bg-orange-950/200 hover:text-white hover:border-orange-500 disabled:opacity-50"
               data-testid="button-withdraw-gold-vault"
             >
               <Banknote className="w-4 h-4 mr-1.5" />
@@ -1307,14 +1307,14 @@ export default function FinaVault() {
 
         {/* KYC Verification Required Banner */}
         {user?.kycStatus !== 'Approved' && (
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+          <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-2xl p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center shrink-0">
-                <Lock className="w-5 h-5 text-amber-600" />
+              <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center shrink-0">
+                <Lock className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-amber-800 text-sm">KYC Required</h3>
-                <p className="text-xs text-amber-700">Verify your identity to access vault features.</p>
+                <h3 className="font-semibold text-amber-800 dark:text-amber-200 text-sm">KYC Required</h3>
+                <p className="text-xs text-amber-700 dark:text-amber-300">Verify your identity to access vault features.</p>
               </div>
               <Link href="/kyc">
                 <Button size="sm" className="bg-amber-600 hover:bg-amber-700 text-white rounded-full text-xs shrink-0">
@@ -1497,12 +1497,12 @@ export default function FinaVault() {
                                           <div className="flex items-center gap-2">
                                             <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
                                               entry.action === 'Buy' || entry.action?.includes('Deposit') || entry.action?.includes('Receive') || entry.action?.includes('Credit') 
-                                                ? 'bg-green-100 text-green-700'
+                                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                                 : entry.action?.includes('Lock') || entry.action?.includes('Reserve')
-                                                ? 'bg-purple-100 text-purple-700'
+                                                ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300'
                                                 : entry.action === 'Sell' || entry.action?.includes('Withdrawal') || entry.action?.includes('Send') || entry.action?.includes('Fee')
-                                                ? 'bg-red-100 text-red-700'
-                                                : 'bg-blue-100 text-blue-700'
+                                                ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
+                                                : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                                             }`}>
                                               {entry.action === 'Buy' ? 'Add Funds' : (entry.action || '').replace(/_/g, ' ')}
                                             </span>
@@ -1510,10 +1510,10 @@ export default function FinaVault() {
                                         </td>
                                         <td className="p-4">
                                           <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                            entry.status === 'Completed' ? 'bg-green-100 text-green-700'
-                                            : entry.status === 'Pending' ? 'bg-yellow-100 text-yellow-700'
-                                            : entry.status === 'Processing' ? 'bg-blue-100 text-blue-700'
-                                            : entry.status === 'Failed' || entry.status === 'Cancelled' ? 'bg-red-100 text-red-700'
+                                            entry.status === 'Completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
+                                            : entry.status === 'Pending' ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300'
+                                            : entry.status === 'Processing' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                            : entry.status === 'Failed' || entry.status === 'Cancelled' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'
                                             : 'bg-muted text-foreground/85'
                                           }`}>
                                             {entry.status || 'Recorded'}
@@ -1529,7 +1529,7 @@ export default function FinaVault() {
                                             {formatParentTo()}
                                           </span>
                                         </td>
-                                        <td className="p-4 text-right font-medium text-green-600">
+                                        <td className="p-4 text-right font-medium text-green-600 dark:text-green-400">
                                           {safeParseFloat(entry.goldGrams).toFixed(4)}
                                         </td>
                                         <td className="p-4 text-right font-medium">
@@ -1572,13 +1572,13 @@ export default function FinaVault() {
                                             </td>
                                             <td className="p-4">
                                               <span className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
-                                                child.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                                child.action === 'Vault_Transfer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                               }`}>
                                                 {child.action === 'Vault_Transfer' ? 'Physical Storage' : 'Digital Storage'}
                                               </span>
                                             </td>
                                             <td className="p-4">
-                                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-600">
+                                              <span className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-green-50 dark:bg-green-950/20 text-green-600 dark:text-green-400">
                                                 {child.status || 'Completed'}
                                               </span>
                                             </td>

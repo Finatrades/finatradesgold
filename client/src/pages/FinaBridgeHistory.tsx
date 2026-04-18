@@ -77,11 +77,11 @@ export default function FinaBridgeHistory() {
     const transferActions = ['FinaPay_To_Trade', 'Trade_To_FinaPay'];
     
     if (creditActions.includes(action)) {
-      return <ArrowDownRight className="w-5 h-5 text-green-600" />;
+      return <ArrowDownRight className="w-5 h-5 text-green-600 dark:text-green-400" />;
     } else if (debitActions.includes(action)) {
-      return <ArrowUpRight className="w-5 h-5 text-red-600" />;
+      return <ArrowUpRight className="w-5 h-5 text-red-600 dark:text-red-400" />;
     } else if (transferActions.includes(action)) {
-      return <ArrowLeftRight className="w-5 h-5 text-blue-600" />;
+      return <ArrowLeftRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
     }
     return <Briefcase className="w-5 h-5 text-muted-foreground" />;
   };
@@ -125,15 +125,15 @@ export default function FinaBridgeHistory() {
     switch (status.toLowerCase()) {
       case 'completed':
       case 'settled':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       case 'open':
-        return 'bg-blue-100 text-blue-700';
+        return 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300';
       case 'in_progress':
       case 'pending':
-        return 'bg-purple-100 text-fuchsia-700';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
       case 'cancelled':
       case 'disputed':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -153,7 +153,7 @@ export default function FinaBridgeHistory() {
         </div>
 
         {wallet && (
-          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200 dark:border-blue-800/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -164,13 +164,13 @@ export default function FinaBridgeHistory() {
                 </div>
                 <div className="text-center">
                   <p className="text-sm text-muted-foreground mb-1">Locked in Trades</p>
-                  <p className="text-xl font-semibold text-blue-600">
+                  <p className="text-xl font-semibold text-blue-600 dark:text-blue-400">
                     {parseFloat(wallet.lockedGoldGrams || '0').toFixed(4)}g
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-muted-foreground mb-1">Incoming (Pending)</p>
-                  <p className="text-xl font-semibold text-green-600">
+                  <p className="text-xl font-semibold text-green-600 dark:text-green-400">
                     {parseFloat(wallet.incomingLockedGoldGrams || '0').toFixed(4)}g
                   </p>
                 </div>
@@ -255,7 +255,7 @@ export default function FinaBridgeHistory() {
                               <td className="py-3 px-4">
                                 <div className="flex items-center gap-3">
                                   <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                                    isCredit ? 'bg-green-100' : 'bg-red-100'
+                                    isCredit ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
                                   }`}>
                                     {getActionIcon(entry.action)}
                                   </div>
@@ -271,7 +271,7 @@ export default function FinaBridgeHistory() {
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
                                 {isDebit ? (
-                                  <span className="text-red-600 font-medium">
+                                  <span className="text-red-600 dark:text-red-400 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
                                 ) : (
@@ -280,7 +280,7 @@ export default function FinaBridgeHistory() {
                               </td>
                               <td className="py-3 px-4 text-right font-mono">
                                 {isCredit ? (
-                                  <span className="text-green-600 font-medium">
+                                  <span className="text-green-600 dark:text-green-400 font-medium">
                                     {Math.abs(goldAmount).toFixed(4)}
                                   </span>
                                 ) : (
@@ -355,8 +355,8 @@ export default function FinaBridgeHistory() {
                             </td>
                             <td className="py-3 px-4">
                               <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                  <Ship className="w-4 h-4 text-blue-600" />
+                                <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                  <Ship className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
                                   <div className="font-medium text-foreground text-sm">
@@ -371,8 +371,8 @@ export default function FinaBridgeHistory() {
                             <td className="py-3 px-4">
                               <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                                 trade.userRole === 'importer' 
-                                  ? 'bg-blue-100 text-blue-700'
-                                  : 'bg-green-100 text-green-700'
+                                  ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
+                                  : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                               }`}>
                                 {trade.userRole === 'importer' ? 'Importer' : 'Exporter'}
                               </span>

@@ -388,7 +388,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
       <Card className="mb-4 bg-gradient-to-br from-white to-gray-50 border border-border/60 rounded-xl shadow-sm">
         <CardHeader className="pb-3">
-          <CardTitle className="text-xl text-purple-800">Deposit Physical Gold</CardTitle>
+          <CardTitle className="text-xl text-purple-800 dark:text-purple-200">Deposit Physical Gold</CardTitle>
           <CardDescription className="text-sm">
             Submit your physical gold for secure vault storage and receive digital ownership credits
           </CardDescription>
@@ -412,19 +412,19 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 }}
                 className="grid grid-cols-2 md:grid-cols-4 gap-3"
               >
-                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'GOLD_BAR' ? 'border-purple-500 bg-purple-50' : ''}`}>
+                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'GOLD_BAR' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : ''}`}>
                   <RadioGroupItem value="GOLD_BAR" data-testid="radio-gold-bar" />
                   <span>Gold Bars</span>
                 </Label>
-                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'GOLD_COIN' ? 'border-purple-500 bg-purple-50' : ''}`}>
+                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'GOLD_COIN' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : ''}`}>
                   <RadioGroupItem value="GOLD_COIN" data-testid="radio-gold-coin" />
                   <span>Gold Coins</span>
                 </Label>
-                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'RAW' ? 'border-purple-500 bg-purple-50' : ''}`}>
+                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'RAW' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : ''}`}>
                   <RadioGroupItem value="RAW" data-testid="radio-raw" />
                   <span>Raw Gold</span>
                 </Label>
-                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'OTHER' ? 'border-purple-500 bg-purple-50' : ''}`}>
+                <Label className={`flex items-center gap-2 p-3 border rounded-lg cursor-pointer text-sm ${depositType === 'OTHER' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : ''}`}>
                   <RadioGroupItem value="OTHER" data-testid="radio-other" />
                   <span>Other</span>
                 </Label>
@@ -434,7 +434,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
             <Separator />
             
             {/* Input Mode & Price Mode Selection */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg">
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Input Mode</Label>
                 <RadioGroup
@@ -463,7 +463,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                   <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${priceMode === 'live' ? 'border-purple-500 bg-card' : 'bg-muted/40'}`}>
                     <RadioGroupItem value="live" data-testid="radio-price-live" />
                     <span>Live Price</span>
-                    {liveGoldPrice > 0 && <span className="text-xs text-green-600">(${liveGoldPrice.toFixed(2)}/g)</span>}
+                    {liveGoldPrice > 0 && <span className="text-xs text-green-600 dark:text-green-400">(${liveGoldPrice.toFixed(2)}/g)</span>}
                   </Label>
                   <Label className={`flex items-center gap-2 px-3 py-2 border rounded-lg cursor-pointer text-sm ${priceMode === 'manual' ? 'border-purple-500 bg-card' : 'bg-muted/40'}`}>
                     <RadioGroupItem value="manual" data-testid="radio-price-manual" />
@@ -574,7 +574,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                           : '--'
                         } 
                         disabled 
-                        className="bg-muted text-green-700" 
+                        className="bg-muted text-green-700 dark:text-green-300" 
                       />
                     </div>
                   </div>
@@ -655,7 +655,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                           />
                           <button
                             type="button"
-                            className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="absolute -top-1 -right-1 bg-red-50 dark:bg-red-950/200 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                             onClick={() => {
                               const newPhotos = [...item.photos];
                               newPhotos.splice(photoIdx, 1);
@@ -669,7 +669,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                       ))}
                       <label
                         className={`w-16 h-16 flex flex-col items-center justify-center border-2 border-dashed rounded-lg cursor-pointer transition-colors ${
-                          item.photos.length < 2 ? 'border-red-300 bg-red-50 hover:border-red-400' : 'border-border hover:border-purple-400 hover:bg-purple-50'
+                          item.photos.length < 2 ? 'border-red-300 bg-red-50 dark:bg-red-950/20 hover:border-red-400' : 'border-border hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20'
                         }`}
                       >
                         <Upload className="w-5 h-5 text-muted-foreground/70" />
@@ -697,14 +697,14 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 </div>
               ))}
 
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-3 bg-purple-50 border border-purple-200 rounded-lg">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg">
                 <div className="flex justify-between sm:block">
                   <span className="font-medium">Total Declared Weight:</span>
-                  <span className="text-lg font-bold text-purple-800 sm:ml-2">{totalWeight.toFixed(4)} g</span>
+                  <span className="text-lg font-bold text-purple-800 dark:text-purple-200 sm:ml-2">{totalWeight.toFixed(4)} g</span>
                 </div>
                 <div className="flex justify-between sm:block text-right">
                   <span className="font-medium sm:hidden">≈ USD Value:</span>
-                  <span className="text-lg font-bold text-green-700">
+                  <span className="text-lg font-bold text-green-700 dark:text-green-300">
                     ≈ ${effectivePrice > 0 ? (totalWeight * effectivePrice).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '--'}
                   </span>
                   <span className="text-xs text-muted-foreground block">
@@ -718,13 +718,13 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
 
         {/* Negotiation Required Notice - shown for RAW and OTHER types */}
         {isNegotiationRequired && (
-          <Card className="border-amber-200 bg-amber-50">
+          <Card className="border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20">
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-start gap-3">
-                <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-amber-800">Negotiation Required</p>
-                  <p className="text-sm text-amber-700">
+                  <p className="font-medium text-amber-800 dark:text-amber-200">Negotiation Required</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
                     Raw gold and other items require professional assay and valuation. 
                     After inspection, you will receive an offer which you can accept, counter, or reject.
                     The equivalent USD value will be determined through negotiation and acceptance by both parties.
@@ -732,18 +732,18 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                 </div>
               </div>
               
-              <div className="pl-8 pt-2 border-t border-amber-200 space-y-3">
-                <p className="text-sm text-amber-800">
+              <div className="pl-8 pt-2 border-t border-amber-200 dark:border-amber-800/40 space-y-3">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   Enter your target value (optional). This helps start the negotiation. Final value is determined after assay.
                 </p>
                 {priceMode === 'live' ? (
                   <div className="space-y-2">
-                    <p className="text-xs text-amber-600">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
                       Using live price @ ${effectivePrice.toFixed(2)}/g - Enter USD and gold grams will auto-calculate.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label className="text-xs text-amber-700">Target USD Value</Label>
+                        <Label className="text-xs text-amber-700 dark:text-amber-300">Target USD Value</Label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                           <Input
@@ -767,7 +767,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-amber-700">Target Gold (auto-calculated)</Label>
+                        <Label className="text-xs text-amber-700 dark:text-amber-300">Target Gold (auto-calculated)</Label>
                         <div className="relative">
                           <Input
                             type="text"
@@ -782,12 +782,12 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <p className="text-xs text-amber-600">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">
                       Using manual price - Enter your target gold grams and USD value independently.
                     </p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <Label className="text-xs text-amber-700">Target Gold (grams)</Label>
+                        <Label className="text-xs text-amber-700 dark:text-amber-300">Target Gold (grams)</Label>
                         <div className="relative">
                           <Input
                             type="number"
@@ -803,7 +803,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                         </div>
                       </div>
                       <div className="space-y-1">
-                        <Label className="text-xs text-amber-700">Target USD Value</Label>
+                        <Label className="text-xs text-amber-700 dark:text-amber-300">Target USD Value</Label>
                         <div className="relative">
                           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">$</span>
                           <Input
@@ -868,27 +868,27 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
               onValueChange={(v) => setDeliveryMethod(v as any)}
               className="grid grid-cols-1 md:grid-cols-3 gap-3"
             >
-              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'PERSONAL_DROPOFF' ? 'border-purple-500 bg-purple-50' : 'border-border'}`}>
+              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'PERSONAL_DROPOFF' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="PERSONAL_DROPOFF" className="sr-only" data-testid="radio-personal-dropoff" />
-                <Building2 className="w-6 h-6 text-amber-600" />
+                <Building2 className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="font-medium text-sm">I will bring it</p>
                   <p className="text-xs text-muted-foreground">Personal drop-off</p>
                 </div>
               </Label>
 
-              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'COURIER' ? 'border-purple-500 bg-purple-50' : 'border-border'}`}>
+              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'COURIER' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="COURIER" className="sr-only" data-testid="radio-courier" />
-                <Package className="w-6 h-6 text-amber-600" />
+                <Package className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="font-medium text-sm">Courier</p>
                   <p className="text-xs text-muted-foreground">Logistics arranged by me</p>
                 </div>
               </Label>
 
-              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'ARMORED_PICKUP' ? 'border-purple-500 bg-purple-50' : 'border-border'}`}>
+              <Label className={`flex flex-col items-center gap-2 p-4 border-2 rounded-xl cursor-pointer text-center ${deliveryMethod === 'ARMORED_PICKUP' ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20' : 'border-border'}`}>
                 <RadioGroupItem value="ARMORED_PICKUP" className="sr-only" data-testid="radio-armored-pickup" />
-                <Truck className="w-6 h-6 text-amber-600" />
+                <Truck className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 <div>
                   <p className="font-medium text-sm">Request Pickup</p>
                   <p className="text-xs text-muted-foreground">Armored transport</p>
@@ -932,7 +932,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div 
-                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 ${invoiceFile ? 'border-green-400 bg-green-50' : 'border-border'}`}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20 ${invoiceFile ? 'border-green-400 bg-green-50 dark:bg-green-950/20' : 'border-border'}`}
                 onClick={() => document.getElementById('invoice-upload')?.click()}
               >
                 <input
@@ -950,13 +950,13 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                     <p className="text-xs text-muted-foreground">Proof of purchase</p>
                   </div>
                   {invoiceFile && (
-                    <p className="text-sm text-green-600 mt-1">{invoiceFile.name}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">{invoiceFile.name}</p>
                   )}
                 </div>
               </div>
 
               <div 
-                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 ${certificateFile ? 'border-green-400 bg-green-50' : 'border-border'}`}
+                className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-colors hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20 ${certificateFile ? 'border-green-400 bg-green-50 dark:bg-green-950/20' : 'border-border'}`}
                 onClick={() => document.getElementById('certificate-upload')?.click()}
               >
                 <input
@@ -974,7 +974,7 @@ export default function PhysicalGoldDeposit({ embedded = false, onSuccess }: Phy
                     <p className="text-xs text-muted-foreground">Assay / Purity</p>
                   </div>
                   {certificateFile && (
-                    <p className="text-sm text-green-600 mt-1">{certificateFile.name}</p>
+                    <p className="text-sm text-green-600 dark:text-green-400 mt-1">{certificateFile.name}</p>
                   )}
                 </div>
               </div>

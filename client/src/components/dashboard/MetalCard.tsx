@@ -75,7 +75,7 @@ export default function MetalCard({ className = '' }: MetalCardProps) {
               <p className="text-white text-sm font-semibold">12/28</p>
             </div>
             <div className="flex -space-x-2">
-              <div className="w-6 h-6 rounded-full bg-red-500" />
+              <div className="w-6 h-6 rounded-full bg-red-50 dark:bg-red-950/200" />
               <div className="w-6 h-6 rounded-full bg-orange-400" />
             </div>
           </div>

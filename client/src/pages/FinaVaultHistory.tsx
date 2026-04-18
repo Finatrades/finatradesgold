@@ -157,18 +157,18 @@ export default function FinaVaultHistory() {
     switch (s) {
       case 'completed':
       case 'approved':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       case 'pending':
       case 'inprogress':
       case 'submitted':
       case 'underreview':
-        return 'bg-purple-100 text-fuchsia-700';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
       case 'received':
       case 'readyforpayment':
-        return 'bg-amber-100 text-amber-700';
+        return 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300';
       case 'rejected':
       case 'cancelled':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -181,13 +181,13 @@ export default function FinaVaultHistory() {
     const conversionActions = ['LGPW_To_FGPW', 'FGPW_To_LGPW'];
     
     if (conversionActions.includes(action)) {
-      return <ArrowLeftRight className="w-5 h-5 text-purple-600" />;
+      return <ArrowLeftRight className="w-5 h-5 text-purple-600 dark:text-purple-400" />;
     } else if (creditActions.includes(action)) {
-      return <ArrowDownRight className="w-5 h-5 text-green-600" />;
+      return <ArrowDownRight className="w-5 h-5 text-green-600 dark:text-green-400" />;
     } else if (debitActions.includes(action)) {
-      return <ArrowUpRight className="w-5 h-5 text-red-600" />;
+      return <ArrowUpRight className="w-5 h-5 text-red-600 dark:text-red-400" />;
     } else if (transferActions.includes(action)) {
-      return <ArrowLeftRight className="w-5 h-5 text-blue-600" />;
+      return <ArrowLeftRight className="w-5 h-5 text-blue-600 dark:text-blue-400" />;
     }
     return <RefreshCw className="w-5 h-5 text-muted-foreground" />;
   };
@@ -197,11 +197,11 @@ export default function FinaVaultHistory() {
     const debitActions = ['Withdrawal', 'Transfer_Send', 'Fee_Deduction'];
     
     if (creditActions.includes(action)) {
-      return 'text-green-600';
+      return 'text-green-600 dark:text-green-400';
     } else if (debitActions.includes(action)) {
-      return 'text-red-600';
+      return 'text-red-600 dark:text-red-400';
     }
-    return 'text-blue-600';
+    return 'text-blue-600 dark:text-blue-400';
   };
 
   const formatAction = (action: string, entry?: LedgerEntry) => {
@@ -334,7 +334,7 @@ export default function FinaVaultHistory() {
                                   </div>
                                 </td>
                                 <td className="py-3 px-4">
-                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 border border-green-200">
+                                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 border border-green-200 dark:border-green-800/40">
                                     {formatAction(mainEntry.action, mainEntry)}
                                   </span>
                                 </td>
@@ -345,7 +345,7 @@ export default function FinaVaultHistory() {
                                   {formatTo(mainEntry)}
                                 </td>
                                 <td className="py-3 px-4 text-right font-mono">
-                                  <span className="text-green-600 font-medium">
+                                  <span className="text-green-600 dark:text-green-400 font-medium">
                                     {goldAmount.toFixed(4)}
                                   </span>
                                 </td>
@@ -365,7 +365,7 @@ export default function FinaVaultHistory() {
                                   </td>
                                   <td className="py-2 px-4">
                                     <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                      entry.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                      entry.action === 'Vault_Transfer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                     }`}>
                                       {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Digital Storage'}
                                     </span>
@@ -446,12 +446,12 @@ export default function FinaVaultHistory() {
                               <div className="flex items-center gap-2">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                                   tx.type === 'deposit' 
-                                    ? 'bg-green-100' 
-                                    : 'bg-red-100'
+                                    ? 'bg-green-100 dark:bg-green-900/30' 
+                                    : 'bg-red-100 dark:bg-red-900/30'
                                 }`}>
                                   {tx.type === 'deposit' 
-                                    ? <ArrowDownRight className="w-4 h-4 text-green-600" />
-                                    : <ArrowUpRight className="w-4 h-4 text-red-600" />
+                                    ? <ArrowDownRight className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                    : <ArrowUpRight className="w-4 h-4 text-red-600 dark:text-red-400" />
                                   }
                                 </div>
                                 <span className="font-medium text-foreground text-sm capitalize">
@@ -470,7 +470,7 @@ export default function FinaVaultHistory() {
                               </span>
                             </td>
                             <td className="py-3 px-4 text-right font-mono">
-                              <span className={`font-medium ${tx.type === 'deposit' ? 'text-green-600' : 'text-red-600'}`}>
+                              <span className={`font-medium ${tx.type === 'deposit' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                                 {tx.type === 'deposit' ? '+' : '-'}{parseFloat(tx.goldGrams).toFixed(4)}
                               </span>
                             </td>

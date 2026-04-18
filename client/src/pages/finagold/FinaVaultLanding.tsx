@@ -78,7 +78,7 @@ function VaultDoor() {
           className="relative"
         >
           <div className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-100 to-pink-50 border-2 border-purple-300 flex items-center justify-center">
-            <Lock className="w-12 h-12 text-purple-600" />
+            <Lock className="w-12 h-12 text-purple-600 dark:text-purple-400" />
           </div>
           
           <motion.div
@@ -120,8 +120,8 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       <FloatingParticles count={40} />
       
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-purple-100/30 blur-[150px]" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-pink-100/20 blur-[120px]" />
+      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-[150px]" />
+      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] rounded-full bg-pink-100 dark:bg-pink-900/30/20 blur-[120px]" />
 
       <div className="relative z-10 max-w-6xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
@@ -138,7 +138,7 @@ function HeroSection() {
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ delay: 0.2 + i * 0.1 }}
-                  className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 text-purple-700"
+                  className="px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50 text-purple-700 dark:text-purple-300"
                 >
                   {badge}
                 </motion.span>
@@ -187,8 +187,8 @@ function HeroSection() {
                 Open Vault
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/sign-in" className="flex items-center gap-2 border border-purple-300 text-foreground/85 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all">
-                <FileCheck className="w-5 h-5 text-purple-600" />
+              <Link href="/sign-in" className="flex items-center gap-2 border border-purple-300 text-foreground/85 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all">
+                <FileCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 View Certificate
               </Link>
             </motion.div>
@@ -257,14 +257,14 @@ function ValuePillarsSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -8, boxShadow: '0 20px 60px rgba(147, 51, 234, 0.15)' }}
-              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all group"
+              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all group"
             >
               <motion.div
                 animate={pillar.animation === 'rotate' ? { rotateY: [0, 360] } : {}}
                 transition={{ duration: 6, repeat: Infinity, ease: 'linear' }}
                 className="w-16 h-16 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:from-purple-200 group-hover:to-pink-100 transition-colors"
               >
-                <pillar.icon className="w-8 h-8 text-purple-600" />
+                <pillar.icon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </motion.div>
               <h3 className="text-lg font-semibold text-foreground mb-2">{pillar.title}</h3>
               <p className="text-sm text-muted-foreground">{pillar.description}</p>
@@ -324,7 +324,7 @@ function CertificateSection() {
                   className="flex items-start gap-4"
                 >
                   <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center shrink-0">
-                    <CheckCircle className="w-4 h-4 text-purple-600" />
+                    <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <p className="font-medium text-foreground">{item.label}</p>
@@ -395,7 +395,7 @@ function CertificateSection() {
                 </div>
                 
                 <div className="pt-4 border-t border-border/60">
-                  <div className="flex items-center gap-2 text-green-600">
+                  <div className="flex items-center gap-2 text-green-600 dark:text-green-400">
                     <CheckCircle className="w-5 h-5" />
                     <span className="text-sm font-medium">Verified & Secured</span>
                   </div>
@@ -410,7 +410,7 @@ function CertificateSection() {
             >
               <p className="text-xs text-muted-foreground">Assay Report</p>
               <p className="text-sm text-foreground mt-1">LBMA Certified</p>
-              <div className="mt-2 h-1 bg-purple-100 rounded-full overflow-hidden">
+              <div className="mt-2 h-1 bg-purple-100 dark:bg-purple-900/30 rounded-full overflow-hidden">
                 <motion.div
                   animate={{ x: ['-100%', '100%'] }}
                   transition={{ duration: 2, repeat: Infinity }}
@@ -497,13 +497,13 @@ function VaultOperationsSection() {
                     }`}
                   >
                     <step.icon className={`w-8 h-8 transition-colors ${
-                      isActive || isCompleted ? 'text-purple-600' : 'text-muted-foreground/70'
+                      isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'
                     }`} />
                     
                     <motion.div
                       initial={{ scale: 0 }}
                       animate={{ scale: isCompleted ? 1 : 0 }}
-                      className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-500 flex items-center justify-center"
+                      className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-green-50 dark:bg-green-950/200 flex items-center justify-center"
                     >
                       <CheckCircle className="w-4 h-4 text-white" />
                     </motion.div>
@@ -515,7 +515,7 @@ function VaultOperationsSection() {
                     transition={{ delay: i * 0.15 + 0.2 }}
                     className="mt-6"
                   >
-                    <span className={`text-xs font-bold ${isActive ? 'text-purple-600' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'}`}>
                       Step {i + 1}
                     </span>
                     <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
@@ -562,7 +562,7 @@ function SecuritySection() {
                 ]
               }}
               transition={{ duration: 4, repeat: Infinity }}
-              className="relative w-64 h-64 mx-auto rounded-full bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 flex items-center justify-center"
+              className="relative w-64 h-64 mx-auto rounded-full bg-gradient-to-br from-purple-50 to-pink-50 border border-purple-200 dark:border-purple-800/40 flex items-center justify-center"
             >
               <motion.div
                 animate={{ rotate: 360 }}
@@ -575,7 +575,7 @@ function SecuritySection() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="w-32 h-32 rounded-full bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-400 flex items-center justify-center"
               >
-                <Shield className="w-16 h-16 text-purple-600" />
+                <Shield className="w-16 h-16 text-purple-600 dark:text-purple-400" />
               </motion.div>
               
               {features.map((f, i) => (
@@ -586,14 +586,14 @@ function SecuritySection() {
                     scale: [0.9, 1, 0.9],
                   }}
                   transition={{ duration: 3, repeat: Infinity, delay: i * 0.5 }}
-                  className="absolute w-12 h-12 rounded-full bg-card shadow-md border border-purple-200 flex items-center justify-center"
+                  className="absolute w-12 h-12 rounded-full bg-card shadow-md border border-purple-200 dark:border-purple-800/40 flex items-center justify-center"
                   style={{
                     top: `${50 + 45 * Math.sin((i * Math.PI * 2) / 4)}%`,
                     left: `${50 + 45 * Math.cos((i * Math.PI * 2) / 4)}%`,
                     transform: 'translate(-50%, -50%)',
                   }}
                 >
-                  <f.icon className="w-5 h-5 text-purple-600" />
+                  <f.icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 </motion.div>
               ))}
             </motion.div>
@@ -623,10 +623,10 @@ function SecuritySection() {
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
-                  className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border/60 shadow-lg hover:border-purple-200 transition-all"
+                  className="flex items-center gap-3 p-4 rounded-xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
-                    <feature.icon className="w-5 h-5 text-purple-600" />
+                    <feature.icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-foreground font-medium">{feature.title}</span>
                 </motion.div>
@@ -684,10 +684,10 @@ function GlobalNetworkSection() {
                 className="absolute inset-0 w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-purple-300/50"
               />
               <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-lg shadow-purple-500/50">
-                <MapPin className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600" />
+                <MapPin className="absolute -top-6 left-1/2 -translate-x-1/2 w-4 h-4 text-purple-600 dark:text-purple-400" />
               </div>
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card shadow-md border border-purple-200 text-purple-700">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card shadow-md border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300">
                   {loc.name}
                 </span>
               </div>
@@ -779,7 +779,7 @@ function LiveBalanceSection() {
               <div className="text-3xl font-bold text-foreground">
                 ${(balance * 85.23).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
-              <p className="text-green-600 text-sm mt-1">+2.34% today</p>
+              <p className="text-green-600 dark:text-green-400 text-sm mt-1">+2.34% today</p>
             </div>
             
             <div className="text-center md:text-right">
@@ -829,9 +829,9 @@ function IntegrationSection() {
             initial={{ opacity: 0, x: -30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 flex flex-col items-center justify-center transition-all"
+            className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center transition-all"
           >
-            <Lock className="w-12 h-12 text-purple-600 mb-2" />
+            <Lock className="w-12 h-12 text-purple-600 dark:text-purple-400 mb-2" />
             <span className="text-foreground font-semibold">FinaVault</span>
           </motion.div>
 
@@ -863,9 +863,9 @@ function IntegrationSection() {
             initial={{ opacity: 0, x: 30 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 flex flex-col items-center justify-center transition-all"
+            className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center transition-all"
           >
-            <Wallet className="w-12 h-12 text-purple-600 mb-2" />
+            <Wallet className="w-12 h-12 text-purple-600 dark:text-purple-400 mb-2" />
             <span className="text-foreground font-semibold">FinaPay</span>
           </motion.div>
         </div>
@@ -883,7 +883,7 @@ function FinalCTASection() {
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
           transition={{ duration: 5, repeat: Infinity }}
-          className="w-[700px] h-[700px] rounded-full bg-purple-100/30 blur-[120px]"
+          className="w-[700px] h-[700px] rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-[120px]"
         />
       </div>
 

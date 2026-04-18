@@ -145,12 +145,12 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 60, repeat: Infinity, ease: 'linear' }}
-          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200/30"
+          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200 dark:border-purple-800/40/30"
         />
         <motion.div
           animate={{ rotate: -360 }}
           transition={{ duration: 80, repeat: Infinity, ease: 'linear' }}
-          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200/30"
+          className="absolute -bottom-1/4 -left-1/4 w-1/2 h-1/2 rounded-full border border-dashed border-purple-200 dark:border-purple-800/40/30"
         />
       </div>
 
@@ -166,10 +166,10 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200 dark:border-purple-800/40/50 mb-6"
           >
-            <Sparkles className="w-4 h-4 text-fuchsia-600" />
-            <span className="text-sm font-medium text-fuchsia-800">Simple 4-Step Process</span>
+            <Sparkles className="w-4 h-4 text-fuchsia-600 dark:text-fuchsia-400" />
+            <span className="text-sm font-medium text-fuchsia-800 dark:text-fuchsia-200">Simple 4-Step Process</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -196,7 +196,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                 onClick={toggleAutoPlay}
                 className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all ${
                   isAutoPlaying
-                    ? 'bg-purple-100 text-fuchsia-700'
+                    ? 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300'
                     : 'bg-muted text-muted-foreground hover:bg-muted'
                 }`}
               >
@@ -258,7 +258,7 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                         </motion.div>
                         <div
                           className={`absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
-                            isActive ? 'bg-purple-500 text-white' : 'bg-muted text-muted-foreground'
+                            isActive ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'bg-muted text-muted-foreground'
                           }`}
                         >
                           {step.id}
@@ -371,11 +371,11 @@ export default function BNSLHowItWorks({ onOpenCalculator }: BNSLHowItWorksProps
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4 }}
-                    className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200/50"
+                    className="p-4 rounded-xl bg-gradient-to-r from-purple-50 to-yellow-50 border border-purple-200 dark:border-purple-800/40/50"
                   >
                     <div className="flex items-center gap-3">
-                      <BadgeCheck className="w-5 h-5 text-fuchsia-600" />
-                      <span className="font-medium text-fuchsia-800">{steps[activeStep].highlight}</span>
+                      <BadgeCheck className="w-5 h-5 text-fuchsia-600 dark:text-fuchsia-400" />
+                      <span className="font-medium text-fuchsia-800 dark:text-fuchsia-200">{steps[activeStep].highlight}</span>
                     </div>
                   </motion.div>
                 </div>

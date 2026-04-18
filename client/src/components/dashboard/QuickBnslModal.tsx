@@ -495,7 +495,7 @@ export default function QuickBnslModal({
                   }}
                   disabled={!hasScrolledTerms}
                   data-testid="checkbox-agree-terms"
-                  className="mt-0.5 border-white/30 data-[state=checked]:bg-teal-500 data-[state=checked]:border-teal-500"
+                  className="mt-0.5 border-white/30 data-[state=checked]:bg-teal-50 dark:bg-teal-950/200 data-[state=checked]:border-teal-500"
                 />
                 <Label htmlFor="agree-terms" className="text-[10.5px] text-white/60 leading-snug cursor-pointer">
                   I have read and agree to the BNSL Terms & Conditions. I understand this is an irrevocable sale of gold and agree to the deferred payment structure and early termination penalties.
@@ -589,7 +589,7 @@ export default function QuickBnslModal({
               onClick={handleSubmit}
               disabled={!canSubmit || submitting}
               data-testid="button-confirm-enroll"
-              className="ml-auto bg-teal-500 hover:bg-teal-400 text-white font-bold text-[12px] px-5 disabled:opacity-40"
+              className="ml-auto bg-teal-50 dark:bg-teal-950/200 hover:bg-teal-400 text-white font-bold text-[12px] px-5 disabled:opacity-40"
             >
               {submitting ? (
                 <>

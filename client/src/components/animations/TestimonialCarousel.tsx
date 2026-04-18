@@ -111,10 +111,10 @@ export default function TestimonialCarousel() {
           <div className="flex items-center justify-center gap-4 mt-8">
             <button
               onClick={prev}
-              className="w-10 h-10 rounded-full bg-card border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
+              className="w-10 h-10 rounded-full bg-card border border-purple-200 dark:border-purple-800/40 flex items-center justify-center hover:bg-purple-50 dark:bg-purple-950/20 transition-colors shadow-sm"
               data-testid="testimonial-prev"
             >
-              <ChevronLeft className="w-5 h-5 text-purple-600" />
+              <ChevronLeft className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </button>
             <div className="flex gap-2">
               {testimonials.map((_, i) => (
@@ -133,10 +133,10 @@ export default function TestimonialCarousel() {
             </div>
             <button
               onClick={next}
-              className="w-10 h-10 rounded-full bg-card border border-purple-200 flex items-center justify-center hover:bg-purple-50 transition-colors shadow-sm"
+              className="w-10 h-10 rounded-full bg-card border border-purple-200 dark:border-purple-800/40 flex items-center justify-center hover:bg-purple-50 dark:bg-purple-950/20 transition-colors shadow-sm"
               data-testid="testimonial-next"
             >
-              <ChevronRight className="w-5 h-5 text-purple-600" />
+              <ChevronRight className="w-5 h-5 text-purple-600 dark:text-purple-400" />
             </button>
           </div>
         </div>

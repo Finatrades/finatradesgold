@@ -74,11 +74,11 @@ export default function BNSLRiskDisclosure() {
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'low':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200';
+        return 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40';
       case 'medium':
-        return 'bg-purple-100 text-fuchsia-700 border-purple-200';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300 border-purple-200 dark:border-purple-800/40';
       case 'high':
-        return 'bg-red-100 text-red-700 border-red-200';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40';
       default:
         return 'bg-muted text-foreground/85 border-border';
     }
@@ -109,7 +109,7 @@ export default function BNSLRiskDisclosure() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 border border-slate-200 dark:border-slate-800/40 mb-6"
           >
             <Scale className="w-4 h-4 text-slate-600" />
             <span className="text-sm font-medium text-slate-700">Transparency First</span>
@@ -132,15 +132,15 @@ export default function BNSLRiskDisclosure() {
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="mb-8 p-6 rounded-2xl bg-purple-50 border border-purple-200"
+            className="mb-8 p-6 rounded-2xl bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40"
           >
             <div className="flex items-start gap-4">
-              <div className="p-2 rounded-lg bg-purple-100">
-                <AlertTriangle className="w-6 h-6 text-fuchsia-600" />
+              <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
+                <AlertTriangle className="w-6 h-6 text-fuchsia-600 dark:text-fuchsia-400" />
               </div>
               <div>
                 <h3 className="font-bold text-fuchsia-900 mb-2">Important Investment Notice</h3>
-                <p className="text-fuchsia-800 text-sm leading-relaxed">
+                <p className="text-fuchsia-800 dark:text-fuchsia-200 text-sm leading-relaxed">
                   All investments carry risk. The value of your gold can go down as well as up, and
                   you may get back less than you invest. Please read this disclosure carefully and
                   consider seeking independent financial advice before making investment decisions.

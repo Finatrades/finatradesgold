@@ -82,13 +82,13 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
   
   const getStatusColor = (status: DepositRequestStatus) => {
     switch (status) {
-      case 'Submitted': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'Under Review': return 'bg-blue-500/10 text-blue-500 border-blue-500/20';
-      case 'Approved – Awaiting Delivery': return 'bg-purple-500/10 text-purple-500 border-purple-500/20';
-      case 'Received at Vault': return 'bg-teal-500/10 text-teal-500 border-teal-500/20';
-      case 'Stored in Vault': return 'bg-green-500/10 text-green-500 border-green-500/20';
-      case 'Rejected': return 'bg-red-500/10 text-red-500 border-red-500/20';
-      case 'Cancelled': return 'bg-red-500/10 text-red-500 border-red-500/20';
+      case 'Submitted': return 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500 border-blue-500/20';
+      case 'Under Review': return 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500 border-blue-500/20';
+      case 'Approved – Awaiting Delivery': return 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500 border-purple-500/20';
+      case 'Received at Vault': return 'bg-teal-50 dark:bg-teal-950/200/10 text-teal-500 border-teal-500/20';
+      case 'Stored in Vault': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20';
+      case 'Rejected': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
+      case 'Cancelled': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500 border-red-500/20';
       default: return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
     }
   };
@@ -124,7 +124,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
       <Card className="bg-card shadow-sm border border-border">
         <CardContent className="pt-6">
           {['Rejected', 'Cancelled'].includes(request.status) ? (
-            <div className="flex items-center gap-3 text-red-600 p-4 bg-red-500/10 rounded-lg border border-red-500/20">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400 p-4 bg-red-50 dark:bg-red-950/200/10 rounded-lg border border-red-500/20">
               <XCircle className="w-6 h-6" />
               <div>
                 <h4 className="font-bold">Request {request.status}</h4>
@@ -149,7 +149,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
                       {completed ? <CheckCircle2 className="w-6 h-6" /> : <Circle className="w-6 h-6" />}
                     </div>
                     <span className={`text-xs mt-3 text-center max-w-[100px] font-semibold transition-colors duration-300 ${
-                      current ? 'text-purple-700' : completed ? 'text-purple-600' : 'text-muted-foreground/70'
+                      current ? 'text-purple-700 dark:text-purple-300' : completed ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'
                     }`}>
                       {step}
                     </span>
@@ -285,7 +285,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-600 text-sm font-medium flex items-center gap-2">
+              <div className="p-3 bg-blue-50 dark:bg-blue-950/200/10 border border-blue-500/20 rounded-lg text-blue-600 dark:text-blue-400 text-sm font-medium flex items-center gap-2">
                 <Info className="w-4 h-4" />
                 {request.deliveryMethod}
               </div>
@@ -320,7 +320,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
               )}
 
               {request.status === 'Approved – Awaiting Delivery' && (
-                 <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-lg text-fuchsia-600 text-sm">
+                 <div className="p-3 bg-purple-50 dark:bg-purple-950/200/10 border border-purple-500/20 rounded-lg text-fuchsia-600 dark:text-fuchsia-400 text-sm">
                    <p className="font-bold mb-1">Action Required:</p>
                    Please deliver your gold to the vault address provided in your email, quoting Reference #{request.id}.
                  </div>
@@ -334,7 +334,7 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
               <CardContent className="pt-6">
                  <Button 
                    variant="destructive" 
-                   className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-600 border border-red-500/20"
+                   className="w-full bg-red-50 dark:bg-red-950/200/10 hover:bg-red-50 dark:bg-red-950/200/20 text-red-600 dark:text-red-400 border border-red-500/20"
                    onClick={() => onCancel(request.id)}
                  >
                    Cancel Request
@@ -344,12 +344,12 @@ export default function RequestDetails({ request, onClose, onCancel }: RequestDe
           )}
 
           {request.status === 'Stored in Vault' && (
-             <Card className="bg-green-500/5 border-green-500/10">
+             <Card className="bg-green-50 dark:bg-green-950/200/5 border-green-500/10">
                <CardContent className="pt-6 text-center">
-                 <div className="w-12 h-12 bg-green-500/20 text-green-600 rounded-full flex items-center justify-center mx-auto mb-3">
+                 <div className="w-12 h-12 bg-green-50 dark:bg-green-950/200/20 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-3">
                    <ShieldCheck className="w-6 h-6" />
                  </div>
-                 <h3 className="text-green-600 font-bold mb-1">Securely Stored</h3>
+                 <h3 className="text-green-600 dark:text-green-400 font-bold mb-1">Securely Stored</h3>
                  <p className="text-muted-foreground text-xs mb-4">Vault Ref: {request.vaultInternalReference || 'PENDING'}</p>
                  <Button className="w-full bg-primary text-white hover:bg-primary/90">
                    Download Vault Receipt

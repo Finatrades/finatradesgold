@@ -301,7 +301,7 @@ function TourOverlay({
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.1 }}
-          className="absolute bg-card rounded-xl shadow-2xl border border-purple-200 overflow-hidden"
+          className="absolute bg-card rounded-xl shadow-2xl border border-purple-200 dark:border-purple-800/40 overflow-hidden"
           style={{
             top: tooltipPosition.top,
             left: tooltipPosition.left,
@@ -337,7 +337,7 @@ function TourOverlay({
                   variant="outline"
                   size="sm"
                   onClick={onPrev}
-                  className="text-purple-600 border-purple-200 hover:bg-purple-50"
+                  className="text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/40 hover:bg-purple-50 dark:bg-purple-950/20"
                 >
                   <ChevronLeft className="w-4 h-4 mr-1" />
                   Back

@@ -150,7 +150,7 @@ export default function TransactionPinPrompt({
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="w-5 h-5 text-amber-600" />
+              <KeyRound className="w-5 h-5 text-amber-600 dark:text-amber-400" />
               Transaction PIN Required
             </DialogTitle>
             <DialogDescription>
@@ -159,11 +159,11 @@ export default function TransactionPinPrompt({
           </DialogHeader>
           
           <div className="py-4">
-            <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-lg border border-amber-100">
-              <AlertCircle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-100">
+              <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-sm text-amber-800">No PIN Set</h4>
-                <p className="text-sm text-amber-700 mt-1">
+                <h4 className="font-medium text-sm text-amber-800 dark:text-amber-200">No PIN Set</h4>
+                <p className="text-sm text-amber-700 dark:text-amber-300 mt-1">
                   Set up a 6-digit PIN in your security settings to authorize transactions.
                 </p>
               </div>
@@ -196,11 +196,11 @@ export default function TransactionPinPrompt({
         
         <div className="py-4">
           {isLocked && lockedUntil ? (
-            <div className="flex items-start gap-3 p-4 bg-red-50 rounded-lg border border-red-100">
-              <LockKeyhole className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-100">
+              <LockKeyhole className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
               <div>
-                <h4 className="font-medium text-sm text-red-800">PIN Locked</h4>
-                <p className="text-sm text-red-700 mt-1">
+                <h4 className="font-medium text-sm text-red-800 dark:text-red-200">PIN Locked</h4>
+                <p className="text-sm text-red-700 dark:text-red-300 mt-1">
                   Too many failed attempts. Your PIN is locked until{' '}
                   {lockedUntil.toLocaleTimeString()}.
                 </p>

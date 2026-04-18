@@ -81,13 +81,13 @@ export default function FinaBridgeProposals() {
     switch (status.toLowerCase()) {
       case 'accepted':
       case 'approved':
-        return 'bg-green-100 text-green-700';
+        return 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300';
       case 'pending':
       case 'forwarded':
-        return 'bg-purple-100 text-fuchsia-700';
+        return 'bg-purple-100 dark:bg-purple-900/30 text-fuchsia-700 dark:text-fuchsia-300';
       case 'rejected':
       case 'declined':
-        return 'bg-red-100 text-red-700';
+        return 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300';
       default:
         return 'bg-muted text-muted-foreground';
     }
@@ -230,7 +230,7 @@ export default function FinaBridgeProposals() {
                           </p>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="text-xs text-red-600 border-red-200 hover:bg-red-50">
+                          <Button size="sm" variant="outline" className="text-xs text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/40 hover:bg-red-50 dark:bg-red-950/20">
                             Decline
                           </Button>
                           <Button size="sm" className="text-xs bg-green-600 hover:bg-green-700">

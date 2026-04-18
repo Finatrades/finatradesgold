@@ -124,7 +124,7 @@ export default function BnslPlanDetail({
            </Button>
            <Button 
              variant="destructive" 
-             className="bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20"
+             className="bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/200/20 border border-red-500/20"
              onClick={() => setIsSimulatorOpen(true)}
              disabled={plan.status !== 'Active'}
            >
@@ -147,7 +147,7 @@ export default function BnslPlanDetail({
                 <span>Started {new Date(plan.startDate).toLocaleDateString()}</span>
               </div>
             </div>
-            <Badge className="bg-green-500/20 text-green-600 hover:bg-green-500/30 border-green-500/20">
+            <Badge className="bg-green-50 dark:bg-green-950/200/20 text-green-600 dark:text-green-400 hover:bg-green-50 dark:bg-green-950/200/30 border-green-500/20">
               {plan.status}
             </Badge>
           </div>
@@ -186,10 +186,10 @@ export default function BnslPlanDetail({
             </div>
           </div>
 
-          <div className="mt-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
-             <Clock className="w-5 h-5 text-blue-600 mt-0.5" />
+          <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-950/200/10 border border-blue-500/20 rounded-lg flex items-start gap-3">
+             <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5" />
              <div>
-               <h4 className="font-bold text-blue-600 text-sm">Contract Type: Deferred Price Sale</h4>
+               <h4 className="font-bold text-blue-600 dark:text-blue-400 text-sm">Contract Type: Deferred Price Sale</h4>
                <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                  You have sold this gold to Wingold. You no longer own it. You hold a contractual right to receive 
                  (1) Quarterly Margin in gold grams and (2) Base Price Component settlement at maturity.
@@ -248,9 +248,9 @@ export default function BnslPlanDetail({
                    <td className="p-4 pr-6 text-right">
                      <span className={`px-2 py-1 rounded text-xs font-bold ${
                        payout.status === 'Paid' 
-                         ? 'bg-green-500/10 text-green-600' 
+                         ? 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400' 
                          : payout.status === 'Cancelled'
-                         ? 'bg-red-500/10 text-red-600'
+                         ? 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400'
                          : 'bg-muted text-muted-foreground'
                      }`}>
                        {payout.status}

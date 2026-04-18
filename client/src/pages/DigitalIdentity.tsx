@@ -137,8 +137,8 @@ export default function DigitalIdentity() {
         {!credentialData?.hasCredential ? (
           /* No Credential State */
           <div className="hynex-card p-8 text-center shadow-sm">
-            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Fingerprint className="w-8 h-8 text-purple-600" />
+            <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Fingerprint className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold mb-2">No Digital Identity Yet</h3>
             <p className="text-sm text-muted-foreground mb-6">
@@ -199,16 +199,16 @@ export default function DigitalIdentity() {
               <div className="hynex-card p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
                   <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                    credentialData.status === 'active' ? 'bg-green-100' : 'bg-red-100'
+                    credentialData.status === 'active' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'
                   }`}>
                     <CheckCircle className={`w-4 h-4 ${
-                      credentialData.status === 'active' ? 'text-green-600' : 'text-red-600'
+                      credentialData.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                     }`} />
                   </div>
                   <span className="text-sm text-muted-foreground">Status</span>
                 </div>
                 <p className={`text-lg font-bold ${
-                  credentialData.status === 'active' ? 'text-green-600' : 'text-red-600'
+                  credentialData.status === 'active' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
                 }`} data-testid="credential-status">
                   {credentialData.status === 'active' ? 'Verified' : credentialData.status}
                 </p>
@@ -217,8 +217,8 @@ export default function DigitalIdentity() {
               {/* Shares Card */}
               <div className="hynex-card p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-purple-100 flex items-center justify-center">
-                    <Share2 className="w-4 h-4 text-purple-600" />
+                  <div className="w-8 h-8 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Share2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-sm text-muted-foreground">Shared</span>
                 </div>
@@ -230,8 +230,8 @@ export default function DigitalIdentity() {
               {/* Issued Card */}
               <div className="hynex-card p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-blue-100 flex items-center justify-center">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                    <Calendar className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                   </div>
                   <span className="text-sm text-muted-foreground">Issued</span>
                 </div>
@@ -243,8 +243,8 @@ export default function DigitalIdentity() {
               {/* Expires Card */}
               <div className="hynex-card p-4 shadow-sm">
                 <div className="flex items-center gap-3 mb-2">
-                  <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
-                    <Clock className="w-4 h-4 text-orange-600" />
+                  <div className="w-8 h-8 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                    <Clock className="w-4 h-4 text-orange-600 dark:text-orange-400" />
                   </div>
                   <span className="text-sm text-muted-foreground">Expires</span>
                 </div>
@@ -259,43 +259,43 @@ export default function DigitalIdentity() {
               <div className="hynex-card overflow-hidden">
                 <div className="p-4 border-b border-border/60">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <Award className="w-4 h-4 text-purple-600" />
+                    <Award className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     Verification Badges
                   </h3>
                 </div>
                 <div className="p-4 space-y-3">
                   {credentialData.claimsSummary?.idVerified && (
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <div>
-                        <p className="font-medium text-green-800">Identity Verified</p>
-                        <p className="text-xs text-green-600">Government ID confirmed</p>
+                        <p className="font-medium text-green-800 dark:text-green-200">Identity Verified</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">Government ID confirmed</p>
                       </div>
                     </div>
                   )}
                   {credentialData.claimsSummary?.addressVerified && (
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
+                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                      <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <div>
-                        <p className="font-medium text-green-800">Address Verified</p>
-                        <p className="text-xs text-green-600">Proof of address confirmed</p>
+                        <p className="font-medium text-green-800 dark:text-green-200">Address Verified</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">Proof of address confirmed</p>
                       </div>
                     </div>
                   )}
                   {credentialData.claimsSummary?.amlPassed && (
-                    <div className="flex items-center gap-3 p-3 bg-green-50 rounded-xl">
-                      <Shield className="w-5 h-5 text-green-600" />
+                    <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-950/20 rounded-xl">
+                      <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
                       <div>
-                        <p className="font-medium text-green-800">AML Screening Passed</p>
-                        <p className="text-xs text-green-600">Anti-money laundering check complete</p>
+                        <p className="font-medium text-green-800 dark:text-green-200">AML Screening Passed</p>
+                        <p className="text-xs text-green-600 dark:text-green-400">Anti-money laundering check complete</p>
                       </div>
                     </div>
                   )}
-                  <div className="flex items-center gap-3 p-3 bg-purple-50 rounded-xl">
-                    <FileText className="w-5 h-5 text-purple-600" />
+                  <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-950/20 rounded-xl">
+                    <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     <div>
-                      <p className="font-medium text-purple-800">KYC Level</p>
-                      <p className="text-xs text-purple-600">{credentialData.claimsSummary?.kycLevel || 'Tier 3 - Fully Verified'}</p>
+                      <p className="font-medium text-purple-800 dark:text-purple-200">KYC Level</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">{credentialData.claimsSummary?.kycLevel || 'Tier 3 - Fully Verified'}</p>
                     </div>
                   </div>
                 </div>
@@ -306,7 +306,7 @@ export default function DigitalIdentity() {
               <div className="hynex-card overflow-hidden">
                 <div className="p-4 border-b border-border/60">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <FileText className="w-4 h-4 text-purple-600" />
+                    <FileText className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                     Credential Details
                   </h3>
                 </div>
@@ -354,7 +354,7 @@ export default function DigitalIdentity() {
               <div className="hynex-card overflow-hidden">
                 <div className="p-4 border-b border-border/60 flex justify-between items-center">
                   <h3 className="font-semibold flex items-center gap-2">
-                    <History className="w-4 h-4 text-blue-600" />
+                    <History className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                     Presentation History
                   </h3>
                   <Button size="sm" variant="ghost" onClick={() => refetch()}>
@@ -372,12 +372,12 @@ export default function DigitalIdentity() {
                     presentationsData.presentations.map((p) => (
                       <div key={p.id} className="flex items-center gap-3 p-4">
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          p.verificationSuccessful ? 'bg-green-100' : 'bg-yellow-100'
+                          p.verificationSuccessful ? 'bg-green-100 dark:bg-green-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'
                         }`}>
                           {p.verificationSuccessful ? (
-                            <CheckCircle className="w-5 h-5 text-green-600" />
+                            <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                           ) : (
-                            <AlertTriangle className="w-5 h-5 text-yellow-600" />
+                            <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
                           )}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -394,13 +394,13 @@ export default function DigitalIdentity() {
                   )}
                   
                   {/* Always show credential issued event */}
-                  <div className="flex items-center gap-3 p-4 bg-purple-50/50">
-                    <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center">
-                      <Award className="w-5 h-5 text-purple-600" />
+                  <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-950/20/50">
+                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <Award className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-medium text-purple-800">Credential Issued</p>
-                      <p className="text-xs text-purple-600">
+                      <p className="font-medium text-purple-800 dark:text-purple-200">Credential Issued</p>
+                      <p className="text-xs text-purple-600 dark:text-purple-400">
                         {credentialData.issuedAt 
                           ? format(new Date(credentialData.issuedAt), 'MMM dd, yyyy \'at\' h:mm a')
                           : 'Date unknown'}

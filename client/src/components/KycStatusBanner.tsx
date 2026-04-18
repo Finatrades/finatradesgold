@@ -36,8 +36,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <AlertTriangle className="w-5 h-5 text-amber-500" />,
           title: 'Identity Verification Required',
           message: 'Complete your KYC verification to unlock all features. Your account is currently in view-only mode.',
-          bgColor: 'bg-amber-50',
-          borderColor: 'border-amber-200',
+          bgColor: 'bg-amber-50 dark:bg-amber-950/20',
+          borderColor: 'border-amber-200 dark:border-amber-800/40',
           buttonText: 'Verify Now',
           canDismiss: false
         };
@@ -46,8 +46,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <ShieldCheck className="w-5 h-5 text-blue-500" />,
           title: 'Verification In Progress',
           message: 'Your KYC verification is being reviewed. Features will be unlocked once approved.',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
+          bgColor: 'bg-blue-50 dark:bg-blue-950/20',
+          borderColor: 'border-blue-200 dark:border-blue-800/40',
           buttonText: 'Check Status',
           canDismiss: true
         };
@@ -56,8 +56,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <AlertTriangle className="w-5 h-5 text-red-500" />,
           title: 'Verification Rejected',
           message: 'Your KYC verification was not approved. Please re-submit with valid documents.',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          bgColor: 'bg-red-50 dark:bg-red-950/20',
+          borderColor: 'border-red-200 dark:border-red-800/40',
           buttonText: 'Re-submit',
           canDismiss: false
         };
@@ -66,8 +66,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <AlertTriangle className="w-5 h-5 text-orange-500" />,
           title: 'Changes Requested',
           message: 'Our compliance team requires updates to some sections of your KYC submission. Please review and resubmit.',
-          bgColor: 'bg-orange-50',
-          borderColor: 'border-orange-200',
+          bgColor: 'bg-orange-50 dark:bg-orange-950/20',
+          borderColor: 'border-orange-200 dark:border-orange-800/40',
           buttonText: 'Fix & Resubmit',
           canDismiss: false
         };
@@ -76,8 +76,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <Clock className="w-5 h-5 text-indigo-500" />,
           title: 'Under Active Review',
           message: 'A compliance officer is currently reviewing your KYC submission.',
-          bgColor: 'bg-indigo-50',
-          borderColor: 'border-indigo-200',
+          bgColor: 'bg-indigo-50 dark:bg-indigo-950/20',
+          borderColor: 'border-indigo-200 dark:border-indigo-800/40',
           buttonText: 'Check Status',
           canDismiss: true
         };
@@ -86,8 +86,8 @@ export default function KycStatusBanner({ kycStatus }: KycStatusBannerProps) {
           icon: <Clock className="w-5 h-5 text-blue-500" />,
           title: 'Pending Review',
           message: 'Your KYC submission is in the review queue. You will be notified once reviewed.',
-          bgColor: 'bg-blue-50',
-          borderColor: 'border-blue-200',
+          bgColor: 'bg-blue-50 dark:bg-blue-950/20',
+          borderColor: 'border-blue-200 dark:border-blue-800/40',
           buttonText: 'Check Status',
           canDismiss: true
         };

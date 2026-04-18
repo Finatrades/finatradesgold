@@ -69,7 +69,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
   if (error || !balance) {
     return (
       <div className="bg-card rounded-2xl border border-border p-6 shadow-sm">
-        <div className="flex items-center gap-2 text-amber-600">
+        <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
           <AlertTriangle className="w-5 h-5" />
           <span>Unable to load wallet balance</span>
         </div>
@@ -152,8 +152,8 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       <div className="px-6 pt-6 pb-4 border-b border-border/60">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-amber-100 rounded-lg">
-              <Wallet className="w-5 h-5 text-amber-600" />
+            <div className="p-2 bg-amber-100 dark:bg-amber-900/30 rounded-lg">
+              <Wallet className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
             <div>
               <h2 className="text-lg font-bold text-foreground" data-testid="dual-wallet-title">Gold Wallet</h2>
@@ -164,7 +164,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             <Button
               size="sm"
               variant="outline"
-              className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+              className="text-xs border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:bg-indigo-950/20"
               onClick={() => { setTransferAmount(''); setAgreedToTerms(false); setShowTransferModal(true); }}
               data-testid="btn-lock-gold-price"
             >
@@ -175,7 +175,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             {onTransferFromVault && (
               <Button
                 size="sm"
-                className="bg-purple-500 hover:bg-fuchsia-600 text-white text-xs sm:text-sm"
+                className="bg-purple-50 dark:bg-purple-950/200 hover:bg-fuchsia-600 text-white text-xs sm:text-sm"
                 onClick={onTransferFromVault}
                 data-testid="btn-transfer-vault"
               >
@@ -191,7 +191,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       <div className="px-6 py-5">
         <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1">Your Gold</p>
         <div className="flex items-end gap-4 flex-wrap">
-          <p className="text-4xl font-bold text-amber-600" data-testid="total-gold">
+          <p className="text-4xl font-bold text-amber-600 dark:text-amber-400" data-testid="total-gold">
             {totalGrams.toFixed(4)}<span className="text-xl ml-1 font-semibold">g</span>
           </p>
           <div className="pb-1">
@@ -204,7 +204,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
 
         {/* Pending Gold Line */}
         {pendingGrams > 0 && (
-          <div className="mt-3 flex items-center gap-2 text-amber-600 text-sm" data-testid="pending-gold-line">
+          <div className="mt-3 flex items-center gap-2 text-amber-600 dark:text-amber-400 text-sm" data-testid="pending-gold-line">
             <Clock className="w-4 h-4 shrink-0" />
             <span className="font-medium">{pendingGrams.toFixed(4)}g awaiting verification</span>
             <a href="/finapay?section=deposits" className="text-xs underline text-amber-500 flex items-center gap-0.5">
@@ -294,10 +294,10 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
           </DialogHeader>
 
           <div className="space-y-5 py-4">
-            <div className="p-3 rounded-lg bg-amber-50 border border-amber-200">
-              <p className="text-xs font-semibold text-amber-700 mb-1">Current Protection Price</p>
-              <p className="text-lg font-bold text-amber-800">${balance.goldPricePerGram.toFixed(2)}/g</p>
-              <p className="text-xs text-amber-600 mt-0.5">Available to protect: {balance.mpgw.availableGrams.toFixed(4)} g</p>
+            <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40">
+              <p className="text-xs font-semibold text-amber-700 dark:text-amber-300 mb-1">Current Protection Price</p>
+              <p className="text-lg font-bold text-amber-800 dark:text-amber-200">${balance.goldPricePerGram.toFixed(2)}/g</p>
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">Available to protect: {balance.mpgw.availableGrams.toFixed(4)} g</p>
             </div>
 
             <div className="space-y-2">
@@ -326,20 +326,20 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
             </div>
 
             {transferAmount && parseFloat(transferAmount) > 0 && (
-              <div className="p-3 rounded-lg bg-indigo-50 border border-indigo-200">
-                <p className="text-sm font-semibold text-indigo-800 mb-1">Protection Summary</p>
+              <div className="p-3 rounded-lg bg-indigo-50 dark:bg-indigo-950/20 border border-indigo-200 dark:border-indigo-800/40">
+                <p className="text-sm font-semibold text-indigo-800 dark:text-indigo-200 mb-1">Protection Summary</p>
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className="text-indigo-600">Gold to protect:</span>
-                    <span className="font-semibold text-indigo-800">{parseFloat(transferAmount).toFixed(6)} g</span>
+                    <span className="text-indigo-600 dark:text-indigo-400">Gold to protect:</span>
+                    <span className="font-semibold text-indigo-800 dark:text-indigo-200">{parseFloat(transferAmount).toFixed(6)} g</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-indigo-600">Lock price:</span>
-                    <span className="font-semibold text-indigo-800">${balance.goldPricePerGram.toFixed(2)}/g</span>
+                    <span className="text-indigo-600 dark:text-indigo-400">Lock price:</span>
+                    <span className="font-semibold text-indigo-800 dark:text-indigo-200">${balance.goldPricePerGram.toFixed(2)}/g</span>
                   </div>
-                  <div className="flex justify-between text-sm border-t border-indigo-200 pt-1 mt-1">
-                    <span className="text-indigo-700 font-semibold">Protected USD value:</span>
-                    <span className="font-bold text-indigo-800">${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}</span>
+                  <div className="flex justify-between text-sm border-t border-indigo-200 dark:border-indigo-800/40 pt-1 mt-1">
+                    <span className="text-indigo-700 dark:text-indigo-300 font-semibold">Protected USD value:</span>
+                    <span className="font-bold text-indigo-800 dark:text-indigo-200">${(parseFloat(transferAmount) * balance.goldPricePerGram).toFixed(2)}</span>
                   </div>
                 </div>
                 <p className="text-xs text-indigo-500 mt-2">This value will be preserved even if the gold price drops.</p>
@@ -386,7 +386,7 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
       <Dialog open={!!removeConfirm} onOpenChange={(open) => { if (!open) setRemoveConfirm(null); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-amber-700">
+            <DialogTitle className="flex items-center gap-2 text-amber-700 dark:text-amber-300">
               <ShieldOff className="w-5 h-5" />
               Remove Price Protection?
             </DialogTitle>
@@ -398,21 +398,21 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
           {removeConfirm && (
             <div className="space-y-4 py-2">
               {/* What changes */}
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+              <div className="rounded-xl border border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20 p-4 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-700 font-medium">Gold amount</span>
+                  <span className="text-amber-700 dark:text-amber-300 font-medium">Gold amount</span>
                   <span className="font-bold text-amber-900">{removeConfirm.goldGrams.toFixed(4)} g</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-amber-700 font-medium">Your locked price</span>
+                  <span className="text-amber-700 dark:text-amber-300 font-medium">Your locked price</span>
                   <span className="font-bold text-amber-900">${removeConfirm.lockedPriceUsd.toFixed(2)}/g</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-amber-200 pt-2">
-                  <span className="text-amber-700 font-medium">Live market price</span>
+                <div className="flex justify-between text-sm border-t border-amber-200 dark:border-amber-800/40 pt-2">
+                  <span className="text-amber-700 dark:text-amber-300 font-medium">Live market price</span>
                   <span className="font-bold text-amber-900">${(balance?.goldPricePerGram ?? 0).toFixed(2)}/g</span>
                 </div>
-                <div className="flex justify-between text-sm border-t border-amber-200 pt-2">
-                  <span className="text-amber-700 font-semibold">Value after removal</span>
+                <div className="flex justify-between text-sm border-t border-amber-200 dark:border-amber-800/40 pt-2">
+                  <span className="text-amber-700 dark:text-amber-300 font-semibold">Value after removal</span>
                   <span className="font-bold text-lg text-amber-900">
                     ${(removeConfirm.goldGrams * (balance?.goldPricePerGram ?? 0)).toFixed(2)}
                   </span>
@@ -420,9 +420,9 @@ const DualWalletDisplay = forwardRef<DualWalletDisplayHandle, DualWalletDisplayP
               </div>
 
               {/* Warning notice */}
-              <div className="rounded-xl border border-orange-200 bg-orange-50 p-3 flex gap-2">
+              <div className="rounded-xl border border-orange-200 dark:border-orange-800/40 bg-orange-50 dark:bg-orange-950/20 p-3 flex gap-2">
                 <AlertTriangle className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
-                <p className="text-xs text-orange-700 leading-relaxed">
+                <p className="text-xs text-orange-700 dark:text-orange-300 leading-relaxed">
                   Once removed, your <span className="font-semibold">{removeConfirm.goldGrams.toFixed(4)} g</span> will
                   be moved back to your <span className="font-semibold">at-market-price</span> balance and valued at the
                   current live market rate of <span className="font-semibold">${(balance?.goldPricePerGram ?? 0).toFixed(2)}/g</span>.

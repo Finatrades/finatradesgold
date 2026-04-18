@@ -49,8 +49,8 @@ export default function GeoRestrictionNotice() {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-card rounded-2xl p-8 max-w-md text-center shadow-2xl"
         >
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Globe className="w-8 h-8 text-red-600" />
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Globe className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
           <h2 className="text-2xl font-bold text-foreground mb-2">
             Service Unavailable
@@ -77,7 +77,7 @@ export default function GeoRestrictionNotice() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -20 }}
-        className="fixed top-0 left-0 right-0 z-[90] bg-amber-500/95 text-amber-950 py-3 px-4 shadow-lg"
+        className="fixed top-0 left-0 right-0 z-[90] bg-amber-50 dark:bg-amber-950/200/95 text-amber-950 py-3 px-4 shadow-lg"
         data-testid="geo-restriction-notice"
       >
         <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">

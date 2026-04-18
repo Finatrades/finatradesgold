@@ -154,21 +154,21 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
             <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
             <p className="text-2xl font-bold text-foreground">${walletBalance.toFixed(2)}</p>
           </div>
-          <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-            <Building2 className="w-6 h-6 text-purple-600" />
+          <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
           </div>
         </div>
         
-        <div className="pt-4 border-t border-purple-200">
+        <div className="pt-4 border-t border-purple-200 dark:border-purple-800/40">
           <WalletTypeSelector value={selectedWalletType} onChange={setSelectedWalletType} />
 
           <div className="flex items-center justify-between mb-2 mt-3">
             <Label className="text-sm font-medium text-foreground/85">Amount to Withdraw *</Label>
             <div className="flex bg-muted rounded-lg p-1">
               <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>Grams</button>
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>Grams</button>
               <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }}
-                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground'}`}>USD</button>
+                className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground'}`}>USD</button>
             </div>
           </div>
           <div className="relative">
@@ -176,15 +176,15 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
             <Input type="number" value={inputValue} onChange={(e) => setInputValue(e.target.value)} placeholder={inputMode === 'grams' ? "0.0000" : "0.00"} className="pl-9 bg-card border-border text-lg font-semibold h-14 rounded-xl" />
           </div>
           {numericValue > 0 && goldPricePerGram > 0 && (
-            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3">
+            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 mt-3">
               <div className="flex justify-between items-center">
-                <span className="text-purple-700 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
-                <span className="text-lg font-bold text-purple-700">{inputMode === 'grams' ? `$${amountUsd.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
+                <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
+                <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{inputMode === 'grams' ? `$${amountUsd.toFixed(2)}` : `${grams.toFixed(4)}g`}</span>
               </div>
             </div>
           )}
           {grams > availableGrams && (
-            <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-3 rounded-xl mt-2">
+            <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-3 rounded-xl mt-2">
               <span>Insufficient gold. You have {availableGrams.toFixed(4)}g available.</span>
             </div>
           )}
@@ -212,20 +212,20 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
   const submittedContent = (
     <div className="py-6 space-y-6">
       <div className="text-center">
-        <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-10 h-10 text-green-600" />
+        <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+          <CheckCircle2 className="w-10 h-10 text-green-600 dark:text-green-400" />
         </div>
         <h3 className="text-xl font-bold">Withdrawal Request Submitted!</h3>
         <p className="text-sm text-muted-foreground mt-2">Your request is now being reviewed.</p>
       </div>
       <div className="grid grid-cols-2 gap-4">
-        <div className="bg-purple-50 border border-purple-200 rounded-xl p-4 text-center">
+        <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-xl p-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Reference</p>
-          <p className="font-mono font-bold text-lg text-purple-600">{referenceNumber}</p>
+          <p className="font-mono font-bold text-lg text-purple-600 dark:text-purple-400">{referenceNumber}</p>
         </div>
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+        <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-xl p-4 text-center">
           <p className="text-xs text-muted-foreground mb-1">Amount</p>
-          <p className="font-bold text-lg text-green-600">{grams.toFixed(4)}g</p>
+          <p className="font-bold text-lg text-green-600 dark:text-green-400">{grams.toFixed(4)}g</p>
         </div>
       </div>
     </div>
@@ -233,12 +233,12 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
 
   const footerButton = step === 'form' ? (
     <Button onClick={handleSubmit} disabled={!inputValue || !bankName || !accountName || !accountNumber || submitting || grams > availableGrams}
-      className="w-full h-14 bg-purple-500 hover:bg-purple-600 text-white font-bold text-base rounded-xl">
+      className="w-full h-14 bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600 text-white font-bold text-base rounded-xl">
       {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
       Submit Withdrawal
     </Button>
   ) : (
-    <Button onClick={handleClose} className="w-full h-14 bg-purple-500 hover:bg-purple-600 text-white font-bold text-base rounded-xl">Done</Button>
+    <Button onClick={handleClose} className="w-full h-14 bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600 text-white font-bold text-base rounded-xl">Done</Button>
   );
 
   if (isMobile) {
@@ -279,12 +279,12 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                     <p className="text-xs text-muted-foreground mb-1">Available Balance</p>
                     <p className="text-2xl font-bold text-foreground">${walletBalance.toFixed(2)}</p>
                   </div>
-                  <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                    <Building2 className="w-6 h-6 text-purple-600" />
+                  <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Building2 className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
                 
-                <div className="pt-4 border-t border-purple-200">
+                <div className="pt-4 border-t border-purple-200 dark:border-purple-800/40">
                 {/* Wallet Type Selection */}
                 <div className="mb-3">
                   <WalletTypeSelector
@@ -299,14 +299,14 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                       <button
                         type="button"
                         onClick={() => { setInputMode('grams'); setInputValue(''); }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                       >
                         Grams
                       </button>
                       <button
                         type="button"
                         onClick={() => { setInputMode('usd'); setInputValue(''); }}
-                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}
+                        className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}
                       >
                         USD
                       </button>
@@ -330,12 +330,12 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                   </div>
                   {/* Show calculated equivalent */}
                   {numericValue > 0 && goldPricePerGram > 0 && (
-                    <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 mt-3 animate-in fade-in">
+                    <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 mt-3 animate-in fade-in">
                       <div className="flex justify-between items-center">
-                        <span className="text-purple-700 text-sm font-medium">
+                        <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">
                           {inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}
                         </span>
-                        <span className="text-lg font-bold text-purple-700">
+                        <span className="text-lg font-bold text-purple-700 dark:text-purple-300">
                           {inputMode === 'grams' 
                             ? `$${amountUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                             : `${grams.toFixed(4)}g`
@@ -345,20 +345,20 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                     </div>
                   )}
                   {grams > availableGrams && (
-                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 p-2 rounded-md mt-2">
+                    <div className="flex items-center gap-2 text-red-500 text-sm bg-red-50 dark:bg-red-950/20 p-2 rounded-md mt-2">
                       <span className="text-red-500">⚠️</span>
                       <span>Insufficient gold. You have {availableGrams.toFixed(4)}g available.</span>
                     </div>
                   )}
                   {grams > 0 && grams <= availableGrams && goldPricePerGram > 0 && (
-                    <div className="bg-green-50 border border-green-200 rounded-lg p-3 mt-3 animate-in fade-in">
+                    <div className="bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg p-3 mt-3 animate-in fade-in">
                       <div className="flex justify-between items-center">
-                        <span className="text-green-700 text-sm font-medium">Remaining Balance</span>
+                        <span className="text-green-700 dark:text-green-300 text-sm font-medium">Remaining Balance</span>
                         <div className="text-right">
-                          <span className="text-lg font-bold text-green-700">
+                          <span className="text-lg font-bold text-green-700 dark:text-green-300">
                             {(availableGrams - grams).toFixed(4)}g
                           </span>
-                          <span className="text-sm text-green-600 ml-2">
+                          <span className="text-sm text-green-600 dark:text-green-400 ml-2">
                             ≈ ${((availableGrams - grams) * goldPricePerGram).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                         </div>
@@ -368,7 +368,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
                 </div>
               </div>
               
-              <div className="bg-purple-50 text-purple-800 text-xs p-4 rounded-lg flex items-start gap-2 border border-purple-200">
+              <div className="bg-purple-50 dark:bg-purple-950/20 text-purple-800 dark:text-purple-200 text-xs p-4 rounded-lg flex items-start gap-2 border border-purple-200 dark:border-purple-800/40">
                 <div className="mt-0.5 text-purple-500">⚠️</div>
                 <p className="leading-relaxed">Once submitted, the withdrawal amount will be held from your balance. Funds will be transferred to your bank account within 2-5 business days after admin approval.</p>
               </div>
@@ -497,7 +497,7 @@ export default function WithdrawalModal({ isOpen, onClose }: WithdrawalModalProp
               <Button 
                 onClick={handleSubmit} 
                 disabled={!inputValue || !bankName || !accountName || !accountNumber || submitting || grams > availableGrams}
-                className="bg-purple-500 hover:bg-purple-600"
+                className="bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600"
                 data-testid="button-submit-withdrawal"
               >
                 {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}

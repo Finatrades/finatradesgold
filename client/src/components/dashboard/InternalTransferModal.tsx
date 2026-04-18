@@ -30,18 +30,18 @@ const WALLETS: Wallet[] = [
     label: 'BNSL Wallet',
     sublabel: 'Gold Yield Plans escrow',
     icon: <Zap className="w-4 h-4" />,
-    color: 'text-teal-700',
-    bg: 'bg-teal-50',
-    border: 'border-teal-200',
+    color: 'text-teal-700 dark:text-teal-300',
+    bg: 'bg-teal-50 dark:bg-teal-950/20',
+    border: 'border-teal-200 dark:border-teal-800/40',
   },
   {
     id: 'finabridge',
     label: 'FinaBridge Wallet',
     sublabel: 'Trade finance escrow',
     icon: <ArrowLeftRight className="w-4 h-4" />,
-    color: 'text-blue-700',
-    bg: 'bg-blue-50',
-    border: 'border-blue-200',
+    color: 'text-blue-700 dark:text-blue-300',
+    bg: 'bg-blue-50 dark:bg-blue-950/20',
+    border: 'border-blue-200 dark:border-blue-800/40',
     requiresBusiness: true,
   },
   {
@@ -49,18 +49,18 @@ const WALLETS: Wallet[] = [
     label: 'Fixed Price Wallet',
     sublabel: 'Lock gold at today\'s price',
     icon: <Lock className="w-4 h-4" />,
-    color: 'text-amber-700',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    color: 'text-amber-700 dark:text-amber-300',
+    bg: 'bg-amber-50 dark:bg-amber-950/20',
+    border: 'border-amber-200 dark:border-amber-800/40',
   },
   {
     id: 'finacard',
     label: 'FinaCard',
     sublabel: 'Gold-backed virtual card',
     icon: <CreditCard className="w-4 h-4" />,
-    color: 'text-violet-700',
-    bg: 'bg-violet-50',
-    border: 'border-violet-200',
+    color: 'text-violet-700 dark:text-violet-300',
+    bg: 'bg-violet-50 dark:bg-violet-950/20',
+    border: 'border-violet-200 dark:border-violet-800/40',
   },
 ];
 
@@ -198,7 +198,7 @@ export default function InternalTransferModal({
 
           {/* Available balance pill */}
           {!isDone && (
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100 mb-4">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100 mb-4">
               <Weight className="w-3 h-3 text-slate-400" />
               <span className="text-[11px] text-slate-500">Available:</span>
               <span className="text-[11px] font-extrabold text-slate-700">{availableGoldGrams.toFixed(4)}g</span>
@@ -209,7 +209,7 @@ export default function InternalTransferModal({
           {/* DONE */}
           {isDone && (
             <div className="flex flex-col items-center py-6 text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <div>
@@ -236,7 +236,7 @@ export default function InternalTransferModal({
                   className={`w-full flex items-center gap-3 px-3.5 py-3 rounded-xl border transition-all text-left ${
                     selectedWallet === wallet.id
                       ? `${wallet.bg} ${wallet.border} border-2`
-                      : 'bg-card border-slate-200 hover:border-slate-300'
+                      : 'bg-card border-slate-200 dark:border-slate-800/40 hover:border-slate-300'
                   }`}
                   data-testid={`option-transfer-${wallet.id}`}
                 >
@@ -287,7 +287,7 @@ export default function InternalTransferModal({
                   <Label className="text-[11px] font-semibold text-slate-600">Amount (grams)</Label>
                   <button
                     onClick={() => setAmount(availableGoldGrams.toFixed(6))}
-                    className="text-[10px] text-violet-600 font-semibold hover:underline"
+                    className="text-[10px] text-violet-600 dark:text-violet-400 font-semibold hover:underline"
                     data-testid="button-transfer-max"
                   >
                     Use Max

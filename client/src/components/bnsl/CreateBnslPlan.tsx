@@ -401,8 +401,8 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
                   Max: {inputMode === 'grams' ? `${bnslWalletBalance.toFixed(3)}g` : `$${(bnslWalletBalance * currentGoldPrice).toFixed(2)}`}
                 </span>
                 <div className="flex bg-muted rounded-lg p-1">
-                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
-                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-500 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
+                  <button type="button" onClick={() => { setInputMode('grams'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'grams' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}>Grams</button>
+                  <button type="button" onClick={() => { setInputMode('usd'); setInputValue(''); }} className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${inputMode === 'usd' ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'text-muted-foreground hover:bg-muted'}`}>USD</button>
                 </div>
               </div>
             </div>
@@ -424,10 +424,10 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             </div>
             {/* Show calculated equivalent */}
             {numericInput > 0 && currentGoldPrice > 0 && (
-              <div className="bg-purple-50 border border-purple-200 rounded-lg p-3 animate-in fade-in">
+              <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-3 animate-in fade-in">
                 <div className="flex justify-between items-center">
-                  <span className="text-purple-700 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
-                  <span className="text-lg font-bold text-purple-700">{inputMode === 'grams' ? `$${basePriceComponent.toFixed(2)}` : `${amount.toFixed(4)}g`}</span>
+                  <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">{inputMode === 'grams' ? 'USD Equivalent' : 'Gold Amount'}</span>
+                  <span className="text-lg font-bold text-purple-700 dark:text-purple-300">{inputMode === 'grams' ? `$${basePriceComponent.toFixed(2)}` : `${amount.toFixed(4)}g`}</span>
                 </div>
               </div>
             )}
@@ -443,12 +443,12 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
             </div>
             
             {/* Price Lock Info */}
-            <div className="p-3 bg-amber-50 border border-amber-200 rounded-lg mt-3">
+            <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg mt-3">
               <div className="flex items-start gap-2">
-                <Shield className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+                <Shield className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="text-amber-800 text-xs font-medium">Price Lock Protection</p>
-                  <p className="text-amber-700 text-xs mt-1">
+                  <p className="text-amber-800 dark:text-amber-200 text-xs font-medium">Price Lock Protection</p>
+                  <p className="text-amber-700 dark:text-amber-300 text-xs mt-1">
                     When you move gold into BNSL, you secure today's USD price. This protects you from price drops, but you won't gain if prices rise while the gold is in BNSL.
                   </p>
                 </div>
@@ -562,7 +562,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
                         <div className="border-t border-border pt-3 space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Total Margin</span>
-                            <span className="font-bold text-green-600">${variantTotalMargin.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                            <span className="font-bold text-green-600 dark:text-green-400">${variantTotalMargin.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
                           </div>
                           <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Quarterly</span>
@@ -596,7 +596,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
                 </div>
                 <div>
                   <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Margin</p>
-                  <p className="text-xl font-bold text-green-600" data-testid="text-total-margin">${totalMarginComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+                  <p className="text-xl font-bold text-green-600 dark:text-green-400" data-testid="text-total-margin">${totalMarginComponent.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
                   <p className="text-[10px] text-muted-foreground">Over {selectedTenor} months</p>
                 </div>
                 <div>
@@ -624,7 +624,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6 space-y-4">
-          <div className="flex items-center gap-2 text-sm text-fuchsia-600 bg-purple-50 p-3 rounded-lg border border-purple-200">
+          <div className="flex items-center gap-2 text-sm text-fuchsia-600 dark:text-fuchsia-400 bg-purple-50 dark:bg-purple-950/20 p-3 rounded-lg border border-purple-200 dark:border-purple-800/40">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>Please read the complete terms carefully. Scroll to the bottom to continue.</span>
           </div>
@@ -638,7 +638,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           </div>
 
           {hasScrolledTerms && (
-            <div className="flex items-center gap-2 text-sm text-green-600">
+            <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
               <CheckCircle2 className="w-4 h-4" />
               <span>You have reviewed the terms</span>
             </div>
@@ -647,7 +647,7 @@ export default function CreateBnslPlan({ bnslWalletBalance, currentGoldPrice, on
           <div 
             className={`flex items-start gap-3 p-4 rounded-lg cursor-pointer transition-colors ${
               agreedToTerms 
-                ? 'bg-green-50 border border-green-200' 
+                ? 'bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40' 
                 : 'bg-muted/50 border border-border hover:bg-muted'
             }`}
             onClick={() => setAgreedToTerms(!agreedToTerms)}

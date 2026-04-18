@@ -88,25 +88,25 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
   };
 
   const getColor = (type: string, isSwap: boolean = false, isMpgwToFpgw: boolean = false, isFpgwToMpgw: boolean = false) => {
-    if (isMpgwToFpgw) return 'bg-green-500/10 text-green-600';
+    if (isMpgwToFpgw) return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400';
     if (isFpgwToMpgw) return 'bg-gray-500/10 text-muted-foreground';
-    if (isSwap) return 'bg-green-500/10 text-green-600';
+    if (isSwap) return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400';
     switch (type) {
-      case 'Buy': return 'bg-green-500/10 text-green-500';
-      case 'Deposit': return 'bg-green-500/10 text-green-500';
-      case 'Sell': return 'bg-red-500/10 text-red-500';
-      case 'Send': return 'bg-purple-500/10 text-purple-500';
-      case 'Receive': return 'bg-blue-500/10 text-blue-500';
-      case 'Request': return 'bg-purple-500/10 text-purple-500';
+      case 'Buy': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500';
+      case 'Deposit': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500';
+      case 'Sell': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500';
+      case 'Send': return 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500';
+      case 'Receive': return 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500';
+      case 'Request': return 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500';
       default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 
   const getStatusColor = (status: string) => {
      switch(status) {
-       case 'Completed': return 'bg-green-500/10 text-green-600 border-green-500/20';
-       case 'Pending': return 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20';
-       case 'Failed': return 'bg-red-500/10 text-red-600 border-red-500/20';
+       case 'Completed': return 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/20';
+       case 'Pending': return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/20';
+       case 'Failed': return 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/20';
        case 'Declined': return 'bg-gray-500/10 text-muted-foreground border-gray-500/20';
        default: return 'bg-card/5 text-white/60';
      }
@@ -395,9 +395,9 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                                   ) : isSwap ? (
                                     <p className="font-semibold text-muted-foreground text-sm">{tx.amountGrams?.toFixed(4)}g</p>
                                   ) : isCredit ? (
-                                    <p className="font-semibold text-green-600 text-sm">+{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
+                                    <p className="font-semibold text-green-600 dark:text-green-400 text-sm">+{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
                                   ) : isDebit ? (
-                                    <p className="font-semibold text-red-600 text-sm">-{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
+                                    <p className="font-semibold text-red-600 dark:text-red-400 text-sm">-{tx.amountGrams?.toFixed(4) || `$${tx.amountUsd.toFixed(2)}`}{tx.amountGrams ? 'g' : ''}</p>
                                   ) : (
                                     <p className="text-sm text-muted-foreground">—</p>
                                   )}
@@ -504,7 +504,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                               <span className="text-muted-foreground">—</span>
                             ) : isDebit ? (
                               <div>
-                                <span className="text-red-600 font-medium">
+                                <span className="text-red-600 dark:text-red-400 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
                                 {tx.amountGrams && tx.amountGrams > 0 && (
@@ -520,7 +520,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                               <span className="text-muted-foreground">—</span>
                             ) : isCredit ? (
                               <div>
-                                <span className="text-green-600 font-medium">
+                                <span className="text-green-600 dark:text-green-400 font-medium">
                                   {tx.amountGrams && tx.amountGrams > 0 ? `${tx.amountGrams.toFixed(4)} g` : `$${tx.amountUsd.toFixed(2)}`}
                                 </span>
                                 {tx.amountGrams && tx.amountGrams > 0 && (
@@ -588,7 +588,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
                               <td className="py-2 px-4">
                                 <div className="flex items-center gap-2">
                                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                                    entry.action === 'Vault_Transfer' ? 'bg-blue-100 text-blue-700' : 'bg-green-100 text-green-700'
+                                    entry.action === 'Vault_Transfer' ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300' : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300'
                                   }`}>
                                     {entry.action === 'Vault_Transfer' ? 'Physical Storage' : 'Recorded'}
                                   </span>

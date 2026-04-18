@@ -34,11 +34,11 @@ export function PriceProtectionBatches({
     <div className="bg-card rounded-2xl border border-indigo-100 shadow-sm overflow-hidden" data-testid="price-protection-section">
       <div className="px-6 pt-5 pb-4 border-b border-indigo-50">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-5 h-5 text-indigo-600" />
+          <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
           <h3 className="text-base font-bold text-indigo-900">Price Protection</h3>
           <Tooltip>
             <TooltipTrigger asChild>
-              <button className="text-indigo-400 hover:text-indigo-600 transition-colors" data-testid="btn-price-protection-tooltip">
+              <button className="text-indigo-400 hover:text-indigo-600 dark:text-indigo-400 transition-colors" data-testid="btn-price-protection-tooltip">
                 <Info className="w-4 h-4" />
               </button>
             </TooltipTrigger>
@@ -64,8 +64,8 @@ export function PriceProtectionBatches({
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 space-y-2">
                   <div className="flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0" />
-                    <span className="text-sm font-semibold text-indigo-800">Price Protection Active</span>
+                    <ShieldCheck className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                    <span className="text-sm font-semibold text-indigo-800 dark:text-indigo-200">Price Protection Active</span>
                   </div>
                   <p className="text-sm text-foreground font-medium">
                     {lock.goldGrams.toFixed(4)}g protected at ${lock.lockedPriceUsd.toFixed(2)}/g
@@ -73,13 +73,13 @@ export function PriceProtectionBatches({
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     Current market: ${balance.goldPricePerGram.toFixed(2)}/g
                     {!isSame && (
-                      <span className={`ml-1 font-medium ${isAhead ? 'text-green-600' : 'text-red-500'}`}>
+                      <span className={`ml-1 font-medium ${isAhead ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                         ({isAhead ? 'your protection is ahead of market' : 'market is above your locked price'})
                       </span>
                     )}
                   </p>
                   <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                    <span>Protected value: <span className="font-semibold text-indigo-700">${lockedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
+                    <span>Protected value: <span className="font-semibold text-indigo-700 dark:text-indigo-300">${lockedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                     <span>·</span>
                     <span>Market value: <span className="font-semibold text-foreground">${marketValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span></span>
                   </div>
@@ -87,7 +87,7 @@ export function PriceProtectionBatches({
                 <Button
                   size="sm"
                   variant="outline"
-                  className="h-8 px-3 text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-50 shrink-0"
+                  className="h-8 px-3 text-xs border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:bg-indigo-950/20 shrink-0"
                   onClick={() => onRemoveLock({ id: lock.id, goldGrams: lock.goldGrams, lockedPriceUsd: lock.lockedPriceUsd })}
                   disabled={isTransferPending}
                   data-testid={`button-unlock-lock-${lock.id}`}

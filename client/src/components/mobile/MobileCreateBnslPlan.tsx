@@ -179,7 +179,7 @@ export default function MobileCreateBnslPlan({
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-purple-50 to-white">
         <div className="text-center">
-          <Loader2 className="w-10 h-10 animate-spin text-purple-600 mx-auto mb-3" />
+          <Loader2 className="w-10 h-10 animate-spin text-purple-600 dark:text-purple-400 mx-auto mb-3" />
           <p className="text-muted-foreground">Loading plans...</p>
         </div>
       </div>
@@ -202,8 +202,8 @@ export default function MobileCreateBnslPlan({
       {/* Header */}
       <div className="sticky top-0 z-10 bg-card/80 backdrop-blur-lg border-b border-purple-100 px-4 py-3">
         <div className="flex items-center gap-3">
-          <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-purple-100 transition-colors">
-            <ArrowLeft className="w-5 h-5 text-purple-700" />
+          <button onClick={handleBack} className="p-2 -ml-2 rounded-full hover:bg-purple-100 dark:bg-purple-900/30 transition-colors">
+            <ArrowLeft className="w-5 h-5 text-purple-700 dark:text-purple-300" />
           </button>
           <div className="flex-1">
             <h1 className="text-lg font-bold text-purple-900">Join BNSL Plan</h1>
@@ -247,11 +247,11 @@ export default function MobileCreateBnslPlan({
               <div className="bg-card rounded-2xl p-5 shadow-sm border border-purple-100">
                 <div className="flex items-center justify-between mb-4">
                   <span className="font-semibold text-foreground">Gold to Sell</span>
-                  <div className="flex bg-purple-100 rounded-lg p-1">
+                  <div className="flex bg-purple-100 dark:bg-purple-900/30 rounded-lg p-1">
                     <button 
                       onClick={() => { setInputMode('grams'); setInputValue(''); }}
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                        inputMode === 'grams' ? 'bg-purple-600 text-white shadow' : 'text-purple-700'
+                        inputMode === 'grams' ? 'bg-purple-600 text-white shadow' : 'text-purple-700 dark:text-purple-300'
                       }`}
                     >
                       Grams
@@ -259,7 +259,7 @@ export default function MobileCreateBnslPlan({
                     <button 
                       onClick={() => { setInputMode('usd'); setInputValue(''); }}
                       className={`px-3 py-1.5 text-sm font-medium rounded-md transition-all ${
-                        inputMode === 'usd' ? 'bg-purple-600 text-white shadow' : 'text-purple-700'
+                        inputMode === 'usd' ? 'bg-purple-600 text-white shadow' : 'text-purple-700 dark:text-purple-300'
                       }`}
                     >
                       USD
@@ -274,7 +274,7 @@ export default function MobileCreateBnslPlan({
                     onChange={(e) => setInputValue(e.target.value)}
                     placeholder="0"
                     className={`text-center text-4xl font-bold h-20 border-2 rounded-xl ${
-                      goldAmount > bnslWalletBalance ? 'border-red-400 bg-red-50' : 'border-purple-200 focus:border-purple-500'
+                      goldAmount > bnslWalletBalance ? 'border-red-400 bg-red-50 dark:bg-red-950/20' : 'border-purple-200 dark:border-purple-800/40 focus:border-purple-500'
                     }`}
                   />
                   <span className="absolute right-4 top-1/2 -translate-y-1/2 text-2xl text-muted-foreground font-medium">
@@ -284,7 +284,7 @@ export default function MobileCreateBnslPlan({
 
                 <button 
                   onClick={() => setInputValue(inputMode === 'grams' ? bnslWalletBalance.toFixed(4) : (bnslWalletBalance * currentGoldPrice).toFixed(2))}
-                  className="mt-3 text-sm text-purple-600 font-medium"
+                  className="mt-3 text-sm text-purple-600 dark:text-purple-400 font-medium"
                 >
                   Use Max: {inputMode === 'grams' ? `${bnslWalletBalance.toFixed(3)}g` : `$${(bnslWalletBalance * currentGoldPrice).toFixed(2)}`}
                 </button>
@@ -301,24 +301,24 @@ export default function MobileCreateBnslPlan({
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-purple-50 rounded-2xl p-4 border border-purple-200"
+                  className="bg-purple-50 dark:bg-purple-950/20 rounded-2xl p-4 border border-purple-200 dark:border-purple-800/40"
                 >
                   <div className="flex justify-between items-center">
-                    <span className="text-purple-700 font-medium">You're selling</span>
+                    <span className="text-purple-700 dark:text-purple-300 font-medium">You're selling</span>
                     <div className="text-right">
                       <p className="text-xl font-bold text-purple-900">{goldAmount.toFixed(4)}g</p>
-                      <p className="text-sm text-purple-600">≈ ${basePriceUsd.toFixed(2)}</p>
+                      <p className="text-sm text-purple-600 dark:text-purple-400">≈ ${basePriceUsd.toFixed(2)}</p>
                     </div>
                   </div>
                 </motion.div>
               )}
 
               {/* Price Lock Info */}
-              <div className="flex items-start gap-3 p-4 bg-amber-50 rounded-xl border border-amber-200">
-                <Shield className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-800/40">
+                <Shield className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="font-medium text-amber-800 text-sm">Price Lock Protection</p>
-                  <p className="text-xs text-amber-700 mt-1">
+                  <p className="font-medium text-amber-800 dark:text-amber-200 text-sm">Price Lock Protection</p>
+                  <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
                     Today's price ${currentGoldPrice.toFixed(2)}/g will be locked for your plan.
                   </p>
                 </div>
@@ -366,7 +366,7 @@ export default function MobileCreateBnslPlan({
                         </div>
                       )}
                       
-                      <div className={`p-4 ${isSelected ? 'bg-purple-50' : 'bg-card'}`}>
+                      <div className={`p-4 ${isSelected ? 'bg-purple-50 dark:bg-purple-950/20' : 'bg-card'}`}>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
                             <div className={`w-12 h-12 rounded-xl flex items-center justify-center ${
@@ -377,8 +377,8 @@ export default function MobileCreateBnslPlan({
                             <div>
                               <p className="text-2xl font-bold text-foreground">{variant.tenorMonths} <span className="text-base font-normal text-muted-foreground">months</span></p>
                               <div className="flex items-center gap-1 mt-0.5">
-                                <TrendingUp className={`w-4 h-4 ${isSelected ? 'text-purple-600' : 'text-green-600'}`} />
-                                <span className={`font-bold ${isSelected ? 'text-purple-600' : 'text-green-600'}`}>
+                                <TrendingUp className={`w-4 h-4 ${isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'}`} />
+                                <span className={`font-bold ${isSelected ? 'text-purple-600 dark:text-purple-400' : 'text-green-600 dark:text-green-400'}`}>
                                   {variant.marginRatePercent}% p.a.
                                 </span>
                               </div>
@@ -396,7 +396,7 @@ export default function MobileCreateBnslPlan({
                           <div className="mt-4 pt-3 border-t border-border grid grid-cols-3 gap-2">
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Total Margin</p>
-                              <p className="font-bold text-green-600">${variantTotalMargin.toFixed(0)}</p>
+                              <p className="font-bold text-green-600 dark:text-green-400">${variantTotalMargin.toFixed(0)}</p>
                             </div>
                             <div className="text-center">
                               <p className="text-xs text-muted-foreground">Quarterly</p>
@@ -461,8 +461,8 @@ export default function MobileCreateBnslPlan({
               {/* Key Terms Cards */}
               <div className="space-y-3">
                 <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
-                    <Coins className="w-5 h-5 text-green-600" />
+                  <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center flex-shrink-0">
+                    <Coins className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Quarterly Payouts</p>
@@ -471,8 +471,8 @@ export default function MobileCreateBnslPlan({
                 </div>
 
                 <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
-                    <Calendar className="w-5 h-5 text-amber-600" />
+                  <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                    <Calendar className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Base Price at Maturity</p>
@@ -481,8 +481,8 @@ export default function MobileCreateBnslPlan({
                 </div>
 
                 <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-red-100 flex items-center justify-center flex-shrink-0">
-                    <AlertTriangle className="w-5 h-5 text-red-600" />
+                  <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center flex-shrink-0">
+                    <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Early Termination: 2% Fee</p>
@@ -491,8 +491,8 @@ export default function MobileCreateBnslPlan({
                 </div>
 
                 <div className="bg-card rounded-xl p-4 border border-border flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-purple-100 flex items-center justify-center flex-shrink-0">
-                    <FileText className="w-5 h-5 text-purple-600" />
+                  <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                    <FileText className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <p className="font-semibold text-foreground">Admin Fee: 0.5%</p>
@@ -532,7 +532,7 @@ export default function MobileCreateBnslPlan({
                 <motion.div 
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-start gap-3 p-4 bg-green-50 rounded-xl border border-green-200"
+                  className="flex items-start gap-3 p-4 bg-green-50 dark:bg-green-950/20 rounded-xl border border-green-200 dark:border-green-800/40"
                 >
                   <Checkbox 
                     id="terms" 
@@ -608,13 +608,13 @@ export default function MobileCreateBnslPlan({
               >
                 <Download className="w-5 h-5 mr-2" />
                 {hasDownloadedDraft ? 'Download Again' : 'Download Agreement PDF'}
-                {hasDownloadedDraft && <CheckCircle2 className="w-5 h-5 ml-2 text-green-600" />}
+                {hasDownloadedDraft && <CheckCircle2 className="w-5 h-5 ml-2 text-green-600 dark:text-green-400" />}
               </Button>
 
               {/* Signature */}
-              <div className="bg-card rounded-xl p-4 border-2 border-purple-200">
+              <div className="bg-card rounded-xl p-4 border-2 border-purple-200 dark:border-purple-800/40">
                 <div className="flex items-center gap-2 mb-3">
-                  <PenLine className="w-5 h-5 text-purple-600" />
+                  <PenLine className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   <span className="font-semibold">Digital Signature</span>
                 </div>
                 <Input
@@ -629,7 +629,7 @@ export default function MobileCreateBnslPlan({
               </div>
 
               {!hasDownloadedDraft && (
-                <p className="text-center text-sm text-amber-600">
+                <p className="text-center text-sm text-amber-600 dark:text-amber-400">
                   Please download and review the agreement first
                 </p>
               )}

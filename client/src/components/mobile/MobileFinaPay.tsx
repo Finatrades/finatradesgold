@@ -176,7 +176,7 @@ export default function MobileFinaPay() {
               <Coins className="w-4 h-4 text-amber-300" />
               <span className="font-semibold">{showBalance ? `${goldGrams.toFixed(4)}g` : '••••'}</span>
             </div>
-            <div className="flex items-center gap-1.5 bg-emerald-500/20 backdrop-blur-sm px-3 py-2 rounded-xl text-sm">
+            <div className="flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/200/20 backdrop-blur-sm px-3 py-2 rounded-xl text-sm">
               <TrendingUp className="w-4 h-4 text-emerald-300" />
               <span className="font-medium text-emerald-200">${currentGoldPriceUsdPerGram.toFixed(2)}/g</span>
             </div>
@@ -226,11 +226,11 @@ export default function MobileFinaPay() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.1 }}
           whileTap={{ scale: 0.98 }}
-          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-amber-200/50 p-5 shadow-lg shadow-amber-100/50"
+          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-amber-200 dark:border-amber-800/40/50 p-5 shadow-lg shadow-amber-100/50"
         >
           <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-amber-200/40 to-orange-200/40 rounded-full blur-2xl" />
           <div className="absolute right-4 bottom-4 opacity-5">
-            <Coins className="w-20 h-20 text-amber-600" />
+            <Coins className="w-20 h-20 text-amber-600 dark:text-amber-400" />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2.5 mb-3">
@@ -241,7 +241,7 @@ export default function MobileFinaPay() {
               >
                 <Coins className="w-4 h-4 text-white" />
               </motion.div>
-              <span className="text-sm font-bold text-amber-800 uppercase tracking-wide">LGPW - Liquid Gold</span>
+              <span className="text-sm font-bold text-amber-800 dark:text-amber-200 uppercase tracking-wide">LGPW - Liquid Gold</span>
             </div>
             <motion.p 
               key={goldGrams}
@@ -251,7 +251,7 @@ export default function MobileFinaPay() {
             >
               {showBalance ? `${goldGrams.toFixed(4)} g` : '••••••'}
             </motion.p>
-            <p className="text-sm text-amber-700/70 mt-1 font-medium">
+            <p className="text-sm text-amber-700 dark:text-amber-300/70 mt-1 font-medium">
               ≈ ${showBalance ? goldValueUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '••••'}
             </p>
           </div>
@@ -263,11 +263,11 @@ export default function MobileFinaPay() {
           animate={{ opacity: 1, x: 0, scale: 1 }}
           transition={{ type: "spring", stiffness: 300, damping: 25, delay: 0.15 }}
           whileTap={{ scale: 0.98 }}
-          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-emerald-200/50 p-5 shadow-lg shadow-emerald-100/50"
+          className="relative overflow-hidden rounded-2xl bg-card/80 backdrop-blur-xl border border-emerald-200 dark:border-emerald-800/40/50 p-5 shadow-lg shadow-emerald-100/50"
         >
           <div className="absolute -top-6 -right-6 w-24 h-24 bg-gradient-to-br from-emerald-200/40 to-green-200/40 rounded-full blur-2xl" />
           <div className="absolute right-4 bottom-4 opacity-5">
-            <Wallet className="w-20 h-20 text-emerald-600" />
+            <Wallet className="w-20 h-20 text-emerald-600 dark:text-emerald-400" />
           </div>
           <div className="relative z-10">
             <div className="flex items-center gap-2.5 mb-3">
@@ -278,7 +278,7 @@ export default function MobileFinaPay() {
               >
                 <Wallet className="w-4 h-4 text-white" />
               </motion.div>
-              <span className="text-sm font-bold text-emerald-800 uppercase tracking-wide">FGPW - Fiat Balance</span>
+              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-200 uppercase tracking-wide">FGPW - Fiat Balance</span>
             </div>
             <motion.p 
               key={usdBalance}
@@ -288,7 +288,7 @@ export default function MobileFinaPay() {
             >
               {showBalance ? `$${usdBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '••••••'}
             </motion.p>
-            <p className="text-sm text-emerald-700/70 mt-1 font-medium">Available for purchases</p>
+            <p className="text-sm text-emerald-700 dark:text-emerald-300/70 mt-1 font-medium">Available for purchases</p>
           </div>
         </motion.div>
       </div>
@@ -305,7 +305,7 @@ export default function MobileFinaPay() {
           <Button 
             variant="ghost" 
             size="sm" 
-            className="text-purple-600 text-sm font-semibold hover:text-purple-700 hover:bg-purple-50"
+            className="text-purple-600 dark:text-purple-400 text-sm font-semibold hover:text-purple-700 dark:text-purple-300 hover:bg-purple-50 dark:bg-purple-950/20"
             onClick={() => setLocation('/finapay')}
           >
             View All
@@ -337,10 +337,10 @@ export default function MobileFinaPay() {
                   <motion.div 
                     whileHover={{ scale: 1.05 }}
                     className={`w-11 h-11 rounded-xl flex items-center justify-center shadow-sm ${
-                      tx.type.toLowerCase().includes('buy') ? 'bg-gradient-to-br from-purple-100 to-violet-100 text-purple-600' :
-                      tx.type.toLowerCase().includes('sell') ? 'bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600' :
-                      tx.type.toLowerCase().includes('send') ? 'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600' :
-                      tx.type.toLowerCase().includes('receive') ? 'bg-gradient-to-br from-green-100 to-emerald-100 text-green-600' :
+                      tx.type.toLowerCase().includes('buy') ? 'bg-gradient-to-br from-purple-100 to-violet-100 text-purple-600 dark:text-purple-400' :
+                      tx.type.toLowerCase().includes('sell') ? 'bg-gradient-to-br from-amber-100 to-orange-100 text-amber-600 dark:text-amber-400' :
+                      tx.type.toLowerCase().includes('send') ? 'bg-gradient-to-br from-blue-100 to-indigo-100 text-blue-600 dark:text-blue-400' :
+                      tx.type.toLowerCase().includes('receive') ? 'bg-gradient-to-br from-green-100 to-emerald-100 text-green-600 dark:text-green-400' :
                       'bg-gradient-to-br from-gray-100 to-slate-100 text-muted-foreground'
                     }`}
                   >
@@ -364,8 +364,8 @@ export default function MobileFinaPay() {
                     <p className="font-semibold text-sm text-foreground">${tx.amountUsd.toFixed(2)}</p>
                   )}
                   <span className={`text-xs px-2 py-0.5 rounded-full ${
-                    tx.status === 'completed' ? 'bg-green-100 text-green-700' :
-                    tx.status === 'pending' ? 'bg-amber-100 text-amber-700' :
+                    tx.status === 'completed' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
+                    tx.status === 'pending' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300' :
                     'bg-muted text-foreground/85'
                   }`}>
                     {tx.status}

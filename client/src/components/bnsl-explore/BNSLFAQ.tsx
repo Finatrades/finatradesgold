@@ -139,8 +139,8 @@ export default function BNSLFAQ() {
     <section className="py-24 bg-gradient-to-b from-white via-gray-50/50 to-white relative overflow-hidden">
       {/* Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-purple-100/30 blur-3xl" />
-        <div className="absolute bottom-40 left-10 w-80 h-80 rounded-full bg-purple-100/20 blur-3xl" />
+        <div className="absolute top-20 right-20 w-72 h-72 rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-3xl" />
+        <div className="absolute bottom-40 left-10 w-80 h-80 rounded-full bg-purple-100 dark:bg-purple-900/30/20 blur-3xl" />
       </div>
 
       <div className="container mx-auto px-4 relative z-10">
@@ -155,10 +155,10 @@ export default function BNSLFAQ() {
             initial={{ scale: 0.9, opacity: 0 }}
             whileInView={{ scale: 1, opacity: 1 }}
             viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-200/50 mb-6"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-200 dark:border-purple-800/40/50 mb-6"
           >
-            <HelpCircle className="w-4 h-4 text-purple-600" />
-            <span className="text-sm font-medium text-purple-800">Got Questions?</span>
+            <HelpCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+            <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Got Questions?</span>
           </motion.div>
 
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -291,7 +291,7 @@ export default function BNSLFAQ() {
           className="mt-16 text-center"
         >
           <div className="inline-flex flex-col items-center gap-4 p-8 rounded-2xl bg-gradient-to-r from-purple-50 to-purple-50 border border-purple-100">
-            <MessageCircle className="w-10 h-10 text-purple-600" />
+            <MessageCircle className="w-10 h-10 text-purple-600 dark:text-purple-400" />
             <div>
               <h3 className="text-xl font-bold text-foreground mb-2">Still have questions?</h3>
               <p className="text-muted-foreground mb-4">Our team is here to help you 24/7</p>

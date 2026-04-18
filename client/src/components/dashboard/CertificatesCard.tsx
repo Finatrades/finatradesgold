@@ -31,7 +31,7 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-[20px] font-bold text-foreground">Certificates</h3>
         <Link href="/finavault">
-          <Button variant="ghost" size="sm" className="text-violet-600 hover:text-violet-700 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-certificates">
+          <Button variant="ghost" size="sm" className="text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:text-violet-300 text-xs h-7 px-2 font-semibold" data-testid="button-view-all-certificates">
             View All
           </Button>
         </Link>
@@ -60,14 +60,14 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
             return (
               <Link key={cert.id} href="/finavault">
                 <div
-                  className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-gray-50 last:border-0 cursor-pointer hover:bg-violet-50 transition-colors group"
+                  className="flex items-center gap-3 py-3 px-2 rounded-lg border-b border-gray-50 last:border-0 cursor-pointer hover:bg-violet-50 dark:bg-violet-950/20 transition-colors group"
                   data-testid={`certificate-row-${cert.id}`}
                 >
                   <div className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${
-                    isDigital ? 'bg-violet-100' : 'bg-muted'
+                    isDigital ? 'bg-violet-100 dark:bg-violet-900/30' : 'bg-muted'
                   }`}>
                     {isDigital ? (
-                      <Award className="w-4 h-4 text-violet-600" />
+                      <Award className="w-4 h-4 text-violet-600 dark:text-violet-400" />
                     ) : (
                       <Box className="w-4 h-4 text-muted-foreground" />
                     )}
@@ -88,7 +88,7 @@ export default function CertificatesCard({ certificates = [], isLoading = false 
                     <Badge 
                       className={`text-xs border-0 ${
                         cert.status === 'Active' 
-                          ? 'bg-green-100 text-green-700' 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' 
                           : 'bg-muted text-muted-foreground'
                       }`}
                     >

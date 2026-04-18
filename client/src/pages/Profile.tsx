@@ -239,10 +239,10 @@ export default function Profile() {
     }
     switch (kycData.status) {
       case 'Approved':
-        return <Badge className="bg-green-100 text-green-800">Approved</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">Approved</Badge>;
       case 'In Progress':
       case 'Pending Review':
-        return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
+        return <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-200">Pending</Badge>;
       case 'Rejected':
         return <Badge variant="destructive">Rejected</Badge>;
       default:
@@ -340,7 +340,7 @@ export default function Profile() {
             </Badge>
             {(isKycInProgress || isKycNotStarted) && (
               <Link href="/kyc">
-                 <Button size="sm" variant="outline" className="border-purple-500 text-purple-600 hover:bg-purple-50">
+                 <Button size="sm" variant="outline" className="border-purple-500 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:bg-purple-950/20">
                     Complete Verification <ArrowRight className="w-3 h-3 ml-1" />
                  </Button>
               </Link>
@@ -384,7 +384,7 @@ export default function Profile() {
             <Card className="p-4 border-border">
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-sm">
-                  <div className={`p-2 rounded-lg ${isKycApproved ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                  <div className={`p-2 rounded-lg ${isKycApproved ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
                   <div>
@@ -393,13 +393,13 @@ export default function Profile() {
                        <p className="text-xs text-muted-foreground">{getKycLevel()}</p>
                     ) : (
                        <Link href="/kyc">
-                         <p className="text-xs text-purple-600 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
+                         <p className="text-xs text-purple-600 dark:text-purple-400 font-medium hover:underline cursor-pointer">Complete KYC Now</p>
                        </Link>
                     )}
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm">
-                  <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                  <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg">
                     <History className="w-4 h-4" />
                   </div>
                   <div>
@@ -412,7 +412,7 @@ export default function Profile() {
 
             <Card className="p-4 border-border" data-testid="card-user-manual">
               <div className="flex items-center gap-3">
-                <div className="p-2 rounded-lg bg-purple-100 text-purple-700">
+                <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300">
                   <FileText className="w-4 h-4" />
                 </div>
                 <div className="flex-1">
@@ -576,8 +576,8 @@ export default function Profile() {
                     <CardDescription>Download your account statements in bank-style format.</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                      <p className="text-sm text-purple-800">
+                    <div className="p-4 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg">
+                      <p className="text-sm text-purple-800 dark:text-purple-200">
                         Generate a comprehensive statement showing all your deposits, withdrawals, transfers, 
                         and gold transactions with opening and closing balances.
                       </p>
@@ -749,8 +749,8 @@ export default function Profile() {
                       </div>
                     ) : !kycData ? (
                       <div className="text-center py-8">
-                        <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg mb-4">
-                          <p className="text-sm text-yellow-800">
+                        <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/40 rounded-lg mb-4">
+                          <p className="text-sm text-yellow-800 dark:text-yellow-200">
                             You haven't submitted your KYC documents yet. Complete verification to unlock all features.
                           </p>
                         </div>
@@ -787,7 +787,7 @@ export default function Profile() {
                                   )}
                                 </div>
                                 {doc.url && (
-                                  <Badge variant="outline" className="bg-green-50 text-green-700 text-xs">
+                                  <Badge variant="outline" className="bg-green-50 dark:bg-green-950/20 text-green-700 dark:text-green-300 text-xs">
                                     Uploaded
                                   </Badge>
                                 )}
@@ -942,7 +942,7 @@ export default function Profile() {
                               data-testid={`bank-account-${account.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="p-2 bg-blue-100 text-blue-700 rounded-lg">
+                                <div className="p-2 bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg">
                                   <Building2 className="w-4 h-4" />
                                 </div>
                                 <div>
@@ -1079,7 +1079,7 @@ export default function Profile() {
                               data-testid={`crypto-wallet-${wallet.id}`}
                             >
                               <div className="flex items-center gap-3">
-                                <div className="p-2 bg-orange-100 text-orange-700 rounded-lg">
+                                <div className="p-2 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 rounded-lg">
                                   <Wallet className="w-4 h-4" />
                                 </div>
                                 <div>

@@ -204,9 +204,9 @@ function userDisplayName(u: UserDisplayable | null | undefined): string {
 }
 
 function getRoleColor(role: string) {
-  if (role === 'importer') return 'bg-blue-500';
-  if (role === 'exporter') return 'bg-green-500';
-  if (role === 'admin') return 'bg-purple-500';
+  if (role === 'importer') return 'bg-blue-50 dark:bg-blue-950/200';
+  if (role === 'exporter') return 'bg-green-50 dark:bg-green-950/200';
+  if (role === 'admin') return 'bg-purple-50 dark:bg-purple-950/200';
   return 'bg-gray-500';
 }
 
@@ -227,14 +227,14 @@ function LcMilestoneStrip({ currentStage, isClosed }: { currentStage: string | n
             <React.Fragment key={s}>
               <div className="flex flex-col items-center gap-1 min-w-fit">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold border-2 flex-shrink-0 ${
-                  isCompleted ? 'bg-emerald-500 border-emerald-500 text-white'
-                    : isActive ? 'bg-purple-500 border-purple-500 text-white'
+                  isCompleted ? 'bg-emerald-50 dark:bg-emerald-950/200 border-emerald-500 text-white'
+                    : isActive ? 'bg-purple-50 dark:bg-purple-950/200 border-purple-500 text-white'
                     : 'bg-background border-border text-muted-foreground'
                 }`}>
                   {isCompleted ? <Check className="w-3 h-3" /> : i + 1}
                 </div>
                 <span className={`text-[9px] font-medium whitespace-nowrap max-w-[58px] text-center leading-tight ${
-                  isCompleted ? 'text-emerald-600' : isActive ? 'text-purple-600' : 'text-muted-foreground'
+                  isCompleted ? 'text-emerald-600 dark:text-emerald-400' : isActive ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground'
                 }`}>{s}</span>
               </div>
               {i < LC_STAGES.length - 1 && (
@@ -257,12 +257,12 @@ function StageBanner({ stage: rawStage, userRole, isClosed }: { stage: string; u
     || (info.actor === 'Importer' && userRole === 'importer')
     || info.actor === 'Done';
   const colorMap: Record<string, string> = {
-    blue: 'bg-blue-50 border-blue-200 text-blue-700',
-    green: 'bg-green-50 border-green-200 text-green-700',
-    amber: 'bg-amber-50 border-amber-200 text-amber-700',
-    red: 'bg-red-50 border-red-200 text-red-700',
-    purple: 'bg-purple-50 border-purple-200 text-purple-700',
-    teal: 'bg-teal-50 border-teal-200 text-teal-700',
+    blue: 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800/40 text-blue-700 dark:text-blue-300',
+    green: 'bg-green-50 dark:bg-green-950/20 border-green-200 dark:border-green-800/40 text-green-700 dark:text-green-300',
+    amber: 'bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800/40 text-amber-700 dark:text-amber-300',
+    red: 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40 text-red-700 dark:text-red-300',
+    purple: 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300',
+    teal: 'bg-teal-50 dark:bg-teal-950/20 border-teal-200 dark:border-teal-800/40 text-teal-700 dark:text-teal-300',
     gray: 'bg-muted/40 border-border text-foreground/85',
   };
   const cls = colorMap[info.color] || colorMap.blue;
@@ -279,12 +279,12 @@ function StageBanner({ stage: rawStage, userRole, isClosed }: { stage: string; u
 function DocumentStatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; className: string }> = {
     Missing: { label: 'Missing', className: 'bg-muted text-muted-foreground border-border' },
-    Pending: { label: 'Uploaded', className: 'bg-blue-50 text-blue-600 border-blue-200' },
-    'Under Review': { label: 'Under Review', className: 'bg-amber-50 text-amber-600 border-amber-200' },
-    Approved: { label: 'Approved', className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    Verified: { label: 'Approved', className: 'bg-emerald-50 text-emerald-600 border-emerald-200' },
-    Rejected: { label: 'Rejected', className: 'bg-red-50 text-red-600 border-red-200' },
-    Expired: { label: 'Expired', className: 'bg-orange-50 text-orange-600 border-orange-200' },
+    Pending: { label: 'Uploaded', className: 'bg-blue-50 dark:bg-blue-950/20 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/40' },
+    'Under Review': { label: 'Under Review', className: 'bg-amber-50 dark:bg-amber-950/20 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/40' },
+    Approved: { label: 'Approved', className: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40' },
+    Verified: { label: 'Approved', className: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/40' },
+    Rejected: { label: 'Rejected', className: 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800/40' },
+    Expired: { label: 'Expired', className: 'bg-orange-50 dark:bg-orange-950/20 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800/40' },
   };
   const c = cfg[status] || cfg['Missing'];
   return <Badge variant="outline" className={`text-xs font-medium ${c.className}`}>{c.label}</Badge>;
@@ -292,10 +292,10 @@ function DocumentStatusBadge({ status }: { status: string }) {
 
 function RiskBadge({ level }: { level: string }) {
   const cfg: Record<string, string> = {
-    Low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    Medium: 'bg-amber-50 text-amber-700 border-amber-200',
-    High: 'bg-red-50 text-red-700 border-red-200',
-    Critical: 'bg-red-100 text-red-900 border-red-300',
+    Low: 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40',
+    Medium: 'bg-amber-50 dark:bg-amber-950/20 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/40',
+    High: 'bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40',
+    Critical: 'bg-red-100 dark:bg-red-900/30 text-red-900 border-red-300',
     Unknown: 'bg-muted/40 text-muted-foreground border-border',
   };
   return <Badge variant="outline" className={`text-xs ${cfg[level] || cfg.Unknown}`}>{level}</Badge>;
@@ -344,8 +344,8 @@ function CounterpartyRiskSidebar({
                 <div key={label} className="border rounded-lg p-3" data-testid={`risk-card-${label.toLowerCase()}`}>
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${label === 'Importer' ? 'bg-blue-100' : 'bg-green-100'}`}>
-                        <Shield className={`w-3.5 h-3.5 ${label === 'Importer' ? 'text-blue-600' : 'text-green-600'}`} />
+                      <div className={`w-7 h-7 rounded-full flex items-center justify-center ${label === 'Importer' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-green-100 dark:bg-green-900/30'}`}>
+                        <Shield className={`w-3.5 h-3.5 ${label === 'Importer' ? 'text-blue-600 dark:text-blue-400' : 'text-green-600 dark:text-green-400'}`} />
                       </div>
                       <div>
                         <p className="text-xs font-semibold leading-tight">{data.name}</p>
@@ -357,7 +357,7 @@ function CounterpartyRiskSidebar({
                   <div className="space-y-2 text-xs">
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">KYC Status</span>
-                      <Badge variant="outline" className={`text-[10px] py-0 ${data.kycStatus === 'Approved' ? 'border-emerald-300 text-emerald-700' : 'border-amber-300 text-amber-700'}`}>{data.kycStatus}</Badge>
+                      <Badge variant="outline" className={`text-[10px] py-0 ${data.kycStatus === 'Approved' ? 'border-emerald-300 text-emerald-700 dark:text-emerald-300' : 'border-amber-300 text-amber-700 dark:text-amber-300'}`}>{data.kycStatus}</Badge>
                     </div>
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Country</span>
@@ -369,14 +369,14 @@ function CounterpartyRiskSidebar({
                         {data.sanctionsStatus === 'Clear'
                           ? <ShieldCheck className="w-3 h-3 text-emerald-500" />
                           : <ShieldAlert className="w-3 h-3 text-red-500" />}
-                        <span className={data.sanctionsStatus === 'Clear' ? 'text-emerald-700 font-medium' : 'text-red-700 font-medium'}>{data.sanctionsStatus}</span>
+                        <span className={data.sanctionsStatus === 'Clear' ? 'text-emerald-700 dark:text-emerald-300 font-medium' : 'text-red-700 dark:text-red-300 font-medium'}>{data.sanctionsStatus}</span>
                       </div>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Jurisdiction Risk</span>
                       <RiskBadge level={data.jurisdictionRisk} />
                     </div>
-                    {data.isPep && <Badge className="bg-amber-100 text-amber-700 border-amber-300 text-[10px] w-full justify-center">PEP — Politically Exposed</Badge>}
+                    {data.isPep && <Badge className="bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-300 text-[10px] w-full justify-center">PEP — Politically Exposed</Badge>}
                     {userRole === 'admin' && data.riskScore !== undefined && (
                       <div>
                         <div className="flex justify-between mb-1">
@@ -972,7 +972,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
           </DialogHeader>
           <div className="flex gap-1 mb-4">
             {[1,2,3,4].map(s => (
-              <div key={s} className={`flex-1 h-1.5 rounded-full ${s <= lcWizardStep ? 'bg-purple-500' : 'bg-border'}`} />
+              <div key={s} className={`flex-1 h-1.5 rounded-full ${s <= lcWizardStep ? 'bg-purple-50 dark:bg-purple-950/200' : 'bg-border'}`} />
             ))}
           </div>
           {lcWizardStep === 1 && (
@@ -981,7 +981,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <div className="grid grid-cols-3 gap-3">
                 {['Irrevocable', 'Transferable', 'Standby'].map(t => (
                   <button key={t} onClick={() => setLcWizardForm(f => ({ ...f, lcType: t }))}
-                    className={`p-3 rounded-lg border-2 text-sm font-medium text-center transition-colors ${lcWizardForm.lcType === t ? 'border-purple-500 bg-purple-50 text-purple-700' : 'border-border hover:border-purple-300'}`}
+                    className={`p-3 rounded-lg border-2 text-sm font-medium text-center transition-colors ${lcWizardForm.lcType === t ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300' : 'border-border hover:border-purple-300'}`}
                     data-testid={`lc-type-${t.toLowerCase()}`}>{t}</button>
                 ))}
               </div>
@@ -1005,8 +1005,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
           {lcWizardStep === 3 && (
             <div className="space-y-3">
               <p className="text-sm font-medium">Required Documents</p>
-              <div className="text-xs text-muted-foreground p-2 bg-amber-50 border border-amber-200 rounded flex items-start gap-1.5">
-                <Info className="w-3 h-3 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div className="text-xs text-muted-foreground p-2 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded flex items-start gap-1.5">
+                <Info className="w-3 h-3 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
                 Warehouse Receipt and Proof of Lading are for gold-backed commodity trades only. Enable them only if this deal involves physical gold.
               </div>
               <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -1014,10 +1014,10 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   const isGoldDoc = d.type === 'Warehouse Receipt' || d.type === 'Proof of Lading';
                   const checked = lcWizardForm.requiredDocuments.includes(d.type);
                   return (
-                    <div key={d.type} className={`flex items-center gap-3 p-2 rounded border hover:bg-muted/30 ${isGoldDoc ? 'border-purple-200 bg-purple-50/30' : ''}`}>
+                    <div key={d.type} className={`flex items-center gap-3 p-2 rounded border hover:bg-muted/30 ${isGoldDoc ? 'border-purple-200 dark:border-purple-800/40 bg-purple-50 dark:bg-purple-950/20/30' : ''}`}>
                       <Checkbox checked={checked} onCheckedChange={c => setLcWizardForm(f => ({ ...f, requiredDocuments: c ? [...f.requiredDocuments, d.type] : f.requiredDocuments.filter(x => x !== d.type) }))} data-testid={`checkbox-doc-${d.type.toLowerCase().replace(/\s+/g, '-')}`} />
                       <div className="flex-1">
-                        <p className="text-sm font-medium">{d.label}{isGoldDoc && <span className="ml-2 text-[10px] text-purple-600 font-normal">(gold-backed)</span>}</p>
+                        <p className="text-sm font-medium">{d.label}{isGoldDoc && <span className="ml-2 text-[10px] text-purple-600 dark:text-purple-400 font-normal">(gold-backed)</span>}</p>
                         <p className="text-xs text-muted-foreground">{d.responsibleLabel}</p>
                       </div>
                     </div>
@@ -1041,7 +1041,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     <div key={key} className="flex items-center justify-between p-3 border rounded-lg">
                       <div><p className="text-sm font-medium">{label}</p><p className="text-xs text-muted-foreground">{desc}</p></div>
                       <button onClick={() => setLcWizardForm(f => ({ ...f, [key]: !f[key] }))}
-                        className={`w-12 h-6 rounded-full transition-colors ${isOn ? 'bg-purple-500' : 'bg-border'}`}
+                        className={`w-12 h-6 rounded-full transition-colors ${isOn ? 'bg-purple-50 dark:bg-purple-950/200' : 'bg-border'}`}
                         data-testid={`toggle-${key}`}>
                         <div className={`w-5 h-5 bg-card rounded-full shadow transition-transform mx-0.5 ${isOn ? 'translate-x-6' : ''}`} />
                       </button>
@@ -1319,7 +1319,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 {/* Risk Sidebar Toggle */}
                 <Button variant={riskSidebarOpen ? 'default' : 'outline'} size="sm"
                   onClick={() => setRiskSidebarOpen(o => !o)} data-testid="button-toggle-risk-sidebar"
-                  className={riskSidebarOpen ? 'bg-amber-500 hover:bg-amber-600 text-white' : ''}>
+                  className={riskSidebarOpen ? 'bg-amber-50 dark:bg-amber-950/200 hover:bg-amber-600 text-white' : ''}>
                   <ShieldAlert className="w-4 h-4 mr-1" />Risk
                 </Button>
                 {canCloseRoom && (
@@ -1345,13 +1345,13 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 <div key={u.id} className="flex items-center gap-2 p-2 rounded-lg border bg-card" data-testid={`participant-${label.toLowerCase().replace(' ', '-')}`}>
                   <Avatar className={`w-9 h-9 border-2 ${color}`}>
                     {u.profilePhoto && <AvatarImage src={u.profilePhoto} alt={label} />}
-                    <AvatarFallback className={`text-white text-sm font-medium ${label === 'Deal Manager' ? 'bg-purple-500' : 'bg-primary'}`}>
+                    <AvatarFallback className={`text-white text-sm font-medium ${label === 'Deal Manager' ? 'bg-purple-50 dark:bg-purple-950/200' : 'bg-primary'}`}>
                       {(u.firstName?.charAt(0) || u.email.charAt(0)).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
                     <p className="text-sm font-medium leading-tight">{userDisplayName(u)}</p>
-                    <p className={`text-xs leading-tight ${label === 'Deal Manager' ? 'text-purple-600' : 'text-primary'}`}>{label}</p>
+                    <p className={`text-xs leading-tight ${label === 'Deal Manager' ? 'text-purple-600 dark:text-purple-400' : 'text-primary'}`}>{label}</p>
                   </div>
                 </div>
               ))}
@@ -1366,8 +1366,8 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
           {/* Role-based action buttons */}
           {!room?.isClosed && allowedTransitions.length > 0 && (
-            <div className="border-b px-4 py-2 bg-purple-50/50 flex items-center gap-2 flex-wrap" data-testid="action-buttons-bar">
-              <span className="text-xs font-medium text-purple-700 mr-1">Your Actions:</span>
+            <div className="border-b px-4 py-2 bg-purple-50 dark:bg-purple-950/20/50 flex items-center gap-2 flex-wrap" data-testid="action-buttons-bar">
+              <span className="text-xs font-medium text-purple-700 dark:text-purple-300 mr-1">Your Actions:</span>
               {allowedTransitions.map((t, idx) => (
                 <Button key={idx} size="sm"
                   variant={t.variant === 'destructive' ? 'destructive' : t.variant === 'success' ? 'default' : 'outline'}
@@ -1382,7 +1382,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
           {/* Payment gate warning when docs not all approved */}
           {currentLcStage === 'Approved' && userRole === 'importer' && !allDocsApproved && (
-            <div className="border-b px-4 py-2 bg-amber-50 flex items-center gap-2 text-amber-700 text-sm">
+            <div className="border-b px-4 py-2 bg-amber-50 dark:bg-amber-950/20 flex items-center gap-2 text-amber-700 dark:text-amber-300 text-sm">
               <AlertTriangle className="w-4 h-4 flex-shrink-0" />
               <span>Some documents still need admin approval before you can trigger payment.</span>
             </div>
@@ -1397,14 +1397,14 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 </TabsTrigger>
                 <TabsTrigger value="documents" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-documents">
                   <ClipboardList className="w-4 h-4 mr-2" />Documents
-                  {documents.filter(d => d.status === 'Pending').length > 0 && <Badge className="ml-1 bg-amber-500 text-white text-xs py-0 px-1">{documents.filter(d => d.status === 'Pending').length}</Badge>}
+                  {documents.filter(d => d.status === 'Pending').length > 0 && <Badge className="ml-1 bg-amber-50 dark:bg-amber-950/200 text-white text-xs py-0 px-1">{documents.filter(d => d.status === 'Pending').length}</Badge>}
                 </TabsTrigger>
                 <TabsTrigger value="timeline" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-timeline">
                   <Clock className="w-4 h-4 mr-2" />Timeline
                 </TabsTrigger>
                 <TabsTrigger value="discrepancies" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-discrepancies">
                   <Flag className="w-4 h-4 mr-2" />Discrepancies
-                  {openDiscrepancies.length > 0 && <Badge className="ml-1 bg-red-500 text-white text-xs py-0 px-1">{openDiscrepancies.length}</Badge>}
+                  {openDiscrepancies.length > 0 && <Badge className="ml-1 bg-red-50 dark:bg-red-950/200 text-white text-xs py-0 px-1">{openDiscrepancies.length}</Badge>}
                 </TabsTrigger>
               </TabsList>
 
@@ -1430,7 +1430,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                                 <span className="text-xs font-medium">{msg.sender?.finatradesId || msg.senderRole}</span>
                                 <Badge variant="outline" className="text-[10px] px-1 py-0">{msg.senderRole}</Badge>
                               </div>
-                              <div className={`rounded-lg px-3 py-2 ${isOwn ? 'bg-purple-500 text-white' : 'bg-muted'}`}>
+                              <div className={`rounded-lg px-3 py-2 ${isOwn ? 'bg-purple-50 dark:bg-purple-950/200 text-white' : 'bg-muted'}`}>
                                 {msg.content && <p className="text-sm whitespace-pre-wrap">{msg.content}</p>}
                                 {msg.attachmentUrl && (
                                   <a href={msg.attachmentUrl} target="_blank" rel="noopener noreferrer"
@@ -1468,7 +1468,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                   </div>
                 ) : !hasAcceptedTerms ? (
                   <div className="p-4 text-center">
-                    <div className="flex items-center justify-center gap-2 text-amber-600">
+                    <div className="flex items-center justify-center gap-2 text-amber-600 dark:text-amber-400">
                       <AlertTriangle className="w-4 h-4" /><span>Please accept the Terms & Conditions to participate.</span>
                     </div>
                     <Button variant="outline" size="sm" className="mt-2" onClick={() => setShowTermsDialog(true)} data-testid="button-view-terms">View Terms & Conditions</Button>
@@ -1513,22 +1513,22 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
                     return (
                       <div key={reqDoc.type}
-                        className={`border rounded-lg overflow-hidden ${isApproved ? 'border-emerald-200 bg-emerald-50/30' : isRejected ? 'border-red-200 bg-red-50/30' : status === 'Missing' ? 'border-dashed' : ''}`}
+                        className={`border rounded-lg overflow-hidden ${isApproved ? 'border-emerald-200 dark:border-emerald-800/40 bg-emerald-50 dark:bg-emerald-950/20/30' : isRejected ? 'border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20/30' : status === 'Missing' ? 'border-dashed' : ''}`}
                         data-testid={`doc-row-${reqDoc.type.toLowerCase().replace(/[^a-z]/g, '-')}`}>
                         <div className="p-3 flex items-center gap-3">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isApproved ? 'bg-emerald-100' : isRejected ? 'bg-red-100' : status === 'Missing' ? 'bg-muted' : 'bg-blue-100'}`}>
-                            {reqDoc.type === 'Warehouse Receipt' ? <Warehouse className={`w-4 h-4 ${isApproved ? 'text-emerald-600' : isRejected ? 'text-red-600' : 'text-muted-foreground'}`} />
-                              : reqDoc.type === 'Proof of Lading' ? <Ship className={`w-4 h-4 ${isApproved ? 'text-emerald-600' : isRejected ? 'text-red-600' : 'text-muted-foreground'}`} />
-                              : isApproved ? <CheckCircle className="w-4 h-4 text-emerald-600" />
-                              : isRejected ? <XCircle className="w-4 h-4 text-red-600" />
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${isApproved ? 'bg-emerald-100 dark:bg-emerald-900/30' : isRejected ? 'bg-red-100 dark:bg-red-900/30' : status === 'Missing' ? 'bg-muted' : 'bg-blue-100 dark:bg-blue-900/30'}`}>
+                            {reqDoc.type === 'Warehouse Receipt' ? <Warehouse className={`w-4 h-4 ${isApproved ? 'text-emerald-600 dark:text-emerald-400' : isRejected ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                              : reqDoc.type === 'Proof of Lading' ? <Ship className={`w-4 h-4 ${isApproved ? 'text-emerald-600 dark:text-emerald-400' : isRejected ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`} />
+                              : isApproved ? <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                              : isRejected ? <XCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                               : status === 'Missing' ? <FileText className="w-4 h-4 text-muted-foreground" />
-                              : <Eye className="w-4 h-4 text-blue-600" />}
+                              : <Eye className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2 flex-wrap">
                               <span className="font-medium text-sm">{reqDoc.label}</span>
                               <Badge variant="outline" className="text-[10px] px-1 py-0 text-muted-foreground">{reqDoc.responsibleLabel}</Badge>
-                              {isWrOrPol && <Badge variant="outline" className="text-[10px] px-1 py-0 text-purple-600 border-purple-300">Gold-backed</Badge>}
+                              {isWrOrPol && <Badge variant="outline" className="text-[10px] px-1 py-0 text-purple-600 dark:text-purple-400 border-purple-300">Gold-backed</Badge>}
                             </div>
                             {primaryDoc && (
                               <p className="text-xs text-muted-foreground mt-0.5 truncate">
@@ -1536,7 +1536,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                               </p>
                             )}
                             {primaryDoc?.verificationNotes && (
-                              <p className={`text-xs mt-1 ${isRejected ? 'text-red-600' : 'text-muted-foreground'}`}>
+                              <p className={`text-xs mt-1 ${isRejected ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
                                 {isRejected ? '↳ Rejected: ' : '↳ '}{primaryDoc.verificationNotes}
                               </p>
                             )}
@@ -1596,10 +1596,10 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
                   {/* WR Structured Upload Form */}
                   {showWrForm && (
-                    <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50/30 mt-4" data-testid="wr-upload-form">
+                    <div className="border-2 border-purple-200 dark:border-purple-800/40 rounded-lg p-4 bg-purple-50 dark:bg-purple-950/20/30 mt-4" data-testid="wr-upload-form">
                       <div className="flex items-center gap-2 mb-4">
-                        <Warehouse className="w-5 h-5 text-purple-600" />
-                        <h4 className="font-semibold text-purple-700">Warehouse Receipt — Structured Upload</h4>
+                        <Warehouse className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                        <h4 className="font-semibold text-purple-700 dark:text-purple-300">Warehouse Receipt — Structured Upload</h4>
                         <Button variant="ghost" size="icon" className="ml-auto w-7 h-7" onClick={() => { setShowWrForm(false); setPendingWrFile(null); }}><XCircle className="w-4 h-4" /></Button>
                       </div>
                       <div className="grid grid-cols-2 gap-3 mb-4">
@@ -1623,19 +1623,19 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
                   {/* MT700 Validation Panel — shown for LC Draft documents */}
                   {documents.filter(d => d.documentType === 'LC Draft').map(doc => (
-                    <div key={doc.id} className="border-2 border-indigo-200 rounded-lg p-4 bg-indigo-50/30 mt-4" data-testid={`mt700-panel-${doc.id}`}>
+                    <div key={doc.id} className="border-2 border-indigo-200 dark:border-indigo-800/40 rounded-lg p-4 bg-indigo-50 dark:bg-indigo-950/20/30 mt-4" data-testid={`mt700-panel-${doc.id}`}>
                       <div className="flex items-center gap-2 mb-3">
-                        <FileText className="w-5 h-5 text-indigo-600" />
+                        <FileText className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                         <div className="flex-1">
-                          <h4 className="font-semibold text-indigo-700 text-sm">MT700 Field Validator — {doc.fileName}</h4>
+                          <h4 className="font-semibold text-indigo-700 dark:text-indigo-300 text-sm">MT700 Field Validator — {doc.fileName}</h4>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground">Validate mandatory SWIFT MT700 fields for LC compliance</p>
                             {doc.mt700ValidationResult?.triggeredBy === 'auto-approval' && (
-                              <span className="text-[10px] bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full font-medium" data-testid={`mt700-auto-badge-${doc.id}`}>Auto-validated on approval</span>
+                              <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.5 rounded-full font-medium" data-testid={`mt700-auto-badge-${doc.id}`}>Auto-validated on approval</span>
                             )}
                           </div>
                         </div>
-                        <Button size="sm" variant="outline" className="text-xs border-indigo-300 text-indigo-700 hover:bg-indigo-100"
+                        <Button size="sm" variant="outline" className="text-xs border-indigo-300 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:bg-indigo-900/30"
                           onClick={() => handleValidateMt700(doc.id)} disabled={validatingMt700 === doc.id}
                           data-testid={`btn-validate-mt700-${doc.id}`}>
                           {validatingMt700 === doc.id ? <><Loader2 className="w-3 h-3 animate-spin mr-1" />Validating...</> : <><Check className="w-3 h-3 mr-1" />{mt700Validation[doc.id] ? 'Re-validate' : 'Validate MT700'}</>}
@@ -1644,17 +1644,17 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       {mt700Validation[doc.id] && (
                         <div className="space-y-1.5" data-testid={`mt700-results-${doc.id}`}>
                           <div className="flex items-center gap-3 mb-2">
-                            <span className="text-xs font-medium text-indigo-700">
+                            <span className="text-xs font-medium text-indigo-700 dark:text-indigo-300">
                               {mt700Validation[doc.id].filter(f => f.present).length}/{mt700Validation[doc.id].length} fields present
                             </span>
-                            <div className="flex-1 bg-indigo-100 rounded-full h-1.5">
-                              <div className="bg-indigo-500 h-1.5 rounded-full transition-all"
+                            <div className="flex-1 bg-indigo-100 dark:bg-indigo-900/30 rounded-full h-1.5">
+                              <div className="bg-indigo-50 dark:bg-indigo-950/200 h-1.5 rounded-full transition-all"
                                 style={{ width: `${(mt700Validation[doc.id].filter(f => f.present).length / mt700Validation[doc.id].length) * 100}%` }} />
                             </div>
                           </div>
                           <div className="grid grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
                             {mt700Validation[doc.id].map(field => (
-                              <div key={field.tag} className={`flex items-center gap-2 p-1.5 rounded text-xs ${field.present ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}
+                              <div key={field.tag} className={`flex items-center gap-2 p-1.5 rounded text-xs ${field.present ? 'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-700 dark:text-emerald-300' : 'bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400'}`}
                                 data-testid={`mt700-field-${field.tag}`}>
                                 {field.present ? <Check className="w-3 h-3 flex-shrink-0" /> : <XCircle className="w-3 h-3 flex-shrink-0" />}
                                 <span className="font-mono font-medium">{field.tag}</span>
@@ -1669,10 +1669,10 @@ Version 1.0 - Effective Date: January 2025`.trim();
 
                   {/* POL Structured Upload Form */}
                   {showPolForm && (
-                    <div className="border-2 border-blue-200 rounded-lg p-4 bg-blue-50/30 mt-4" data-testid="pol-upload-form">
+                    <div className="border-2 border-blue-200 dark:border-blue-800/40 rounded-lg p-4 bg-blue-50 dark:bg-blue-950/20/30 mt-4" data-testid="pol-upload-form">
                       <div className="flex items-center gap-2 mb-4">
-                        <Ship className="w-5 h-5 text-blue-600" />
-                        <h4 className="font-semibold text-blue-700">Proof of Lading — Structured Upload</h4>
+                        <Ship className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                        <h4 className="font-semibold text-blue-700 dark:text-blue-300">Proof of Lading — Structured Upload</h4>
                         <Button variant="ghost" size="icon" className="ml-auto w-7 h-7" onClick={() => { setShowPolForm(false); setPendingPolFile(null); }}><XCircle className="w-4 h-4" /></Button>
                       </div>
                       <div className="grid grid-cols-2 gap-3 mb-4">
@@ -1701,10 +1701,10 @@ Version 1.0 - Effective Date: January 2025`.trim();
               <TabsContent value="timeline" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-timeline">
                 <div className="space-y-4">
                   <h3 className="font-semibold">Deal Timeline</h3>
-                  <div className="p-4 border rounded-lg bg-purple-50 border-purple-200">
+                  <div className="p-4 border rounded-lg bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800/40">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center"><Clock className="w-5 h-5 text-purple-600" /></div>
-                      <div className="flex-1"><p className="text-xs text-muted-foreground">Current LC Stage</p><p className="font-bold text-purple-700">{currentLcStage}</p></div>
+                      <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center"><Clock className="w-5 h-5 text-purple-600 dark:text-purple-400" /></div>
+                      <div className="flex-1"><p className="text-xs text-muted-foreground">Current LC Stage</p><p className="font-bold text-purple-700 dark:text-purple-300">{currentLcStage}</p></div>
                       <p className="text-xs text-muted-foreground">Stage {validCurrentIndex + 1} of {LC_STAGES.length}</p>
                     </div>
                   </div>
@@ -1720,7 +1720,7 @@ Version 1.0 - Effective Date: January 2025`.trim();
                           const isLatest = i === milestones.length - 1;
                           return (
                             <div key={m.id} className="flex gap-4 relative" data-testid={`milestone-${m.id}`}>
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-2 ${isLatest ? 'bg-purple-500 border-purple-500 text-white' : 'bg-emerald-500 border-emerald-500 text-white'}`}>
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 z-10 border-2 ${isLatest ? 'bg-purple-50 dark:bg-purple-950/200 border-purple-500 text-white' : 'bg-emerald-50 dark:bg-emerald-950/200 border-emerald-500 text-white'}`}>
                                 {isLatest ? <Clock className="w-4 h-4" /> : <Check className="w-4 h-4" />}
                               </div>
                               <div className="flex-1 pb-4">
@@ -1766,16 +1766,16 @@ Version 1.0 - Effective Date: January 2025`.trim();
                     <>
                       {openDiscrepancies.length > 0 && (
                         <div>
-                          <p className="text-sm font-semibold text-red-600 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" />Open ({openDiscrepancies.length})</p>
+                          <p className="text-sm font-semibold text-red-600 dark:text-red-400 mb-3 flex items-center gap-2"><AlertCircle className="w-4 h-4" />Open ({openDiscrepancies.length})</p>
                           <div className="space-y-3">
                             {openDiscrepancies.map(d => {
                               const relatedDoc = d.documentId ? documents.find(doc => doc.id === d.documentId) : null;
                               return (
-                                <div key={d.id} className="border border-red-200 rounded-lg p-4 bg-red-50/30" data-testid={`discrepancy-${d.id}`}>
+                                <div key={d.id} className="border border-red-200 dark:border-red-800/40 rounded-lg p-4 bg-red-50 dark:bg-red-950/20/30" data-testid={`discrepancy-${d.id}`}>
                                   <div className="flex items-start justify-between gap-3">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 flex-wrap">
-                                        <Badge className="bg-red-100 text-red-700 border-red-200 text-xs">{d.reasonType}</Badge>
+                                        <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40 text-xs">{d.reasonType}</Badge>
                                         {relatedDoc && <span className="text-xs text-muted-foreground">on {relatedDoc.documentType}</span>}
                                       </div>
                                       {d.description && <p className="text-sm mt-2">{d.description}</p>}
@@ -1805,17 +1805,17 @@ Version 1.0 - Effective Date: January 2025`.trim();
                       )}
                       {discrepancies.filter(d => d.status === 'resolved').length > 0 && (
                         <div className="mt-6">
-                          <p className="text-sm font-semibold text-emerald-600 mb-3 flex items-center gap-2"><CheckCircle className="w-4 h-4" />Resolved ({discrepancies.filter(d => d.status === 'resolved').length})</p>
+                          <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 mb-3 flex items-center gap-2"><CheckCircle className="w-4 h-4" />Resolved ({discrepancies.filter(d => d.status === 'resolved').length})</p>
                           <div className="space-y-3">
                             {discrepancies.filter(d => d.status === 'resolved').map(d => (
-                              <div key={d.id} className="border border-emerald-200 rounded-lg p-4 bg-emerald-50/30 opacity-75" data-testid={`discrepancy-resolved-${d.id}`}>
+                              <div key={d.id} className="border border-emerald-200 dark:border-emerald-800/40 rounded-lg p-4 bg-emerald-50 dark:bg-emerald-950/20/30 opacity-75" data-testid={`discrepancy-resolved-${d.id}`}>
                                 <div className="flex items-center gap-2 flex-wrap">
-                                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 text-xs">{d.reasonType}</Badge>
+                                  <Badge className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/40 text-xs">{d.reasonType}</Badge>
                                   <CheckCircle className="w-3 h-3 text-emerald-500" />
                                   <span className="text-xs text-muted-foreground">Resolved {d.resolvedAt ? format(new Date(d.resolvedAt), 'MMM d, HH:mm') : ''}</span>
                                 </div>
                                 {d.description && <p className="text-xs text-muted-foreground mt-1">{d.description}</p>}
-                                {d.resolutionNotes && <p className="text-xs text-emerald-700 mt-1 italic">Resolution: {d.resolutionNotes}</p>}
+                                {d.resolutionNotes && <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-1 italic">Resolution: {d.resolutionNotes}</p>}
                               </div>
                             ))}
                           </div>

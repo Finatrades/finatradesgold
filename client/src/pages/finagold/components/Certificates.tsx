@@ -96,9 +96,9 @@ export default function Certificates() {
                     <p className="text-[#8A2BE2] font-bold text-sm tracking-wider">VAULT CERTIFICATE</p>
                     <p className="text-muted-foreground text-xs mt-1">{isPersonal ? 'Personal Holding' : 'Corporate Reserve'}</p>
                   </div>
-                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-500/10 border border-green-500/20">
-                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                    <span className="text-green-600 text-xs font-medium">Verified</span>
+                  <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 dark:bg-green-950/200/10 border border-green-500/20">
+                    <div className="w-2 h-2 rounded-full bg-green-50 dark:bg-green-950/200" />
+                    <span className="text-green-600 dark:text-green-400 text-xs font-medium">Verified</span>
                   </div>
                 </div>
 

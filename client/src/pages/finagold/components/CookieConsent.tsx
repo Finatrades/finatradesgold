@@ -61,7 +61,7 @@ export default function CookieConsent() {
               <div className="p-6">
                 <div className="flex items-start gap-4 mb-4">
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center flex-shrink-0">
-                    <Cookie className="w-6 h-6 text-purple-600" />
+                    <Cookie className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
                     <h3 className="font-bold text-foreground text-lg">You control your data</h3>
@@ -77,7 +77,7 @@ export default function CookieConsent() {
 
                 <button
                   onClick={() => setShowSettings(!showSettings)}
-                  className="flex items-center gap-2 text-sm text-purple-600 hover:text-purple-700 font-medium mb-4"
+                  className="flex items-center gap-2 text-sm text-purple-600 dark:text-purple-400 hover:text-purple-700 dark:text-purple-300 font-medium mb-4"
                 >
                   <Settings className="w-4 h-4" />
                   Customize settings
@@ -151,7 +151,7 @@ export default function CookieConsent() {
                 </div>
 
                 <p className="text-xs text-muted-foreground/70 mt-4 text-center">
-                  <a href="/privacy-policy" className="hover:text-purple-600 underline">Read more about cookies</a>
+                  <a href="/privacy-policy" className="hover:text-purple-600 dark:text-purple-400 underline">Read more about cookies</a>
                 </p>
               </div>
             </div>
@@ -165,7 +165,7 @@ export default function CookieConsent() {
           className="fixed bottom-4 left-4 z-50 w-12 h-12 min-w-[48px] min-h-[48px] rounded-full bg-card shadow-lg border border-border flex items-center justify-center hover:bg-muted/40 active:scale-95 transition-all mb-[env(safe-area-inset-bottom)]"
           title="Cookie settings"
         >
-          <Cookie className="w-5 h-5 text-purple-600" />
+          <Cookie className="w-5 h-5 text-purple-600 dark:text-purple-400" />
         </button>
       )}
     </>

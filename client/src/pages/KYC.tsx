@@ -1004,50 +1004,50 @@ export default function KYC() {
       <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-in-progress">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
-            <Card className="border-green-200 shadow-lg">
+            <Card className="border-green-200 dark:border-green-800/40 shadow-lg">
               <CardHeader className="text-center pb-4">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                   <Clock className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-status-title">Verification {statusLabel}</CardTitle>
+                <CardTitle className="text-2xl text-green-800 dark:text-green-200" data-testid="text-kyc-status-title">Verification {statusLabel}</CardTitle>
                 <CardDescription className="text-base">
                   Your {isCorporate ? 'Corporate' : 'Personal'} KYC verification has been submitted and is currently being reviewed.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex justify-center">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 text-amber-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200 font-semibold text-sm" data-testid="text-kyc-status-badge">
                     <Clock className="w-4 h-4" />
                     Status: {statusLabel}
                   </span>
                 </div>
 
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-green-800">Submitted Successfully</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="font-semibold text-green-800 dark:text-green-200">Submitted Successfully</span>
                   </div>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     Your documents and information have been received. Our compliance team is reviewing your submission.
                   </p>
                 </div>
                 
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <Clock className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-blue-800">Expected Processing Time</span>
+                    <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="font-semibold text-blue-800 dark:text-blue-200">Expected Processing Time</span>
                   </div>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
                     {expectedDays} - You will be notified via email once your verification is complete.
                   </p>
                 </div>
                 
-                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
+                <div className="p-4 bg-purple-50 dark:bg-purple-950/20 rounded-lg border border-purple-200 dark:border-purple-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <ShieldCheck className="w-5 h-5 text-purple-600" />
-                    <span className="font-semibold text-purple-800">What Happens Next?</span>
+                    <ShieldCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                    <span className="font-semibold text-purple-800 dark:text-purple-200">What Happens Next?</span>
                   </div>
-                  <ul className="text-sm text-purple-700 space-y-1 ml-8 list-disc">
+                  <ul className="text-sm text-purple-700 dark:text-purple-300 space-y-1 ml-8 list-disc">
                     <li>Our team reviews your submitted documents</li>
                     <li>You'll receive an email notification with the result</li>
                     <li>Once approved, all platform features will be unlocked</li>
@@ -1086,14 +1086,14 @@ export default function KYC() {
       <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-changes-requested">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
-            <Card className="border-orange-200 shadow-lg">
+            <Card className="border-orange-200 dark:border-orange-800/40 shadow-lg">
               <CardHeader className="text-center pb-4">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-orange-400 to-amber-500 flex items-center justify-center">
                   <AlertCircle className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-orange-800" data-testid="text-kyc-status-title">Changes Requested</CardTitle>
+                <CardTitle className="text-2xl text-orange-800 dark:text-orange-200" data-testid="text-kyc-status-title">Changes Requested</CardTitle>
                 <div className="flex justify-center mt-2">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 text-orange-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-200 font-semibold text-sm" data-testid="text-kyc-status-badge">
                     <AlertCircle className="w-4 h-4" />
                     Status: Changes Requested
                   </span>
@@ -1105,21 +1105,21 @@ export default function KYC() {
               <CardContent className="space-y-6">
                 {rejectedSections.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-orange-800 flex items-center gap-2">
+                    <h4 className="font-semibold text-orange-800 dark:text-orange-200 flex items-center gap-2">
                       <XCircle className="w-4 h-4" />
                       Sections Requiring Updates
                     </h4>
                     {rejectedSections.map((review, idx) => (
-                      <div key={review.id || idx} className="p-4 bg-red-50 rounded-lg border border-red-200" data-testid={`section-review-${review.sectionName}`}>
+                      <div key={review.id || idx} className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800/40" data-testid={`section-review-${review.sectionName}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-800 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                          <span className="font-medium text-red-800 dark:text-red-200 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
                         </div>
                         {review.reasonCode && (
-                          <p className="text-sm text-red-700 ml-6">Reason: {review.reasonCode}</p>
+                          <p className="text-sm text-red-700 dark:text-red-300 ml-6">Reason: {review.reasonCode}</p>
                         )}
                         {review.freeText && (
-                          <p className="text-sm text-red-600 ml-6 mt-1">{review.freeText}</p>
+                          <p className="text-sm text-red-600 dark:text-red-400 ml-6 mt-1">{review.freeText}</p>
                         )}
                       </div>
                     ))}
@@ -1128,13 +1128,13 @@ export default function KYC() {
 
                 {approvedSections.length > 0 && (
                   <div className="space-y-2">
-                    <h4 className="font-semibold text-green-800 flex items-center gap-2">
+                    <h4 className="font-semibold text-green-800 dark:text-green-200 flex items-center gap-2">
                       <CheckCircle2 className="w-4 h-4" />
                       Approved Sections (No Changes Needed)
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {approvedSections.map((section) => (
-                        <span key={section} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm">
+                        <span key={section} className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-sm">
                           <Lock className="w-3 h-3" />
                           {SECTION_LABELS[section] || section.replace(/_/g, ' ')}
                         </span>
@@ -1144,21 +1144,21 @@ export default function KYC() {
                 )}
 
                 {existingSubmission.rejectionReason && (
-                  <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/40">
                     <div className="flex items-center gap-3 mb-2">
-                      <AlertCircle className="w-5 h-5 text-amber-600" />
-                      <span className="font-semibold text-amber-800">Additional Notes</span>
+                      <AlertCircle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                      <span className="font-semibold text-amber-800 dark:text-amber-200">Additional Notes</span>
                     </div>
-                    <p className="text-sm text-amber-700">{existingSubmission.rejectionReason}</p>
+                    <p className="text-sm text-amber-700 dark:text-amber-300">{existingSubmission.rejectionReason}</p>
                   </div>
                 )}
 
-                <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <RefreshCw className="w-5 h-5 text-blue-600" />
-                    <span className="font-semibold text-blue-800">How to Resubmit</span>
+                    <RefreshCw className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                    <span className="font-semibold text-blue-800 dark:text-blue-200">How to Resubmit</span>
                   </div>
-                  <p className="text-sm text-blue-700">
+                  <p className="text-sm text-blue-700 dark:text-blue-300">
                     Click "Fix & Resubmit" below. Only the sections marked for updates will be editable. 
                     Approved sections are locked and do not need changes.
                   </p>
@@ -1193,14 +1193,14 @@ export default function KYC() {
       <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-rejected">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
-            <Card className="border-red-200 shadow-lg">
+            <Card className="border-red-200 dark:border-red-800/40 shadow-lg">
               <CardHeader className="text-center pb-4">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-red-400 to-rose-500 flex items-center justify-center">
                   <AlertCircle className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-red-800" data-testid="text-kyc-status-title">Verification Rejected</CardTitle>
+                <CardTitle className="text-2xl text-red-800 dark:text-red-200" data-testid="text-kyc-status-title">Verification Rejected</CardTitle>
                 <div className="flex justify-center mt-2">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 text-red-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200 font-semibold text-sm" data-testid="text-kyc-status-badge">
                     <AlertCircle className="w-4 h-4" />
                     Status: Rejected
                   </span>
@@ -1212,21 +1212,21 @@ export default function KYC() {
               <CardContent className="space-y-6">
                 {rejectedSections.length > 0 && (
                   <div className="space-y-3">
-                    <h4 className="font-semibold text-red-800 flex items-center gap-2">
+                    <h4 className="font-semibold text-red-800 dark:text-red-200 flex items-center gap-2">
                       <XCircle className="w-4 h-4" />
                       Section-wise Rejection Details
                     </h4>
                     {rejectedSections.map((review, idx) => (
-                      <div key={review.id || idx} className="p-3 bg-red-50 rounded-lg border border-red-200" data-testid={`rejection-detail-${review.sectionName}`}>
+                      <div key={review.id || idx} className="p-3 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800/40" data-testid={`rejection-detail-${review.sectionName}`}>
                         <div className="flex items-center gap-2 mb-1">
                           <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-800 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
+                          <span className="font-medium text-red-800 dark:text-red-200 capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
                         </div>
                         {review.reasonCode && (
-                          <p className="text-sm text-red-700 ml-6">Reason: {review.reasonCode}</p>
+                          <p className="text-sm text-red-700 dark:text-red-300 ml-6">Reason: {review.reasonCode}</p>
                         )}
                         {review.freeText && (
-                          <p className="text-sm text-red-600 ml-6 mt-1">{review.freeText}</p>
+                          <p className="text-sm text-red-600 dark:text-red-400 ml-6 mt-1">{review.freeText}</p>
                         )}
                       </div>
                     ))}
@@ -1234,23 +1234,23 @@ export default function KYC() {
                 )}
 
                 {existingSubmission.rejectionReason && (
-                  <div className="p-4 bg-red-50 rounded-lg border border-red-200">
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800/40">
                     <div className="flex items-center gap-3 mb-2">
-                      <AlertCircle className="w-5 h-5 text-red-600" />
-                      <span className="font-semibold text-red-800">Reason for Rejection</span>
+                      <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                      <span className="font-semibold text-red-800 dark:text-red-200">Reason for Rejection</span>
                     </div>
-                    <p className="text-sm text-red-700">
+                    <p className="text-sm text-red-700 dark:text-red-300">
                       {existingSubmission.rejectionReason}
                     </p>
                   </div>
                 )}
                 
-                <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
+                <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <RefreshCw className="w-5 h-5 text-amber-600" />
-                    <span className="font-semibold text-amber-800">What Can You Do?</span>
+                    <RefreshCw className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                    <span className="font-semibold text-amber-800 dark:text-amber-200">What Can You Do?</span>
                   </div>
-                  <p className="text-sm text-amber-700">
+                  <p className="text-sm text-amber-700 dark:text-amber-300">
                     Please review the rejection reason above. You can resubmit your verification with corrected documents, 
                     or contact our support team for assistance.
                   </p>
@@ -1314,14 +1314,14 @@ export default function KYC() {
       <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-approved">
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
-            <Card className="border-green-200 shadow-lg">
+            <Card className="border-green-200 dark:border-green-800/40 shadow-lg">
               <CardHeader className="text-center pb-4">
                 <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                   <CheckCircle2 className="w-10 h-10 text-white" />
                 </div>
-                <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-status-title">Verification Approved</CardTitle>
+                <CardTitle className="text-2xl text-green-800 dark:text-green-200" data-testid="text-kyc-status-title">Verification Approved</CardTitle>
                 <div className="flex justify-center mt-2">
-                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-800 font-semibold text-sm" data-testid="text-kyc-status-badge">
+                  <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200 font-semibold text-sm" data-testid="text-kyc-status-badge">
                     <CheckCircle2 className="w-4 h-4" />
                     Status: Approved
                   </span>
@@ -1331,12 +1331,12 @@ export default function KYC() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
-                <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
                   <div className="flex items-center gap-3 mb-2">
-                    <CheckCircle2 className="w-5 h-5 text-green-600" />
-                    <span className="font-semibold text-green-800">Full Access Granted</span>
+                    <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                    <span className="font-semibold text-green-800 dark:text-green-200">Full Access Granted</span>
                   </div>
-                  <p className="text-sm text-green-700">
+                  <p className="text-sm text-green-700 dark:text-green-300">
                     All platform features have been unlocked. You can now access all trading and financial services.
                   </p>
                 </div>
@@ -1398,14 +1398,14 @@ export default function KYC() {
             </div>
 
             {isResubmitMode && rejectedSections.length > 0 && (
-              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmit-banner">
+              <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-lg" data-testid="resubmit-banner">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-orange-800 text-sm">Sections Requiring Updates</h4>
+                    <h4 className="font-semibold text-orange-800 dark:text-orange-200 text-sm">Sections Requiring Updates</h4>
                     <ul className="mt-1 space-y-1">
                       {rejectedSections.map((review) => (
-                        <li key={review.id} className="text-sm text-orange-700 flex items-center gap-1">
+                        <li key={review.id} className="text-sm text-orange-700 dark:text-orange-300 flex items-center gap-1">
                           <XCircle className="w-3 h-3 text-red-500" />
                           <span className="capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
                           {review.freeText && <span className="text-orange-500">— {review.freeText}</span>}
@@ -1413,7 +1413,7 @@ export default function KYC() {
                       ))}
                     </ul>
                     {approvedSections.length > 0 && (
-                      <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-2 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
                         Approved sections are locked and cannot be edited.
                       </p>
@@ -1439,9 +1439,9 @@ export default function KYC() {
               {/* Sidebar Steps */}
               <div className="md:col-span-4">
                 {showKycResumeBanner && (
-                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                    <p className="text-sm font-medium text-blue-800 mb-1">Resume saved draft?</p>
-                    <p className="text-xs text-blue-600 mb-2">A more recent draft was found from another session.</p>
+                  <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-lg">
+                    <p className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-1">Resume saved draft?</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-400 mb-2">A more recent draft was found from another session.</p>
                     <div className="flex gap-2">
                       <button
                         type="button"
@@ -1472,7 +1472,7 @@ export default function KYC() {
                         type="button"
                         data-testid="button-dismiss-draft"
                         onClick={dismissKycResume}
-                        className="text-xs text-blue-600 hover:text-blue-800 underline"
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:text-blue-200 underline"
                       >
                         Dismiss
                       </button>
@@ -1526,7 +1526,7 @@ export default function KYC() {
                           <User className="w-5 h-5" />
                           Personal Information
                           {isSectionLocked('personal_information') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -1749,7 +1749,7 @@ export default function KYC() {
                           <FileText className="w-5 h-5" />
                           Identity Documents
                           {isSectionLocked('documents') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -1761,9 +1761,9 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-sm font-medium text-blue-700">Passport required</p>
-                          <p className="text-xs text-blue-600 mt-0.5">JPG, JPEG, PNG, PDF — max 5 MB</p>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/40 rounded-lg">
+                          <p className="text-sm font-medium text-blue-700 dark:text-blue-300">Passport required</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">JPG, JPEG, PNG, PDF — max 5 MB</p>
                         </div>
 
                         <div className="space-y-5">
@@ -1791,11 +1791,11 @@ export default function KYC() {
                           />
 
                           {passportNationality && personalNationality && !nationalityMatches(personalNationality, passportNationality) && (
-                            <div className="flex items-start gap-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-800/40 rounded-lg">
                               <XCircle className="w-4 h-4 text-red-500 mt-0.5 shrink-0" />
                               <div>
-                                <p className="text-sm font-medium text-red-700">Nationality mismatch</p>
-                                <p className="text-xs text-red-600 mt-0.5">
+                                <p className="text-sm font-medium text-red-700 dark:text-red-300">Nationality mismatch</p>
+                                <p className="text-xs text-red-600 dark:text-red-400 mt-0.5">
                                   Your passport shows <span className="font-semibold">{passportNationality}</span> but you declared <span className="font-semibold">{personalNationality}</span> in Step 1.
                                   Please go back and correct your nationality, or upload the correct passport.
                                 </p>
@@ -1863,7 +1863,7 @@ export default function KYC() {
                           <FileText className="w-5 h-5" />
                           Address & Compliance
                           {isSectionLocked('documents') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -1875,9 +1875,9 @@ export default function KYC() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className={`space-y-6 ${isSectionLocked('documents') ? 'opacity-60 pointer-events-none' : ''}`}>
-                        <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                          <p className="text-sm font-medium text-blue-800">Address on file</p>
-                          <p className="text-xs text-blue-600 mt-0.5">{[personalAddress, personalCity, personalCountry].filter(Boolean).join(', ') || 'Not yet provided'}</p>
+                        <div className="p-3 bg-blue-50 dark:bg-blue-950/20 border border-blue-100 rounded-lg">
+                          <p className="text-sm font-medium text-blue-800 dark:text-blue-200">Address on file</p>
+                          <p className="text-xs text-blue-600 dark:text-blue-400 mt-0.5">{[personalAddress, personalCity, personalCountry].filter(Boolean).join(', ') || 'Not yet provided'}</p>
                         </div>
 
                         <FileUploadZone
@@ -1906,11 +1906,11 @@ export default function KYC() {
                         {(() => {
                           const addrNameOk = !addressProofNameMismatch;
                           return !addrNameOk ? (
-                            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg">
                               <AlertCircle className="w-4 h-4 text-amber-500 mt-0.5 shrink-0" />
                               <div>
-                                <p className="text-sm font-medium text-amber-700">Name doesn't fully match</p>
-                                <p className="text-xs text-amber-600 mt-0.5">
+                                <p className="text-sm font-medium text-amber-700 dark:text-amber-300">Name doesn't fully match</p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-0.5">
                                   The name on your address proof differs from your declared name. You can still continue — our team will review the discrepancy.
                                 </p>
                               </div>
@@ -1939,7 +1939,7 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           Liveness Check
                           {isSectionLocked('liveness') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -1958,7 +1958,7 @@ export default function KYC() {
                              <div className="w-48 h-48 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-4">
                                <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" loading="lazy" />
                              </div>
-                             <div className="flex items-center justify-center gap-2 text-green-600 mb-4">
+                             <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 mb-4">
                                <CheckCircle2 className="w-5 h-5" />
                                <span className="font-medium">Liveness Verified!</span>
                              </div>
@@ -2075,7 +2075,7 @@ export default function KYC() {
                         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                           <CheckCircle2 className="w-10 h-10 text-white" />
                         </div>
-                        <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-submitted-title">
+                        <CardTitle className="text-2xl text-green-800 dark:text-green-200" data-testid="text-kyc-submitted-title">
                           {isResubmitMode ? 'Resubmission Successful!' : 'KYC Submitted Successfully!'}
                         </CardTitle>
                         <CardDescription className="text-base">
@@ -2084,25 +2084,25 @@ export default function KYC() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {submissionRef && (
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                          <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                             <div>
-                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Reference Number</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Reference Number</p>
                               <p className="text-lg font-mono font-bold text-blue-900 mt-0.5" data-testid="text-kyc-reference">{submissionRef.referenceNumber}</p>
                             </div>
                             <div className="sm:text-right">
-                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Expected By</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Expected By</p>
                               <p className="text-sm font-semibold text-blue-900 mt-0.5" data-testid="text-kyc-sla">
                                 {new Date(submissionRef.slaDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                               </p>
                             </div>
                           </div>
                         )}
-                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
                           <div className="flex items-center gap-3 mb-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                            <span className="font-semibold text-green-800">What happens next?</span>
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <span className="font-semibold text-green-800 dark:text-green-200">What happens next?</span>
                           </div>
-                          <ul className="text-sm text-green-700 space-y-1 ml-8 list-disc">
+                          <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 ml-8 list-disc">
                             <li>Our team will review your submitted documents</li>
                             <li>You'll receive an email notification with the result</li>
                             <li>Expected processing time: 24 hours</li>
@@ -2122,7 +2122,7 @@ export default function KYC() {
                     <div className="animate-in fade-in slide-in-from-right-4 duration-300">
                       <CardHeader>
                         <CardTitle className="flex items-center gap-2">
-                          <CheckCircle2 className="w-5 h-5 text-green-600" />
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
                           Review & Submit
                         </CardTitle>
                         <CardDescription>
@@ -2159,25 +2159,25 @@ export default function KYC() {
                                 {
                                   label: 'Passport',
                                   value: passportFile
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportFile.name}</span>
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />{passportFile.name}</span>
                                     : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
                                 },
                                 {
                                   label: 'Passport Number',
                                   value: passportNumber
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportNumber}</span>
-                                    : <span className="text-amber-600">Not provided</span>,
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />{passportNumber}</span>
+                                    : <span className="text-amber-600 dark:text-amber-400">Not provided</span>,
                                 },
                                 {
                                   label: 'Passport Expiry',
                                   value: passportExpiryDate
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{passportExpiryDate}</span>
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />{passportExpiryDate}</span>
                                     : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not provided</span>,
                                 },
                                 {
                                   label: 'Address Proof',
                                   value: addressProofFile
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />{addressProofFile.name}</span>
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />{addressProofFile.name}</span>
                                     : <span className="text-red-500 flex items-center gap-1"><XCircle className="w-3.5 h-3.5" />Not uploaded</span>,
                                 },
                               ],
@@ -2190,16 +2190,16 @@ export default function KYC() {
                                 {
                                   label: 'Selfie',
                                   value: capturedSelfie
-                                    ? <span className="flex items-center gap-1 text-green-600"><CheckCircle2 className="w-3.5 h-3.5" />Captured</span>
-                                    : <span className="flex items-center gap-1 text-amber-600"><AlertCircle className="w-3.5 h-3.5" />Not completed</span>,
+                                    ? <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="w-3.5 h-3.5" />Captured</span>
+                                    : <span className="flex items-center gap-1 text-amber-600 dark:text-amber-400"><AlertCircle className="w-3.5 h-3.5" />Not completed</span>,
                                 },
                               ],
                             } as ConfirmationSection,
                           ]}
                         />
 
-                        <div className="p-4 bg-blue-50 rounded-lg border border-blue-200">
-                          <p className="text-sm text-blue-700">
+                        <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40">
+                          <p className="text-sm text-blue-700 dark:text-blue-300">
                             By submitting, you confirm that all information provided is accurate and complete. 
                             Our compliance team will review your submission within 24 hours.
                           </p>
@@ -2221,11 +2221,11 @@ export default function KYC() {
 
                 </Card>
 
-                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                  <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20/50 rounded-lg border border-blue-100">
+                  <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                   <div>
                     <h4 className="text-sm font-bold text-blue-900">Bank-Grade Security</h4>
-                    <p className="text-xs text-blue-700 mt-1">
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                       Your data is encrypted using AES-256 and stored in compliant data centers. We never share your personal information without consent.
                     </p>
                   </div>
@@ -2258,14 +2258,14 @@ export default function KYC() {
             </div>
 
             {isResubmitMode && rejectedSections.length > 0 && (
-              <div className="mb-6 p-4 bg-orange-50 border border-orange-200 rounded-lg" data-testid="resubmit-banner-corporate">
+              <div className="mb-6 p-4 bg-orange-50 dark:bg-orange-950/20 border border-orange-200 dark:border-orange-800/40 rounded-lg" data-testid="resubmit-banner-corporate">
                 <div className="flex items-start gap-3">
-                  <AlertCircle className="w-5 h-5 text-orange-600 shrink-0 mt-0.5" />
+                  <AlertCircle className="w-5 h-5 text-orange-600 dark:text-orange-400 shrink-0 mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-orange-800 text-sm">Sections Requiring Updates</h4>
+                    <h4 className="font-semibold text-orange-800 dark:text-orange-200 text-sm">Sections Requiring Updates</h4>
                     <ul className="mt-1 space-y-1">
                       {rejectedSections.map((review) => (
-                        <li key={review.id} className="text-sm text-orange-700 flex items-center gap-1">
+                        <li key={review.id} className="text-sm text-orange-700 dark:text-orange-300 flex items-center gap-1">
                           <XCircle className="w-3 h-3 text-red-500" />
                           <span className="capitalize">{SECTION_LABELS[review.sectionName] || review.sectionName.replace(/_/g, ' ')}</span>
                           {review.freeText && <span className="text-orange-500">— {review.freeText}</span>}
@@ -2273,7 +2273,7 @@ export default function KYC() {
                       ))}
                     </ul>
                     {approvedSections.length > 0 && (
-                      <p className="text-xs text-green-700 mt-2 flex items-center gap-1">
+                      <p className="text-xs text-green-700 dark:text-green-300 mt-2 flex items-center gap-1">
                         <Lock className="w-3 h-3" />
                         Approved sections are locked and cannot be edited.
                       </p>
@@ -2319,7 +2319,7 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           Corporate Details
                           {isSectionLocked('corporate_details') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -2457,7 +2457,7 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           Beneficial Owners & Shareholding
                           {isSectionLocked('beneficial_owners') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -2584,7 +2584,7 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           Corporate Documents
                           {isSectionLocked('corporate_documents') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -2750,7 +2750,7 @@ export default function KYC() {
                         <CardTitle className="flex items-center gap-2">
                           Address & Compliance
                           {isSectionLocked('corporate_details') && (
-                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                            <span className="ml-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                               <Lock className="w-3 h-3" /> Approved
                             </span>
                           )}
@@ -2870,7 +2870,7 @@ export default function KYC() {
                         <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-green-400 to-emerald-500 flex items-center justify-center">
                           <CheckCircle2 className="w-10 h-10 text-white" />
                         </div>
-                        <CardTitle className="text-2xl text-green-800" data-testid="text-kyc-submitted-title">
+                        <CardTitle className="text-2xl text-green-800 dark:text-green-200" data-testid="text-kyc-submitted-title">
                           {isResubmitMode ? 'Resubmission Successful!' : 'Corporate KYC Submitted Successfully!'}
                         </CardTitle>
                         <CardDescription className="text-base">
@@ -2879,25 +2879,25 @@ export default function KYC() {
                       </CardHeader>
                       <CardContent className="space-y-4">
                         {submissionRef && (
-                          <div className="p-4 bg-blue-50 rounded-lg border border-blue-200 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
+                          <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg border border-blue-200 dark:border-blue-800/40 flex flex-col sm:flex-row sm:items-center gap-3 justify-between">
                             <div>
-                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Reference Number</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Reference Number</p>
                               <p className="text-lg font-mono font-bold text-blue-900 mt-0.5" data-testid="text-kyc-reference-corp">{submissionRef.referenceNumber}</p>
                             </div>
                             <div className="sm:text-right">
-                              <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">Expected By</p>
+                              <p className="text-xs text-blue-600 dark:text-blue-400 font-medium uppercase tracking-wide">Expected By</p>
                               <p className="text-sm font-semibold text-blue-900 mt-0.5" data-testid="text-kyc-sla-corp">
                                 {new Date(submissionRef.slaDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}
                               </p>
                             </div>
                           </div>
                         )}
-                        <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+                        <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
                           <div className="flex items-center gap-3 mb-2">
-                            <CheckCircle2 className="w-5 h-5 text-green-600" />
-                            <span className="font-semibold text-green-800">What happens next?</span>
+                            <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                            <span className="font-semibold text-green-800 dark:text-green-200">What happens next?</span>
                           </div>
-                          <ul className="text-sm text-green-700 space-y-1 ml-8 list-disc">
+                          <ul className="text-sm text-green-700 dark:text-green-300 space-y-1 ml-8 list-disc">
                             <li>Our team will review your submitted documents</li>
                             <li>You'll receive an email notification with the result</li>
                             <li>Expected processing time: 5 business days</li>
@@ -2926,7 +2926,7 @@ export default function KYC() {
                           <div className="flex items-center gap-2">
                             <h4 className="font-medium">Authorized Representative Verification</h4>
                             {isSectionLocked('representative_liveness') && (
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 text-green-700 text-xs font-medium">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 text-xs font-medium">
                                 <Lock className="w-3 h-3" /> Approved
                               </span>
                             )}
@@ -2939,7 +2939,7 @@ export default function KYC() {
                                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-green-500 mx-auto mb-3">
                                     <img src={capturedSelfie} alt="Verified selfie" className="w-full h-full object-cover" loading="lazy" />
                                   </div>
-                                  <div className="flex items-center justify-center gap-2 text-green-600 mb-3">
+                                  <div className="flex items-center justify-center gap-2 text-green-600 dark:text-green-400 mb-3">
                                     <CheckCircle2 className="w-5 h-5" />
                                     <span className="font-medium text-sm">Liveness Verified!</span>
                                   </div>
@@ -2989,7 +2989,7 @@ export default function KYC() {
                             </div>
                           )}
                           {isSectionLocked('representative_liveness') && (
-                            <div className="flex items-center gap-2 text-green-600 text-sm">
+                            <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
                               <CheckCircle2 className="w-4 h-4" />
                               <span>Liveness previously approved — no action required.</span>
                             </div>
@@ -3017,7 +3017,7 @@ export default function KYC() {
                               {beneficialOwners.filter(o => o.name.trim()).length} beneficial owner(s) listed
                             </p>
                             {hasPepOwners && (
-                              <p className="text-sm text-fuchsia-600 mt-1">PEP declaration included</p>
+                              <p className="text-sm text-fuchsia-600 dark:text-fuchsia-400 mt-1">PEP declaration included</p>
                             )}
                           </div>
                           
@@ -3033,8 +3033,8 @@ export default function KYC() {
                             <div className="flex items-center gap-2">
                               {capturedSelfie ? (
                                 <>
-                                  <CheckCircle2 className="w-4 h-4 text-green-600" />
-                                  <span className="text-sm text-green-600">Liveness verified</span>
+                                  <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                                  <span className="text-sm text-green-600 dark:text-green-400">Liveness verified</span>
                                 </>
                               ) : (
                                 <>
@@ -3046,8 +3046,8 @@ export default function KYC() {
                           </div>
                         </div>
                         
-                        <div className="p-4 border border-purple-200 bg-purple-50 rounded-lg">
-                          <p className="text-sm text-fuchsia-800">
+                        <div className="p-4 border border-purple-200 dark:border-purple-800/40 bg-purple-50 dark:bg-purple-950/20 rounded-lg">
+                          <p className="text-sm text-fuchsia-800 dark:text-fuchsia-200">
                             By submitting this application, I confirm that all information provided is accurate and complete. 
                             I understand that providing false information may result in rejection or account termination.
                           </p>
@@ -3069,11 +3069,11 @@ export default function KYC() {
 
               </Card>
 
-              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50/50 rounded-lg border border-blue-100">
-                <ShieldCheck className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div className="mt-6 flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-950/20/50 rounded-lg border border-blue-100">
+                <ShieldCheck className="w-5 h-5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
                 <div>
                   <h4 className="text-sm font-bold text-blue-900">Secure Processing</h4>
-                  <p className="text-xs text-blue-700 mt-1">
+                  <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
                     Your corporate documents are encrypted and processed in compliance with international data protection regulations.
                   </p>
                 </div>
@@ -3101,7 +3101,7 @@ function StepItem({ title, description, icon, isActive, isCompleted }: { title: 
           : 'bg-transparent border-transparent opacity-50'
     }`}>
       <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-        isActive ? 'bg-primary text-white' : isCompleted ? 'bg-green-500 text-white' : 'bg-muted text-muted-foreground'
+        isActive ? 'bg-primary text-white' : isCompleted ? 'bg-green-50 dark:bg-green-950/200 text-white' : 'bg-muted text-muted-foreground'
       }`}>
         {isCompleted ? <CheckCircle2 className="w-5 h-5" /> : icon}
       </div>

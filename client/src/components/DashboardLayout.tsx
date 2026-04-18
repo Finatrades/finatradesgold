@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="flex items-center gap-2 text-foreground/80" data-testid="strip-gold-price">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-50 dark:bg-emerald-950/200" />
               </span>
               <span className="font-medium">Gold Price:</span>
               <span className="font-semibold text-foreground">${goldPrice ? goldPrice.toFixed(2) : '156.59'}/gram</span>
@@ -116,17 +116,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               className="hidden md:flex items-center gap-2 text-foreground/75 hover:text-foreground transition-colors"
               data-testid="strip-settlement-assurance"
             >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span className="font-medium">Settlement Assurance</span>
               <span className="text-muted-foreground">Backed by USD 42.134 Billion</span>
             </button>
 
             <Link href="/security">
               <button
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100 transition-colors text-[11.5px] font-medium dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-400"
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:bg-rose-900/30 transition-colors text-[11.5px] font-medium dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-400"
                 data-testid="button-enable-2fa"
               >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-50 dark:bg-rose-950/200" />
                 Enable 2FA
               </button>
             </Link>
@@ -211,7 +211,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       <p className="text-sm font-medium">{user.firstName} {user.lastName}</p>
                       <p className="text-xs text-muted-foreground">{user.email}</p>
                       {user.lastLoginAt && (
-                        <p className="text-xs text-green-600 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-green-600 dark:text-green-400 flex items-center gap-1 mt-1">
                           <Clock className="w-3 h-3" />
                           Signed in: {format(new Date(user.lastLoginAt), 'MMM d, h:mm a')}
                         </p>
@@ -233,7 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       logout();
                       setLocation('/');
                     }} 
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    className="cursor-pointer text-red-600 dark:text-red-400 focus:text-red-600 dark:text-red-400 focus:bg-red-50 dark:bg-red-950/20"
                     data-testid="menu-item-signout"
                   >
                     <LogOut className="mr-2 h-4 w-4" />
@@ -314,7 +314,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6 text-white" />
                 </div>
-                <DialogTitle className="text-xl font-bold text-green-800">
+                <DialogTitle className="text-xl font-bold text-green-800 dark:text-green-200">
                   Guarantee of Settlement Assurance
                 </DialogTitle>
               </div>
@@ -323,18 +323,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+              <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200 dark:border-green-800/40">
                 <p className="text-foreground/85 leading-relaxed text-sm">
                   Raminvest Holding Ltd (DIFC Registration No. 7030), as the governing entity of the Group ecosystem that includes Wingold & Metals DMCC, provides a limited settlement assurance mechanism supported by verified geological gold reserves held through Boudadiya Services SARL under Mining Permit No. 2265 B2-WOMPOU.
                 </p>
               </div>
               
-              <div className="p-4 bg-green-50 rounded-lg border border-green-200">
+              <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg border border-green-200 dark:border-green-800/40">
                 <div className="flex items-center gap-2 mb-2">
-                  <span className="text-green-700 font-semibold">Verified Reserve Value</span>
+                  <span className="text-green-700 dark:text-green-300 font-semibold">Verified Reserve Value</span>
                 </div>
-                <p className="text-2xl font-bold text-green-800">USD 42.134 Billion</p>
-                <p className="text-sm text-green-600 mt-1">
+                <p className="text-2xl font-bold text-green-800 dark:text-green-200">USD 42.134 Billion</p>
+                <p className="text-sm text-green-600 dark:text-green-400 mt-1">
                   (USD 42,134,363,570) as of 15 July 2025, based on a gold spot price of USD 3,327.93 per ounce
                 </p>
                 <p className="text-xs text-green-500 mt-2">
@@ -348,8 +348,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </p>
               </div>
               
-              <div className="p-4 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-amber-800 font-medium text-sm mb-2">Important Notice:</p>
+              <div className="p-4 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-200 dark:border-amber-800/40">
+                <p className="text-amber-800 dark:text-amber-200 font-medium text-sm mb-2">Important Notice:</p>
                 <p className="text-foreground/85 leading-relaxed text-sm">
                   It is not a banking guarantee, financial insurance, or customer protection product, and no continuing or residual liability remains with Raminvest thereafter. By participating, you acknowledge this mechanism as a risk-mitigation feature of the ecosystem, while your sole contractual counterparty for all Plan obligations remains Wingold & Metals DMCC.
                 </p>

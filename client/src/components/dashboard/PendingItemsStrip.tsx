@@ -4,9 +4,9 @@ import { Clock, ArrowDownLeft, DollarSign, ChevronRight } from 'lucide-react';
 import { usePendingItems } from '@/hooks/usePendingItems';
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  transfers: <ArrowDownLeft className="w-3.5 h-3.5 text-amber-700" />,
-  payments:  <DollarSign   className="w-3.5 h-3.5 text-amber-700" />,
-  deposits:  <Clock        className="w-3.5 h-3.5 text-amber-700" />,
+  transfers: <ArrowDownLeft className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />,
+  payments:  <DollarSign   className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />,
+  deposits:  <Clock        className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />,
 };
 
 export default function PendingItemsStrip() {
@@ -51,7 +51,7 @@ export default function PendingItemsStrip() {
               className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
               style={{ background: 'linear-gradient(135deg, #fef3c7, #fde68a)' }}
             >
-              <Clock className="w-3.5 h-3.5 text-amber-700" />
+              <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />
             </div>
             <span className="text-[13px] font-bold text-foreground">Pending Actions</span>
             <span
@@ -68,7 +68,7 @@ export default function PendingItemsStrip() {
             {items.map((item) => (
               <Link key={item.key} href={item.href}>
                 <div
-                  className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-amber-50/70 transition-all cursor-pointer group"
+                  className="flex items-center justify-between px-3 py-2 rounded-xl hover:bg-amber-50 dark:bg-amber-950/20/70 transition-all cursor-pointer group"
                   style={{ border: '1px solid rgba(251,191,36,0.15)' }}
                   data-testid={`pending-row-${item.key}`}
                 >
@@ -77,19 +77,19 @@ export default function PendingItemsStrip() {
                       className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0"
                       style={{ background: 'rgba(251,191,36,0.12)' }}
                     >
-                      {CATEGORY_ICONS[item.key] ?? <Clock className="w-3.5 h-3.5 text-amber-700" />}
+                      {CATEGORY_ICONS[item.key] ?? <Clock className="w-3.5 h-3.5 text-amber-700 dark:text-amber-300" />}
                     </div>
                     <span className="text-[12px] font-medium text-foreground/85 truncate">{item.label}</span>
                   </div>
                   <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
                     <span
-                      className="fin-badge text-amber-800"
+                      className="fin-badge text-amber-800 dark:text-amber-200"
                       style={{ background: 'rgba(251,191,36,0.20)', border: '1px solid rgba(251,191,36,0.25)', minWidth: '20px', height: '20px', padding: '0 6px', fontSize: '11px' }}
                       data-testid={`badge-count-${item.key}`}
                     >
                       {item.count}
                     </span>
-                    <ChevronRight className="w-3.5 h-3.5 text-amber-600 group-hover:translate-x-0.5 transition-transform" />
+                    <ChevronRight className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 group-hover:translate-x-0.5 transition-transform" />
                   </div>
                 </div>
               </Link>

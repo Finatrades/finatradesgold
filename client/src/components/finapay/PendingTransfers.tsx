@@ -527,18 +527,18 @@ export default function PendingTransfers() {
     pendingDeposits.length;
 
   return (
-    <Card className="border-amber-200 bg-amber-50/50">
+    <Card className="border-amber-200 dark:border-amber-800/40 bg-amber-50 dark:bg-amber-950/20/50">
       <CardHeader
         className="pb-3 cursor-pointer select-none"
         onClick={() => setIsOpen((o) => !o)}
         data-testid="pending-items-header"
       >
-        <CardTitle className="text-lg font-bold flex items-center gap-2 text-amber-700">
+        <CardTitle className="text-lg font-bold flex items-center gap-2 text-amber-700 dark:text-amber-300">
           <Clock className="w-5 h-5" />
           Pending Items
           <Badge
             variant="secondary"
-            className="ml-2 bg-amber-200 text-amber-800"
+            className="ml-2 bg-amber-200 text-amber-800 dark:text-amber-200"
           >
             {totalPendingItems}
           </Badge>
@@ -547,7 +547,7 @@ export default function PendingTransfers() {
             animate={{ rotate: isOpen ? 180 : 0 }}
             transition={{ duration: 0.2, ease: "easeInOut" }}
           >
-            <ChevronDown className="w-5 h-5 text-amber-600" />
+            <ChevronDown className="w-5 h-5 text-amber-600 dark:text-amber-400" />
           </motion.div>
         </CardTitle>
       </CardHeader>
@@ -578,16 +578,16 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={transfer.id}
-                  className="p-4 bg-card rounded-lg border border-amber-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-amber-200 dark:border-amber-800/40 shadow-sm"
                   data-testid={`pending-transfer-incoming-${transfer.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-green-100 rounded-full">
-                        <ArrowDownLeft className="w-4 h-4 text-green-600" />
+                      <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-full">
+                        <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" />
                       </div>
                       <div>
-                        <p className="font-semibold text-lg text-green-700">
+                        <p className="font-semibold text-lg text-green-700 dark:text-green-300">
                           {amount.primary}
                         </p>
                         {amount.secondary && (
@@ -606,7 +606,7 @@ export default function PendingTransfers() {
                         )}
                         {timeRemaining && (
                           <p
-                            className={`text-xs mt-1 ${timeRemaining === "Expired" ? "text-red-600" : "text-amber-600"}`}
+                            className={`text-xs mt-1 ${timeRemaining === "Expired" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}
                           >
                             <Clock className="w-3 h-3 inline mr-1" />
                             {timeRemaining}
@@ -628,7 +628,7 @@ export default function PendingTransfers() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-red-200 text-red-600 hover:bg-red-50"
+                        className="border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/20"
                         onClick={() => handleAction(transfer, "reject")}
                         disabled={rejectMutation.isPending}
                         data-testid={`button-reject-${transfer.id}`}
@@ -667,19 +667,19 @@ export default function PendingTransfers() {
                   <div className="flex items-start gap-3">
                     <div
                       className={`p-2 rounded-full ${
-                        isInvitation ? "bg-purple-100" : "bg-blue-100"
+                        isInvitation ? "bg-purple-100 dark:bg-purple-900/30" : "bg-blue-100 dark:bg-blue-900/30"
                       }`}
                     >
                       {isInvitation ? (
-                        <Mail className="w-4 h-4 text-purple-600" />
+                        <Mail className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       ) : (
-                        <Clock className="w-4 h-4 text-blue-600" />
+                        <Clock className="w-4 h-4 text-blue-600 dark:text-blue-400" />
                       )}
                     </div>
                     <div className="flex-1">
                       <p
                         className={`font-semibold text-lg ${
-                          isInvitation ? "text-purple-700" : "text-blue-700"
+                          isInvitation ? "text-purple-700 dark:text-purple-300" : "text-blue-700 dark:text-blue-300"
                         }`}
                       >
                         {amount.primary}
@@ -699,14 +699,14 @@ export default function PendingTransfers() {
                         </p>
                       )}
                       {isInvitation ? (
-                        <Badge className="mt-2 bg-purple-100 text-purple-700 border border-purple-300">
+                        <Badge className="mt-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-300">
                           <Mail className="w-3 h-3 mr-1" />
                           Awaiting registration
                         </Badge>
                       ) : (
                         <Badge
                           variant="outline"
-                          className="mt-2 text-amber-600 border-amber-300"
+                          className="mt-2 text-amber-600 dark:text-amber-400 border-amber-300"
                         >
                           Awaiting recipient approval
                         </Badge>
@@ -715,9 +715,9 @@ export default function PendingTransfers() {
                         <div
                           className={`flex items-center gap-1 text-xs mt-2 ${
                             timeRemaining === "Expired"
-                              ? "text-red-600"
+                              ? "text-red-600 dark:text-red-400"
                               : isInvitation
-                                ? "text-purple-600"
+                                ? "text-purple-600 dark:text-purple-400"
                                 : "text-muted-foreground"
                           }`}
                         >
@@ -742,7 +742,7 @@ export default function PendingTransfers() {
 
         {pendingDeposits.length > 0 && (
           <div id="finapay-pending-deposits" className="space-y-3">
-            <p className="text-sm font-medium text-emerald-700 flex items-center gap-2">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
               <ArrowDownLeft className="w-4 h-4" />
               Add Funds - Awaiting Approval
             </p>
@@ -755,15 +755,15 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={deposit.id}
-                  className="p-4 bg-card rounded-lg border border-emerald-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-emerald-200 dark:border-emerald-800/40 shadow-sm"
                   data-testid={`pending-deposit-${deposit.id}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className="p-2 bg-emerald-100 rounded-full">
-                      <ArrowDownLeft className="w-4 h-4 text-emerald-600" />
+                    <div className="p-2 bg-emerald-100 dark:bg-emerald-900/30 rounded-full">
+                      <ArrowDownLeft className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="font-semibold text-lg text-emerald-700">
+                      <p className="font-semibold text-lg text-emerald-700 dark:text-emerald-300">
                         {goldGrams > 0
                           ? `${goldGrams.toFixed(4)}g Gold`
                           : `$${usdValue.toFixed(2)}`}
@@ -782,12 +782,12 @@ export default function PendingTransfers() {
                       </p>
                       <Badge
                         variant="outline"
-                        className="mt-2 text-amber-600 border-amber-300"
+                        className="mt-2 text-amber-600 dark:text-amber-400 border-amber-300"
                       >
                         <Clock className="w-3 h-3 mr-1" />
                         Awaiting Bank approval - usually within 24-48 hours
                       </Badge>
-                      <p className="text-xs text-emerald-600 mt-1">
+                      <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-1">
                         Once approved, gold will be credited to your wallet
                       </p>
                       <p className="text-xs text-muted-foreground mt-2">
@@ -806,7 +806,7 @@ export default function PendingTransfers() {
 
         {receivedRequests.length > 0 && (
           <div id="finapay-pending-requests" className="space-y-3">
-            <p className="text-sm font-medium text-purple-700 flex items-center gap-2">
+            <p className="text-sm font-medium text-purple-700 dark:text-purple-300 flex items-center gap-2">
               <DollarSign className="w-4 h-4" />
               Payment Requests - Action Required
             </p>
@@ -821,16 +821,16 @@ export default function PendingTransfers() {
               return (
                 <div
                   key={request.id}
-                  className="p-4 bg-card rounded-lg border border-purple-200 shadow-sm"
+                  className="p-4 bg-card rounded-lg border border-purple-200 dark:border-purple-800/40 shadow-sm"
                   data-testid={`payment-request-${request.id}`}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-start gap-3">
-                      <div className="p-2 bg-purple-100 rounded-full">
-                        <DollarSign className="w-4 h-4 text-purple-600" />
+                      <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                        <DollarSign className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                       </div>
                       <div>
-                        <p className="font-semibold text-lg text-purple-700">
+                        <p className="font-semibold text-lg text-purple-700 dark:text-purple-300">
                           {amount.primary}
                         </p>
                         {amount.secondary && (
@@ -858,7 +858,7 @@ export default function PendingTransfers() {
                             <a
                               href={request.attachmentUrl || "#"}
                               download={request.attachmentName}
-                              className="inline-flex items-center gap-1.5 text-xs bg-purple-50 text-purple-700 px-2 py-1 rounded-md hover:bg-purple-100 transition-colors"
+                              className="inline-flex items-center gap-1.5 text-xs bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 px-2 py-1 rounded-md hover:bg-purple-100 dark:bg-purple-900/30 transition-colors"
                               onClick={(e) => {
                                 if (request.attachmentUrl) {
                                   e.preventDefault();
@@ -883,7 +883,7 @@ export default function PendingTransfers() {
                         )}
                         {timeRemaining && (
                           <p
-                            className={`text-xs mt-1 ${timeRemaining === "Expired" ? "text-red-600" : "text-amber-600"}`}
+                            className={`text-xs mt-1 ${timeRemaining === "Expired" ? "text-red-600 dark:text-red-400" : "text-amber-600 dark:text-amber-400"}`}
                           >
                             <Clock className="w-3 h-3 inline mr-1" />
                             {timeRemaining}
@@ -905,7 +905,7 @@ export default function PendingTransfers() {
                       <Button
                         size="sm"
                         variant="outline"
-                        className="border-red-200 text-red-600 hover:bg-red-50"
+                        className="border-red-200 dark:border-red-800/40 text-red-600 dark:text-red-400 hover:bg-red-50 dark:bg-red-950/20"
                         onClick={() => handleRequestAction(request, "decline")}
                         disabled={declineRequestMutation.isPending}
                         data-testid={`button-decline-${request.id}`}
@@ -940,25 +940,25 @@ export default function PendingTransfers() {
             <DialogTitle className="flex items-center gap-2">
               {actionType === "accept" && (
                 <>
-                  <CheckCircle className="w-5 h-5 text-green-600" />
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
                   Accept Transfer
                 </>
               )}
               {actionType === "reject" && (
                 <>
-                  <XCircle className="w-5 h-5 text-red-600" />
+                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                   Reject Transfer
                 </>
               )}
               {actionType === "pay" && (
                 <>
-                  <Send className="w-5 h-5 text-purple-600" />
+                  <Send className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   Pay Request
                 </>
               )}
               {actionType === "decline" && (
                 <>
-                  <XCircle className="w-5 h-5 text-red-600" />
+                  <XCircle className="w-5 h-5 text-red-600 dark:text-red-400" />
                   Decline Request
                 </>
               )}
@@ -1015,9 +1015,9 @@ export default function PendingTransfers() {
               )}
 
               {actionType === "accept" && (
-                <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-start gap-2">
-                  <CheckCircle className="w-5 h-5 text-green-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-green-800">
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg flex items-start gap-2">
+                  <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-green-800 dark:text-green-200">
                     By accepting, you agree to receive these funds into your
                     Finatrades wallet.
                   </p>
@@ -1025,9 +1025,9 @@ export default function PendingTransfers() {
               )}
 
               {actionType === "reject" && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
                     The sender will be automatically refunded when you reject
                     this transfer.
                   </p>
@@ -1038,8 +1038,8 @@ export default function PendingTransfers() {
 
           {selectedRequest && (
             <div className="py-4">
-              <div className="bg-purple-50 p-4 rounded-lg space-y-2">
-                <p className="font-semibold text-lg text-purple-700">
+              <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg space-y-2">
+                <p className="font-semibold text-lg text-purple-700 dark:text-purple-300">
                   {formatRequestAmount(selectedRequest).primary}
                 </p>
                 {formatRequestAmount(selectedRequest).secondary && (
@@ -1082,9 +1082,9 @@ export default function PendingTransfers() {
               )}
 
               {actionType === "pay" && (
-                <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg flex items-start gap-2">
-                  <Send className="w-5 h-5 text-purple-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-purple-800">
+                <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg flex items-start gap-2">
+                  <Send className="w-5 h-5 text-purple-600 dark:text-purple-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-purple-800 dark:text-purple-200">
                     By paying, you agree to send gold from your Finatrades
                     wallet to fulfill this request.
                   </p>
@@ -1092,9 +1092,9 @@ export default function PendingTransfers() {
               )}
 
               {actionType === "decline" && (
-                <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg flex items-start gap-2">
-                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <p className="text-sm text-amber-800">
+                <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 rounded-lg flex items-start gap-2">
+                  <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
                     The requester will be notified that you declined their
                     payment request.
                   </p>

@@ -144,7 +144,7 @@ export function TradeAgreement({
             </CardTitle>
             <Badge 
               variant={bothPartiesSigned ? "default" : "secondary"}
-              className={bothPartiesSigned ? "bg-green-500" : ""}
+              className={bothPartiesSigned ? "bg-green-50 dark:bg-green-950/200" : ""}
               data-testid="agreement-status-badge"
             >
               {bothPartiesSigned ? (
@@ -183,7 +183,7 @@ export function TradeAgreement({
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  importerSigned ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground/70'
+                  importerSigned ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-muted text-muted-foreground/70'
                 }`}>
                   {importerSigned ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                 </div>
@@ -193,11 +193,11 @@ export function TradeAgreement({
                 </div>
               </div>
               {importerSigned ? (
-                <Badge variant="outline" className="text-green-600 border-green-200" data-testid="importer-signed-badge">
+                <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/40" data-testid="importer-signed-badge">
                   Signed {importerSignedAt && new Date(importerSignedAt).toLocaleDateString()}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                <Badge variant="outline" className="text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800/40">
                   Pending
                 </Badge>
               )}
@@ -206,7 +206,7 @@ export function TradeAgreement({
             <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
               <div className="flex items-center gap-2">
                 <div className={`h-8 w-8 rounded-full flex items-center justify-center ${
-                  exporterSigned ? 'bg-green-100 text-green-600' : 'bg-muted text-muted-foreground/70'
+                  exporterSigned ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400' : 'bg-muted text-muted-foreground/70'
                 }`}>
                   {exporterSigned ? <CheckCircle2 className="h-4 w-4" /> : <Clock className="h-4 w-4" />}
                 </div>
@@ -216,11 +216,11 @@ export function TradeAgreement({
                 </div>
               </div>
               {exporterSigned ? (
-                <Badge variant="outline" className="text-green-600 border-green-200" data-testid="exporter-signed-badge">
+                <Badge variant="outline" className="text-green-600 dark:text-green-400 border-green-200 dark:border-green-800/40" data-testid="exporter-signed-badge">
                   Signed {exporterSignedAt && new Date(exporterSignedAt).toLocaleDateString()}
                 </Badge>
               ) : (
-                <Badge variant="outline" className="text-yellow-600 border-yellow-200">
+                <Badge variant="outline" className="text-yellow-600 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800/40">
                   Pending
                 </Badge>
               )}
@@ -273,12 +273,12 @@ export function TradeAgreement({
           </DialogHeader>
 
           <div className="space-y-4">
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="p-4 bg-yellow-50 dark:bg-yellow-950/20 border border-yellow-200 dark:border-yellow-800/40 rounded-lg">
               <div className="flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
                 <div className="text-sm">
-                  <p className="font-medium text-yellow-800">Important Notice</p>
-                  <p className="text-yellow-700 mt-1">
+                  <p className="font-medium text-yellow-800 dark:text-yellow-200">Important Notice</p>
+                  <p className="text-yellow-700 dark:text-yellow-300 mt-1">
                     By signing this agreement, you confirm that you have read and understood all terms 
                     and conditions. This constitutes a legally binding contract.
                   </p>

@@ -110,20 +110,20 @@ export default function Notifications() {
 
   const getTypeColor = (type: string) => {
     switch (type) {
-      case 'transaction': return 'bg-blue-500/10 text-blue-500';
-      case 'kyc': return 'bg-purple-500/10 text-purple-500';
-      case 'bnsl': return 'bg-green-500/10 text-green-500';
-      case 'vault': return 'bg-yellow-500/10 text-yellow-500';
-      case 'security': return 'bg-red-500/10 text-red-500';
-      case 'referral': return 'bg-pink-500/10 text-pink-500';
+      case 'transaction': return 'bg-blue-50 dark:bg-blue-950/200/10 text-blue-500';
+      case 'kyc': return 'bg-purple-50 dark:bg-purple-950/200/10 text-purple-500';
+      case 'bnsl': return 'bg-green-50 dark:bg-green-950/200/10 text-green-500';
+      case 'vault': return 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-500';
+      case 'security': return 'bg-red-50 dark:bg-red-950/200/10 text-red-500';
+      case 'referral': return 'bg-pink-50 dark:bg-pink-950/200/10 text-pink-500';
       default: return 'bg-gray-500/10 text-muted-foreground';
     }
   };
 
   const getPriorityBadge = (priority: string) => {
     switch (priority) {
-      case 'high': return <Badge className="bg-red-100 text-red-700">Urgent</Badge>;
-      case 'medium': return <Badge className="bg-yellow-100 text-yellow-700">Important</Badge>;
+      case 'high': return <Badge className="bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300">Urgent</Badge>;
+      case 'medium': return <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300">Important</Badge>;
       default: return null;
     }
   };
@@ -183,7 +183,7 @@ export default function Notifications() {
           </Card>
           <Card className="p-4 cursor-pointer hover:border-primary transition-colors" onClick={() => setFilter('unread')} data-testid="filter-unread">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-950/200/10 flex items-center justify-center">
                 <BellOff className="w-5 h-5 text-blue-500" />
               </div>
               <div>
@@ -194,7 +194,7 @@ export default function Notifications() {
           </Card>
           <Card className="p-4 cursor-pointer hover:border-primary transition-colors" onClick={() => setFilter('transaction')} data-testid="filter-transactions">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-green-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-green-50 dark:bg-green-950/200/10 flex items-center justify-center">
                 <Wallet className="w-5 h-5 text-green-500" />
               </div>
               <div>
@@ -205,7 +205,7 @@ export default function Notifications() {
           </Card>
           <Card className="p-4 cursor-pointer hover:border-primary transition-colors" onClick={() => setFilter('security')} data-testid="filter-security">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-red-500/10 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-red-50 dark:bg-red-950/200/10 flex items-center justify-center">
                 <Shield className="w-5 h-5 text-red-500" />
               </div>
               <div>

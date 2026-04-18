@@ -75,8 +75,8 @@ export default function ResetPassword() {
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 flex items-center justify-center">
-                <XCircle className="w-8 h-8 text-red-600" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                <XCircle className="w-8 h-8 text-red-600 dark:text-red-400" />
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Invalid or Expired Link</h1>
               <p className="text-muted-foreground">This password reset link is invalid or has expired.</p>
@@ -121,8 +121,8 @@ export default function ResetPassword() {
           <div className="container mx-auto px-6 max-w-md">
             
             <div className="text-center mb-8">
-              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <CheckCircle className="w-8 h-8 text-green-600" />
+              <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                <CheckCircle className="w-8 h-8 text-green-600 dark:text-green-400" />
               </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">Password Reset Complete</h1>
               <p className="text-muted-foreground">Your password has been successfully updated.</p>

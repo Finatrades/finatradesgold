@@ -236,8 +236,8 @@ function RaminvestSection() {
   return (
     <section id="raminvest" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="raminvest-section">
       <div className="absolute inset-0">
-        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100/20 blur-[120px] rounded-full" />
+        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100 dark:bg-purple-900/30/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100 dark:bg-pink-900/30/20 blur-[120px] rounded-full" />
       </div>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div
@@ -286,11 +286,11 @@ function RaminvestSection() {
             ].map((item) => (
               <div
                 key={item.title}
-                className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 group"
+                className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 dark:border-purple-800/40 group"
                 data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <item.icon className="w-6 h-6 text-purple-600" strokeWidth={1.5} />
+                  <item.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
                 </div>
                 <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
@@ -350,9 +350,9 @@ function FinatradesSection() {
                 { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
                 { icon: Lock, label: 'SO-FIT - FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
               ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-purple-600" />
+                    <item.icon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
                   <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
@@ -370,8 +370,8 @@ function WingoldSection() {
   return (
     <section id="wingold" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="wingold-section">
       <div className="absolute inset-0">
-        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-amber-100/20 blur-[150px] rounded-full" />
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100/20 blur-[120px] rounded-full" />
+        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-amber-100 dark:bg-amber-900/30/20 blur-[150px] rounded-full" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/20 blur-[120px] rounded-full" />
       </div>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
@@ -390,9 +390,9 @@ function WingoldSection() {
                 { icon: Shield, label: 'Secure Trading', desc: 'Certified storage and transparent management' },
                 { icon: Award, label: 'Institutional Grade', desc: 'Solutions for governments and institutions' },
               ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 dark:border-amber-800/40 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-amber-600" />
+                    <item.icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
                   </div>
                   <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
                   <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
@@ -406,7 +406,7 @@ function WingoldSection() {
                   <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" loading="lazy" />
                 </div>
               </div>
-              <p className="text-amber-600 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
+              <p className="text-amber-600 dark:text-amber-400 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
               <p className="text-muted-foreground text-base leading-relaxed mb-4">
                 Wingold & Metals specializes in the trading and management of precious metals, providing strategic financial solutions 
                 for governments, institutions, and corporate clients. Through proprietary financial instruments and innovative structured solutions, 
@@ -435,7 +435,7 @@ function WinCommoditiesSection() {
   return (
     <section id="wincommodities" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="wincommodities-section">
       <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
-      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100/20 rounded-full blur-[120px]" />
+      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100 dark:bg-green-900/30/20 rounded-full blur-[120px]" />
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
           <h2 className="text-sm font-semibold tracking-[0.2em] text-[#DC2626] uppercase">WinCommodities</h2>
@@ -482,7 +482,7 @@ function WinCommoditiesSection() {
                 { icon: Lock, label: 'Trade Security', desc: 'Fully compliant and transparent transactions' },
                 { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
               ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 dark:border-red-800/40 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>
@@ -502,8 +502,8 @@ function WinLogisticsSection() {
   return (
     <section id="winlogistics" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="winlogistics-section">
       <div className="absolute inset-0">
-        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-blue-100/20 blur-[150px] rounded-full" />
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100/20 blur-[120px] rounded-full" />
+        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-blue-100 dark:bg-blue-900/30/20 blur-[150px] rounded-full" />
+        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/20 blur-[120px] rounded-full" />
       </div>
       <div className="max-w-7xl mx-auto px-6 relative z-10">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
@@ -522,7 +522,7 @@ function WinLogisticsSection() {
                 { icon: Building2, label: 'Warehousing', desc: 'Strategic warehouse partnerships in key trade zones' },
                 { icon: Globe, label: 'Trade Infrastructure', desc: 'Structured documentation and process handling' },
               ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
+                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 dark:border-red-800/40 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
                     <item.icon className="w-4 h-4 text-[#DC2626]" />
                   </div>

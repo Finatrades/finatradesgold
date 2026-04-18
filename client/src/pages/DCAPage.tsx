@@ -65,9 +65,9 @@ const frequencyLabels: Record<string, string> = {
 };
 
 const statusColors: Record<string, string> = {
-  active: 'bg-green-500/10 text-green-600 border-green-500/30',
-  paused: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/30',
-  cancelled: 'bg-red-500/10 text-red-600 border-red-500/30'
+  active: 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400 border-green-500/30',
+  paused: 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400 border-yellow-500/30',
+  cancelled: 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400 border-red-500/30'
 };
 
 const daysOfWeek = [
@@ -307,7 +307,7 @@ export default function DCAPage() {
               variant="outline"
               size="sm"
               data-testid={`button-cancel-${plan.id}`}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+              className="text-red-600 dark:text-red-400 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-950/20"
               onClick={() => {
                 setSelectedPlan(plan);
                 setShowCancelConfirm(true);
@@ -402,12 +402,12 @@ export default function DCAPage() {
             <Loader2 className="w-8 h-8 animate-spin text-primary" />
           </div>
         ) : error ? (
-          <Card className="bg-red-50 border-red-200">
+          <Card className="bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40">
             <CardContent className="p-6 flex items-center gap-4">
               <AlertCircle className="w-8 h-8 text-red-500" />
               <div>
-                <h3 className="font-semibold text-red-800">Failed to load DCA plans</h3>
-                <p className="text-red-600">Please try again later.</p>
+                <h3 className="font-semibold text-red-800 dark:text-red-200">Failed to load DCA plans</h3>
+                <p className="text-red-600 dark:text-red-400">Please try again later.</p>
               </div>
             </CardContent>
           </Card>
@@ -644,10 +644,10 @@ export default function DCAPage() {
                   <div className="flex items-center justify-between mb-2">
                     <Badge className={
                       execution.status === 'completed' 
-                        ? 'bg-green-500/10 text-green-600' 
+                        ? 'bg-green-50 dark:bg-green-950/200/10 text-green-600 dark:text-green-400' 
                         : execution.status === 'failed'
-                        ? 'bg-red-500/10 text-red-600'
-                        : 'bg-yellow-500/10 text-yellow-600'
+                        ? 'bg-red-50 dark:bg-red-950/200/10 text-red-600 dark:text-red-400'
+                        : 'bg-yellow-50 dark:bg-yellow-950/200/10 text-yellow-600 dark:text-yellow-400'
                     }>
                       {execution.status}
                     </Badge>
@@ -669,7 +669,7 @@ export default function DCAPage() {
                       <p className="font-semibold">${execution.goldPriceAtPurchase.toFixed(2)}/g</p>
                     </div>
                     {execution.error && (
-                      <div className="col-span-2 text-red-600 text-xs">
+                      <div className="col-span-2 text-red-600 dark:text-red-400 text-xs">
                         Error: {execution.error}
                       </div>
                     )}
@@ -684,7 +684,7 @@ export default function DCAPage() {
       <Dialog open={showCancelConfirm} onOpenChange={setShowCancelConfirm}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-red-600">
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
               <XCircle className="w-5 h-5" />
               Cancel Plan
             </DialogTitle>

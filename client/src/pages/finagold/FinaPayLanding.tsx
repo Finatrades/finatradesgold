@@ -126,8 +126,8 @@ function HeroSection() {
       <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC]" />
       <FloatingParticles count={30} />
       
-      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100/40 blur-[150px]" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100/30 blur-[120px]" />
+      <div className="absolute top-1/4 left-0 w-[500px] h-[500px] rounded-full bg-purple-100 dark:bg-purple-900/30/40 blur-[150px]" />
+      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-pink-100 dark:bg-pink-900/30/30 blur-[120px]" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-6 w-full">
         <div className="grid lg:grid-cols-2 gap-12 items-center">
@@ -141,12 +141,12 @@ function HeroSection() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50"
             >
               <div className="w-5 h-5 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 flex items-center justify-center">
                 <Wallet className="w-3 h-3 text-white" />
               </div>
-              <span className="text-sm font-medium text-purple-700">Digital Gold Wallet</span>
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Digital Gold Wallet</span>
             </motion.div>
 
             <motion.div
@@ -195,7 +195,7 @@ function HeroSection() {
               </Link>
               <Link
                 href="/sign-in"
-                className="flex items-center gap-2 border border-purple-300 text-purple-700 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 hover:border-purple-400 transition-all"
+                className="flex items-center gap-2 border border-purple-300 text-purple-700 dark:text-purple-300 px-6 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all"
               >
                 <RefreshCw className="w-5 h-5" />
                 View Transactions
@@ -221,9 +221,9 @@ function HeroSection() {
                 <motion.div
                   animate={{ rotate: [0, 360] }}
                   transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
-                  className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center"
+                  className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center"
                 >
-                  <RefreshCw className="w-4 h-4 text-purple-600" />
+                  <RefreshCw className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </motion.div>
               </div>
               
@@ -237,7 +237,7 @@ function HeroSection() {
                 >
                   $24,750.85 <span className="text-lg font-normal text-muted-foreground">USD</span>
                 </motion.div>
-                <p className="text-purple-600 text-sm mt-1">≈ 12.45 oz Gold</p>
+                <p className="text-purple-600 dark:text-purple-400 text-sm mt-1">≈ 12.45 oz Gold</p>
               </div>
 
               <div className="flex justify-center gap-3 pt-4">
@@ -246,7 +246,7 @@ function HeroSection() {
                     key={action}
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
-                    className="px-4 py-2 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:border-purple-300 hover:text-purple-600 transition-all"
+                    className="px-4 py-2 rounded-lg border border-border text-muted-foreground text-sm font-medium hover:border-purple-300 hover:text-purple-600 dark:text-purple-400 transition-all"
                   >
                     {action}
                   </motion.button>
@@ -297,10 +297,10 @@ function WalletFeaturesSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.1 }}
               whileHover={{ y: -5 }}
-              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-lg hover:border-purple-200 transition-all"
+              className="relative p-6 rounded-2xl bg-card border border-border/60 shadow-sm hover:shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all"
             >
               <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center mb-4">
-                <feature.icon className="w-6 h-6 text-purple-600" />
+                <feature.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
               <h3 className="text-lg font-bold text-foreground mb-2">{feature.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{feature.description}</p>
@@ -354,8 +354,8 @@ function WalletPhoneMockupSection() {
                   </div>
                   <span className="text-foreground font-bold">FinaPay</span>
                 </div>
-                <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                  <RefreshCw className="w-4 h-4 text-purple-600" />
+                <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <RefreshCw className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                 </div>
               </div>
               
@@ -395,8 +395,8 @@ function WalletPhoneMockupSection() {
                   { icon: RefreshCw, label: 'Convert' },
                 ].map((action) => (
                   <div key={action.label} className="flex flex-col items-center gap-1">
-                    <div className="w-12 h-12 rounded-full bg-purple-100 flex items-center justify-center">
-                      <action.icon className="w-5 h-5 text-purple-600" />
+                    <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <action.icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                     </div>
                     <span className="text-xs text-muted-foreground">{action.label}</span>
                   </div>
@@ -407,7 +407,7 @@ function WalletPhoneMockupSection() {
               <div className="border-t border-border/60 pt-4">
                 <div className="flex justify-between items-center mb-3">
                   <span className="text-foreground font-semibold text-sm">Recent Activity</span>
-                  <span className="text-purple-600 text-xs font-medium">View All</span>
+                  <span className="text-purple-600 dark:text-purple-400 text-xs font-medium">View All</span>
                 </div>
                 
                 {[
@@ -418,12 +418,12 @@ function WalletPhoneMockupSection() {
                   <div key={i} className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-3">
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                        tx.type === 'receive' ? 'bg-green-100' :
-                        tx.type === 'send' ? 'bg-pink-100' : 'bg-purple-100'
+                        tx.type === 'receive' ? 'bg-green-100 dark:bg-green-900/30' :
+                        tx.type === 'send' ? 'bg-pink-100 dark:bg-pink-900/30' : 'bg-purple-100 dark:bg-purple-900/30'
                       }`}>
-                        {tx.type === 'receive' ? <ArrowDownLeft className="w-4 h-4 text-green-600" /> :
-                         tx.type === 'send' ? <ArrowUpRight className="w-4 h-4 text-pink-600" /> :
-                         <Building2 className="w-4 h-4 text-purple-600" />}
+                        {tx.type === 'receive' ? <ArrowDownLeft className="w-4 h-4 text-green-600 dark:text-green-400" /> :
+                         tx.type === 'send' ? <ArrowUpRight className="w-4 h-4 text-pink-600 dark:text-pink-400" /> :
+                         <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />}
                       </div>
                       <div>
                         <p className="text-foreground text-sm font-medium">{tx.name}</p>
@@ -461,10 +461,10 @@ function GoldCardSection() {
               initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50"
             >
-              <CreditCard className="w-4 h-4 text-purple-600" />
-              <span className="text-sm font-medium text-purple-700">Coming Soon</span>
+              <CreditCard className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-sm font-medium text-purple-700 dark:text-purple-300">Coming Soon</span>
             </motion.div>
 
             <h2 className="text-3xl md:text-4xl font-bold text-foreground">
@@ -511,7 +511,7 @@ function GoldCardSection() {
                   <span className="text-white font-bold text-sm">FINATRADES</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20">
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-green-50 dark:bg-green-950/200/20">
                     <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
                     <span className="text-green-400 text-xs">ACTIVE</span>
                   </div>
@@ -589,7 +589,7 @@ function WalletUIDemoSection() {
                 <motion.div
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 2, repeat: Infinity }}
-                  className="px-3 py-1 rounded-full bg-green-100 text-green-600 text-sm"
+                  className="px-3 py-1 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm"
                 >
                   +2.4% today
                 </motion.div>
@@ -601,7 +601,7 @@ function WalletUIDemoSection() {
               >
                 $24,580.00
               </motion.div>
-              <p className="text-purple-600">≈ 10.32 grams gold</p>
+              <p className="text-purple-600 dark:text-purple-400">≈ 10.32 grams gold</p>
             </div>
 
             <div className="grid grid-cols-3 gap-4">
@@ -614,7 +614,7 @@ function WalletUIDemoSection() {
                   key={action.label}
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
-                  className="p-4 rounded-xl bg-card border border-border/60 shadow-md hover:border-purple-200 transition-all flex flex-col items-center gap-2"
+                  className="p-4 rounded-xl bg-card border border-border/60 shadow-md hover:border-purple-200 dark:border-purple-800/40 transition-all flex flex-col items-center gap-2"
                 >
                   <action.icon className={`w-6 h-6 ${action.color}`} />
                   <span className="text-sm text-muted-foreground">{action.label}</span>
@@ -643,12 +643,12 @@ function WalletUIDemoSection() {
               >
                 <div className="flex items-center gap-4">
                   <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    tx.type === 'Received' ? 'bg-green-100' : 
-                    tx.type === 'Sent' ? 'bg-red-100' : 'bg-purple-100'
+                    tx.type === 'Received' ? 'bg-green-100 dark:bg-green-900/30' : 
+                    tx.type === 'Sent' ? 'bg-red-100 dark:bg-red-900/30' : 'bg-purple-100 dark:bg-purple-900/30'
                   }`}>
                     <tx.icon className={`w-5 h-5 ${
                       tx.type === 'Received' ? 'text-green-500' : 
-                      tx.type === 'Sent' ? 'text-red-500' : 'text-purple-600'
+                      tx.type === 'Sent' ? 'text-red-500' : 'text-purple-600 dark:text-purple-400'
                     }`} />
                   </div>
                   <div>
@@ -699,9 +699,9 @@ function GoldTransferSection() {
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 flex flex-col items-center justify-center gap-2"
+              className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center gap-2"
             >
-              <Building2 className="w-10 h-10 text-purple-600" />
+              <Building2 className="w-10 h-10 text-purple-600 dark:text-purple-400" />
               <span className="text-foreground font-medium">FinaVault</span>
             </motion.div>
 
@@ -722,9 +722,9 @@ function GoldTransferSection() {
             <motion.div
               animate={{ scale: [1, 1.05, 1] }}
               transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-              className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 flex flex-col items-center justify-center gap-2"
+              className="w-32 h-32 rounded-2xl bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center gap-2"
             >
-              <Wallet className="w-10 h-10 text-purple-600" />
+              <Wallet className="w-10 h-10 text-purple-600 dark:text-purple-400" />
               <span className="text-foreground font-medium">FinaPay</span>
             </motion.div>
           </div>
@@ -733,7 +733,7 @@ function GoldTransferSection() {
             <motion.div
               animate={{ opacity: [0.5, 1, 0.5] }}
               transition={{ duration: 2, repeat: Infinity }}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 text-green-600 text-sm"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-sm"
             >
               <CheckCircle className="w-4 h-4" />
               Transfer Complete
@@ -810,7 +810,7 @@ function GlobalPaymentSection() {
               />
               <div className="relative w-4 h-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-gradient-to-r from-purple-600 to-pink-500 shadow-lg shadow-purple-500/50" />
               <div className="absolute top-4 left-1/2 -translate-x-1/2 whitespace-nowrap">
-                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 text-purple-700 shadow-sm">
+                <span className="px-3 py-1 rounded-full text-xs font-medium bg-card/90 border border-purple-200 dark:border-purple-800/40 text-purple-700 dark:text-purple-300 shadow-sm">
                   {hub.name}
                 </span>
               </div>
@@ -857,19 +857,19 @@ function TransactionHistorySection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
               whileHover={{ y: -8, rotateY: 5 }}
-              className="p-6 rounded-2xl bg-card border border-border/60 shadow-lg backdrop-blur-sm hover:border-purple-200 transition-all"
+              className="p-6 rounded-2xl bg-card border border-border/60 shadow-lg backdrop-blur-sm hover:border-purple-200 dark:border-purple-800/40 transition-all"
             >
               <motion.div
                 animate={{ scale: [1, 1.1, 1], opacity: [0.7, 1, 0.7] }}
                 transition={{ duration: 2, repeat: Infinity, delay: i * 0.3 }}
                 className={`w-12 h-12 rounded-xl mb-4 flex items-center justify-center ${
-                  tx.color === 'green' ? 'bg-green-100' :
-                  tx.color === 'blue' ? 'bg-blue-100' : 'bg-purple-100'
+                  tx.color === 'green' ? 'bg-green-100 dark:bg-green-900/30' :
+                  tx.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30' : 'bg-purple-100 dark:bg-purple-900/30'
                 }`}
               >
                 <tx.icon className={`w-6 h-6 ${
                   tx.color === 'green' ? 'text-green-500' :
-                  tx.color === 'blue' ? 'text-blue-500' : 'text-purple-600'
+                  tx.color === 'blue' ? 'text-blue-500' : 'text-purple-600 dark:text-purple-400'
                 }`} />
               </motion.div>
               <h3 className="text-foreground font-semibold mb-1">{tx.title}</h3>
@@ -921,7 +921,7 @@ function SecuritySection() {
                 whileInView={{ scale: 1, opacity: 1 }}
                 viewport={{ once: true }}
                 transition={{ duration: 0.8 }}
-                className="absolute inset-0 rounded-full border-2 border-purple-200"
+                className="absolute inset-0 rounded-full border-2 border-purple-200 dark:border-purple-800/40"
               />
               
               <motion.div
@@ -935,7 +935,7 @@ function SecuritySection() {
                 transition={{ duration: 2, repeat: Infinity }}
                 className="absolute inset-12 rounded-full bg-gradient-to-r from-purple-100 to-pink-100 border-2 border-purple-300 flex items-center justify-center"
               >
-                <Fingerprint className="w-16 h-16 text-purple-600" />
+                <Fingerprint className="w-16 h-16 text-purple-600 dark:text-purple-400" />
               </motion.div>
             </motion.div>
           </motion.div>
@@ -964,7 +964,7 @@ function SecuritySection() {
                   className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/60 shadow-md"
                 >
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-r from-purple-100 to-pink-100 flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-purple-600" />
+                    <Shield className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <span className="text-foreground font-medium">{feature}</span>
                 </motion.div>
@@ -987,7 +987,7 @@ function FinaPayCardSection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200/50 text-purple-700">
+          <span className="inline-block px-4 py-2 rounded-full text-sm font-medium bg-gradient-to-r from-purple-100 to-pink-100 border border-purple-200 dark:border-purple-800/40/50 text-purple-700 dark:text-purple-300">
             Coming Soon
           </span>
           
@@ -1056,7 +1056,7 @@ function FinalCTASection() {
         <motion.div
           animate={{ scale: [1, 1.3, 1], opacity: [0.1, 0.25, 0.1] }}
           transition={{ duration: 5, repeat: Infinity }}
-          className="w-[700px] h-[700px] rounded-full bg-purple-100/30 blur-[120px]"
+          className="w-[700px] h-[700px] rounded-full bg-purple-100 dark:bg-purple-900/30/30 blur-[120px]"
         />
       </div>
 

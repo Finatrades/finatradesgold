@@ -97,13 +97,13 @@ const getActivityIcon = (type: string) => {
     case 'settings_change':
       return <Settings className="w-4 h-4 text-muted-foreground" />;
     case 'mfa_enabled':
-      return <Shield className="w-4 h-4 text-green-600" />;
+      return <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />;
     case 'mfa_disabled':
       return <Shield className="w-4 h-4 text-red-500" />;
     case 'kyc_submitted':
-      return <FileCheck className="w-4 h-4 text-blue-600" />;
+      return <FileCheck className="w-4 h-4 text-blue-600 dark:text-blue-400" />;
     case 'kyc_approved':
-      return <FileCheck className="w-4 h-4 text-green-600" />;
+      return <FileCheck className="w-4 h-4 text-green-600 dark:text-green-400" />;
     case 'beneficiary_added':
     case 'beneficiary_removed':
       return <UserCog className="w-4 h-4 text-purple-500" />;
@@ -121,23 +121,23 @@ const getActivityIcon = (type: string) => {
 
 const getActivityBadge = (type: string) => {
   const typeConfig: Record<string, { color: string; label: string }> = {
-    login: { color: 'bg-green-100 text-green-700', label: 'Login' },
+    login: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300', label: 'Login' },
     logout: { color: 'bg-muted text-foreground/85', label: 'Logout' },
-    login_failed: { color: 'bg-red-100 text-red-700', label: 'Failed Login' },
-    password_change: { color: 'bg-purple-100 text-purple-700', label: 'Password Change' },
-    email_change: { color: 'bg-blue-100 text-blue-700', label: 'Email Change' },
-    profile_update: { color: 'bg-orange-100 text-orange-700', label: 'Profile Update' },
+    login_failed: { color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300', label: 'Failed Login' },
+    password_change: { color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300', label: 'Password Change' },
+    email_change: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300', label: 'Email Change' },
+    profile_update: { color: 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300', label: 'Profile Update' },
     settings_change: { color: 'bg-muted text-foreground/85', label: 'Settings' },
-    mfa_enabled: { color: 'bg-green-100 text-green-700', label: 'MFA Enabled' },
-    mfa_disabled: { color: 'bg-red-100 text-red-700', label: 'MFA Disabled' },
-    kyc_submitted: { color: 'bg-blue-100 text-blue-700', label: 'KYC Submitted' },
-    kyc_approved: { color: 'bg-green-100 text-green-700', label: 'KYC Approved' },
-    beneficiary_added: { color: 'bg-purple-100 text-purple-700', label: 'Beneficiary Added' },
-    beneficiary_removed: { color: 'bg-red-100 text-red-700', label: 'Beneficiary Removed' },
-    dca_created: { color: 'bg-blue-100 text-blue-700', label: 'DCA Created' },
-    dca_updated: { color: 'bg-blue-100 text-blue-700', label: 'DCA Updated' },
-    price_alert_created: { color: 'bg-purple-100 text-purple-700', label: 'Alert Created' },
-    price_alert_triggered: { color: 'bg-green-100 text-green-700', label: 'Alert Triggered' },
+    mfa_enabled: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300', label: 'MFA Enabled' },
+    mfa_disabled: { color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300', label: 'MFA Disabled' },
+    kyc_submitted: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300', label: 'KYC Submitted' },
+    kyc_approved: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300', label: 'KYC Approved' },
+    beneficiary_added: { color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300', label: 'Beneficiary Added' },
+    beneficiary_removed: { color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300', label: 'Beneficiary Removed' },
+    dca_created: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300', label: 'DCA Created' },
+    dca_updated: { color: 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300', label: 'DCA Updated' },
+    price_alert_created: { color: 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300', label: 'Alert Created' },
+    price_alert_triggered: { color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300', label: 'Alert Triggered' },
   };
 
   const config = typeConfig[type.toLowerCase()] || { color: 'bg-muted text-foreground/85', label: type };
@@ -225,7 +225,7 @@ export default function ActivityLogPage() {
           <CardHeader className="pb-4 border-b">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <Activity className="w-5 h-5 text-purple-600" />
+                <Activity className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 Recent Activity
               </CardTitle>
               <Select value={activityFilter} onValueChange={handleFilterChange}>
@@ -246,12 +246,12 @@ export default function ActivityLogPage() {
           <CardContent className="p-0">
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400" />
               </div>
             ) : error ? (
               <div className="flex flex-col items-center justify-center py-20 text-center">
                 <AlertCircle className="w-12 h-12 mb-4 text-red-400" />
-                <h3 className="text-lg font-semibold mb-2 text-red-600">Failed to Load</h3>
+                <h3 className="text-lg font-semibold mb-2 text-red-600 dark:text-red-400">Failed to Load</h3>
                 <p className="text-muted-foreground text-sm mb-4">
                   There was an error loading your activity log.
                 </p>
@@ -345,7 +345,7 @@ export default function ActivityLogPage() {
                           data-testid={`card-activity-${activity.id}`}
                         >
                           <div className="flex items-start gap-3">
-                            <div className="p-2 rounded-full bg-purple-100">
+                            <div className="p-2 rounded-full bg-purple-100 dark:bg-purple-900/30">
                               {getActivityIcon(activity.activityType)}
                             </div>
                             <div className="flex-1 min-w-0">

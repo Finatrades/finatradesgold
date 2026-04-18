@@ -111,8 +111,8 @@ function FinatradesIdSection() {
         </div>
 
         {!idInfo?.canChange && idInfo?.canChangeIn > 0 && (
-          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 border border-amber-200 dark:bg-amber-900/20 dark:border-amber-800">
-            <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/40 dark:bg-amber-900/20 dark:border-amber-800">
+            <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
             <p className="text-sm text-amber-700 dark:text-amber-400">
               ID can be changed again in {idInfo.canChangeIn} day{idInfo.canChangeIn !== 1 ? 's' : ''}
             </p>
@@ -157,7 +157,7 @@ function FinatradesIdSection() {
                 </Button>
               </div>
               {availability && (
-                <p className={`text-xs mt-1.5 ${availability.available ? 'text-green-600' : 'text-red-500'}`}>
+                <p className={`text-xs mt-1.5 ${availability.available ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`}>
                   {availability.message}
                 </p>
               )}
@@ -325,7 +325,7 @@ export default function Settings() {
             <div className="divide-y divide-border/60">
               <NotificationRow
                 icon={Mail}
-                iconColor="bg-blue-500/10 text-blue-500"
+                iconColor="bg-blue-50 dark:bg-blue-950/200/10 text-blue-500"
                 label="Email Notifications"
                 description="Receive all account updates via email"
                 checked={localPrefs.emailNotifications}
@@ -334,7 +334,7 @@ export default function Settings() {
               />
               <NotificationRow
                 icon={Smartphone}
-                iconColor="bg-violet-500/10 text-violet-500"
+                iconColor="bg-violet-50 dark:bg-violet-950/200/10 text-violet-500"
                 label="Push Notifications"
                 description="In-browser and mobile push alerts"
                 checked={localPrefs.pushNotifications}

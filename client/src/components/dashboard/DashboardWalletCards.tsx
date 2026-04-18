@@ -47,7 +47,7 @@ export default function DashboardWalletCards({
 }: DashboardWalletCardsProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <Card className="group relative p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200">
+      <Card className="group relative p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 dark:border-emerald-800/40 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -61,7 +61,7 @@ export default function DashboardWalletCards({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="w-7 h-7 rounded-full bg-emerald-200 flex items-center justify-center cursor-pointer hover:bg-emerald-300 transition-colors">
-                      <Info className="w-4 h-4 text-emerald-700" />
+                      <Info className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -70,7 +70,7 @@ export default function DashboardWalletCards({
                 </Tooltip>
               </TooltipProvider>
               <Link href="/finapay">
-                <span className="text-xs text-emerald-600 hover:text-emerald-700 flex items-center gap-0.5 cursor-pointer font-medium">
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:text-emerald-300 flex items-center gap-0.5 cursor-pointer font-medium">
                   View <ArrowRight className="w-3 h-3" />
                 </span>
               </Link>
@@ -85,10 +85,10 @@ export default function DashboardWalletCards({
             <p className="text-[12px] text-muted-foreground/70">≈ ${Number(finaPayWallet.usdValue).toFixed(2)} USD</p>
           </div>
           
-          <div className="flex justify-between pt-3 mt-3 border-t border-emerald-200">
+          <div className="flex justify-between pt-3 mt-3 border-t border-emerald-200 dark:border-emerald-800/40">
             <div>
               <p className="text-[12px] text-muted-foreground">Pending</p>
-              <p className="text-sm font-semibold text-emerald-600">{Number(finaPayWallet.pending || 0).toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">{Number(finaPayWallet.pending || 0).toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-[12px] text-muted-foreground">Transactions</p>
@@ -99,7 +99,7 @@ export default function DashboardWalletCards({
       </Card>
 
       {isBusinessUser ? (
-        <Card className="group relative p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200">
+        <Card className="group relative p-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 dark:border-blue-800/40 rounded-xl shadow-sm hover:shadow-md hover:border-blue-300 hover:-translate-y-0.5 transition-all duration-200">
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -113,7 +113,7 @@ export default function DashboardWalletCards({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <div className="w-7 h-7 rounded-full bg-blue-200 flex items-center justify-center cursor-pointer hover:bg-blue-300 transition-colors">
-                        <Info className="w-4 h-4 text-blue-700" />
+                        <Info className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                       </div>
                     </TooltipTrigger>
                     <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -122,7 +122,7 @@ export default function DashboardWalletCards({
                   </Tooltip>
                 </TooltipProvider>
                 <Link href="/finabridge">
-                  <span className="text-xs text-blue-600 hover:text-blue-700 flex items-center gap-0.5 cursor-pointer font-medium">
+                  <span className="text-xs text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:text-blue-300 flex items-center gap-0.5 cursor-pointer font-medium">
                     View <ArrowRight className="w-3 h-3" />
                   </span>
                 </Link>
@@ -137,10 +137,10 @@ export default function DashboardWalletCards({
               <p className="text-[12px] text-muted-foreground/70">≈ ${(finaBridgeData?.usdValue || 0).toFixed(2)} USD</p>
             </div>
             
-            <div className="flex justify-between pt-3 mt-3 border-t border-blue-200">
+            <div className="flex justify-between pt-3 mt-3 border-t border-blue-200 dark:border-blue-800/40">
               <div>
                 <p className="text-[12px] text-muted-foreground">Active Cases</p>
-                <p className="text-sm font-semibold text-blue-600">{finaBridgeData?.activeCases || 0}</p>
+                <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">{finaBridgeData?.activeCases || 0}</p>
               </div>
               <div className="text-right">
                 <p className="text-[12px] text-muted-foreground">Trade Volume</p>
@@ -183,7 +183,7 @@ export default function DashboardWalletCards({
               <Button
                 size="sm"
                 variant="outline"
-                className="border-violet-200 text-violet-600 hover:bg-violet-50 text-xs font-semibold"
+                className="border-violet-200 dark:border-violet-800/40 text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:bg-violet-950/20 text-xs font-semibold"
                 onClick={() => toast.success('You will be notified when FinaCard launches!')}
                 data-testid="button-notify-finacard"
               >
@@ -195,7 +195,7 @@ export default function DashboardWalletCards({
         </Card>
       )}
 
-      <Card className="group relative p-4 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 rounded-xl shadow-sm hover:shadow-md hover:border-violet-300 hover:-translate-y-0.5 transition-all duration-200">
+      <Card className="group relative p-4 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 dark:border-violet-800/40 rounded-xl shadow-sm hover:shadow-md hover:border-violet-300 hover:-translate-y-0.5 transition-all duration-200">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
@@ -209,7 +209,7 @@ export default function DashboardWalletCards({
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <div className="w-7 h-7 rounded-full bg-violet-200 flex items-center justify-center cursor-pointer hover:bg-violet-300 transition-colors">
-                      <Info className="w-4 h-4 text-violet-700" />
+                      <Info className="w-4 h-4 text-violet-700 dark:text-violet-300" />
                     </div>
                   </TooltipTrigger>
                   <TooltipContent side="top" className="max-w-[250px] text-sm">
@@ -218,7 +218,7 @@ export default function DashboardWalletCards({
                 </Tooltip>
               </TooltipProvider>
               <Link href="/bnsl">
-                <span className="text-xs text-violet-600 hover:text-violet-700 flex items-center gap-0.5 cursor-pointer font-medium">
+                <span className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:text-violet-300 flex items-center gap-0.5 cursor-pointer font-medium">
                   View <ArrowRight className="w-3 h-3" />
                 </span>
               </Link>
@@ -233,10 +233,10 @@ export default function DashboardWalletCards({
             <p className="text-[12px] text-muted-foreground/70">≈ ${Number(bnslData.usdValue).toFixed(2)} USD</p>
           </div>
           
-          <div className="flex justify-between pt-3 mt-3 border-t border-violet-200">
+          <div className="flex justify-between pt-3 mt-3 border-t border-violet-200 dark:border-violet-800/40">
             <div>
               <p className="text-[12px] text-muted-foreground">Locked</p>
-              <p className="text-sm font-semibold text-violet-600">{Number(bnslData.lockedGrams).toFixed(2)}g</p>
+              <p className="text-sm font-semibold text-violet-600 dark:text-violet-400">{Number(bnslData.lockedGrams).toFixed(2)}g</p>
             </div>
             <div className="text-right">
               <p className="text-[12px] text-muted-foreground">Active Plans</p>

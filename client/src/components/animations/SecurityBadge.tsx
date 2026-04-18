@@ -18,7 +18,7 @@ export default function SecurityBadge({ type = 'shield', label, className = '' }
 
   return (
     <motion.div
-      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/80 backdrop-blur-sm border border-green-200 shadow-sm ${className}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card/80 backdrop-blur-sm border border-green-200 dark:border-green-800/40 shadow-sm ${className}`}
       whileHover={{ scale: 1.05, boxShadow: '0 4px 20px rgba(34, 197, 94, 0.15)' }}
       transition={{ type: 'spring', stiffness: 400, damping: 25 }}
     >
@@ -28,9 +28,9 @@ export default function SecurityBadge({ type = 'shield', label, className = '' }
         }}
         transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
       >
-        <Icon className="w-4 h-4 text-green-600" />
+        <Icon className="w-4 h-4 text-green-600 dark:text-green-400" />
       </motion.div>
-      <span className="text-xs font-medium text-green-700">{label}</span>
+      <span className="text-xs font-medium text-green-700 dark:text-green-300">{label}</span>
     </motion.div>
   );
 }

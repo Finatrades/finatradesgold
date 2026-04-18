@@ -146,11 +146,11 @@ export default function ReferralsPage() {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Completed':
-        return <Badge className="bg-green-100 text-green-700 border-green-200" data-testid={`badge-status-completed`}>Completed</Badge>;
+        return <Badge className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800/40" data-testid={`badge-status-completed`}>Completed</Badge>;
       case 'Active':
-        return <Badge className="bg-blue-100 text-blue-700 border-blue-200" data-testid={`badge-status-active`}>Active</Badge>;
+        return <Badge className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800/40" data-testid={`badge-status-active`}>Active</Badge>;
       case 'Pending':
-        return <Badge className="bg-yellow-100 text-yellow-700 border-yellow-200" data-testid={`badge-status-pending`}>Pending</Badge>;
+        return <Badge className="bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300 border-yellow-200 dark:border-yellow-800/40" data-testid={`badge-status-pending`}>Pending</Badge>;
       default:
         return <Badge variant="outline" data-testid={`badge-status-${status.toLowerCase()}`}>{status}</Badge>;
     }
@@ -204,8 +204,8 @@ export default function ReferralsPage() {
             ))}
           </div>
         ) : dashboardError ? (
-          <Card className="p-6 border-red-200 bg-red-50" data-testid="error-dashboard">
-            <div className="flex items-center gap-3 text-red-600">
+          <Card className="p-6 border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-950/20" data-testid="error-dashboard">
+            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
               <AlertCircle className="w-5 h-5" />
               <p>Failed to load referral dashboard. Please try again.</p>
             </div>
@@ -216,10 +216,10 @@ export default function ReferralsPage() {
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-1 md:grid-cols-4 gap-4"
           >
-            <Card className="p-5 bg-gradient-to-br from-purple-500/10 to-purple-700/5 border-purple-200" data-testid="card-total-referrals">
+            <Card className="p-5 bg-gradient-to-br from-purple-500/10 to-purple-700/5 border-purple-200 dark:border-purple-800/40" data-testid="card-total-referrals">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-purple-100 flex items-center justify-center">
-                  <Users className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                  <Users className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Referrals</p>
@@ -228,10 +228,10 @@ export default function ReferralsPage() {
               </div>
             </Card>
 
-            <Card className="p-5 bg-gradient-to-br from-blue-500/10 to-blue-700/5 border-blue-200" data-testid="card-active-referrals">
+            <Card className="p-5 bg-gradient-to-br from-blue-500/10 to-blue-700/5 border-blue-200 dark:border-blue-800/40" data-testid="card-active-referrals">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-blue-100 flex items-center justify-center">
-                  <TrendingUp className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                  <TrendingUp className="w-6 h-6 text-blue-600 dark:text-blue-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Active Referrals</p>
@@ -240,10 +240,10 @@ export default function ReferralsPage() {
               </div>
             </Card>
 
-            <Card className="p-5 bg-gradient-to-br from-green-500/10 to-green-700/5 border-green-200" data-testid="card-completed-referrals">
+            <Card className="p-5 bg-gradient-to-br from-green-500/10 to-green-700/5 border-green-200 dark:border-green-800/40" data-testid="card-completed-referrals">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-green-100 flex items-center justify-center">
-                  <Award className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 rounded-xl bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                  <Award className="w-6 h-6 text-green-600 dark:text-green-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Completed</p>
@@ -252,10 +252,10 @@ export default function ReferralsPage() {
               </div>
             </Card>
 
-            <Card className="p-5 bg-gradient-to-br from-amber-500/10 to-amber-700/5 border-amber-200" data-testid="card-total-bonus">
+            <Card className="p-5 bg-gradient-to-br from-amber-500/10 to-amber-700/5 border-amber-200 dark:border-amber-800/40" data-testid="card-total-bonus">
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center">
-                  <Sparkles className="w-6 h-6 text-amber-600" />
+                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-amber-600 dark:text-amber-400" />
                 </div>
                 <div>
                   <p className="text-sm text-muted-foreground">Total Bonus Earned</p>
@@ -272,7 +272,7 @@ export default function ReferralsPage() {
           <Card className="lg:col-span-1 p-6" data-testid="card-referral-code">
             <CardHeader className="p-0 pb-4">
               <CardTitle className="text-lg flex items-center gap-2">
-                <LinkIcon className="w-5 h-5 text-purple-600" />
+                <LinkIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 Your Referral Code
               </CardTitle>
               <CardDescription>Share this code with friends to invite them</CardDescription>
@@ -284,8 +284,8 @@ export default function ReferralsPage() {
                 </div>
               ) : !dashboard?.referralCode ? (
                 <div className="text-center py-6">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-purple-100 flex items-center justify-center mb-4">
-                    <UserPlus className="w-8 h-8 text-purple-600" />
+                  <div className="w-16 h-16 mx-auto rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
+                    <UserPlus className="w-8 h-8 text-purple-600 dark:text-purple-400" />
                   </div>
                   <h3 className="font-semibold mb-2">No Referral Code Yet</h3>
                   <p className="text-sm text-muted-foreground mb-4">
@@ -379,7 +379,7 @@ export default function ReferralsPage() {
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <span className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-purple-600" />
+                  <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   Referred Users
                 </span>
                 <Badge variant="outline">{referrals.length} total</Badge>
@@ -416,8 +416,8 @@ export default function ReferralsPage() {
                       data-testid={`row-referral-${ref.id}`}
                     >
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
-                          <Users className="w-5 h-5 text-purple-600" />
+                        <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                          <Users className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
                           <p className="font-medium" data-testid={`text-referral-name-${ref.id}`}>
@@ -434,7 +434,7 @@ export default function ReferralsPage() {
                       <div className="flex flex-col items-end gap-2">
                         {getStatusBadge(ref.status)}
                         {ref.status === 'Completed' && ref.bonusEarnedGrams > 0 && (
-                          <span className="text-sm font-medium text-green-600" data-testid={`text-bonus-${ref.id}`}>
+                          <span className="text-sm font-medium text-green-600 dark:text-green-400" data-testid={`text-bonus-${ref.id}`}>
                             +{ref.bonusEarnedGrams.toFixed(3)}g
                           </span>
                         )}
@@ -463,17 +463,17 @@ export default function ReferralsPage() {
           </Card>
         </div>
 
-        <Card className="p-6 bg-gradient-to-r from-purple-500/5 via-purple-600/5 to-purple-700/5 border-purple-200" data-testid="card-how-it-works">
+        <Card className="p-6 bg-gradient-to-r from-purple-500/5 via-purple-600/5 to-purple-700/5 border-purple-200 dark:border-purple-800/40" data-testid="card-how-it-works">
           <CardHeader className="p-0 pb-4">
             <CardTitle className="text-lg flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-purple-600" />
+              <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               How Referrals Work
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-purple-500 text-white flex items-center justify-center font-bold shrink-0">1</div>
+                <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-950/200 text-white flex items-center justify-center font-bold shrink-0">1</div>
                 <div>
                   <h4 className="font-semibold mb-1">Get Your Code</h4>
                   <p className="text-sm text-muted-foreground">Generate your unique referral code above</p>
@@ -494,7 +494,7 @@ export default function ReferralsPage() {
                 </div>
               </div>
               <div className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-green-500 text-white flex items-center justify-center font-bold shrink-0">4</div>
+                <div className="w-10 h-10 rounded-full bg-green-50 dark:bg-green-950/200 text-white flex items-center justify-center font-bold shrink-0">4</div>
                 <div>
                   <h4 className="font-semibold mb-1">Earn Rewards</h4>
                   <p className="text-sm text-muted-foreground">Both of you earn gold bonuses!</p>

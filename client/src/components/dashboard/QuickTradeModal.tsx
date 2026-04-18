@@ -275,7 +275,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           {/* DONE */}
           {isDone && (
             <div className="flex flex-col items-center py-6 text-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
                 <CheckCircle2 className="w-8 h-8 text-green-500" />
               </div>
               <div>
@@ -306,7 +306,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           {!isDone && step === 1 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
-                <Package className="w-4 h-4 text-blue-700" />
+                <Package className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                 <h3 className="font-bold text-slate-800 text-[13px]">What are you trading?</h3>
               </div>
 
@@ -382,8 +382,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                   <div className="flex items-center justify-between mb-1.5">
                     <div className="flex items-center gap-1.5">
                       {isPriceLocked
-                        ? <Lock className="w-3 h-3 text-purple-600" />
-                        : <Unlock className="w-3 h-3 text-amber-600" />
+                        ? <Lock className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                        : <Unlock className="w-3 h-3 text-amber-600 dark:text-amber-400" />
                       }
                       <span className="text-[11px] font-semibold text-slate-700">Lock Gold Price</span>
                     </div>
@@ -394,7 +394,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                       data-testid="switch-price-lock"
                     />
                   </div>
-                  <div className={`text-[10px] px-1.5 py-1 rounded ${isPriceLocked ? 'bg-purple-100 text-purple-700' : 'bg-amber-100 text-amber-700'}`}>
+                  <div className={`text-[10px] px-1.5 py-1 rounded ${isPriceLocked ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300'}`}>
                     {isPriceLocked ? (
                       <div className="flex items-start gap-1">
                         <Shield className="w-3 h-3 mt-0.5 shrink-0" />
@@ -415,18 +415,18 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                     {/* Settlement pill */}
                     <div className={`flex items-center gap-1.5 px-3 py-2 rounded-lg border ${
                       !hasEnoughBalance
-                        ? 'bg-red-50 border-red-200'
-                        : 'bg-blue-50 border-blue-100'
+                        ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800/40'
+                        : 'bg-blue-50 dark:bg-blue-950/20 border-blue-100'
                     }`}>
-                      <Weight className={`w-3 h-3 ${!hasEnoughBalance ? 'text-red-500' : 'text-blue-600'}`} />
-                      <span className={`text-[11px] font-semibold ${!hasEnoughBalance ? 'text-red-700' : 'text-blue-700'}`}>
+                      <Weight className={`w-3 h-3 ${!hasEnoughBalance ? 'text-red-500' : 'text-blue-600 dark:text-blue-400'}`} />
+                      <span className={`text-[11px] font-semibold ${!hasEnoughBalance ? 'text-red-700 dark:text-red-300' : 'text-blue-700 dark:text-blue-300'}`}>
                         Settlement: <span className="font-extrabold">{settlementGrams.toFixed(3)}g</span> gold
                         <span className={`font-normal ml-1 ${!hasEnoughBalance ? 'text-red-400' : 'text-blue-400'}`}>@ ${goldPrice.toFixed(2)}/g</span>
                       </span>
                     </div>
 
                     {/* FinaBridge balance line */}
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 rounded-lg border border-slate-100">
+                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-50 dark:bg-slate-950/20 rounded-lg border border-slate-100">
                       <Wallet className="w-3 h-3 text-slate-400" />
                       <span className="text-[10px] text-slate-500">FinaBridge Wallet:</span>
                       {balanceLoading ? (
@@ -434,7 +434,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                       ) : (
                         <span className={`text-[11px] font-bold ${
                           finabridgeBalance === null ? 'text-slate-400' :
-                          !hasEnoughBalance ? 'text-red-600' : 'text-green-600'
+                          !hasEnoughBalance ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'
                         }`}>
                           {finabridgeBalance === null ? (balanceFetchFailed ? 'unavailable' : '—') : `${finabridgeBalance.toFixed(4)}g available`}
                         </span>
@@ -443,9 +443,9 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
                     {/* Insufficient balance warning */}
                     {!hasEnoughBalance && (
-                      <div className="flex items-start gap-2 px-3 py-2 bg-red-50 rounded-lg border border-red-200">
+                      <div className="flex items-start gap-2 px-3 py-2 bg-red-50 dark:bg-red-950/20 rounded-lg border border-red-200 dark:border-red-800/40">
                         <AlertTriangle className="w-3.5 h-3.5 text-red-500 mt-0.5 shrink-0" />
-                        <div className="text-[10px] text-red-700">
+                        <div className="text-[10px] text-red-700 dark:text-red-300">
                           <p className="font-bold">Insufficient FinaBridge balance</p>
                           <p className="mt-0.5">
                             Need <strong>{settlementGrams.toFixed(3)}g</strong>
@@ -474,15 +474,15 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           {!isDone && step === 2 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
-                <Users className="w-4 h-4 text-blue-700" />
+                <Users className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                 <h3 className="font-bold text-slate-800 text-[13px]">Exporter Preference</h3>
               </div>
 
               {/* Toggle */}
-              <div className={`p-3 rounded-xl border-2 transition-all ${suggestExporter ? 'border-blue-200 bg-blue-50/60' : 'border-slate-200 bg-slate-50'}`}>
+              <div className={`p-3 rounded-xl border-2 transition-all ${suggestExporter ? 'border-blue-200 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-950/20/60' : 'border-slate-200 dark:border-slate-800/40 bg-slate-50 dark:bg-slate-950/20'}`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <Globe className={`w-4 h-4 ${suggestExporter ? 'text-blue-600' : 'text-slate-500'}`} />
+                    <Globe className={`w-4 h-4 ${suggestExporter ? 'text-blue-600 dark:text-blue-400' : 'text-slate-500'}`} />
                     <div>
                       <p className="text-[12px] font-bold text-slate-800">Let Finatrades find exporters</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">
@@ -502,8 +502,8 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
 
               {/* Manual exporter fields */}
               {!suggestExporter && (
-                <div className="space-y-3 p-3 rounded-xl border border-purple-200 bg-purple-50/40">
-                  <p className="text-[11px] font-bold text-purple-800 flex items-center gap-1.5">
+                <div className="space-y-3 p-3 rounded-xl border border-purple-200 dark:border-purple-800/40 bg-purple-50 dark:bg-purple-950/20/40">
+                  <p className="text-[11px] font-bold text-purple-800 dark:text-purple-200 flex items-center gap-1.5">
                     <Building2 className="w-3.5 h-3.5" /> My Exporter Details
                   </p>
 
@@ -627,7 +627,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           {!isDone && step === 3 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
-                <Ship className="w-4 h-4 text-blue-700" />
+                <Ship className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                 <h3 className="font-bold text-slate-800 text-[13px]">Shipping & Payment</h3>
                 <span className="text-[10px] text-slate-400">(optional fields)</span>
               </div>
@@ -737,22 +737,22 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
           {!isDone && step === 4 && (
             <div className="space-y-4">
               <div className="flex items-center gap-2 mb-0.5">
-                <Landmark className="w-4 h-4 text-blue-700" />
+                <Landmark className="w-4 h-4 text-blue-700 dark:text-blue-300" />
                 <h3 className="font-bold text-slate-800 text-[13px]">Review & Submit</h3>
               </div>
 
               {/* Summary card */}
-              <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-3.5 space-y-2">
+              <div className="rounded-xl border border-blue-100 bg-blue-50 dark:bg-blue-950/20/50 p-3.5 space-y-2">
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Goods</p>
+                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Goods</p>
                   <ReviewRow label="Product" value={goodsName} />
                   {description && <ReviewRow label="Description" value={description} />}
                   {quantity && <ReviewRow label="Quantity" value={`${quantity} ${quantityUnit}`} />}
                 </div>
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Finance</p>
+                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Finance</p>
                   <ReviewRow label="Trade Value" value={`$${parseFloat(tradeValueUsd).toLocaleString()} USD`} />
                   <ReviewRow label="Settlement Gold" value={`${settlementGrams.toFixed(3)}g`} highlight />
                   <ReviewRow label="Gold Price" value={isPriceLocked ? `$${goldPrice.toFixed(2)}/g (Locked)` : `$${goldPrice.toFixed(2)}/g (Floating)`} />
@@ -760,7 +760,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 </div>
 
                 <div className="pb-1.5 mb-1.5 border-b border-blue-100">
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Exporter</p>
+                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Exporter</p>
                   {suggestExporter ? (
                     <ReviewRow label="Finding" value="Finatrades will suggest exporters" />
                   ) : (
@@ -774,7 +774,7 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 </div>
 
                 <div>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-wide mb-1.5">Logistics</p>
+                  <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wide mb-1.5">Logistics</p>
                   <ReviewRow label="Transport" value={modeOfTransport} />
                   <ReviewRow label="Incoterms" value={incoterms} />
                   {portOfLoading && <ReviewRow label="Port of Loading" value={portOfLoading} />}
@@ -783,9 +783,9 @@ export default function QuickTradeModal({ open, onOpenChange, currentGoldPrice }
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 rounded-lg border border-amber-100">
-                <Globe className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
-                <p className="text-[11px] text-amber-700">
+              <div className="flex items-start gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-950/20 rounded-lg border border-amber-100">
+                <Globe className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+                <p className="text-[11px] text-amber-700 dark:text-amber-300">
                   This request will be <strong>Open to Exporters</strong> immediately.
                   {suggestExporter ? ' Finatrades will suggest matching exporters.' : ' Your specified exporter will be contacted.'}
                 </p>
@@ -819,7 +819,7 @@ function ReviewRow({ label, value, highlight }: { label: string; value: string; 
   return (
     <div className="flex items-center justify-between py-0.5">
       <span className="text-[11px] text-slate-500">{label}</span>
-      <span className={`text-[12px] font-bold ${highlight ? 'text-blue-700' : 'text-slate-800'}`}>{value}</span>
+      <span className={`text-[12px] font-bold ${highlight ? 'text-blue-700 dark:text-blue-300' : 'text-slate-800'}`}>{value}</span>
     </div>
   );
 }
