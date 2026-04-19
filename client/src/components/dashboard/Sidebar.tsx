@@ -268,7 +268,8 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           {/* ── FOOTER ── */}
           <div className={`shrink-0 ${collapsed ? 'p-2' : 'p-3'} border-t border-border/40 space-y-2`}>
 
-            {/* Upgrade to Business card (expanded only) */}
+            {/* Upgrade to Business card (expanded only, hidden for business accounts) */}
+            {accountType !== 'business' && (
             <div className={collapsed ? 'lg:hidden' : ''}>
               <div
                 className="relative overflow-hidden rounded-2xl p-3.5"
@@ -305,6 +306,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                 </div>
               </div>
             </div>
+            )}
 
             {/* User chip + logout (expanded) */}
             <div className={collapsed ? 'lg:hidden' : ''}>
