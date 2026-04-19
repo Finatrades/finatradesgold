@@ -551,10 +551,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
 
           {/* ── COL 1 (4/12): Wallet Balance + FinaCard visual ── */}
-          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4 flex flex-col gap-4">
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4 space-y-4">
 
             {/* ═══ Wallet Balance Card — Gold grams major, USD + AED secondary ═══ */}
-            <div className="hynex-card p-5 relative overflow-hidden flex-1 flex flex-col" data-testid="card-wallet-balance">
+            <div className="hynex-card p-5 relative overflow-hidden" data-testid="card-wallet-balance">
               {/* subtle gold orb top-right */}
               <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full pointer-events-none opacity-50" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18), transparent 70%)', filter: 'blur(20px)' }} />
 
@@ -761,7 +761,7 @@ export default function Dashboard() {
 
               return (
                 <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-asset-management">
-                  {/* Header — title + tab switcher (FinaBridge gated for personal users) */}
+                  {/* Header — title + tab switcher */}
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-[15px] font-semibold text-foreground">Asset Management</h3>
                     <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full">
@@ -772,25 +772,13 @@ export default function Dashboard() {
                       >
                         BNSL
                       </button>
-                      {isBusinessUser ? (
-                        <button
-                          onClick={() => setAssetTab('finabridge')}
-                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                          data-testid="tab-finabridge"
-                        >
-                          FinaBridge
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => window.location.href = '/upgrade'}
-                          className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all text-muted-foreground/60 hover:text-foreground inline-flex items-center gap-1"
-                          title="Upgrade to Business to unlock FinaBridge"
-                          data-testid="tab-finabridge-locked"
-                        >
-                          <Lock className="w-2.5 h-2.5" />
-                          FinaBridge
-                        </button>
-                      )}
+                      <button
+                        onClick={() => setAssetTab('finabridge')}
+                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        data-testid="tab-finabridge"
+                      >
+                        FinaBridge
+                      </button>
                     </div>
                   </div>
 
