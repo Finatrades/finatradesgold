@@ -143,6 +143,7 @@ export default function Dashboard() {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
   const [assetTab, setAssetTab] = useState<'bnsl' | 'finabridge'>('bnsl');
+  const [goldWalletsTab, setGoldWalletsTab] = useState<'wallets' | 'trend'>('wallets');
 
   /* 3D tilt instances — one per major glass card */
   const tiltHero          = useTilt(9);
@@ -531,8 +532,8 @@ export default function Dashboard() {
         {/* ═══════════════════ TOP ROW: FinaCard | Holdings | Performance ═══════════════════ */}
         <div className="grid grid-cols-12 gap-4">
 
-          {/* ── COL 1 (5/12): Wallet Balance + FinaCard visual ── */}
-          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 space-y-4">
+          {/* ── COL 1 (4/12): Wallet Balance + FinaCard visual ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4 space-y-4">
 
             {/* ═══ Wallet Balance Card — Gold grams major, USD + AED secondary ═══ */}
             <div className="hynex-card p-5 relative overflow-hidden" data-testid="card-wallet-balance">
@@ -880,88 +881,172 @@ export default function Dashboard() {
             })()}
           </motion.div>
 
-          {/* ── COL 3 (3/12): Smart Gold Performance — Donut + Area chart ── */}
-          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-3">
+          {/* ── COL 3 (4/12): Gold Wallets — 4-ring breakdown + Trend tab ── */}
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4">
             <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-gold-performance">
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-[14px] font-semibold text-foreground">Gold Performance</h3>
-                <select value={chartPeriod} onChange={e => setChartPeriod(e.target.value as any)} className="text-[11px] font-semibold bg-muted/60 border border-border/60 rounded-full px-2.5 py-1 cursor-pointer focus:outline-none" data-testid="select-chart-period">
-                  <option value="7D">Weekly</option>
-                  <option value="30D">Monthly</option>
-                  <option value="90D">Quarterly</option>
-                </select>
-              </div>
-
-              {/* 3-ring donut with side labels (Hynex-style) */}
               {(() => {
-                const tot = Math.max(totalPortfolioValue, 1);
-                const pctWallet = (walletGoldValue / tot) * 100;
-                const pctCard = (finacardValue / tot) * 100;
-                const pctBnsl = (bnslValue / tot) * 100;
+                const mpgwGrams = (totals.mpgwAvailableGrams || 0) + (totals.mpgwPendingGrams || 0)
+                                + (totals.mpgwLockedBnslGrams || 0) + (totals.mpgwReservedTradeGrams || 0)
+                                || (totals.walletGoldGrams || 0);
+                const fpgwGrams = (totals.fpgwAvailableGrams || 0) + (totals.fpgwPendingGrams || 0)
+                                + (totals.fpgwLockedBnslGrams || 0) + (totals.fpgwReservedTradeGrams || 0);
+                const bnslGrams = totals.bnslWalletGoldGrams || 0;
+                const fbGrams = finaBridge?.goldGrams || 0;
+                const totalGrams = mpgwGrams + fpgwGrams + bnslGrams + fbGrams;
+                const safeTot = Math.max(totalGrams, 0.000001);
+
+                const buckets = [
+                  { key: 'mpgw',  label: 'FinaPay Live (MPGW)',         short: 'MPGW',       grams: mpgwGrams, color: '139,92,246',  hex: '#8b5cf6' },
+                  { key: 'fpgw',  label: 'FinaPay Fixed/Hedged (FPGW)', short: 'FPGW',       grams: fpgwGrams, color: '245,158,11',  hex: '#f59e0b' },
+                  { key: 'bnsl',  label: 'BNSL Wallet',                 short: 'BNSL',       grams: bnslGrams, color: '6,182,212',   hex: '#06b6d4' },
+                  { key: 'fb',    label: 'FinaBridge Wallet',           short: 'FinaBridge', grams: fbGrams,   color: '16,185,129',  hex: '#10b981' },
+                ];
+
+                /* Concentric ring radii — outer to inner */
+                const radii = [78, 62, 46, 30];
+                const isWalletsTab = goldWalletsTab === 'wallets';
+
                 return (
-                  <div className="relative flex items-center justify-between gap-3 mb-2">
-                    {/* left label */}
-                    <div className="text-right">
-                      <p className="kpi-value text-[22px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctWallet)}%</p>
-                      <p className="text-[11px] text-muted-foreground mt-1">Wallet</p>
-                    </div>
-
-                    <div className="relative" style={{ width: 170, height: 170 }}>
-                      <svg width="170" height="170" viewBox="0 0 170 170">
-                        {/* outer ring — cyan (Wallet) */}
-                        <circle cx="85" cy="85" r="72" fill="none" stroke="rgba(34,211,238,0.10)" strokeWidth="9" />
-                        <circle cx="85" cy="85" r="72" fill="none" stroke="url(#perfCyan)" strokeWidth="9" strokeLinecap="round"
-                          strokeDasharray={`${(pctWallet / 100) * 452} 452`} transform="rotate(-90 85 85)" />
-                        {/* mid ring — green (FinaCard) */}
-                        <circle cx="85" cy="85" r="58" fill="none" stroke="rgba(16,185,129,0.10)" strokeWidth="9" />
-                        <circle cx="85" cy="85" r="58" fill="none" stroke="url(#perfGreen)" strokeWidth="9" strokeLinecap="round"
-                          strokeDasharray={`${(pctCard / 100) * 364} 364`} transform="rotate(-90 85 85)" />
-                        {/* inner ring — amber (BNSL) */}
-                        <circle cx="85" cy="85" r="44" fill="none" stroke="rgba(245,158,11,0.10)" strokeWidth="9" />
-                        <circle cx="85" cy="85" r="44" fill="none" stroke="url(#perfGold)" strokeWidth="9" strokeLinecap="round"
-                          strokeDasharray={`${(pctBnsl / 100) * 276} 276`} transform="rotate(-90 85 85)" />
-                        <defs>
-                          <linearGradient id="perfCyan" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#22d3ee" /><stop offset="100%" stopColor="#06b6d4" /></linearGradient>
-                          <linearGradient id="perfGreen" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#34d399" /><stop offset="100%" stopColor="#10b981" /></linearGradient>
-                          <linearGradient id="perfGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stopColor="#fbbf24" /><stop offset="100%" stopColor="#f59e0b" /></linearGradient>
-                        </defs>
-                      </svg>
-                    </div>
-
-                    {/* right labels */}
-                    <div className="text-left space-y-3">
+                  <>
+                    {/* Header — title + tab switcher */}
+                    <div className="flex items-start justify-between mb-1">
                       <div>
-                        <p className="kpi-value text-[20px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctCard)}%</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">FinaCard</p>
+                        <h3 className="text-[15px] font-semibold text-foreground">Gold Wallets</h3>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">Breakdown across wallet types</p>
                       </div>
-                      <div>
-                        <p className="kpi-value text-[20px] text-foreground leading-none font-bold tabular-nums">{Math.round(pctBnsl)}%</p>
-                        <p className="text-[11px] text-muted-foreground mt-1">BNSL</p>
+                      <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full shrink-0">
+                        <button
+                          onClick={() => setGoldWalletsTab('wallets')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${isWalletsTab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          data-testid="tab-wallets"
+                        >
+                          Wallets
+                        </button>
+                        <button
+                          onClick={() => setGoldWalletsTab('trend')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isWalletsTab ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          data-testid="tab-trend"
+                        >
+                          Trend
+                        </button>
                       </div>
                     </div>
-                  </div>
+
+                    {isWalletsTab ? (
+                      <>
+                        {/* Total badge top-right of body */}
+                        <div className="flex items-center justify-end mb-2">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-50/80 dark:bg-amber-950/30 border border-amber-200/50 dark:border-amber-800/40" data-testid="badge-total-grams">
+                            <span className="text-[11px] text-muted-foreground font-medium">Total</span>
+                            <span className="text-[13px] font-bold text-foreground tabular-nums">
+                              {showBalance ? `${formatNumber(totalGrams, 3)}g` : hiddenValue}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 4-ring concentric chart */}
+                        <div className="flex items-center justify-center my-2">
+                          <div className="relative" style={{ width: 196, height: 196 }}>
+                            <svg width="196" height="196" viewBox="0 0 196 196">
+                              {buckets.map((b, i) => {
+                                const r = radii[i];
+                                const c = 2 * Math.PI * r;
+                                const pct = b.grams / safeTot;
+                                return (
+                                  <g key={b.key}>
+                                    {/* track */}
+                                    <circle cx="98" cy="98" r={r} fill="none" stroke={`rgba(${b.color},0.10)`} strokeWidth="8" />
+                                    {/* fill */}
+                                    <motion.circle
+                                      cx="98" cy="98" r={r} fill="none"
+                                      stroke={`rgb(${b.color})`} strokeWidth="8" strokeLinecap="round"
+                                      strokeDasharray={c}
+                                      initial={{ strokeDashoffset: c }}
+                                      animate={{ strokeDashoffset: c - (pct * c) }}
+                                      transition={{ duration: 1, delay: i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                                      transform="rotate(-90 98 98)"
+                                    />
+                                  </g>
+                                );
+                              })}
+                            </svg>
+                            {/* center pill */}
+                            <div className="absolute inset-0 flex items-center justify-center">
+                              <div className="w-[78px] h-[78px] rounded-full bg-card border-2 border-violet-200/60 dark:border-violet-800/50 flex flex-col items-center justify-center shadow-[0_4px_16px_-4px_rgba(124,58,237,0.25)]">
+                                <span className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Total</span>
+                                <span className="text-[14px] font-bold text-foreground tabular-nums leading-tight">
+                                  {showBalance ? `${formatNumber(totalGrams, 2)}g` : '••'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 4 wallet rows */}
+                        <div className="mt-3 pt-3 border-t border-border/40 space-y-3" data-testid="gold-wallets-list">
+                          {buckets.map((b) => {
+                            const pct = (b.grams / safeTot) * 100;
+                            return (
+                              <div key={b.key} data-testid={`row-wallet-${b.key}`}>
+                                <div className="flex items-center justify-between mb-1 gap-2">
+                                  <div className="flex items-center gap-2 min-w-0 flex-1">
+                                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: b.hex }} />
+                                    <span className="text-[11px] text-foreground font-medium truncate">{b.label}</span>
+                                  </div>
+                                  <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-[11px] font-semibold text-foreground tabular-nums">
+                                      {showBalance ? (b.grams > 0 ? `${formatNumber(b.grams, 4)}g` : '—') : '••'}
+                                    </span>
+                                    <span className="text-[10px] text-muted-foreground tabular-nums w-9 text-right">{Math.round(pct)}%</span>
+                                  </div>
+                                </div>
+                                <div className="h-1 rounded-full bg-muted overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${pct}%` }}
+                                    transition={{ duration: 0.9, ease: 'easeOut' }}
+                                    className="h-full rounded-full"
+                                    style={{ background: b.hex }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        {/* Trend tab — period select + price + area chart */}
+                        <div className="flex items-center justify-between mt-2 mb-1">
+                          <div>
+                            <p className="text-[22px] font-bold text-foreground tabular-nums leading-none">${formatNumber(goldPrice)}<span className="text-[12px] text-muted-foreground font-medium">/g</span></p>
+                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">+{(unrealizedGainPct || 0).toFixed(2)}% growth</p>
+                          </div>
+                          <select value={chartPeriod} onChange={e => setChartPeriod(e.target.value as any)} className="text-[11px] font-semibold bg-muted/60 border border-border/60 rounded-full px-2.5 py-1 cursor-pointer focus:outline-none text-foreground" data-testid="select-chart-period">
+                            <option value="7D">Weekly</option>
+                            <option value="30D">Monthly</option>
+                            <option value="90D">Quarterly</option>
+                          </select>
+                        </div>
+                        <div className="flex-1 -mx-1 mt-2" style={{ minHeight: 200 }}>
+                          <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
+                              <defs>
+                                <linearGradient id="perfArea" x1="0" y1="0" x2="0" y2="1">
+                                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
+                                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
+                                </linearGradient>
+                              </defs>
+                              <Area type="monotone" dataKey="price" stroke="#22d3ee" strokeWidth={2} fill="url(#perfArea)" />
+                              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 11 }} />
+                            </AreaChart>
+                          </ResponsiveContainer>
+                        </div>
+                      </>
+                    )}
+                  </>
                 );
               })()}
-
-              {/* Area chart */}
-              <div className="flex-1 -mx-1" style={{ minHeight: 70 }}>
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 0, bottom: 0, left: 0 }}>
-                    <defs>
-                      <linearGradient id="perfArea" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
-                        <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <Area type="monotone" dataKey="price" stroke="#22d3ee" strokeWidth={2} fill="url(#perfArea)" />
-                    <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 11 }} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              <p className="text-[10px] text-muted-foreground mt-1 text-center">
-                ${formatNumber(goldPrice)}/g · <span className="text-emerald-500 font-semibold">+{(unrealizedGainPct || 0).toFixed(1)}%</span> growth
-              </p>
             </div>
           </motion.div>
         </div>
