@@ -935,7 +935,7 @@ export default function Dashboard() {
                           style={{ background: `rgb(${accentRgb})` }}
                           data-testid={`cta-${assetTab}`}
                         >
-                          {isBnsl ? 'Start a Plan' : 'Apply Now'} <ChevronRight className="w-3 h-3" />
+                          {isBnsl ? 'Join BNSL Plan now' : 'Apply Now'} <ChevronRight className="w-3 h-3" />
                         </Link>
                       </div>
                     )}
