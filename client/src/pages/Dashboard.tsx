@@ -613,7 +613,7 @@ export default function Dashboard() {
 
             {/* Premium Gold Card visual — adaptive dark/light with FinaTrades branding */}
             <GlareCard
-              className="relative h-[310px] rounded-3xl cursor-pointer"
+              className="relative h-[240px] rounded-3xl cursor-pointer"
               glareColor={isDarkTheme ? 'rgba(255, 215, 0, 0.28)' : 'rgba(167, 139, 250, 0.32)'}
             >
             <motion.div
@@ -638,14 +638,14 @@ export default function Dashboard() {
               {/* diagonal sheen */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: isDarkTheme ? 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)' : 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)', opacity: isDarkTheme ? 0.5 : 0.4 }} />
 
-              <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+              <div className="relative z-10 p-5 h-full flex flex-col justify-between">
                 {/* Top row: FinaTrades logo (left) + GOLD CARD pill (right) */}
                 <div className="flex items-start justify-between">
                   <img
                     src={isDarkTheme ? finatradesCardLogo : finatradesLogo}
                     alt="FinaTrades"
-                    className="h-6 w-auto object-contain"
-                    style={{ filter: isDarkTheme ? 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' : 'drop-shadow(0 1px 3px rgba(124,58,237,0.18))' }}
+                    className="h-9 w-auto object-contain"
+                    style={{ filter: isDarkTheme ? 'drop-shadow(0 2px 6px rgba(0,0,0,0.4)) brightness(1.1)' : 'drop-shadow(0 1px 3px rgba(124,58,237,0.18))' }}
                   />
                   <div
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
