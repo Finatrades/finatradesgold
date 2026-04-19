@@ -845,14 +845,15 @@ export default function Dashboard() {
                             { key: 'fb-trade-value', label: 'Trade Value', value: showBalance ? `$${formatNumber(fbTradeVolume)}` : hiddenValue, accent: 'text-foreground' },
                             { key: 'fb-pending', label: 'Pending', value: String(fbActiveTrades > 0 ? Math.min(fbActiveTrades, 1) : 0), accent: 'text-foreground' },
                           ];
-                      const tilts = ['-rotate-[3deg] translate-y-0.5', 'rotate-0 -translate-y-1 scale-[1.06]', 'rotate-[3deg] translate-y-0.5'];
                       return items.map((it, i) => {
                         const isCenter = i === 1;
                         return (
                           <div
                             key={it.key}
                             data-testid={it.key}
-                            className={`group relative rounded-xl px-2 py-2.5 text-center transition-all duration-300 hover:rotate-0 hover:translate-y-0 hover:scale-[1.08] cursor-default ${tilts[i]} ${
+                            className={`group relative rounded-xl px-2 py-2.5 text-center transition-all duration-300 hover:scale-[1.04] cursor-default ${
+                              isCenter ? '-translate-y-1 scale-[1.04]' : ''
+                            } ${
                               isCenter
                                 ? 'bg-gradient-to-br from-violet-50 to-cyan-50 dark:from-violet-950/40 dark:to-cyan-950/40 border border-violet-200/70 dark:border-violet-800/50 shadow-md shadow-violet-500/10 ring-1 ring-violet-300/40 dark:ring-violet-700/30'
                                 : 'bg-muted/40 dark:bg-muted/20 border border-border/60 hover:bg-muted/70 dark:hover:bg-muted/40 hover:shadow-sm'
