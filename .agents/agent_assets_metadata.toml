@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "gwd2L_gNehU3v7OCaDk7T"
+uri = "file://.canvas/assets/finatrades-dashboard-mockup-v1.png"
+type = "image"
+title = "FinaTrades institutional dashboard mockup"
 
 [[outputs]]
 id = "lUs0WMecvBtaZdPuDacO8"
