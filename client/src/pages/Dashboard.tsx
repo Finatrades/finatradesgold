@@ -467,41 +467,58 @@ export default function Dashboard() {
           <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 space-y-4">
             {/* Quick Action pill row */}
             <div className="flex flex-wrap gap-2" data-testid="quick-actions">
-              {/* Buy Gold — primary revenue action, amber gradient */}
+              {/* 1. Add Fund — deposit USD/AED to buy gold */}
               <button
-                onClick={() => setActiveModal('buybar')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-md"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow: '0 2px 10px rgba(217,119,6,0.30)' }}
-                data-testid="button-buy-gold"
+                onClick={() => setActiveModal('deposit')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-violet-400/50 hover:bg-violet-50 dark:hover:bg-violet-950/20 hover:shadow-sm transition-all"
+                data-testid="button-add-fund"
               >
-                <Package className="w-3.5 h-3.5" /> Buy Gold
+                <Plus className="w-3.5 h-3.5 text-violet-500" /> Add Fund
               </button>
 
-              {/* Withdraw — sell gold + cash-out to bank/crypto (single intermediary flow) */}
+              {/* 2. Lock Gold Price — MPGW → FPGW price lock */}
               <button
-                onClick={() => setActiveModal('withdraw')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-rose-400/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
-                data-testid="button-withdraw"
+                onClick={() => setActiveModal('lock')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-amber-400/50 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:shadow-sm transition-all"
+                data-testid="button-lock-price"
               >
-                <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" /> Withdraw
+                <Lock className="w-3.5 h-3.5 text-amber-500" /> Lock Gold Price
               </button>
 
-              {/* Transfer — internal MPGW ↔ FPGW transfer */}
+              {/* 3. Deposit Gold — physical gold deposit to vault */}
               <button
-                onClick={() => setShowTransferModal(true)}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-violet-400/50 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-all"
-                data-testid="button-transfer"
+                onClick={() => setDepositGoldModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-teal-400/50 hover:bg-teal-50 dark:hover:bg-teal-950/20 hover:shadow-sm transition-all"
+                data-testid="button-deposit-gold"
               >
-                <ArrowLeftRight className="w-3.5 h-3.5 text-violet-500" /> Transfer
+                <Vault className="w-3.5 h-3.5 text-teal-500" /> Deposit Gold
               </button>
 
-              {/* Receive — request gold from another user */}
+              {/* 4. Send Gold — P2P send to another user */}
+              <button
+                onClick={() => setActiveModal('send')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-indigo-400/50 hover:bg-indigo-50 dark:hover:bg-indigo-950/20 hover:shadow-sm transition-all"
+                data-testid="button-send-gold"
+              >
+                <Send className="w-3.5 h-3.5 text-indigo-500" /> Send Gold
+              </button>
+
+              {/* 5. Receive Gold — request gold from another user */}
               <button
                 onClick={() => setActiveModal('request')}
-                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-emerald-400/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all"
-                data-testid="button-receive"
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-emerald-400/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 hover:shadow-sm transition-all"
+                data-testid="button-receive-gold"
               >
-                <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-500" /> Receive
+                <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-500" /> Receive Gold
+              </button>
+
+              {/* 6. Transfer — internal MPGW ↔ FPGW movement */}
+              <button
+                onClick={() => setShowTransferModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-purple-400/50 hover:bg-purple-50 dark:hover:bg-purple-950/20 hover:shadow-sm transition-all"
+                data-testid="button-transfer"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 text-purple-500" /> Transfer
               </button>
             </div>
 
