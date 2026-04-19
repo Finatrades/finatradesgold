@@ -6,7 +6,7 @@ import { useAccountType } from '@/context/AccountTypeContext';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import ThemeToggle from '@/components/ThemeToggle';
 import IdleTimeoutWarning from '@/components/IdleTimeoutWarning';
-import KycStatusBanner from '@/components/KycStatusBanner';
+import KycStatusPill from '@/components/KycStatusPill';
 import { useIdleTimeout } from '@/hooks/useIdleTimeout';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -76,7 +76,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return (
       <MobileShell>
         <MobileHeader />
-        <KycStatusBanner kycStatus={user.kycStatus} />
         <main className="px-4 py-3 pb-24">
           {children}
         </main>
@@ -196,6 +195,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </button>
               </Link>
 
+              <KycStatusPill kycStatus={user.kycStatus} />
+
               <NotificationCenter />
 
               <ThemeToggle />
@@ -304,7 +305,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="relative" style={{ zIndex: 1 }}>
-            <KycStatusBanner kycStatus={user.kycStatus} />
             <div className="p-6">
               {children}
             </div>

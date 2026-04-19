@@ -1,5 +1,6 @@
 import React from 'react';
 import { Bell, Settings, ChevronLeft } from 'lucide-react';
+import KycStatusPill from '@/components/KycStatusPill';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -81,7 +82,8 @@ export default function MobileHeader({ title, showBack = false, transparent = fa
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {user?.kycStatus && <KycStatusPill kycStatus={user.kycStatus} compact />}
           <button
             onClick={() => setLocation('/notifications')}
             className="w-11 h-11 rounded-full bg-muted flex items-center justify-center relative touch-target haptic-press active:bg-muted"
