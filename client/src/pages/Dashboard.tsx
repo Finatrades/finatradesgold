@@ -142,6 +142,7 @@ export default function Dashboard() {
   const [showTradeModal, setShowTradeModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [depositGoldModalOpen, setDepositGoldModalOpen] = useState(false);
+  const [assetTab, setAssetTab] = useState<'bnsl' | 'finabridge'>('bnsl');
 
   /* 3D tilt instances — one per major glass card */
   const tiltHero          = useTilt(9);
@@ -668,73 +669,215 @@ export default function Dashboard() {
             </GlareCard>
           </motion.div>
 
-          {/* ── COL 2 (4/12): Gold Holdings & Metrics ── */}
+          {/* ── COL 2 (4/12): Asset Management — Tabbed BNSL / FinaBridge ── */}
           <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4">
-            <div className="hynex-card h-full p-6 flex flex-col" data-testid="card-gold-holdings">
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="text-[15px] font-semibold text-foreground">Gold Holdings & Metrics</h3>
-                </div>
-                <button className="p-1.5 hover:bg-muted rounded-lg" aria-label="More options"><span className="text-muted-foreground text-lg leading-none">⋯</span></button>
-              </div>
+            {(() => {
+              const activePlans = bnslPlans.filter((p: any) => p.status === 'Active');
+              const bnslLockedGrams = totals.bnslWalletGoldGrams || 0;
+              const bnslLockedUsd = bnslLockedGrams * goldPrice;
+              const bnslAvailableGrams = 0;
+              const bnslDailyMargin = activePlans.reduce((sum: number, p: any) => {
+                const totalDays = Math.max(1, (new Date(p.maturityDate).getTime() - new Date(p.startDate).getTime()) / 86400000);
+                return sum + (parseFloat(p.totalMarginComponentUsd || 0) / totalDays);
+              }, 0);
+              const bnslEarned = activePlans.reduce((s: number, p: any) => s + parseFloat(p.paidMarginUsd || 0), 0);
+              const bnslTotal = bnslLockedGrams + bnslAvailableGrams;
+              const bnslLockedPct = bnslTotal > 0 ? (bnslLockedGrams / bnslTotal) * 100 : 0;
 
-              {/* primary value */}
-              <div className="flex items-baseline gap-3 mb-1">
-                {showBalance ? (
-                  <span data-testid="text-gold-balance-usd" className="inline-block">
-                    <NumberTicker
-                      value={walletGoldValue}
-                      decimalPlaces={2}
-                      prefix="$"
-                      className="kpi-value text-[36px] text-foreground"
-                    />
-                  </span>
-                ) : (
-                  <span className="kpi-value text-[36px] text-foreground" data-testid="text-gold-balance-usd">{hiddenValue}</span>
-                )}
-                <span className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/200/15 text-emerald-600 dark:text-emerald-400 text-[11px] font-bold">
-                  <TrendingUp className="w-2.5 h-2.5" />
-                  {totals.walletGoldGrams > 0 ? `${formatNumber(totals.walletGoldGrams, 3)}g` : '0g'}
-                </span>
-              </div>
-              <p className="text-[12px] text-muted-foreground mb-1">Wallet Balance</p>
-              <p className="text-[11px] text-muted-foreground/70">Gold-backed savings &amp; trade settlements</p>
+              const fbLockedGrams = (finaBridge?.goldGrams || 0);
+              const fbAvailableGrams = 0;
+              const fbLockedUsd = fbLockedGrams * goldPrice;
+              const fbActiveTrades = finaBridge?.activeCases || 0;
+              const fbTradeVolume = finaBridge?.tradeVolume || 0;
+              const fbTotal = fbLockedGrams + fbAvailableGrams;
+              const fbLockedPct = fbTotal > 0 ? (fbLockedGrams / fbTotal) * 100 : 0;
 
-              {/* sub metrics grid */}
-              <div className="mt-5 pt-5 border-t border-border/40 grid grid-cols-2 gap-4">
-                <div data-testid="metric-vault">
-                  <p className="kpi-value text-[22px] text-foreground">
-                    {showBalance ? `$${formatNumber(finacardValue)}` : hiddenValue}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">FinaCard Balance</p>
-                </div>
-                <div data-testid="metric-bnsl">
-                  <p className="kpi-value text-[22px] text-foreground">
-                    {showBalance ? `$${formatNumber(bnslValue)}` : hiddenValue}
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">BNSL Savings</p>
-                </div>
-              </div>
+              const isBnsl = assetTab === 'bnsl';
+              const accentRgb = isBnsl ? '124,58,237' : '6,182,212';
+              const lockedPct = isBnsl ? bnslLockedPct : fbLockedPct;
+              const circumference = 2 * Math.PI * 52;
+              const dashOffset = circumference - (lockedPct / 100) * circumference;
 
-              {/* avatar stack + actions */}
-              <div className="mt-auto pt-5 flex items-center justify-between">
-                <div className="flex -space-x-2">
-                  {[0,1,2,3].map(i => (
-                    <div key={i} className="w-7 h-7 rounded-full ring-2 ring-card flex items-center justify-center text-[10px] font-bold text-white" style={{ background: ['#7c3aed','#f59e0b','#10b981','#3b82f6'][i] }}>
-                      {['F','B','V','C'][i]}
+              const sortedPlans = [...activePlans].sort((a: any, b: any) => {
+                const aLeft = new Date(a.maturityDate).getTime() - Date.now();
+                const bLeft = new Date(b.maturityDate).getTime() - Date.now();
+                return aLeft - bLeft;
+              }).slice(0, 3);
+
+              return (
+                <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-asset-management">
+                  {/* Header — title + tab switcher */}
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-[15px] font-semibold text-foreground">Asset Management</h3>
+                    <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full">
+                      <button
+                        onClick={() => setAssetTab('bnsl')}
+                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        data-testid="tab-bnsl"
+                      >
+                        BNSL
+                      </button>
+                      <button
+                        onClick={() => setAssetTab('finabridge')}
+                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                        data-testid="tab-finabridge"
+                      >
+                        FinaBridge
+                      </button>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Zone 1: Donut + Stats */}
+                  <div className="flex items-center gap-4">
+                    {/* Donut */}
+                    <div className="relative shrink-0" style={{ width: 124, height: 124 }}>
+                      <svg width="124" height="124" viewBox="0 0 124 124">
+                        <circle cx="62" cy="62" r="52" fill="none" stroke={`rgba(${accentRgb},0.10)`} strokeWidth="10" />
+                        <motion.circle
+                          key={assetTab}
+                          cx="62" cy="62" r="52" fill="none"
+                          stroke={`rgb(${accentRgb})`} strokeWidth="10" strokeLinecap="round"
+                          strokeDasharray={circumference}
+                          initial={{ strokeDashoffset: circumference }}
+                          animate={{ strokeDashoffset: dashOffset }}
+                          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
+                          transform="rotate(-90 62 62)"
+                        />
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <p className="kpi-value text-[22px] font-bold text-foreground tabular-nums leading-none">
+                          {showBalance ? `${Math.round(lockedPct)}%` : '••'}
+                        </p>
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1 font-semibold">Locked</p>
+                      </div>
+                    </div>
+
+                    {/* Stats grid */}
+                    <div className="flex-1 grid grid-cols-2 gap-2">
+                      <div className="rounded-lg bg-muted/40 p-2.5">
+                        <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Available</p>
+                        <p className="text-[14px] font-bold text-foreground tabular-nums leading-tight mt-0.5">
+                          {showBalance ? `${formatNumber(isBnsl ? bnslAvailableGrams : fbAvailableGrams, 2)}g` : hiddenValue}
+                        </p>
+                      </div>
+                      <div className="rounded-lg p-2.5" style={{ background: `rgba(${accentRgb},0.08)` }}>
+                        <p className="text-[9px] uppercase tracking-wider font-semibold" style={{ color: `rgb(${accentRgb})` }}>Locked</p>
+                        <p className="text-[14px] font-bold text-foreground tabular-nums leading-tight mt-0.5">
+                          {showBalance ? `${formatNumber(isBnsl ? bnslLockedGrams : fbLockedGrams, 2)}g` : hiddenValue}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground tabular-nums">
+                          {showBalance ? `$${formatNumber(isBnsl ? bnslLockedUsd : fbLockedUsd)}` : ''}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Zone 2: KPI strip */}
+                  <div className="mt-4 grid grid-cols-3 gap-2 pb-4 border-b border-border/50">
+                    {isBnsl ? (
+                      <>
+                        <div data-testid="bnsl-active-plans">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Active Plans</p>
+                          <p className="text-[16px] font-bold text-foreground tabular-nums">{activePlans.length}</p>
+                        </div>
+                        <div data-testid="bnsl-daily-yield">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Daily Yield</p>
+                          <p className="text-[16px] font-bold text-foreground tabular-nums">{showBalance ? `$${bnslDailyMargin.toFixed(2)}` : hiddenValue}</p>
+                        </div>
+                        <div data-testid="bnsl-earned">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Earned</p>
+                          <p className="text-[16px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{showBalance ? `$${formatNumber(bnslEarned)}` : hiddenValue}</p>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div data-testid="fb-active-trades">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Active Trades</p>
+                          <p className="text-[16px] font-bold text-foreground tabular-nums">{fbActiveTrades}</p>
+                        </div>
+                        <div data-testid="fb-trade-value">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Trade Value</p>
+                          <p className="text-[16px] font-bold text-foreground tabular-nums">{showBalance ? `$${formatNumber(fbTradeVolume)}` : hiddenValue}</p>
+                        </div>
+                        <div data-testid="fb-pending">
+                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Pending</p>
+                          <p className="text-[16px] font-bold text-foreground tabular-nums">{fbActiveTrades > 0 ? Math.min(fbActiveTrades, 1) : 0}</p>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Zone 3: Progress list OR Empty state */}
+                  <div className="mt-4 flex-1 flex flex-col">
+                    {isBnsl && sortedPlans.length > 0 ? (
+                      <>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <p className="text-[11px] font-semibold text-foreground">Plan Maturity</p>
+                          <Link href="/bnsl" className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 hover:underline">View All →</Link>
+                        </div>
+                        <div className="space-y-2.5" data-testid="bnsl-plans-list">
+                          {sortedPlans.map((p: any) => {
+                            const start = new Date(p.startDate).getTime();
+                            const mat = new Date(p.maturityDate).getTime();
+                            const now = Date.now();
+                            const pct = Math.min(100, Math.max(0, ((now - start) / (mat - start)) * 100));
+                            const daysLeft = Math.max(0, Math.ceil((mat - now) / 86400000));
+                            return (
+                              <div key={p.id} className="text-[11px]" data-testid={`plan-${p.contractId}`}>
+                                <div className="flex items-center justify-between mb-1">
+                                  <span className="font-mono text-muted-foreground truncate">{p.contractId}</span>
+                                  <span className="text-foreground tabular-nums font-semibold">{Math.round(pct)}% · {daysLeft}d</span>
+                                </div>
+                                <div className="h-1.5 rounded-full bg-muted overflow-hidden">
+                                  <motion.div
+                                    initial={{ width: 0 }}
+                                    animate={{ width: `${pct}%` }}
+                                    transition={{ duration: 1, ease: 'easeOut' }}
+                                    className="h-full rounded-full"
+                                    style={{ background: `linear-gradient(90deg, rgb(${accentRgb}), rgba(${accentRgb},0.7))` }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </>
+                    ) : !isBnsl && fbActiveTrades > 0 ? (
+                      <>
+                        <div className="flex items-center justify-between mb-2.5">
+                          <p className="text-[11px] font-semibold text-foreground">Active Trades</p>
+                          <Link href="/finabridge" className="text-[10px] font-semibold text-cyan-600 dark:text-cyan-400 hover:underline">View All →</Link>
+                        </div>
+                        <div className="rounded-lg border border-border/50 p-3 text-[11px] text-muted-foreground" data-testid="fb-trades-summary">
+                          {fbActiveTrades} active trade{fbActiveTrades > 1 ? 's' : ''} · {formatNumber(fbLockedGrams, 2)}g locked
+                          <Link href="/finabridge" className="block mt-1 text-cyan-600 dark:text-cyan-400 font-semibold hover:underline">Open FinaBridge →</Link>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="flex-1 flex flex-col items-center justify-center text-center py-4" data-testid={`empty-${assetTab}`}>
+                        <div className="w-10 h-10 rounded-full flex items-center justify-center mb-2" style={{ background: `rgba(${accentRgb},0.10)` }}>
+                          {isBnsl ? <TrendingUp className="w-5 h-5" style={{ color: `rgb(${accentRgb})` }} /> : <Landmark className="w-5 h-5" style={{ color: `rgb(${accentRgb})` }} />}
+                        </div>
+                        <p className="text-[12px] font-semibold text-foreground">
+                          {isBnsl ? 'Buy Now Sell Later' : 'Cross-Border Trade'}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 mb-2.5 max-w-[220px]">
+                          {isBnsl ? 'Lock gold, earn quarterly margins of 9–12% APR' : 'Settle imports & exports in physical gold'}
+                        </p>
+                        <Link
+                          href={isBnsl ? '/bnsl' : '/finabridge'}
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold text-white transition-all hover:scale-[1.03]"
+                          style={{ background: `rgb(${accentRgb})` }}
+                          data-testid={`cta-${assetTab}`}
+                        >
+                          {isBnsl ? 'Start a Plan' : 'Apply Now'} <ChevronRight className="w-3 h-3" />
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex gap-1.5">
-                  <button onClick={() => setActiveModal('deposit')} className="w-7 h-7 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center" aria-label="Add" data-testid="button-add-deposit">
-                    <Plus className="w-3.5 h-3.5 text-foreground" />
-                  </button>
-                  <button onClick={() => setActiveModal('withdraw')} className="w-7 h-7 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center" aria-label="Remove" data-testid="button-withdraw-quick">
-                    <span className="text-foreground text-base leading-none">−</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+              );
+            })()}
           </motion.div>
 
           {/* ── COL 3 (3/12): Smart Gold Performance — Donut + Area chart ── */}
