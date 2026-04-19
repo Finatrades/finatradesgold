@@ -642,10 +642,14 @@ export default function Dashboard() {
                 {/* Top row: FinaTrades logo (left) + GOLD CARD pill (right) */}
                 <div className="flex items-start justify-between">
                   <img
-                    src={isDarkTheme ? finatradesCardLogo : finatradesLogo}
+                    src={finatradesLogo}
                     alt="FinaTrades"
                     className="h-9 w-auto object-contain"
-                    style={{ filter: isDarkTheme ? 'drop-shadow(0 2px 6px rgba(0,0,0,0.4)) brightness(1.1)' : 'drop-shadow(0 1px 3px rgba(124,58,237,0.18))' }}
+                    style={{
+                      filter: isDarkTheme
+                        ? 'brightness(0) invert(1) drop-shadow(0 2px 6px rgba(0,0,0,0.45))'
+                        : 'drop-shadow(0 1px 3px rgba(124,58,237,0.20))',
+                    }}
                   />
                   <div
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
