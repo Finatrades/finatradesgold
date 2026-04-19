@@ -551,10 +551,10 @@ export default function Dashboard() {
         <div className="grid grid-cols-12 gap-4">
 
           {/* ── COL 1 (4/12): Wallet Balance + FinaCard visual ── */}
-          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4 space-y-4">
+          <motion.div variants={itemVariants} className="col-span-12 lg:col-span-4 flex flex-col gap-4">
 
             {/* ═══ Wallet Balance Card — Gold grams major, USD + AED secondary ═══ */}
-            <div className="hynex-card p-5 relative overflow-hidden" data-testid="card-wallet-balance">
+            <div className="hynex-card p-5 relative overflow-hidden flex-1 flex flex-col" data-testid="card-wallet-balance">
               {/* subtle gold orb top-right */}
               <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full pointer-events-none opacity-50" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18), transparent 70%)', filter: 'blur(20px)' }} />
 
