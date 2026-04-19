@@ -4,11 +4,13 @@ import { useEffect, useRef, useState } from "react";
 
 type Mode = "light" | "dark" | "system";
 
-const OPTIONS: { value: Mode; label: string; Icon: typeof Sun }[] = [
+const OPTIONS: { value: Mode; label: string; Icon: typeof Sun; isDefault?: boolean }[] = [
+  { value: "system", label: "System", Icon: Monitor, isDefault: true },
   { value: "light", label: "Light", Icon: Sun },
   { value: "dark", label: "Dark", Icon: Moon },
-  { value: "system", label: "System", Icon: Monitor },
 ];
+
+const STORAGE_KEY = "finatrades-theme";
 
 export default function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme();
@@ -82,6 +84,9 @@ export default function ThemeToggle() {
                 aria-checked={active}
                 onClick={() => {
                   setTheme(value);
+                  if (value === "system") {
+                    try { window.localStorage.removeItem(STORAGE_KEY); } catch {}
+                  }
                   setOpen(false);
                 }}
                 className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-colors ${
@@ -92,7 +97,14 @@ export default function ThemeToggle() {
                 data-testid={`menuitem-theme-${value}`}
               >
                 <Icon className="h-4 w-4" />
-                <span className="flex-1 text-left">{label}</span>
+                <span className="flex-1 text-left flex items-center gap-1.5">
+                  {label}
+                  {OPTIONS.find(o => o.value === value)?.isDefault && (
+                    <span className="text-[10px] font-medium text-muted-foreground/80 px-1.5 py-0.5 rounded-full bg-muted/60 border border-border/40">
+                      default
+                    </span>
+                  )}
+                </span>
                 {active && <Check className="h-3.5 w-3.5 text-primary" />}
               </button>
             );
