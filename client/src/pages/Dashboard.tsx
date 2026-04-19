@@ -514,8 +514,66 @@ export default function Dashboard() {
         {/* ═══════════════════ TOP ROW: FinaCard | Holdings | Performance ═══════════════════ */}
         <div className="grid grid-cols-12 gap-4">
 
-          {/* ── COL 1 (5/12): FinaCard visual ── */}
+          {/* ── COL 1 (5/12): Wallet Balance + FinaCard visual ── */}
           <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 space-y-4">
+
+            {/* ═══ Wallet Balance Card — Gold grams major, USD + AED secondary ═══ */}
+            <div className="hynex-card p-5 relative overflow-hidden" data-testid="card-wallet-balance">
+              {/* subtle gold orb top-right */}
+              <div className="absolute -top-12 -right-12 w-44 h-44 rounded-full pointer-events-none opacity-50" style={{ background: 'radial-gradient(circle, rgba(245,158,11,0.18), transparent 70%)', filter: 'blur(20px)' }} />
+
+              <div className="relative flex items-start justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.20), rgba(217,119,6,0.10))', border: '1px solid rgba(245,158,11,0.25)' }}>
+                    <Vault className="w-4 h-4 text-amber-500" />
+                  </div>
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Wallet Balance</p>
+                    <p className="text-[10px] text-muted-foreground/70">MPGW · Liquid Gold</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setBalanceVisible(!balanceVisible)}
+                  className="w-7 h-7 rounded-full bg-muted hover:bg-primary/10 flex items-center justify-center transition-colors"
+                  aria-label="Toggle balance visibility"
+                  data-testid="button-toggle-wallet-balance"
+                >
+                  {showBalance ? <Eye className="w-3.5 h-3.5 text-muted-foreground" /> : <EyeOff className="w-3.5 h-3.5 text-muted-foreground" />}
+                </button>
+              </div>
+
+              {/* Major: Gold grams */}
+              <div className="relative flex items-baseline gap-2 mb-3" data-testid="text-wallet-grams">
+                <span className="kpi-value text-[34px] leading-none font-bold tracking-tight bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">
+                  {showBalance ? formatNumber(totals.walletGoldGrams || 0, 3) : hiddenValue}
+                </span>
+                <span className="text-[15px] font-semibold text-amber-600/80">g</span>
+                <span className="text-[11px] text-muted-foreground ml-auto self-end pb-1">24K Gold</span>
+              </div>
+
+              {/* Secondary: USD + AED row */}
+              <div className="relative grid grid-cols-2 gap-2 pt-3 border-t border-border/50">
+                <div data-testid="text-wallet-usd">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-0.5">USD</p>
+                  <p className="text-[15px] font-bold text-foreground tabular-nums">
+                    {showBalance ? `$${formatNumber(walletGoldValue)}` : hiddenValue}
+                  </p>
+                </div>
+                <div className="border-l border-border/50 pl-3" data-testid="text-wallet-aed">
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground/80 font-semibold mb-0.5 flex items-center gap-1">
+                    <DirhamSymbol className="w-2.5 h-2.5" /> AED
+                  </p>
+                  <p className="text-[15px] font-bold text-foreground tabular-nums flex items-center gap-1">
+                    {showBalance ? (
+                      <>
+                        <DirhamSymbol className="w-3 h-3" />
+                        {formatNumber(walletGoldValue * 3.6725)}
+                      </>
+                    ) : hiddenValue}
+                  </p>
+                </div>
+              </div>
+            </div>
 
             {/* FinaCard credit card visual — Hynex style with GlareCard tilt */}
             <GlareCard
