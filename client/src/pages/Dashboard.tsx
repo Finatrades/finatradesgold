@@ -747,7 +747,7 @@ export default function Dashboard() {
               const fbTotal = fbLockedGrams + fbAvailableGrams;
               const fbLockedPct = fbTotal > 0 ? (fbLockedGrams / fbTotal) * 100 : 0;
 
-              const isBnsl = assetTab === 'bnsl';
+              const isBnsl = !isBusinessUser ? true : assetTab === 'bnsl';
               const accentRgb = isBnsl ? '124,58,237' : '6,182,212';
               const lockedPct = isBnsl ? bnslLockedPct : fbLockedPct;
               const circumference = 2 * Math.PI * 52;
@@ -761,25 +761,29 @@ export default function Dashboard() {
 
               return (
                 <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-asset-management">
-                  {/* Header — title + tab switcher */}
+                  {/* Header — title + tab switcher (FinaBridge tab only for business users) */}
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-[15px] font-semibold text-foreground">Asset Management</h3>
-                    <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full">
-                      <button
-                        onClick={() => setAssetTab('bnsl')}
-                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        data-testid="tab-bnsl"
-                      >
-                        BNSL
-                      </button>
-                      <button
-                        onClick={() => setAssetTab('finabridge')}
-                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        data-testid="tab-finabridge"
-                      >
-                        FinaBridge
-                      </button>
-                    </div>
+                    {isBusinessUser ? (
+                      <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full">
+                        <button
+                          onClick={() => setAssetTab('bnsl')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          data-testid="tab-bnsl"
+                        >
+                          BNSL
+                        </button>
+                        <button
+                          onClick={() => setAssetTab('finabridge')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          data-testid="tab-finabridge"
+                        >
+                          FinaBridge
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="px-2.5 py-1 rounded-full text-[10px] font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/50" data-testid="badge-bnsl-only">BNSL</span>
+                    )}
                   </div>
 
                   {/* Zone 1: Donut + Stats */}
@@ -930,6 +934,24 @@ export default function Dashboard() {
                       </div>
                     )}
                   </div>
+
+                  {/* Personal-only: Upgrade-to-Business upsell strip */}
+                  {!isBusinessUser && (
+                    <Link
+                      href="/upgrade-to-business"
+                      className="mt-4 -mx-1 group flex items-center gap-2.5 px-3 py-2 rounded-lg bg-gradient-to-r from-violet-50/80 via-indigo-50/80 to-violet-50/80 dark:from-violet-950/30 dark:via-indigo-950/30 dark:to-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 hover:border-violet-300 dark:hover:border-violet-700 transition-all"
+                      data-testid="cta-upgrade-business-asset"
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shrink-0 shadow-sm">
+                        <Landmark className="w-3.5 h-3.5 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-semibold text-foreground leading-tight">Unlock FinaBridge & Trade Finance</p>
+                        <p className="text-[9.5px] text-muted-foreground leading-tight mt-0.5">Upgrade to Business · 100× higher limits</p>
+                      </div>
+                      <ChevronRight className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400 shrink-0 group-hover:translate-x-0.5 transition-transform" />
+                    </Link>
+                  )}
                 </div>
               );
             })()}
@@ -946,18 +968,20 @@ export default function Dashboard() {
                                 + (totals.fpgwLockedBnslGrams || 0) + (totals.fpgwReservedTradeGrams || 0);
                 const bnslGrams = totals.bnslWalletGoldGrams || 0;
                 const fbGrams = finaBridge?.goldGrams || 0;
-                const totalGrams = mpgwGrams + fpgwGrams + bnslGrams + fbGrams;
-                const safeTot = Math.max(totalGrams, 0.000001);
 
-                const buckets = [
+                /* Wallet buckets — FinaBridge only included for business users */
+                const allBuckets = [
                   { key: 'mpgw',  label: 'FinaPay Live (MPGW)',         short: 'MPGW',       grams: mpgwGrams, color: '139,92,246',  hex: '#8b5cf6' },
                   { key: 'fpgw',  label: 'FinaPay Fixed/Hedged (FPGW)', short: 'FPGW',       grams: fpgwGrams, color: '245,158,11',  hex: '#f59e0b' },
                   { key: 'bnsl',  label: 'BNSL Wallet',                 short: 'BNSL',       grams: bnslGrams, color: '6,182,212',   hex: '#06b6d4' },
                   { key: 'fb',    label: 'FinaBridge Wallet',           short: 'FinaBridge', grams: fbGrams,   color: '16,185,129',  hex: '#10b981' },
                 ];
+                const buckets = isBusinessUser ? allBuckets : allBuckets.filter(b => b.key !== 'fb');
+                const totalGrams = buckets.reduce((s, b) => s + b.grams, 0);
+                const safeTot = Math.max(totalGrams, 0.000001);
 
-                /* Concentric ring radii — outer to inner */
-                const radii = [78, 62, 46, 30];
+                /* Concentric ring radii — outer to inner (4 rings for business, 3 for personal) */
+                const radii = isBusinessUser ? [78, 62, 46, 30] : [78, 58, 38];
                 const isWalletsTab = goldWalletsTab === 'wallets';
 
                 return (
