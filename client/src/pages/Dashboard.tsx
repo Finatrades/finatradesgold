@@ -26,7 +26,6 @@ import { DirhamSymbol } from '@/components/ui/DirhamSymbol';
 import { motion, AnimatePresence, useMotionValue, useTransform, useSpring } from 'framer-motion';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import BuyGoldBarModal from '@/components/finapay/modals/BuyGoldBarModal';
-import SellGoldModal from '@/components/finapay/modals/SellGoldModal';
 import WithdrawGoldModal from '@/components/finapay/modals/WithdrawGoldModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
@@ -478,13 +477,13 @@ export default function Dashboard() {
                 <Package className="w-3.5 h-3.5" /> Buy Gold
               </button>
 
-              {/* Sell — opens SellGoldModal */}
+              {/* Withdraw — sell gold + cash-out to bank/crypto (single intermediary flow) */}
               <button
-                onClick={() => setActiveModal('sell')}
+                onClick={() => setActiveModal('withdraw')}
                 className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-rose-400/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
-                data-testid="button-sell-gold"
+                data-testid="button-withdraw"
               >
-                <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> Sell
+                <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" /> Withdraw
               </button>
 
               {/* Transfer — internal MPGW ↔ FPGW transfer */}
@@ -924,14 +923,6 @@ export default function Dashboard() {
 
       <DepositModal isOpen={activeModal === 'deposit'} onClose={() => setActiveModal(null)} />
       <BuyGoldBarModal isOpen={activeModal === 'buybar'} onClose={() => setActiveModal(null)} />
-      <SellGoldModal
-        isOpen={activeModal === 'sell'}
-        onClose={() => setActiveModal(null)}
-        goldPrice={goldPrice}
-        walletBalance={totals.walletGoldGrams || 0}
-        spreadPercent={1.5}
-        onConfirm={() => setActiveModal(null)}
-      />
       <WithdrawGoldModal isOpen={activeModal === 'withdraw'} onClose={() => setActiveModal(null)} />
       <SendGoldModal
         isOpen={activeModal === 'send'}
