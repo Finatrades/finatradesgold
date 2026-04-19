@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNotifications } from '@/context/NotificationContext';
+import FloatingAgentChat from '@/components/FloatingAgentChat';
+import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -1001,7 +1003,9 @@ export default function KYC() {
       : 'Under Review';
     
     return (
-      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-in-progress">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground" data-testid="kyc-status-in-progress">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-green-200 dark:border-green-800/40 shadow-lg">
@@ -1083,7 +1087,9 @@ export default function KYC() {
     const isCorporate = user?.accountType === 'business';
     
     return (
-      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-changes-requested">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground" data-testid="kyc-status-changes-requested">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-orange-200 dark:border-orange-800/40 shadow-lg">
@@ -1190,7 +1196,9 @@ export default function KYC() {
     const isCorporate = user?.accountType === 'business';
     
     return (
-      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-rejected">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground" data-testid="kyc-status-rejected">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-red-200 dark:border-red-800/40 shadow-lg">
@@ -1311,7 +1319,9 @@ export default function KYC() {
     const isCorporate = user?.accountType === 'business';
     
     return (
-      <div className="min-h-screen bg-background text-foreground" data-testid="kyc-status-approved">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground" data-testid="kyc-status-approved">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-2xl">
             <Card className="border-green-200 dark:border-green-800/40 shadow-lg">
@@ -1382,7 +1392,9 @@ export default function KYC() {
     const isAddressComplianceComplete = isSectionLocked('documents') || !!addressProofFile;
     
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-4xl">
             
@@ -2242,7 +2254,9 @@ export default function KYC() {
   // === FINATRADES MODE: CORPORATE ACCOUNT KYC ===
   if (isBusiness) {
     return (
-      <div className="min-h-screen bg-background text-foreground">
+      <div data-kyc-shell className="min-h-screen bg-background text-foreground">
+        <KycTopBar />
+        <FloatingAgentChat />
         <div className="min-h-screen py-12 bg-background">
           <div className="container mx-auto px-6 max-w-5xl">
             
@@ -3089,6 +3103,40 @@ export default function KYC() {
 
   // Fallback - should not reach here as all paths are covered above
   return null;
+}
+
+/**
+ * Top header bar for all KYC pages — institutional branding.
+ * Sticky at top with logo + legal entity name + DMCC/regulatory chip.
+ */
+function KycTopBar() {
+  return (
+    <div className="sticky top-0 z-40 backdrop-blur-md bg-background/85 border-b border-border/60" data-testid="kyc-topbar">
+      <div className="container mx-auto px-6 max-w-6xl">
+        <div className="flex items-center justify-between h-14">
+          <div className="flex items-center gap-3 min-w-0">
+            <img
+              src={finatradesLogo}
+              alt="FinaTrades"
+              className="h-7 w-auto object-contain dark:[filter:brightness(0)_invert(1)] shrink-0"
+            />
+            <div className="hidden sm:flex flex-col leading-tight min-w-0">
+              <span className="text-[13px] font-bold text-foreground truncate">Finatrades Finances SA</span>
+              <span className="text-[10px] text-muted-foreground tracking-wide uppercase">Switzerland · DMCC Regulated</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40" data-testid="badge-secure-kyc">
+              <ShieldCheck className="w-3 h-3" /> Bank-Grade Secure
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border border-violet-200/60 dark:border-violet-800/40">
+              <Lock className="w-3 h-3" /> AES-256 Encrypted
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function StepItem({ title, description, icon, isActive, isCompleted }: { title: string, description: string, icon: React.ReactNode, isActive: boolean, isCompleted: boolean }) {
