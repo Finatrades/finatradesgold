@@ -114,7 +114,8 @@ export default function Dashboard() {
   const { resolvedTheme } = useTheme();
   const isDarkTheme = resolvedTheme === 'dark';
   const dashData = useDashboardData();
-  const { totals, goldPrice, finaBridge, isLoading } = dashData;
+  const { totals, goldPrice, finaBridge, isLoading, isFetching } = dashData;
+  const isRefetching = isFetching && !isLoading;
   const bnslPlans = dashData.bnslPlans || [];
   const notifications = dashData.notifications || [];
   const { transactions: unifiedTx } = useUnifiedTransactions({ limit: 10 });
@@ -862,7 +863,7 @@ export default function Dashboard() {
                             <p className={`text-[8.5px] uppercase tracking-wider font-semibold mb-0.5 ${isCenter ? 'text-violet-700 dark:text-violet-300' : 'text-muted-foreground'}`}>
                               {it.label}
                             </p>
-                            <p className={`text-[16px] font-bold tabular-nums leading-tight ${it.accent}`}>{it.value}</p>
+                            <p className={`text-[16px] font-bold tabular-nums leading-tight ${it.accent} ${isRefetching ? 'animate-pulse opacity-70' : ''}`}>{it.value}</p>
                             {isCenter && (
                               <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-background animate-pulse" />
                             )}
