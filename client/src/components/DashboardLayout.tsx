@@ -101,10 +101,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <header className={`sticky top-0 z-30 transition-all duration-300 px-4 pt-4 pb-2 ${scrolled ? '' : ''}`}>
 
           {/* ── UNIFIED rounded card wrapping both rows (status strip + main bar) ── */}
-          <div className="rounded-2xl border border-border/60 bg-background/95 backdrop-blur-md shadow-[0_4px_16px_-4px_rgba(16,24,40,0.08),_0_2px_4px_-2px_rgba(16,24,40,0.04)] overflow-hidden">
+          {/* NOTE: no `overflow-hidden` on wrapper — would clip notification/theme/user dropdowns. Inner row uses rounded-t to clip its own gradient. */}
+          <div className="rounded-2xl border border-border/60 bg-background/95 backdrop-blur-md shadow-[0_4px_16px_-4px_rgba(16,24,40,0.08),_0_2px_4px_-2px_rgba(16,24,40,0.04)]">
 
             {/* ── Row 1: Top status strip (gold price · assurance · 2FA) ── */}
-            <div className="h-9 px-5 flex items-center justify-between text-[12px] bg-gradient-to-r from-violet-50/60 via-transparent to-violet-50/60 dark:from-violet-950/15 dark:via-transparent dark:to-violet-950/15 border-b border-border/40">
+            <div className="h-9 px-5 flex items-center justify-between text-[12px] bg-gradient-to-r from-violet-50/60 via-transparent to-violet-50/60 dark:from-violet-950/15 dark:via-transparent dark:to-violet-950/15 border-b border-border/40 rounded-t-2xl">
               <div className="flex items-center gap-2 text-foreground/80" data-testid="strip-gold-price">
                 <span className="font-medium text-muted-foreground">Gold Price:</span>
                 <span className="font-semibold text-foreground tabular-nums">
