@@ -468,15 +468,41 @@ export default function Dashboard() {
           <motion.div variants={itemVariants} className="col-span-12 lg:col-span-5 space-y-4">
             {/* Quick Action pill row */}
             <div className="flex flex-wrap gap-2" data-testid="quick-actions">
-              <button onClick={() => setActiveModal('deposit')} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-add-funds">
-                <Plus className="w-3.5 h-3.5" /> Add Funds
-              </button>
-              <button onClick={() => setShowTransferModal(true)} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-pay-bill">
-                <Send className="w-3.5 h-3.5" /> Pay Bill
-              </button>
-              <Link href="/transactions"><a className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-primary/40 hover:bg-primary/5 transition-all" data-testid="button-reports"><ArrowUpRight className="w-3.5 h-3.5" /> Reports</a></Link>
-              <button onClick={() => setActiveModal('buybar')} className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold text-white transition-all hover:scale-[1.02]" style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)', boxShadow: '0 2px 10px rgba(124,58,237,0.30)' }} data-testid="button-buy-gold">
+              {/* Buy Gold — primary revenue action, amber gradient */}
+              <button
+                onClick={() => setActiveModal('buybar')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-md"
+                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow: '0 2px 10px rgba(217,119,6,0.30)' }}
+                data-testid="button-buy-gold"
+              >
                 <Package className="w-3.5 h-3.5" /> Buy Gold
+              </button>
+
+              {/* Sell — opens SellGoldModal */}
+              <button
+                onClick={() => setActiveModal('sell')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-rose-400/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 transition-all"
+                data-testid="button-sell-gold"
+              >
+                <TrendingDown className="w-3.5 h-3.5 text-rose-500" /> Sell
+              </button>
+
+              {/* Transfer — internal MPGW ↔ FPGW transfer */}
+              <button
+                onClick={() => setShowTransferModal(true)}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-violet-400/50 hover:bg-violet-50 dark:hover:bg-violet-950/20 transition-all"
+                data-testid="button-transfer"
+              >
+                <ArrowLeftRight className="w-3.5 h-3.5 text-violet-500" /> Transfer
+              </button>
+
+              {/* Receive — request gold from another user */}
+              <button
+                onClick={() => setActiveModal('request')}
+                className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-full text-[13px] font-semibold bg-card border border-border hover:border-emerald-400/50 hover:bg-emerald-50 dark:hover:bg-emerald-950/20 transition-all"
+                data-testid="button-receive"
+              >
+                <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-500" /> Receive
               </button>
             </div>
 
