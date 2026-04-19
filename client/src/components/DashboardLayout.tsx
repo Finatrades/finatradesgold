@@ -194,13 +194,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span className="text-[13px] font-semibold text-foreground">{user.firstName} {user.lastName}</span>
                     <span className="text-[11px] text-violet-500 font-medium">Personal Account</span>
                   </div>
-                  <Avatar className="h-9 w-9 border border-border/60">
-                    <AvatarImage
-                      src={user.profilePhoto || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.firstName + ' ' + user.lastName)}&backgroundColor=7C3AED&textColor=ffffff`}
-                      alt={user.firstName}
-                    />
-                    <AvatarFallback className="bg-violet-600 text-white font-bold">
-                      {user.firstName[0]}{user.lastName[0]}
+                  {/* Header avatar = clean letter initials in solid violet circle (premium look).
+                      Profile photo (if any) appears full-size on /profile page, not in chrome. */}
+                  <Avatar className="h-10 w-10 border border-border/60 shadow-sm">
+                    <AvatarFallback className="bg-violet-600 text-white font-bold text-sm tracking-wide">
+                      {(user.firstName?.[0] || '').toUpperCase()}{(user.lastName?.[0] || '').toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </div>
