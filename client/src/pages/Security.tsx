@@ -28,6 +28,56 @@ export default function Security() {
   const [deletionComments, setDeletionComments] = useState('');
   const [deletionPassword, setDeletionPassword] = useState('');
   const [showDeletionPassword, setShowDeletionPassword] = useState(false);
+
+  // Change password dialog states
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+
+  const changePasswordMutation = useMutation({
+    mutationFn: async (data: { currentPassword: string; newPassword: string }) => {
+      const res = await apiRequest('POST', `/api/users/${user?.id}/change-password`, data);
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.message || 'Failed to change password');
+      return json;
+    },
+    onSuccess: () => {
+      toast.success('Password changed successfully', {
+        description: 'Use your new password the next time you sign in.',
+      });
+      setShowChangePasswordDialog(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmNewPassword('');
+    },
+    onError: (err: Error) => {
+      toast.error(err.message);
+    },
+  });
+
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword || !confirmNewPassword) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters long');
+      return;
+    }
+    if (newPassword !== confirmNewPassword) {
+      toast.error('New passwords do not match');
+      return;
+    }
+    if (newPassword === currentPassword) {
+      toast.error('New password must be different from current password');
+      return;
+    }
+    changePasswordMutation.mutate({ currentPassword, newPassword });
+  };
   
   // Query for existing deletion request
   const { data: deletionRequestData, isLoading: isDeletionRequestLoading, refetch: refetchDeletionRequest } = useQuery({
@@ -513,11 +563,138 @@ export default function Security() {
             </div>
           </CardHeader>
           <CardContent>
-            <Button variant="outline" data-testid="button-change-password">
+            <Button
+              variant="outline"
+              data-testid="button-change-password"
+              onClick={() => setShowChangePasswordDialog(true)}
+            >
               <Lock className="w-4 h-4 mr-2" /> Change Password
             </Button>
           </CardContent>
         </Card>
+
+        {/* Change Password Dialog */}
+        <Dialog open={showChangePasswordDialog} onOpenChange={(open) => {
+          setShowChangePasswordDialog(open);
+          if (!open) {
+            setCurrentPassword('');
+            setNewPassword('');
+            setConfirmNewPassword('');
+            setShowCurrentPassword(false);
+            setShowNewPassword(false);
+            setShowConfirmNewPassword(false);
+          }
+        }}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Change Password</DialogTitle>
+              <DialogDescription>
+                Enter your current password, then choose a new password (minimum 8 characters).
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="space-y-2">
+                <Label htmlFor="current-password">Current password *</Label>
+                <div className="relative">
+                  <Input
+                    id="current-password"
+                    type={showCurrentPassword ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter your current password"
+                    data-testid="input-current-password"
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    tabIndex={-1}
+                  >
+                    {showCurrentPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="new-password">New password *</Label>
+                <div className="relative">
+                  <Input
+                    id="new-password"
+                    type={showNewPassword ? 'text' : 'password'}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    data-testid="input-new-password"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                    tabIndex={-1}
+                  >
+                    {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirm-new-password">Confirm new password *</Label>
+                <div className="relative">
+                  <Input
+                    id="confirm-new-password"
+                    type={showConfirmNewPassword ? 'text' : 'password'}
+                    value={confirmNewPassword}
+                    onChange={(e) => setConfirmNewPassword(e.target.value)}
+                    placeholder="Re-enter the new password"
+                    data-testid="input-confirm-new-password"
+                    autoComplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                    tabIndex={-1}
+                  >
+                    {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {confirmNewPassword && newPassword !== confirmNewPassword && (
+                  <p className="text-xs text-red-500" data-testid="text-password-mismatch">
+                    Passwords do not match
+                  </p>
+                )}
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowChangePasswordDialog(false)}
+                disabled={changePasswordMutation.isPending}
+                data-testid="button-cancel-change-password"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleChangePassword}
+                disabled={
+                  changePasswordMutation.isPending ||
+                  !currentPassword ||
+                  !newPassword ||
+                  !confirmNewPassword ||
+                  newPassword !== confirmNewPassword ||
+                  newPassword.length < 8
+                }
+                data-testid="button-submit-change-password"
+              >
+                {changePasswordMutation.isPending ? (
+                  <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Updating...</>
+                ) : (
+                  <><Lock className="w-4 h-4 mr-2" /> Update Password</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Transaction PIN Card */}
         <Card>

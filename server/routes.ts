@@ -2266,8 +2266,55 @@ export async function registerRoutes(
   });
   
   // Update user profile - PROTECTED: requires matching session
+  // Change password — requires current password verification
+  app.post("/api/users/:userId/change-password", ensureOwnerOrAdmin, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = req.body || {};
+      if (typeof currentPassword !== 'string' || typeof newPassword !== 'string') {
+        return res.status(400).json({ message: "currentPassword and newPassword are required" });
+      }
+      if (newPassword.length < 8) {
+        return res.status(400).json({ message: "New password must be at least 8 characters long" });
+      }
+      if (newPassword === currentPassword) {
+        return res.status(400).json({ message: "New password must be different from current password" });
+      }
+
+      const user = await storage.getUser(req.params.userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Verify current password (supports legacy plaintext migration)
+      let isValid = false;
+      if (user.password.startsWith('$2')) {
+        isValid = await bcrypt.compare(currentPassword, user.password);
+      } else if (user.password === currentPassword) {
+        isValid = true;
+      }
+      if (!isValid) {
+        logUserActivity(req, req.params.userId, "password_change", "Failed password change attempt - invalid current password").catch(err => console.error("[Activity Log] Password change failure log failed:", err));
+        return res.status(401).json({ message: "Current password is incorrect" });
+      }
+
+      const hashed = await bcrypt.hash(newPassword, 12);
+      await storage.updateUser(req.params.userId, { password: hashed });
+
+      logUserActivity(req, req.params.userId, "password_change", "Password changed successfully").catch(err => console.error("[Activity Log] Password change log failed:", err));
+
+      res.json({ success: true, message: "Password changed successfully" });
+    } catch (error) {
+      console.error("[change-password] error", error);
+      res.status(500).json({ message: "Failed to change password" });
+    }
+  });
+
   app.patch("/api/users/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
+      // SECURITY: Block password updates via generic PATCH — must use /change-password endpoint
+      if ('password' in (req.body || {})) {
+        return res.status(400).json({ message: "Password cannot be updated via this endpoint. Use /change-password." });
+      }
       const user = await storage.updateUser(req.params.userId, req.body);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
