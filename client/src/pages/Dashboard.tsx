@@ -831,39 +831,44 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Zone 2: KPI strip */}
-                  <div className="mt-4 grid grid-cols-3 gap-2 pb-4 border-b border-border/50">
-                    {isBnsl ? (
-                      <>
-                        <div data-testid="bnsl-active-plans">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Active Plans</p>
-                          <p className="text-[16px] font-bold text-foreground tabular-nums">{activePlans.length}</p>
-                        </div>
-                        <div data-testid="bnsl-daily-yield">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Daily Yield</p>
-                          <p className="text-[16px] font-bold text-foreground tabular-nums">{showBalance ? `$${bnslDailyMargin.toFixed(2)}` : hiddenValue}</p>
-                        </div>
-                        <div data-testid="bnsl-earned">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Earned</p>
-                          <p className="text-[16px] font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">{showBalance ? `$${formatNumber(bnslEarned)}` : hiddenValue}</p>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div data-testid="fb-active-trades">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Active Trades</p>
-                          <p className="text-[16px] font-bold text-foreground tabular-nums">{fbActiveTrades}</p>
-                        </div>
-                        <div data-testid="fb-trade-value">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Trade Value</p>
-                          <p className="text-[16px] font-bold text-foreground tabular-nums">{showBalance ? `$${formatNumber(fbTradeVolume)}` : hiddenValue}</p>
-                        </div>
-                        <div data-testid="fb-pending">
-                          <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Pending</p>
-                          <p className="text-[16px] font-bold text-foreground tabular-nums">{fbActiveTrades > 0 ? Math.min(fbActiveTrades, 1) : 0}</p>
-                        </div>
-                      </>
-                    )}
+                  {/* Zone 2: KPI strip — tilted highlight cards (left ↙ / center ↑ / right ↘) */}
+                  <div className="mt-4 grid grid-cols-3 gap-2 pb-4 border-b border-border/50 [perspective:800px]">
+                    {(() => {
+                      const items = isBnsl
+                        ? [
+                            { key: 'bnsl-active-plans', label: 'Active Plans', value: String(activePlans.length), accent: 'text-foreground' },
+                            { key: 'bnsl-daily-yield', label: 'Daily Yield', value: showBalance ? `$${bnslDailyMargin.toFixed(2)}` : hiddenValue, accent: 'text-foreground' },
+                            { key: 'bnsl-earned', label: 'Earned', value: showBalance ? `$${formatNumber(bnslEarned)}` : hiddenValue, accent: 'text-emerald-600 dark:text-emerald-400' },
+                          ]
+                        : [
+                            { key: 'fb-active-trades', label: 'Active Trades', value: String(fbActiveTrades), accent: 'text-foreground' },
+                            { key: 'fb-trade-value', label: 'Trade Value', value: showBalance ? `$${formatNumber(fbTradeVolume)}` : hiddenValue, accent: 'text-foreground' },
+                            { key: 'fb-pending', label: 'Pending', value: String(fbActiveTrades > 0 ? Math.min(fbActiveTrades, 1) : 0), accent: 'text-foreground' },
+                          ];
+                      const tilts = ['-rotate-[3deg] translate-y-0.5', 'rotate-0 -translate-y-1 scale-[1.06]', 'rotate-[3deg] translate-y-0.5'];
+                      return items.map((it, i) => {
+                        const isCenter = i === 1;
+                        return (
+                          <div
+                            key={it.key}
+                            data-testid={it.key}
+                            className={`group relative rounded-xl px-2 py-2.5 text-center transition-all duration-300 hover:rotate-0 hover:translate-y-0 hover:scale-[1.08] cursor-default ${tilts[i]} ${
+                              isCenter
+                                ? 'bg-gradient-to-br from-violet-50 to-cyan-50 dark:from-violet-950/40 dark:to-cyan-950/40 border border-violet-200/70 dark:border-violet-800/50 shadow-md shadow-violet-500/10 ring-1 ring-violet-300/40 dark:ring-violet-700/30'
+                                : 'bg-muted/40 dark:bg-muted/20 border border-border/60 hover:bg-muted/70 dark:hover:bg-muted/40 hover:shadow-sm'
+                            }`}
+                          >
+                            <p className={`text-[8.5px] uppercase tracking-wider font-semibold mb-0.5 ${isCenter ? 'text-violet-700 dark:text-violet-300' : 'text-muted-foreground'}`}>
+                              {it.label}
+                            </p>
+                            <p className={`text-[16px] font-bold tabular-nums leading-tight ${it.accent}`}>{it.value}</p>
+                            {isCenter && (
+                              <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-background animate-pulse" />
+                            )}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
 
                   {/* Zone 3: Progress list OR Empty state */}
