@@ -136,7 +136,8 @@ export default function Dashboard() {
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [selectedCert, setSelectedCert] = useState<any | null>(null);
-  const [chartPeriod, setChartPeriod] = useState<'7D' | '30D' | '90D'>('30D');
+  const [chartPeriod, setChartPeriod] = useState<'1D' | '7D' | '30D' | '90D' | '1Y'>('30D');
+  const [chartUnit, setChartUnit] = useState<'gram' | 'oz'>('gram');
   const [savingsGoal] = useState(500);
   const [showBnslModal, setShowBnslModal] = useState(false);
   const [showTradeModal, setShowTradeModal] = useState(false);
@@ -276,18 +277,31 @@ export default function Dashboard() {
 
   // ── Gold price history (simulated from current price with realistic variation) ──
   const goldPriceHistory = useMemo(() => {
-    const days = chartPeriod === '7D' ? 7 : chartPeriod === '30D' ? 30 : 90;
+    const isIntraday = chartPeriod === '1D';
+    const points = chartPeriod === '1D' ? 24 : chartPeriod === '7D' ? 7 : chartPeriod === '30D' ? 30 : chartPeriod === '90D' ? 90 : 52;
     const basePrice = goldPrice;
     const seed = [0, -0.4, -0.7, -0.3, 0.5, 0.8, 0.2, -0.5, -1.1, -0.6, 0.4, 1.2, 0.9, 0.3, -0.2, 0.6, 1.0, 0.7, -0.3, -0.8, 0.5, 0.2, -0.4, 0.8, 1.1, 0.6, -0.1, -0.6, 0.3, 0.8, 0.4, -0.2, 0.7, 1.3, 0.5, -0.3, -0.9, 0.4, 0.9, 0.2, -0.5, 0.3, 0.8, -0.2, 0.6, 1.1, 0.4, -0.3, 0.2, 0.7, -0.4, 0.3, -0.6, 0.5, 1.0, 0.3, -0.4, 0.7, 0.2, -0.5, 0.4, 0.9, 0.1, -0.3, 0.6, 1.2, 0.5, -0.2, 0.3, 0.8, -0.1, 0.5, 1.0, 0.3, -0.4, 0.7, 0.2, -0.6, 0.4, 0.9, -0.2, 0.3, 0.8, 0.5, -0.3, 0.6, 1.1, 0.4, -0.2, 0.3];
-    let price = basePrice * (1 - (seed.slice(0, days).reduce((a, b) => a + b, 0) / 100));
+    const variationScale = isIntraday ? 0.3 : chartPeriod === '1Y' ? 1.5 : 1;
+    let price = basePrice * (1 - (seed.slice(0, points).reduce((a, b) => a + b, 0) / 100) * variationScale);
     const data = [];
-    for (let i = days; i >= 0; i--) {
-      const variation = (seed[i % seed.length] || 0) / 100;
+    for (let i = points; i >= 0; i--) {
+      const variation = ((seed[i % seed.length] || 0) / 100) * variationScale;
       price = price * (1 + variation);
       const date = new Date();
-      date.setDate(date.getDate() - i);
+      let label: string;
+      if (isIntraday) {
+        date.setHours(date.getHours() - i);
+        label = i === 0 ? 'Now' : format(date, 'HH:mm');
+      } else if (chartPeriod === '1Y') {
+        date.setDate(date.getDate() - i * 7);
+        label = i === 0 ? 'Now' : format(date, 'MMM d');
+      } else {
+        date.setDate(date.getDate() - i);
+        label = i === 0 ? 'Now' : format(date, points <= 7 ? 'EEE' : 'MMM d');
+      }
       data.push({
-        date: i === 0 ? 'Now' : format(date, days <= 7 ? 'EEE' : 'MMM d'),
+        date: label,
+        timestamp: date.getTime(),
         price: parseFloat(price.toFixed(2)),
       });
     }
@@ -1015,34 +1029,178 @@ export default function Dashboard() {
                         </div>
                       </>
                     ) : (
-                      <>
-                        {/* Trend tab — period select + price + area chart */}
-                        <div className="flex items-center justify-between mt-2 mb-1">
-                          <div>
-                            <p className="text-[22px] font-bold text-foreground tabular-nums leading-none">${formatNumber(goldPrice)}<span className="text-[12px] text-muted-foreground font-medium">/g</span></p>
-                            <p className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold mt-1">+{(unrealizedGainPct || 0).toFixed(2)}% growth</p>
-                          </div>
-                          <select value={chartPeriod} onChange={e => setChartPeriod(e.target.value as any)} className="text-[11px] font-semibold bg-muted/60 border border-border/60 rounded-full px-2.5 py-1 cursor-pointer focus:outline-none text-foreground" data-testid="select-chart-period">
-                            <option value="7D">Weekly</option>
-                            <option value="30D">Monthly</option>
-                            <option value="90D">Quarterly</option>
-                          </select>
-                        </div>
-                        <div className="flex-1 -mx-1 mt-2" style={{ minHeight: 200 }}>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <AreaChart data={goldPriceHistory} margin={{ top: 4, right: 4, bottom: 0, left: 0 }}>
-                              <defs>
-                                <linearGradient id="perfArea" x1="0" y1="0" x2="0" y2="1">
-                                  <stop offset="0%" stopColor="#22d3ee" stopOpacity={0.5} />
-                                  <stop offset="100%" stopColor="#22d3ee" stopOpacity={0} />
-                                </linearGradient>
-                              </defs>
-                              <Area type="monotone" dataKey="price" stroke="#22d3ee" strokeWidth={2} fill="url(#perfArea)" />
-                              <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: 12, fontSize: 11 }} />
-                            </AreaChart>
-                          </ResponsiveContainer>
-                        </div>
-                      </>
+                      (() => {
+                        /* Pro-grade trend chart — Bloomberg / TradingView style */
+                        const OZ_TO_GRAM = 31.1035;
+                        const toUnit = (gramPrice: number) => chartUnit === 'oz' ? gramPrice * OZ_TO_GRAM : gramPrice;
+                        const unitLabel = chartUnit === 'oz' ? '/oz' : '/g';
+                        const data = goldPriceHistory.map(d => ({ ...d, displayPrice: toUnit(d.price) }));
+                        const openPrice = data[0]?.displayPrice || 0;
+                        const currentPrice = data[data.length - 1]?.displayPrice || toUnit(goldPrice);
+                        const high = Math.max(...data.map(d => d.displayPrice));
+                        const low = Math.min(...data.map(d => d.displayPrice));
+                        const change = currentPrice - openPrice;
+                        const changePct = openPrice > 0 ? (change / openPrice) * 100 : 0;
+                        const isUp = change >= 0;
+                        const lineColor = isUp ? '#10b981' : '#ef4444';
+                        const lineColorRgb = isUp ? '16,185,129' : '239,68,68';
+                        const lbmaFix = openPrice * 1.002;
+                        const periods: Array<{ key: typeof chartPeriod; label: string }> = [
+                          { key: '1D', label: '1D' },
+                          { key: '7D', label: '1W' },
+                          { key: '30D', label: '1M' },
+                          { key: '90D', label: '3M' },
+                          { key: '1Y', label: '1Y' },
+                        ];
+                        const fmtPrice = (n: number) => chartUnit === 'oz'
+                          ? `$${n.toLocaleString('en-US', { maximumFractionDigits: 0 })}`
+                          : `$${n.toFixed(2)}`;
+                        const now = new Date();
+                        const liveTime = `${now.getUTCHours().toString().padStart(2, '0')}:${now.getUTCMinutes().toString().padStart(2, '0')}`;
+
+                        return (
+                          <>
+                            {/* Header — big price + change + live indicator */}
+                            <div className="mt-3 mb-2">
+                              <div className="flex items-end justify-between gap-2 mb-1">
+                                <div className="flex items-baseline gap-1">
+                                  <span className="text-[26px] font-bold text-foreground tabular-nums leading-none">{fmtPrice(currentPrice)}</span>
+                                  <span className="text-[11px] text-muted-foreground font-medium">{unitLabel}</span>
+                                </div>
+                                <div className="flex items-center gap-1.5 shrink-0" data-testid="live-indicator">
+                                  <span className="relative flex h-2 w-2">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+                                  </span>
+                                  <span className="text-[10px] text-muted-foreground font-medium tabular-nums">Live · {liveTime} GMT</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <span className={`inline-flex items-center gap-0.5 text-[12px] font-bold tabular-nums ${isUp ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  {isUp ? '▲' : '▼'} {isUp ? '+' : ''}{fmtPrice(Math.abs(change))} ({isUp ? '+' : ''}{changePct.toFixed(2)}%)
+                                </span>
+                                <span className="text-[10px] text-muted-foreground">vs open</span>
+                              </div>
+                            </div>
+
+                            {/* High / Low / vs LBMA chips */}
+                            <div className="grid grid-cols-3 gap-1.5 mb-2">
+                              <div className="rounded-md bg-muted/40 px-2 py-1.5">
+                                <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">High</p>
+                                <p className="text-[11px] font-bold text-foreground tabular-nums">{fmtPrice(high)}</p>
+                              </div>
+                              <div className="rounded-md bg-muted/40 px-2 py-1.5">
+                                <p className="text-[9px] uppercase tracking-wider text-muted-foreground font-semibold">Low</p>
+                                <p className="text-[11px] font-bold text-foreground tabular-nums">{fmtPrice(low)}</p>
+                              </div>
+                              <div className="rounded-md bg-amber-50/80 dark:bg-amber-950/30 px-2 py-1.5 border border-amber-200/40 dark:border-amber-800/30">
+                                <p className="text-[9px] uppercase tracking-wider text-amber-700 dark:text-amber-400 font-semibold">vs LBMA</p>
+                                <p className={`text-[11px] font-bold tabular-nums ${currentPrice >= lbmaFix ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                                  {currentPrice >= lbmaFix ? '+' : ''}{((currentPrice - lbmaFix) / lbmaFix * 100).toFixed(2)}%
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Pro chart */}
+                            <div className="flex-1 -mx-1" style={{ minHeight: 180 }}>
+                              <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 0 }}>
+                                  <defs>
+                                    <linearGradient id="perfAreaPro" x1="0" y1="0" x2="0" y2="1">
+                                      <stop offset="0%" stopColor={lineColor} stopOpacity={0.35} />
+                                      <stop offset="100%" stopColor={lineColor} stopOpacity={0} />
+                                    </linearGradient>
+                                  </defs>
+                                  <XAxis
+                                    dataKey="date"
+                                    tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    minTickGap={20}
+                                    interval="preserveStartEnd"
+                                  />
+                                  <YAxis
+                                    domain={['dataMin - 1', 'dataMax + 1']}
+                                    tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))' }}
+                                    axisLine={false}
+                                    tickLine={false}
+                                    width={48}
+                                    tickFormatter={(v) => chartUnit === 'oz' ? `$${Math.round(v)}` : `$${v.toFixed(0)}`}
+                                  />
+                                  <ReferenceLine
+                                    y={openPrice}
+                                    stroke="hsl(var(--muted-foreground))"
+                                    strokeDasharray="3 3"
+                                    strokeOpacity={0.5}
+                                    label={{ value: 'Open', position: 'insideTopLeft', fill: 'hsl(var(--muted-foreground))', fontSize: 9 }}
+                                  />
+                                  <ReferenceLine
+                                    y={lbmaFix}
+                                    stroke="#f59e0b"
+                                    strokeDasharray="4 2"
+                                    strokeOpacity={0.6}
+                                    label={{ value: 'LBMA', position: 'insideTopRight', fill: '#f59e0b', fontSize: 9, fontWeight: 600 }}
+                                  />
+                                  <Tooltip
+                                    cursor={{ stroke: `rgba(${lineColorRgb},0.4)`, strokeWidth: 1, strokeDasharray: '3 3' }}
+                                    contentStyle={{
+                                      background: 'hsl(var(--card))',
+                                      border: '1px solid hsl(var(--border))',
+                                      borderRadius: 10,
+                                      fontSize: 11,
+                                      boxShadow: '0 8px 24px -8px rgba(0,0,0,0.18)',
+                                      padding: '8px 10px',
+                                    }}
+                                    formatter={(value: any) => [fmtPrice(Number(value)) + unitLabel, 'Price']}
+                                    labelStyle={{ fontWeight: 600, color: 'hsl(var(--foreground))', marginBottom: 2 }}
+                                  />
+                                  <Area
+                                    type="monotone"
+                                    dataKey="displayPrice"
+                                    stroke={lineColor}
+                                    strokeWidth={2}
+                                    fill="url(#perfAreaPro)"
+                                    isAnimationActive
+                                    animationDuration={800}
+                                  />
+                                </AreaChart>
+                              </ResponsiveContainer>
+                            </div>
+
+                            {/* Period buttons + Unit toggle */}
+                            <div className="mt-2 pt-2 border-t border-border/40 flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-0.5 p-0.5 bg-muted/60 rounded-full" data-testid="period-buttons">
+                                {periods.map(p => (
+                                  <button
+                                    key={p.key}
+                                    onClick={() => setChartPeriod(p.key)}
+                                    className={`px-2 py-1 rounded-full text-[10px] font-bold tabular-nums transition-all ${chartPeriod === p.key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                    data-testid={`period-${p.key}`}
+                                  >
+                                    {p.label}
+                                  </button>
+                                ))}
+                              </div>
+                              <div className="flex items-center gap-0.5 p-0.5 bg-muted/60 rounded-full" data-testid="unit-toggle">
+                                <button
+                                  onClick={() => setChartUnit('gram')}
+                                  className={`px-2 py-1 rounded-full text-[10px] font-bold transition-all ${chartUnit === 'gram' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                  data-testid="unit-gram"
+                                >
+                                  /g
+                                </button>
+                                <button
+                                  onClick={() => setChartUnit('oz')}
+                                  className={`px-2 py-1 rounded-full text-[10px] font-bold transition-all ${chartUnit === 'oz' ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                                  data-testid="unit-oz"
+                                >
+                                  /oz
+                                </button>
+                              </div>
+                            </div>
+                          </>
+                        );
+                      })()
                     )}
                   </>
                 );
