@@ -100,44 +100,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         
         <header className={`sticky top-0 z-30 transition-all duration-300 ${scrolled ? 'shadow-sm' : ''}`}>
 
-          {/* ── Top status strip ── */}
-          <div className="h-9 px-6 flex items-center justify-between text-[12px] bg-gradient-to-r from-violet-50/60 via-background to-violet-50/60 dark:from-violet-950/20 dark:via-background dark:to-violet-950/20 border-b border-border/30">
-            <div className="flex items-center gap-2 text-foreground/80" data-testid="strip-gold-price">
-              <span className="relative flex h-2 w-2">
-                <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-50 dark:bg-emerald-950/200" />
-              </span>
-              <span className="font-medium">Gold Price:</span>
-              <span className="font-semibold text-foreground">${goldPrice ? goldPrice.toFixed(2) : '156.59'}/gram</span>
-            </div>
-
-            <button
-              onClick={() => setShowAssuranceDialog(true)}
-              className="hidden md:flex items-center gap-2 text-foreground/75 hover:text-foreground transition-colors"
-              data-testid="strip-settlement-assurance"
-            >
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="font-medium">Settlement Assurance</span>
-              <span className="text-muted-foreground">Backed by USD 42.134 Billion</span>
-            </button>
-
-            <Link href="/security">
-              <button
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 border border-rose-200 dark:border-rose-800/40 hover:bg-rose-100 dark:bg-rose-900/30 transition-colors text-[11.5px] font-medium dark:bg-rose-950/40 dark:border-rose-900/60 dark:text-rose-400"
-                data-testid="button-enable-2fa"
-              >
-                <span className="w-1.5 h-1.5 rounded-full bg-rose-50 dark:bg-rose-950/200" />
-                Enable 2FA
-              </button>
-            </Link>
-          </div>
-
-          {/* ── Main bar ── */}
-          <div className="h-16 px-6 flex items-center gap-3 border-b border-border/40 bg-background">
+          {/* ── UNIFIED single-row header — gold price + assurance + 2FA + nav + search + actions all aligned ── */}
+          <div className="h-[68px] px-5 flex items-center gap-2.5 border-b border-border/40 bg-background/95 backdrop-blur-md">
 
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="lg:hidden w-10 h-10 rounded-xl bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
               data-testid="button-mobile-sidebar"
             >
               <Menu className="w-5 h-5" />
@@ -145,35 +113,77 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             {/* Portfolio Console pill */}
             <Link href="/dashboard">
-              <button className="hynex-pill" data-testid="header-pill-console">
+              <button className="hynex-pill shrink-0" data-testid="header-pill-console">
                 <Sparkles className="w-3.5 h-3.5 text-violet-500" />
                 <span className="font-medium">Portfolio Console</span>
               </button>
             </Link>
 
             {/* Date pill */}
-            <div className="hynex-pill" data-testid="header-pill-date">
+            <div className="hynex-pill shrink-0" data-testid="header-pill-date">
               <Calendar className="w-3.5 h-3.5 text-emerald-500" />
               <span>{format(new Date(), 'EEE d, MMM')}</span>
             </div>
 
+            {/* Gold Price chip — live */}
+            <div
+              className="hidden md:inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200/60 dark:border-emerald-800/40 text-[12.5px] shrink-0"
+              data-testid="chip-gold-price"
+            >
+              <span className="relative flex h-2 w-2">
+                {isGoldPriceLive && (
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-60 animate-ping" />
+                )}
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+              <span className="text-emerald-700 dark:text-emerald-300 font-medium">Gold</span>
+              <span className="font-semibold text-emerald-900 dark:text-emerald-100 tabular-nums">
+                ${goldPrice ? goldPrice.toFixed(2) : '156.59'}
+                <span className="text-emerald-600/70 dark:text-emerald-400/70 font-normal text-[11px]">/g</span>
+              </span>
+            </div>
+
+            {/* Settlement Assurance chip — clickable */}
+            <button
+              onClick={() => setShowAssuranceDialog(true)}
+              className="hidden xl:inline-flex items-center gap-2 h-9 px-3.5 rounded-full bg-violet-50 dark:bg-violet-950/30 border border-violet-200/60 dark:border-violet-800/40 hover:bg-violet-100 dark:hover:bg-violet-900/40 text-[12.5px] transition-colors shrink-0"
+              data-testid="chip-settlement-assurance"
+            >
+              <ShieldCheck className="w-3.5 h-3.5 text-violet-600 dark:text-violet-400" />
+              <span className="text-violet-700 dark:text-violet-300 font-medium">Backed</span>
+              <span className="font-semibold text-violet-900 dark:text-violet-100 tabular-nums">$42.13B</span>
+            </button>
+
             {/* Search bar — fills remaining space */}
-            <div className="flex-1 max-w-2xl">
+            <div className="flex-1 min-w-0 max-w-xl">
               <div className="hynex-pill w-full" data-testid="header-search-wrap">
-                <Search className="w-4 h-4 text-muted-foreground/70" />
+                <Search className="w-4 h-4 text-muted-foreground/70 shrink-0" />
                 <input
                   type="text"
-                  placeholder="Search wallet, trade, vault status, or documents"
-                  className="bg-transparent outline-none border-0 text-[13px] flex-1 placeholder:text-muted-foreground/60"
+                  placeholder="Search wallet, trade, vault, documents…"
+                  className="bg-transparent outline-none border-0 text-[13px] flex-1 min-w-0 placeholder:text-muted-foreground/60"
                   data-testid="input-header-search"
                 />
               </div>
             </div>
 
-            {/* Right cluster */}
+            {/* Enable 2FA badge — only if MFA disabled */}
+            {!user.mfaEnabled && (
+              <Link href="/security">
+                <button
+                  className="hidden lg:inline-flex items-center gap-1.5 h-9 px-3 rounded-full bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-800/40 hover:bg-rose-100 dark:hover:bg-rose-900/40 transition-colors text-[11.5px] font-medium shrink-0"
+                  data-testid="button-enable-2fa"
+                >
+                  <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                  Enable 2FA
+                </button>
+              </Link>
+            )}
+
+            {/* Right cluster — action icons */}
             <Link href="/transactions">
               <button
-                className="h-9 w-9 rounded-full bg-muted/60 hover:bg-muted border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+                className="h-9 w-9 rounded-full bg-muted/60 hover:bg-muted border border-border/60 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
                 title="Recent activity"
                 data-testid="button-recent"
               >
@@ -185,7 +195,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <ThemeToggle />
 
-            <div className="h-7 w-px bg-border/60 mx-1" />
+            <div className="h-7 w-px bg-border/60 mx-1 shrink-0" />
 
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
