@@ -983,6 +983,47 @@ export default function FinaBridge() {
     return true;
   });
 
+  // KYC gate — Trade Finance requires Approved KYC before any access
+  if (user && user.kycStatus !== 'Approved') {
+    const kycLabel = user.kycStatus === 'Pending' ? 'Pending Review'
+      : user.kycStatus === 'Rejected' ? 'Rejected'
+      : user.kycStatus === 'Under Review' ? 'Under Review'
+      : 'Not Started';
+    const isPending = user.kycStatus === 'Pending' || user.kycStatus === 'Under Review';
+    return (
+      <DashboardLayout>
+        <div className="max-w-2xl mx-auto py-12 px-4" data-testid="finabridge-kyc-gate">
+          <div className="rounded-2xl border border-border/60 bg-card p-8 text-center shadow-sm">
+            <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-violet-100 to-amber-100 dark:from-violet-950/40 dark:to-amber-950/40 flex items-center justify-center mb-5 border border-violet-200/60 dark:border-violet-800/40">
+              <Shield className="w-8 h-8 text-violet-600 dark:text-violet-400" />
+            </div>
+            <h2 className="text-xl font-bold text-foreground mb-2">Complete KYC to Access Trade Finance</h2>
+            <p className="text-sm text-muted-foreground mb-1 max-w-md mx-auto">
+              FinaBridge is a regulated cross-border trade finance product. You must complete corporate KYC verification before accessing trade requests, proposals, and settlement.
+            </p>
+            <div className="inline-flex items-center gap-2 mt-5 px-3 py-1.5 rounded-full text-[12px] font-semibold bg-muted/60 border border-border/50" data-testid="badge-kyc-status">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+              KYC Status: <span className="text-foreground">{kycLabel}</span>
+            </div>
+            <div className="mt-6 flex items-center justify-center gap-3">
+              {!isPending && (
+                <Button onClick={() => setLocation('/kyc')} className="bg-violet-600 hover:bg-violet-700 text-white" data-testid="button-start-kyc">
+                  {user.kycStatus === 'Rejected' ? 'Resubmit KYC' : 'Complete KYC Now'} <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+              <Button variant="outline" onClick={() => setLocation('/dashboard')} data-testid="button-back-dashboard">
+                Back to Dashboard
+              </Button>
+            </div>
+            {isPending && (
+              <p className="text-[11px] text-muted-foreground mt-4">Your KYC is currently {kycLabel.toLowerCase()}. We&apos;ll notify you once approved.</p>
+            )}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       {/* Disclaimer Modal */}
