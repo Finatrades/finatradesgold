@@ -761,7 +761,7 @@ export default function Dashboard() {
 
               return (
                 <div className="hynex-card h-full p-5 flex flex-col" data-testid="card-asset-management">
-                  {/* Header — title + tab switcher */}
+                  {/* Header — title + tab switcher (FinaBridge gated for personal users) */}
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-[15px] font-semibold text-foreground">Asset Management</h3>
                     <div className="flex items-center gap-1 p-0.5 bg-muted/60 rounded-full">
@@ -772,13 +772,25 @@ export default function Dashboard() {
                       >
                         BNSL
                       </button>
-                      <button
-                        onClick={() => setAssetTab('finabridge')}
-                        className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-                        data-testid="tab-finabridge"
-                      >
-                        FinaBridge
-                      </button>
+                      {isBusinessUser ? (
+                        <button
+                          onClick={() => setAssetTab('finabridge')}
+                          className={`px-3 py-1 rounded-full text-[11px] font-semibold transition-all ${!isBnsl ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+                          data-testid="tab-finabridge"
+                        >
+                          FinaBridge
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => window.location.href = '/upgrade'}
+                          className="px-3 py-1 rounded-full text-[11px] font-semibold transition-all text-muted-foreground/60 hover:text-foreground inline-flex items-center gap-1"
+                          title="Upgrade to Business to unlock FinaBridge"
+                          data-testid="tab-finabridge-locked"
+                        >
+                          <Lock className="w-2.5 h-2.5" />
+                          FinaBridge
+                        </button>
+                      )}
                     </div>
                   </div>
 

@@ -1387,6 +1387,11 @@ export default function KYC() {
           <div className="container mx-auto px-6 max-w-4xl">
             
             <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3 bg-blue-50 dark:bg-blue-950/30 border border-blue-200/50 dark:border-blue-800/30" data-testid="badge-account-type-personal">
+                <span className="text-base">👤</span>
+                <span className="text-[11px] font-bold tracking-wide text-blue-700 dark:text-blue-300 uppercase">Personal Account KYC</span>
+                <span className="text-[10px] text-blue-600/70 dark:text-blue-400/70 ml-1">· ~24h review</span>
+              </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 {isResubmitMode ? 'Resubmit Verification' : 'Identity Verification'}
               </h1>
@@ -2247,6 +2252,11 @@ export default function KYC() {
           <div className="container mx-auto px-6 max-w-5xl">
             
             <div className="text-center mb-10">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full mb-3 bg-purple-50 dark:bg-purple-950/30 border border-purple-200/50 dark:border-purple-800/30" data-testid="badge-account-type-business">
+                <span className="text-base">🏢</span>
+                <span className="text-[11px] font-bold tracking-wide text-purple-700 dark:text-purple-300 uppercase">Business Account KYC</span>
+                <span className="text-[10px] text-purple-600/70 dark:text-purple-400/70 ml-1">· 5 business days review</span>
+              </div>
               <h1 className="text-3xl font-bold text-foreground mb-2">
                 {isResubmitMode ? 'Resubmit Corporate Verification' : 'Corporate KYC Verification'}
               </h1>
