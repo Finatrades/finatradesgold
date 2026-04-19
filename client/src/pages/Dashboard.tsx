@@ -545,7 +545,7 @@ export default function Dashboard() {
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Wallet Balance</p>
-                    <p className="text-[10px] text-muted-foreground/70">MPGW · Liquid Gold</p>
+                    <p className="text-[10px] text-muted-foreground/70">Available Gold</p>
                   </div>
                 </div>
                 <button
