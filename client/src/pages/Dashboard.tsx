@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, Landmark, Lock, Gift, Users } from 'lucide-react';
+import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, Landmark, Lock, Gift, Users, ShoppingCart } from 'lucide-react';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { GlareCard } from '@/components/ui/glare-card';
 import { AnimatedList } from '@/components/ui/animated-list';
@@ -468,6 +468,22 @@ export default function Dashboard() {
             data-testid="button-add-fund"
           >
             <Plus className="w-3.5 h-3.5 text-violet-500" /> Add Fund
+          </button>
+
+          <button
+            onClick={() => setActiveModal('buybar')}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-semibold bg-card border border-border hover:border-amber-400/50 hover:bg-amber-50 dark:hover:bg-amber-950/20 hover:shadow-sm transition-all"
+            data-testid="button-buy-gold-bar"
+          >
+            <ShoppingCart className="w-3.5 h-3.5 text-amber-600" /> Buy Gold Bar
+          </button>
+
+          <button
+            onClick={() => setActiveModal('withdraw')}
+            className="shrink-0 inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-[12.5px] font-semibold bg-card border border-border hover:border-rose-400/50 hover:bg-rose-50 dark:hover:bg-rose-950/20 hover:shadow-sm transition-all"
+            data-testid="button-withdraw-gold"
+          >
+            <ArrowUpRight className="w-3.5 h-3.5 text-rose-500" /> Withdraw Gold
           </button>
 
           <button
