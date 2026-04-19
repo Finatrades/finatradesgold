@@ -94,7 +94,7 @@
   /* Purple & White Theme */
   
   /* Background - Soft Light Gradient Base */
-  --background: #F6F7F9;
+  --background: #F4F5F8;
   --foreground: #0A0A0F;
 
   /* Cards — Glassmorphism matte finish (subtle lavender-tinted off-white) */
@@ -697,15 +697,13 @@ input[type="number"] {
 .hynex-card {
   border: 1px solid rgba(228, 224, 240, 0.85);
   border-radius: 20px;
-  backdrop-filter: blur(20px) saturate(140%);
-  -webkit-backdrop-filter: blur(20px) saturate(140%);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.95) inset,
     0 0 0 1px rgba(124, 58, 237, 0.025) inset,
-    0 1px 2px rgba(16, 24, 40, 0.03),
-    0 4px 10px -2px rgba(124, 58, 237, 0.05),
-    0 12px 28px -10px rgba(124, 58, 237, 0.08),
-    0 28px 56px -18px rgba(16, 24, 40, 0.10);
+    0 1px 2px rgba(16, 24, 40, 0.04),
+    0 4px 10px -2px rgba(124, 58, 237, 0.06),
+    0 12px 28px -10px rgba(124, 58, 237, 0.10),
+    0 28px 56px -18px rgba(16, 24, 40, 0.12);
   transition: transform 260ms cubic-bezier(.2,.7,.2,1), box-shadow 260ms ease, border-color 220ms ease;
   position: relative;
 }
@@ -714,10 +712,11 @@ input[type="number"] {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(180deg, rgba(255,255,255,0.65) 0%, rgba(255,255,255,0) 35%);
+  background: linear-gradient(180deg, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0) 30%);
   pointer-events: none;
-  opacity: 0.7;
+  opacity: 0.6;
 }
+.dark .hynex-card { backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); }
 .hynex-card:not([class*="bg-gradient"]):not([class*="bg-linear"]):not([class*="bg-["]):not([class*="bg-zinc"]):not([class*="bg-slate"]):not([class*="bg-neutral"]):not([class*="bg-stone"]):not([class*="bg-white"]):not([class*="bg-black"]):not([class*="bg-purple"]):not([class*="bg-violet"]):not([class*="bg-pink"]):not([class*="bg-blue"]):not([class*="bg-emerald"]):not([class*="bg-green"]):not([class*="bg-amber"]):not([class*="bg-yellow"]):not([class*="bg-red"]):not([class*="bg-orange"]):not([class*="bg-cyan"]):not([class*="bg-teal"]):not([class*="bg-rose"]):not([class*="bg-indigo"]):not([class*="bg-fuchsia"]):not([class*="bg-sky"]):not([class*="bg-lime"]):not([class*="bg-muted"]):not([class*="bg-primary"]):not([class*="bg-secondary"]):not([class*="bg-accent"]):not([class*="bg-destructive"]):not([class*="bg-popover"]) {
   background: var(--card);
 }
@@ -1635,9 +1634,9 @@ input[type="number"] {
 }
 
 /* Light mode — barely-there ambient tint, NO grain (kept crisp & readable) */
-.aurora-layer-1 { opacity: 0.08; }
-.aurora-layer-2 { opacity: 0.06; }
-.aurora-layer-3 { opacity: 0.05; }
+.aurora-layer-1 { opacity: 0; }
+.aurora-layer-2 { opacity: 0; }
+.aurora-layer-3 { opacity: 0; }
 
 /* Dark mode — bolder glow OK because it sits on near-black */
 .dark .aurora-layer-1 { opacity: 0.45; }
