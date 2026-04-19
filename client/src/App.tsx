@@ -396,7 +396,7 @@ function MaintenanceGuard({ children }: { children: React.ReactNode }) {
 function App() {
   return (
     <HelmetProvider>
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="finatrades-theme" disableTransitionOnChange={false}>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem={true} storageKey="finatrades-theme" disableTransitionOnChange={true}>
     <QueryClientProvider client={queryClient}>
         <BrandingProvider>
           <CMSProvider>
