@@ -208,7 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <div className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity pl-1" data-testid="button-user-menu">
                   <div className="hidden sm:flex flex-col items-end leading-tight">
                     <span className="text-[13px] font-semibold text-foreground">{user.firstName} {user.lastName}</span>
-                    <span className="text-[11px] text-violet-500 font-medium">Personal Account</span>
+                    <span className="text-[11px] text-violet-500 font-medium capitalize" data-testid="text-account-type-header">{accountType} Account</span>
                   </div>
                   {/* Header avatar = clean letter initials in solid violet circle (premium look).
                       Profile photo (if any) appears full-size on /profile page, not in chrome. */}
