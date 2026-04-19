@@ -1,7 +1,9 @@
 import { useState, useMemo, useRef, useCallback } from 'react';
 import DashboardLayout from '@/components/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from 'next-themes';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import finatradesCardLogo from '@/assets/finatrades-card-logo.png';
 import { ArrowUpRight, ArrowDownLeft, ArrowLeftRight, Copy, Check, Package, CreditCard, Send, Download, TrendingUp, TrendingDown, Search, ChevronRight, Plus, Eye, EyeOff, Zap, Sparkles, Shield, Vault, Landmark, Lock, Gift, Users, ShoppingCart } from 'lucide-react';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { GlareCard } from '@/components/ui/glare-card';
@@ -109,6 +111,8 @@ function useTilt(intensity = 10) {
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const { resolvedTheme } = useTheme();
+  const isDarkTheme = resolvedTheme === 'dark';
   const dashData = useDashboardData();
   const { totals, goldPrice, finaBridge, isLoading } = dashData;
   const bnslPlans = dashData.bnslPlans || [];
@@ -607,77 +611,109 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* FinaCard credit card visual — Hynex style with GlareCard tilt */}
+            {/* Premium Gold Card visual — adaptive dark/light with FinaTrades branding */}
             <GlareCard
               className="relative h-[310px] rounded-3xl cursor-pointer"
-              glareColor="rgba(255, 215, 0, 0.28)"
+              glareColor={isDarkTheme ? 'rgba(255, 215, 0, 0.28)' : 'rgba(167, 139, 250, 0.32)'}
             >
             <motion.div
               whileHover={{ y: -4, scale: 1.008 }}
               transition={{ type: 'spring', stiffness: 300, damping: 25 }}
               className="relative h-full rounded-3xl overflow-hidden cursor-pointer"
               style={{
-                background: 'linear-gradient(135deg,#1c1c26 0%,#0d0d14 60%,#16161e 100%)',
-                boxShadow: '0 24px 60px -18px rgba(0,0,0,0.75), 0 0 0 1px rgba(255,255,255,0.05) inset, 0 1px 0 rgba(255,255,255,0.06) inset',
+                background: isDarkTheme
+                  ? 'linear-gradient(135deg, #2d1b4e 0%, #1a0f33 50%, #0d0719 100%)'
+                  : 'linear-gradient(135deg, #faf7ff 0%, #ede4ff 55%, #f5edff 100%)',
+                boxShadow: isDarkTheme
+                  ? '0 24px 60px -18px rgba(124,58,237,0.45), 0 0 0 1px rgba(167,139,250,0.10) inset, 0 1px 0 rgba(255,255,255,0.06) inset'
+                  : '0 20px 50px -16px rgba(124,58,237,0.28), 0 0 0 1px rgba(124,58,237,0.12) inset, 0 1px 0 rgba(255,255,255,0.8) inset',
               }}
               data-testid="card-finacard-visual"
               onClick={() => window.location.href = '/finacard'}
             >
-              {/* big gold glow bottom-left */}
-              <div className="absolute -bottom-24 -left-16 w-[340px] h-[340px] rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(255,184,0,0.55) 0%, rgba(212,175,55,0.30) 40%, transparent 70%)', filter: 'blur(12px)' }} />
-              {/* purple accent top-right */}
-              <div className="absolute -top-12 -right-12 w-56 h-56 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(167,139,250,0.30), transparent 70%)', filter: 'blur(10px)' }} />
-              {/* top sparkle line */}
-              <div className="absolute top-12 left-6 w-12 h-0.5 rounded-full" style={{ background: 'linear-gradient(90deg, rgba(255,215,0,0.8), transparent)' }} />
+              {/* gold glow bottom-right */}
+              <div className="absolute -bottom-20 -right-16 w-[280px] h-[280px] rounded-full pointer-events-none" style={{ background: isDarkTheme ? 'radial-gradient(circle, rgba(255,184,0,0.22) 0%, rgba(212,175,55,0.10) 40%, transparent 70%)' : 'radial-gradient(circle, rgba(255,184,0,0.18) 0%, rgba(212,175,55,0.08) 40%, transparent 70%)', filter: 'blur(14px)' }} />
+              {/* purple accent top-left */}
+              <div className="absolute -top-16 -left-16 w-[260px] h-[260px] rounded-full pointer-events-none" style={{ background: isDarkTheme ? 'radial-gradient(circle, rgba(167,139,250,0.30), transparent 70%)' : 'radial-gradient(circle, rgba(124,58,237,0.18), transparent 70%)', filter: 'blur(12px)' }} />
               {/* diagonal sheen */}
-              <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ background: 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.06) 50%, transparent 70%)' }} />
+              <div className="absolute inset-0 pointer-events-none" style={{ background: isDarkTheme ? 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)' : 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)', opacity: isDarkTheme ? 0.5 : 0.4 }} />
 
               <div className="relative z-10 p-6 h-full flex flex-col justify-between">
+                {/* Top row: FinaTrades logo (left) + GOLD CARD pill (right) */}
                 <div className="flex items-start justify-between">
-                  <span className="text-white text-[20px] font-bold italic tracking-wider" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.5)' }}>VISA</span>
-                  <div className="text-right">
-                    <span className="text-white/55 text-[11px] font-mono-ui tracking-[0.18em] block">**** **** **** {finatradesId.slice(-4)}</span>
-                    <span className="text-white/35 text-[10px] font-mono-ui mt-1 inline-block">12/27</span>
-                  </div>
-                </div>
-
-                {/* "6 Cards" badge — golden gradient like Hynex */}
-                <div className="flex">
+                  <img
+                    src={isDarkTheme ? finatradesCardLogo : finatradesLogo}
+                    alt="FinaTrades"
+                    className="h-6 w-auto object-contain"
+                    style={{ filter: isDarkTheme ? 'drop-shadow(0 2px 6px rgba(0,0,0,0.4))' : 'drop-shadow(0 1px 3px rgba(124,58,237,0.18))' }}
+                  />
                   <div
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full"
                     style={{
-                      background: 'linear-gradient(135deg, rgba(255,215,0,0.30) 0%, rgba(255,184,0,0.18) 100%)',
-                      border: '1px solid rgba(255,215,0,0.35)',
-                      boxShadow: '0 4px 12px rgba(255,184,0,0.25)',
+                      background: isDarkTheme ? 'rgba(255,255,255,0.08)' : 'rgba(124,58,237,0.10)',
+                      border: isDarkTheme ? '1px solid rgba(255,255,255,0.10)' : '1px solid rgba(124,58,237,0.20)',
+                      backdropFilter: 'blur(6px)',
                     }}
                   >
-                    <Sparkles className="w-3 h-3 text-amber-200" />
-                    <span className="text-[11px] font-bold text-amber-100 tracking-tight">FinaCard</span>
+                    <CreditCard className={`w-3 h-3 ${isDarkTheme ? 'text-white/80' : 'text-purple-700'}`} />
+                    <span className={`text-[10px] font-bold tracking-[0.12em] ${isDarkTheme ? 'text-white/90' : 'text-purple-800'}`}>GOLD CARD</span>
                   </div>
                 </div>
 
+                {/* Middle: Gold chip + contactless icon */}
+                <div className="flex items-center gap-3 -mt-2">
+                  <div className="w-11 h-9 rounded-md relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #ffd95a 0%, #d4a017 50%, #b8860b 100%)', boxShadow: '0 2px 6px rgba(184,134,11,0.45), 0 0 0 1px rgba(255,215,0,0.3) inset' }}>
+                    <div className="absolute inset-0 flex flex-col justify-center gap-[2px] py-1.5">
+                      <div className="h-[1.5px] bg-yellow-900/40 mx-1.5" />
+                      <div className="h-[1.5px] bg-yellow-900/40 mx-1.5" />
+                      <div className="h-[1.5px] bg-yellow-900/40 mx-1.5" />
+                    </div>
+                  </div>
+                  <Zap className={`w-4 h-4 rotate-90 ${isDarkTheme ? 'text-white/30' : 'text-purple-400/60'}`} />
+                </div>
+
+                {/* Card number dots — 4 groups of 4 */}
+                <div className="flex items-center gap-3 -mt-1" data-testid="text-card-number-dots">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="flex gap-1.5">
+                      {[0, 1, 2, 3].map(j => (
+                        <div key={j} className={`w-1.5 h-1.5 rounded-full ${isDarkTheme ? 'bg-white/45' : 'bg-purple-700/45'}`} />
+                      ))}
+                    </div>
+                  ))}
+                  <span className={`text-[12px] font-mono-ui tracking-[0.18em] ml-1 ${isDarkTheme ? 'text-white/85' : 'text-purple-900/85'}`}>{finatradesId.slice(-4)}</span>
+                </div>
+
+                {/* Bottom row: Card Holder (left) + Balance (right) */}
                 <div className="flex items-end justify-between">
                   <div>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-[11px] text-white/65 font-medium">Wallet Balance</span>
-                      {totals.totalPortfolioUsd > 0 && (
-                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-400/15 text-emerald-400 text-[10px] font-bold">
-                          <TrendingUp className="w-2.5 h-2.5" /> +{((unrealizedGainPct || 0)).toFixed(1)}%
-                        </span>
-                      )}
-                    </div>
-                    <p className="kpi-value text-white text-[36px] leading-none" data-testid="text-total-balance" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.4)' }}>
-                      {showBalance ? `$${formatNumber(totalPortfolioValue)}` : hiddenValue}
+                    <p className={`text-[10px] uppercase tracking-[0.14em] font-semibold mb-0.5 ${isDarkTheme ? 'text-white/45' : 'text-purple-700/55'}`}>Card Holder</p>
+                    <p className={`text-[13px] font-bold tracking-wide uppercase ${isDarkTheme ? 'text-white' : 'text-purple-900'}`} data-testid="text-card-holder" style={isDarkTheme ? { textShadow: '0 1px 4px rgba(0,0,0,0.4)' } : undefined}>
+                      {`${user?.firstName || ''} ${user?.lastName || ''}`.trim() || 'CARD HOLDER'}
                     </p>
                   </div>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setBalanceVisible(!balanceVisible); }}
-                    className="w-8 h-8 rounded-full bg-foreground/5 hover:bg-foreground/10 flex items-center justify-center transition-colors"
-                    aria-label="Toggle balance visibility"
-                    data-testid="button-toggle-balance"
-                  >
-                    {showBalance ? <Eye className="w-3.5 h-3.5 text-white/70" /> : <EyeOff className="w-3.5 h-3.5 text-white/70" />}
-                  </button>
+                  <div className="text-right">
+                    <div className="flex items-center justify-end gap-2 mb-0.5">
+                      <p className={`text-[10px] uppercase tracking-[0.14em] font-semibold ${isDarkTheme ? 'text-white/45' : 'text-purple-700/55'}`}>Balance</p>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setBalanceVisible(!balanceVisible); }}
+                        className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${isDarkTheme ? 'hover:bg-white/10' : 'hover:bg-purple-900/10'}`}
+                        aria-label="Toggle balance visibility"
+                        data-testid="button-toggle-balance"
+                      >
+                        {showBalance
+                          ? <Eye className={`w-3 h-3 ${isDarkTheme ? 'text-white/60' : 'text-purple-700/70'}`} />
+                          : <EyeOff className={`w-3 h-3 ${isDarkTheme ? 'text-white/60' : 'text-purple-700/70'}`} />}
+                      </button>
+                    </div>
+                    <p className={`text-[20px] font-bold tabular-nums leading-none ${isDarkTheme ? 'text-white' : 'text-purple-900'}`} data-testid="text-total-balance" style={isDarkTheme ? { textShadow: '0 2px 8px rgba(0,0,0,0.4)' } : undefined}>
+                      {showBalance ? `${formatNumber(totals.walletGoldGrams || 0, 3)}` : hiddenValue}
+                      <span className={`text-[14px] font-semibold ml-0.5 ${isDarkTheme ? 'text-white/70' : 'text-purple-700/70'}`}>g</span>
+                    </p>
+                    <p className={`text-[11px] tabular-nums mt-0.5 ${isDarkTheme ? 'text-white/55' : 'text-purple-700/65'}`}>
+                      {showBalance ? `≈ $${formatNumber(walletGoldValue)}` : hiddenValue}
+                    </p>
+                  </div>
                 </div>
               </div>
             </motion.div>
