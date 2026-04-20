@@ -186,7 +186,8 @@ doc.fillColor("#C5D5E6").font("Helvetica").fontSize(11)
 doc.fillColor(GOLD).font("Helvetica-Bold").fontSize(10).text("CONFIDENTIAL  •  INTERNAL DRAFT  •  v1.0", 56, 700, { characterSpacing: 2 });
 doc.fillColor("#FFFFFF").font("Helvetica").fontSize(10).text(`Issued: ${new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" })}`, 56, 716);
 doc.fillColor("#9FB3C8").font("Helvetica").fontSize(9).text("Distribution: Blockchain@finatrades.com", 56, 732);
-doc.fillColor("#9FB3C8").font("Helvetica").fontSize(9).text("Authors: Hasim  •  Charan Pratap  •  Farah Naaz  •  Reda Rami", 56, 748);
+doc.fillColor("#9FB3C8").font("Helvetica").fontSize(9).text("Originator: Charan Pratap Singh, CTO", 56, 748);
+doc.fillColor("#9FB3C8").font("Helvetica").fontSize(9).text("Co-authors: Farah Naaz (Legal Advisor)  •  Hasim (Finance Manager)", 56, 762);
 
 // ---------------- TOC ----------------
 doc.addPage();
@@ -479,12 +480,37 @@ P("Charan operates a mid-sized jewellery shop and frequently transacts in physic
 H2("Use case 3 — Farah Naaz, expatriate sending value to family");
 P("Farah works in Geneva and supports her parents in South Asia. Today, she sends fiat through a money-transfer operator at a 4–6% effective cost. With the Certificate, she purchases CCT digital tokens at the LBMA fix plus 0.5%, transfers them on-chain to her parents' wallet for under one cent in network fees, and her parents convert them locally to either cash or paper notes through a Group office or partner. The all-in cost falls below 1% with the added benefit of holding gold rather than depreciating local currency between transmission and use.");
 
-H2("Use case 4 — Reda Rami, merchant accepting CCT for business payments");
-P("Reda runs a hospitality business in the U.A.E. and seeks to insulate part of his cash flow from regional currency volatility. He opts in to accept CCT at the point of sale through a simple verification widget. End-of-day, his accumulated CCT balance is automatically converted to AED through the Metals DMCC trading desk if he wishes, or held as gold against future expenditure. The on-chain auditability and the absence of chargeback risk are immediate operational benefits.");
+H2("Use case 4 — FinaBridge Trade Finance: CCT as on-chain collateral");
+P("FinaBridge is the Group's existing trade-finance product, in which corporate buyers, sellers and financing banks meet in a structured Deal Room to finance international shipments of goods. Each deal involves three categories of document — Letter of Credit (LC), Proof of Loading (POL) and Warehouse Receipt (WR) — every one of which is already screened by the platform's GPT-4o-based AI fraud-detection engine, with a six-point scoring model and automatic routing of low-confidence cases to human review.");
 
-CalloutBox("What these four cases share",
-  "Each customer interacts with the Certificate in the form most natural to them — paper for Hasim and Charan, digital for Farah, hybrid for Reda — without any of them needing to understand the underlying blockchain. The technology is invisible; the trust is explicit.",
+P("Today, when a corporate buyer pledges gold as collateral for a FinaBridge deal, the platform freezes a specified weight of grams in the buyer's vault account. The freeze is internal: it works only inside Finatrades and is not directly visible to the financing bank.");
+
+H3("How the Certificate transforms FinaBridge");
+Bullets([
+  "Instead of an internal gram-freeze, the buyer pledges a specific set of CCT tokens whose Certificate Reference Numbers are recorded in the Deal Room.",
+  "The CCT tokens are transferred to a smart-contract escrow address controlled by a 2-of-3 multi-signature (buyer, seller, FinaBridge agent), creating a publicly-verifiable on-chain lock.",
+  "The financing bank can independently verify the collateral by entering the CRNs at verify.finatrades.com — no Finatrades API call required, no trust assumption needed.",
+  "On settlement, the smart contract releases the CCT to the seller (in event of default) or back to the buyer (on successful trade completion), with the on-chain transition itself acting as the discharge document.",
+  "If physical gold delivery is preferred at settlement, the receiving party simply burns the CCT and Wingold DMCC delivers bullion against the burn event.",
+]);
+
+H3("Concrete example — Hasim arranges a $500,000 cocoa shipment");
+P("Hasim, in his capacity as Finance Manager for a corporate FinaBridge customer, arranges the import of cocoa from Côte d'Ivoire to the U.A.E. valued at USD 500,000. Today, his customer would freeze approximately 3,250 grams of gold in vault as 100% collateral. With the Certificate programme:");
+Bullets([
+  "The customer pledges 3,250 × CCT-1G tokens (CRN range published in the Deal Room).",
+  "The tokens move to the FinaBridge escrow contract; the financing bank verifies the lock in under 30 seconds, using nothing but a public web page.",
+  "The exporter ships; AI fraud-engine scores the LC, POL and WR (current platform behaviour, unchanged).",
+  "On confirmed receipt of cargo, the smart contract auto-releases 3,250 CCT-1G back to the customer; if dispute, the deal goes to the Group's resolution process and the contract releases according to the resolution outcome.",
+  "Total operational saving per deal: estimated 40% reduction in document-handling time and elimination of a separate paper collateral certificate.",
+]);
+
+CalloutBox("Why this matters strategically",
+  "FinaBridge today is a trusted-platform product (the bank trusts Finatrades). With CCT integration, FinaBridge becomes a trust-minimised product (the bank trusts the public blockchain). This is a step-change in the addressable market — particularly for banks in jurisdictions where reliance on a foreign platform's internal ledger is a regulatory friction.",
   GOLD);
+
+CalloutBox("What these four use cases share",
+  "Every customer — retail saver, jeweller, expatriate, or trade-finance counterparty — interacts with the Certificate in the form most natural to them. None of them needs to understand the underlying blockchain. The technology is invisible; the trust is explicit and verifiable.",
+  NAVY);
 
 // ---------------- 9. FINANCIAL ----------------
 doc.addPage();
@@ -734,10 +760,9 @@ doc.strokeColor(GOLD).lineWidth(2).moveTo(56, doc.y).lineTo(56 + 90, doc.y).stro
 doc.moveDown(1.4);
 
 const team = [
-  { name: "Hasim", role: "Lead Author — Product & Customer Experience" },
-  { name: "Charan Pratap", role: "Co-Author — Operations & Physical Custody" },
-  { name: "Farah Naaz", role: "Co-Author — Compliance & Regulatory Strategy" },
-  { name: "Reda Rami", role: "Co-Author — Technology & Smart-Contract Architecture" },
+  { name: "Charan Pratap Singh", role: "Chief Technology Officer  —  Originator of the Certificate concept; Lead Author for technology, smart-contract architecture and product design." },
+  { name: "Farah Naaz", role: "Legal Advisor  —  Co-Author for the legal & regulatory architecture, FinSA / FinIA / AMLA analysis, and counsel-engagement plan." },
+  { name: "Hasim", role: "Finance Manager  —  Co-Author for the financial model, unit economics, capital allocation and treasury structure." },
 ];
 for (const t of team) {
   if (doc.y > 700) doc.addPage();
@@ -817,12 +842,13 @@ stream.on("finish", async () => {
           <li>Operational lifecycle, financial model, risk register and an 18-month implementation roadmap.</li>
         </ul>
         <p>The document concludes with a structured request for in-principle Board approval, the engagement of external Swiss counsel, FINMA pre-consultation via SO-FIT, capital allocation of USD 4.6 million for the first nine months, and the appointment of a Programme Director.</p>
+        <p><strong>Originator of the concept:</strong> Charan Pratap Singh, Chief Technology Officer.</p>
         <p>Authoring team:<br/>
-          <strong>Hasim</strong> — Product & Customer Experience<br/>
-          <strong>Charan Pratap</strong> — Operations & Physical Custody<br/>
-          <strong>Farah Naaz</strong> — Compliance & Regulatory Strategy<br/>
-          <strong>Reda Rami</strong> — Technology & Smart-Contract Architecture
+          <strong>Charan Pratap Singh</strong> — Chief Technology Officer (Lead Author)<br/>
+          <strong>Farah Naaz</strong> — Legal Advisor<br/>
+          <strong>Hasim</strong> — Finance Manager
         </p>
+        <p>Use case <strong>§8.4</strong> demonstrates how the Certificate integrates directly with our existing <strong>FinaBridge</strong> trade-finance product, replacing the internal gram-freeze with a publicly-verifiable on-chain escrow — a step-change for our financing-bank counterparties.</p>
         <p style="margin-top:24px; padding-top:16px; border-top:1px solid #D8DEE5; font-size:11px; color:#6B7280;">
           This document is confidential and intended solely for internal review by the Finatrades Group and its advisers. It does not constitute an offer to sell or a solicitation of an offer to buy any security, certificate or token in any jurisdiction.
         </p>
