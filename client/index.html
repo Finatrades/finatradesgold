@@ -19,6 +19,29 @@
 
     <link rel="icon" type="image/webp" href="/favicon.webp" />
 
+    <!-- Pre-hydration theme script: prevents FOUC (flash of wrong theme) on refresh.
+         Runs synchronously BEFORE React hydrates, so the correct theme class is on <html>
+         from the very first paint. Must match next-themes storageKey + attribute config in App.tsx. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('finatrades-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || 'system';
+          var resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(resolved);
+          root.style.colorScheme = resolved;
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      /* Match body background to theme immediately to prevent any flash */
+      html { background-color: #ffffff; }
+      html.dark { background-color: #0a0a0a; }
+    </style>
+
     <!-- NGenius SDK loaded dynamically only when needed for payments -->
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
