@@ -100,8 +100,12 @@ if (process.env.NODE_ENV === 'production') {
     if (req.path === '/health' || req.path === '/healthz' || req.path === '/api/health') {
       return next();
     }
-    // Check X-Forwarded-Proto header set by Replit's proxy
-    if (req.headers['x-forwarded-proto'] !== 'https') {
+    // Only redirect when the proxy explicitly tells us the request was over http.
+    // Internal platform probes (autoscale healthchecks, deployment promote checks)
+    // bypass the public proxy and so do NOT set x-forwarded-proto. Redirecting
+    // those probes returns a 301 which the platform treats as a failed healthcheck.
+    const proto = req.headers['x-forwarded-proto'];
+    if (typeof proto === 'string' && proto.toLowerCase() === 'http') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
     }
     next();
