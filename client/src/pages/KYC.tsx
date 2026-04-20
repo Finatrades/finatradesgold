@@ -3120,10 +3120,6 @@ function KycTopBar() {
               alt="FinaTrades"
               className="h-7 w-auto object-contain dark:[filter:brightness(0)_invert(1)] shrink-0"
             />
-            <div className="hidden sm:flex flex-col leading-tight min-w-0">
-              <span className="text-[13px] font-bold text-foreground truncate">Finatrades Finances SA</span>
-              <span className="text-[10px] text-muted-foreground tracking-wide uppercase">Switzerland · DMCC Regulated</span>
-            </div>
           </div>
           <div className="flex items-center gap-2">
             <span className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200/60 dark:border-emerald-800/40" data-testid="badge-secure-kyc">
