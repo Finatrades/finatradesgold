@@ -61,7 +61,12 @@
         indicator.appendChild(span);
         indicator.appendChild(document.createTextNode(' \u2014 return to terminal to continue'));
       } else {
-        indicator.innerHTML = '<span class="selected-text">' + selected.length + ' selected</span> — return to terminal to continue';
+        const span2 = document.createElement('span');
+        span2.className = 'selected-text';
+        span2.textContent = selected.length + ' selected';
+        indicator.textContent = '';
+        indicator.appendChild(span2);
+        indicator.appendChild(document.createTextNode(' \u2014 return to terminal to continue'));
       }
     }, 0);
   });
