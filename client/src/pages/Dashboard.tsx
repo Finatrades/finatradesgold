@@ -639,7 +639,7 @@ export default function Dashboard() {
               {/* diagonal sheen */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: isDarkTheme ? 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)' : 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)', opacity: isDarkTheme ? 0.5 : 0.4 }} />
 
-              <div className="relative z-10 p-5 h-full flex flex-col justify-between">
+              <div className="relative z-10 p-5 h-full flex flex-col justify-between bg-[#fffffffa]">
                 {/* Top row: FinaTrades logo (left) + GOLD CARD pill (right) */}
                 <div className="flex items-start justify-between">
                   <img
@@ -1455,15 +1455,12 @@ export default function Dashboard() {
         </div>
 
       </motion.div>
-
       {showOnboarding && (
         <OnboardingTour onComplete={completeOnboarding} />
       )}
-
       {showOnboarding && (
         <OnboardingTour onComplete={completeOnboarding} />
       )}
-
       <DepositModal isOpen={activeModal === 'deposit'} onClose={() => setActiveModal(null)} />
       <BuyGoldBarModal isOpen={activeModal === 'buybar'} onClose={() => setActiveModal(null)} />
       <WithdrawGoldModal isOpen={activeModal === 'withdraw'} onClose={() => setActiveModal(null)} />
@@ -1486,14 +1483,12 @@ export default function Dashboard() {
         transaction={selectedTransaction}
         goldPrice={goldPrice}
       />
-
       {/* Certificate Detail Modal — same as FinaVault */}
       <CertificateDetailModal
         certificate={selectedCert}
         open={!!selectedCert}
         onOpenChange={(open) => { if (!open) setSelectedCert(null); }}
       />
-
       <QuickBnslModal
         open={showBnslModal}
         onOpenChange={setShowBnslModal}
@@ -1512,14 +1507,12 @@ export default function Dashboard() {
         currentGoldPrice={goldPrice}
         isBusinessUser={isBusinessUser}
       />
-
       {/* Deposit Gold Modal — embeds PhysicalGoldDeposit form */}
       <Dialog open={depositGoldModalOpen} onOpenChange={setDepositGoldModalOpen}>
         <DialogContent className="max-w-3xl w-[95vw] max-h-[88vh] overflow-y-auto p-6 rounded-2xl">
           <PhysicalGoldDeposit embedded={true} onSuccess={() => setDepositGoldModalOpen(false)} />
         </DialogContent>
       </Dialog>
-
     </DashboardLayout>
   );
 }
