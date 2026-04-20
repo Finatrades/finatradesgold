@@ -639,7 +639,7 @@ export default function Dashboard() {
               {/* diagonal sheen */}
               <div className="absolute inset-0 pointer-events-none" style={{ background: isDarkTheme ? 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.04) 50%, transparent 70%)' : 'linear-gradient(105deg, transparent 30%, rgba(255,255,255,0.5) 50%, transparent 70%)', opacity: isDarkTheme ? 0.5 : 0.4 }} />
 
-              <div className="relative z-10 p-5 h-full flex flex-col justify-between bg-[#fffffffa]">
+              <div className="relative z-10 p-5 h-full flex flex-col justify-between bg-[#fffafa00]">
                 {/* Top row: FinaTrades logo (left) + GOLD CARD pill (right) */}
                 <div className="flex items-start justify-between">
                   <img
