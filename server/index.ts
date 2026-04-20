@@ -81,9 +81,25 @@ const app = express();
 // Trust proxy for production (required for secure cookies behind Replit's reverse proxy)
 app.set('trust proxy', 1);
 
+// Fast healthcheck endpoints registered FIRST, before any middleware,
+// so platform health probes always get an immediate response even during
+// heavy boot (job queues, redis, schedulers, route registration, etc).
+app.get('/health', (_req, res) => res.status(200).send('ok'));
+app.get('/healthz', (_req, res) => res.status(200).send('ok'));
+app.get('/api/health', (_req, res) => res.status(200).json({
+  status: 'ok',
+  timestamp: new Date().toISOString(),
+  environment: process.env.NODE_ENV || 'development',
+  version: '1.0.0',
+}));
+
 // HTTPS enforcement in production - redirect HTTP to HTTPS
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
+    // Skip redirect for healthcheck paths so platform probes never get a 301
+    if (req.path === '/health' || req.path === '/healthz' || req.path === '/api/health') {
+      return next();
+    }
     // Check X-Forwarded-Proto header set by Replit's proxy
     if (req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
