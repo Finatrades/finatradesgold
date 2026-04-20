@@ -561,11 +561,11 @@ function buildEmailWrapper(body: string, subject: string): string {
       <tr>
         <td style="padding-right: 12px; vertical-align: middle;">
           <div style="width: 44px; height: 44px; background-color: #8A2BE2; border-radius: 10px; text-align: center; line-height: 44px;">
-            <span style="color: #ffffff; font-size: 26px; font-weight: bold; font-family: Arial, sans-serif;">F</span>
+            <span style="color: #ffffff; font-size: 26px; font-weight: bold; font-family: 'Inter', Arial, sans-serif;">F</span>
           </div>
         </td>
         <td style="vertical-align: middle;">
-          <div style="font-size: 26px; font-weight: 800; color: #A78BFA; letter-spacing: 2px; font-family: 'Segoe UI', Arial, sans-serif;">FINATRADES</div>
+          <div style="font-size: 26px; font-weight: 800; color: #A78BFA; letter-spacing: 2px; font-family: 'Inter', Arial, sans-serif;">FINATRADES</div>
         </td>
       </tr>
     </table>
@@ -685,26 +685,26 @@ async function generateCatalogPdf() {
         : '<span style="background: #22C55E; color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; margin-left: 8px;">EMAIL</span>';
 
       emailSections += `
-        <div style="page-break-before: always; padding: 40px 0;">
-          <div style="margin-bottom: 24px; border-bottom: 3px solid ${color}; padding-bottom: 16px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
-              <span style="background: ${color}; color: white; width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px;">${templateIndex}</span>
-              <span style="font-size: 20px; font-weight: 700; color: #1F2937;">${tmpl.name}</span>
+        <div class="tmpl-page">
+          <div style="margin-bottom: 12px; border-bottom: 2px solid ${color}; padding-bottom: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+              <span style="background: ${color}; color: white; width: 26px; height: 26px; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px;">${templateIndex}</span>
+              <span style="font-size: 16px; font-weight: 700; color: #1F2937;">${tmpl.name}</span>
               ${typeBadge}
             </div>
-            <div style="font-size: 12px; color: #6B7280; margin-bottom: 4px;">
+            <div style="font-size: 10px; color: #6B7280; margin-bottom: 4px;">
               <strong>Slug:</strong> ${tmpl.slug} &nbsp;|&nbsp; <strong>Module:</strong> ${label} &nbsp;|&nbsp; <strong>Type:</strong> ${tmpl.type}
             </div>
-            <div style="font-size: 13px; color: #374151; background: #F3F4F6; padding: 8px 12px; border-radius: 6px; margin-top: 8px;">
+            <div style="font-size: 11px; color: #374151; background: #F3F4F6; padding: 5px 10px; border-radius: 5px; margin-top: 5px;">
               <strong>Subject:</strong> ${filledSubject}
             </div>
             ${tmpl.variables && tmpl.variables.length > 0 ? `
-              <div style="font-size: 11px; color: #6B7280; margin-top: 8px;">
-                <strong>Variables:</strong> ${tmpl.variables.map((v: any) => `<code style="background: #EDE9FE; padding: 1px 4px; border-radius: 3px; font-size: 10px;">{{${v.name}}}</code>`).join(', ')}
+              <div style="font-size: 10px; color: #6B7280; margin-top: 5px;">
+                <strong>Variables:</strong> ${tmpl.variables.map((v: any) => `<code style="background: #EDE9FE; padding: 1px 4px; border-radius: 3px; font-size: 9px;">{{${v.name}}}</code>`).join(', ')}
               </div>
             ` : ''}
           </div>
-          <div style="background: #f3f4f6; padding: 30px; border-radius: 12px;">
+          <div class="email-shell" style="background: #f3f4f6; padding: 16px; border-radius: 10px;">
             ${renderedEmail}
           </div>
         </div>`;
@@ -716,11 +716,17 @@ async function generateCatalogPdf() {
 <head>
   <meta charset="UTF-8">
   <title>FinaTrades Email Template Catalog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #1F2937; }
-    @page { margin: 20mm 15mm; size: A4; }
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif; color: #1F2937; -webkit-font-smoothing: antialiased; }
+    @page { margin: 15mm 12mm; size: A4; }
     code { font-family: 'Courier New', monospace; }
+    /* Force every template to a fresh page and try to keep its contents together */
+    .tmpl-page { page-break-before: always; page-break-inside: avoid; break-inside: avoid; padding: 20px 0; }
+    .tmpl-page table, .tmpl-page .email-shell { page-break-inside: avoid; break-inside: avoid; }
   </style>
 </head>
 <body>
