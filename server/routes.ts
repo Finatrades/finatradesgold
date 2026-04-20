@@ -882,8 +882,11 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
   
-  // Seed email templates on startup (must await to ensure templates exist before handling requests)
-  await seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
+  // Seed email templates in the background — this can take 30+ seconds and would
+  // otherwise block startup, causing platform healthcheck/promote probes to time out.
+  // Templates aren't needed for the first few requests; emails are queued and processed
+  // asynchronously, so seeding can finish after the server is already accepting traffic.
+  seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
 
   // RBAC Consistency Check: ensure all active employees have matching user_role_assignments
   try {

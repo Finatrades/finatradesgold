@@ -456,7 +456,7 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Run pending database migrations at startup
+  // Run pending database migrations at startup (must complete before any DB access)
   try {
     await runMigrations();
   } catch (err) {
@@ -465,52 +465,6 @@ app.use((req, res, next) => {
     if (process.env.NODE_ENV === 'production') {
       process.exit(1);
     }
-  }
-
-  // Initialize Redis connection
-  try {
-    const redis = getRedisClient();
-    if (redis) {
-      await redis.ping();
-      console.log('[Redis] Connected and ready');
-    } else {
-      console.log('[Redis] Using in-memory fallback');
-    }
-  } catch (error) {
-    console.warn('[Redis] Connection failed, using in-memory fallback:', error);
-  }
-
-  // Seed default platform configuration
-  try {
-    await storage.seedDefaultPlatformConfig();
-  } catch (error) {
-    console.error('[Platform Config] Failed to seed defaults:', error);
-  }
-  
-  // Seed default chat agents
-  try {
-    await storage.seedDefaultChatAgents();
-    console.log('[Chat Agents] Default agents seeded successfully');
-  } catch (error) {
-    console.error('[Chat Agents] Failed to seed defaults:', error);
-  }
-
-  // Seed knowledge base categories
-  try {
-    await storage.seedDefaultKnowledgeBase();
-  } catch (error) {
-    console.error('[Knowledge Base] Failed to seed defaults:', error);
-  }
-  
-  // Initialize enterprise job queue system
-  try {
-    const { initializeJobQueues } = await import('./job-queue');
-    initializeJobQueues();
-    const { startEmailQueueProcessor } = await import('./email');
-    startEmailQueueProcessor();
-    console.log('[Enterprise] Background job processing enabled');
-  } catch (error) {
-    console.warn('[Enterprise] Job queue initialization skipped:', error);
   }
 
   // Ensure FINABRIDGE_AI_CALLBACK_SECRET is set — auto-generate if not configured
@@ -523,21 +477,11 @@ app.use((req, res, next) => {
 
   // Setup Socket.IO for real-time chat
   setupSocketIO(httpServer);
-  
-  await registerRoutes(httpServer, app);
-  
-  registerR2ProxyRoutes(app);
 
-  // Initialize AI document verification worker AFTER routes are registered.
-  // The worker makes HTTP callback POSTs to /api/admin/finabridge/requests/:id/ai-callback
-  // which must exist before any queued jobs begin executing.
-  try {
-    const { initializeVerifyDocumentWorker } = await import('./jobs/verify-document.job');
-    initializeVerifyDocumentWorker();
-    console.log('[Enterprise] AI document verification worker enabled');
-  } catch (error) {
-    console.warn('[Enterprise] AI document verification worker skipped:', error);
-  }
+  // Register all HTTP routes (this also kicks off background email-template seeding internally)
+  await registerRoutes(httpServer, app);
+
+  registerR2ProxyRoutes(app);
 
   app.use((err: any, req: Request, res: Response, _next: NextFunction) => {
     if (err.type === 'entity.too.large') {
@@ -603,6 +547,73 @@ app.use((req, res, next) => {
     },
     () => {
       log(`serving on port ${port}`);
+      // Kick off all heavy background initialization AFTER the server is listening.
+      // This guarantees the platform's promote/healthcheck probe always finds an open
+      // port and a fast-responding /health endpoint, even though full warm-up may
+      // take another 30-60 seconds in the background.
+      void initializeBackgroundServices();
     },
   );
 })();
+
+/**
+ * Background initialization: Redis, seed data, job queues, schedulers, and the
+ * AI document verification worker. Runs after the HTTP server is already listening
+ * so it cannot delay the platform's healthcheck/promote probe.
+ */
+async function initializeBackgroundServices(): Promise<void> {
+  // Initialize Redis connection
+  try {
+    const redis = getRedisClient();
+    if (redis) {
+      await redis.ping();
+      console.log('[Redis] Connected and ready');
+    } else {
+      console.log('[Redis] Using in-memory fallback');
+    }
+  } catch (error) {
+    console.warn('[Redis] Connection failed, using in-memory fallback:', error);
+  }
+
+  // Seed default platform configuration
+  try {
+    await storage.seedDefaultPlatformConfig();
+  } catch (error) {
+    console.error('[Platform Config] Failed to seed defaults:', error);
+  }
+
+  // Seed default chat agents
+  try {
+    await storage.seedDefaultChatAgents();
+    console.log('[Chat Agents] Default agents seeded successfully');
+  } catch (error) {
+    console.error('[Chat Agents] Failed to seed defaults:', error);
+  }
+
+  // Seed knowledge base categories
+  try {
+    await storage.seedDefaultKnowledgeBase();
+  } catch (error) {
+    console.error('[Knowledge Base] Failed to seed defaults:', error);
+  }
+
+  // Initialize enterprise job queue system
+  try {
+    const { initializeJobQueues } = await import('./job-queue');
+    initializeJobQueues();
+    const { startEmailQueueProcessor } = await import('./email');
+    startEmailQueueProcessor();
+    console.log('[Enterprise] Background job processing enabled');
+  } catch (error) {
+    console.warn('[Enterprise] Job queue initialization skipped:', error);
+  }
+
+  // Initialize AI document verification worker
+  try {
+    const { initializeVerifyDocumentWorker } = await import('./jobs/verify-document.job');
+    initializeVerifyDocumentWorker();
+    console.log('[Enterprise] AI document verification worker enabled');
+  } catch (error) {
+    console.warn('[Enterprise] AI document verification worker skipped:', error);
+  }
+}
