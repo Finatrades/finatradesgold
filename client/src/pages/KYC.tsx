@@ -2859,11 +2859,34 @@ export default function KYC() {
                         <Button 
                           onClick={() => {
                             const errors: { headOfficeAddress?: string; emailAddress?: string } = {};
-                            if (!headOfficeAddress.trim()) errors.headOfficeAddress = 'Head office address is required';
-                            if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) errors.emailAddress = 'Invalid email format';
+                            const issues: string[] = [];
+                            if (!headOfficeAddress.trim()) {
+                              errors.headOfficeAddress = 'Head office address is required';
+                              issues.push('Head Office Address (required)');
+                            }
+                            if (emailAddress && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailAddress)) {
+                              errors.emailAddress = 'Invalid email format';
+                              issues.push('Email Address (invalid format)');
+                            }
                             if (Object.keys(errors).length > 0) {
                               setCorpStep4Errors(errors);
-                              toast.error("Please fix the highlighted fields");
+                              toast.error(
+                                issues.length === 1
+                                  ? `Please fix: ${issues[0]}`
+                                  : `Please fix ${issues.length} fields`,
+                                {
+                                  description: issues.join(' • '),
+                                  duration: 6000,
+                                }
+                              );
+                              // Scroll to first error field
+                              setTimeout(() => {
+                                const firstErrorEl = document.querySelector('[data-testid="input-head-office-address"], [data-testid="input-email-address"]') as HTMLElement;
+                                if (firstErrorEl) {
+                                  firstErrorEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  firstErrorEl.focus();
+                                }
+                              }, 100);
                               return;
                             }
                             setCorporateStep(5);
