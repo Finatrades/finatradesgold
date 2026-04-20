@@ -2747,7 +2747,40 @@ export default function KYC() {
                       <CardFooter className="flex justify-between">
                         <Button variant="outline" onClick={() => setCorporateStep(2)}>Back</Button>
                         <Button 
-                          onClick={() => setCorporateStep(4)}
+                          onClick={() => {
+                            // Two-layer check: (1) required core docs, (2) PEP docs if applicable
+                            const requiredDocs: { key: keyof typeof corpDocs; label: string; testId: string }[] = [
+                              { key: 'certificateOfIncorporation', label: 'Certificate of Incorporation', testId: 'upload-cert-incorporation' },
+                              { key: 'memorandumArticles', label: 'Memorandum & Articles of Association', testId: 'upload-memorandum' },
+                              { key: 'shareholderList', label: 'List of Shareholders', testId: 'upload-shareholder-list' },
+                              { key: 'uboPassports', label: 'UBO Passports', testId: 'upload-ubo-passports' },
+                            ];
+                            const missing = requiredDocs.filter(d => !corpDocs[d.key]);
+                            const pepMissing = hasPepOwners && !corpDocs.pepSelfDeclaration;
+
+                            if (missing.length > 0 || pepMissing) {
+                              const allMissing = [
+                                ...missing.map(m => m.label),
+                                ...(pepMissing ? ['PEP Self-Declaration Form'] : []),
+                              ];
+                              toast.error(
+                                allMissing.length === 1
+                                  ? `Missing required document: ${allMissing[0]}`
+                                  : `${allMissing.length} required documents missing`,
+                                {
+                                  description: allMissing.join(' • '),
+                                  duration: 7000,
+                                }
+                              );
+                              setTimeout(() => {
+                                const firstMissingTestId = missing[0]?.testId || 'upload-pep-declaration';
+                                const el = document.querySelector(`[data-testid="${firstMissingTestId}"]`) as HTMLElement;
+                                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                              }, 100);
+                              return;
+                            }
+                            setCorporateStep(4);
+                          }}
                           className="bg-primary text-white hover:bg-primary/90"
                           data-testid="button-continue-step-4"
                         >
