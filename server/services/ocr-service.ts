@@ -442,8 +442,6 @@ Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, rec
     ? 'meta-llama/llama-4-scout-17b-16e-instruct'
     : 'gpt-4o';
 
-  console.log(`[KYC OCR] Vision provider: ${groqClient ? 'groq' : 'openai'}`);
-
   let response;
   if ((mimeType === 'application/pdf' || documentUrl.toLowerCase().endsWith('.pdf')) && buffer) {
     const parsed = await pdfParse(buffer);
