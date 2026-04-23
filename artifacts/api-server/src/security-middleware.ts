@@ -10,8 +10,23 @@ const CSRF_TOKEN_LENGTH = 32;
 const CSRF_HEADER = 'x-csrf-token';
 const CSRF_COOKIE = 'csrf_token';
 
-// Routes exempt from CSRF protection (webhooks only - external services need to POST without our tokens)
+// Routes exempt from CSRF protection
 const CSRF_EXEMPT_ROUTES = [
+  // Auth endpoints - native mobile apps (no browser context) need these without CSRF token
+  '/api/auth/login',
+  '/api/auth/logout',
+  '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
+  '/api/auth/send-verification',
+  '/api/auth/verify-email',
+  '/api/auth/me',
+  '/api/admin/login',
+  '/api/mfa/verify',
+  // Public / low-risk endpoints
+  '/api/contact',
+  '/api/csrf-token',
+  // Webhooks - external services need to POST without our tokens
   '/api/webhooks/',
   '/api/binance-pay/webhook',
   '/api/ngenius/webhook',

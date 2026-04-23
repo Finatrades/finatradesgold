@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
+import { invalidateCsrfToken } from "@/hooks/useApi";
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 const API_BASE = domain ? `https://${domain}` : "";
@@ -27,6 +28,20 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+async function getCsrfToken(): Promise<string> {
+  try {
+    const res = await fetch(`${API_BASE}/api/csrf-token`, {
+      credentials: "include",
+      headers: { "X-Requested-With": "XMLHttpRequest" },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      return (data.csrfToken as string) || "";
+    }
+  } catch {}
+  return "";
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -53,11 +68,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function login(email: string, password: string) {
+    const csrfToken = await getCsrfToken();
+
     const response = await fetch(`${API_BASE}/api/auth/login`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Requested-With": "XMLHttpRequest",
+        ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
       },
       body: JSON.stringify({ email, password }),
       credentials: "include",
@@ -65,7 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (!response.ok) {
       const data = await response.json().catch(() => ({}));
-      throw new Error(data.message || "Login failed");
+      throw new Error((data as any).message || "Login failed");
     }
 
     const data = await response.json();
@@ -83,12 +101,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   async function logout() {
     try {
+      const csrfToken = await getCsrfToken();
       await fetch(`${API_BASE}/api/auth/logout`, {
         method: "POST",
-        headers: { "X-Requested-With": "XMLHttpRequest" },
+        headers: {
+          "X-Requested-With": "XMLHttpRequest",
+          ...(csrfToken ? { "x-csrf-token": csrfToken } : {}),
+        },
         credentials: "include",
       });
     } catch {}
+
+    invalidateCsrfToken();
 
     await Promise.all([
       AsyncStorage.removeItem("@finatrades_token"),
