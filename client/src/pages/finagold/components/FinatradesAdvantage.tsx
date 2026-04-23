@@ -89,7 +89,7 @@ export default function FinatradesAdvantage() {
           <span className="inline-block px-4 py-2 rounded-full bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-[0.2em] mb-6">
             WHY CHOOSE US
           </span>
-          <h2 className="text-3xl lg:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-3xl lg:text-5xl font-bold text-slate-900 mb-4">
             The Finatrades Advantage
           </h2>
           <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full" />
@@ -109,10 +109,10 @@ export default function FinatradesAdvantage() {
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
                   <feature.icon className="w-7 h-7 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
                 </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
+                <h3 className="text-lg font-semibold text-slate-900 mb-2">
                   {feature.title}
                 </h3>
-                <p className="text-muted-foreground text-sm">
+                <p className="text-slate-700 text-sm">
                   {feature.description}
                 </p>
               </div>

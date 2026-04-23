@@ -143,7 +143,7 @@ function StepNode({
         }`}
       >
         <step.icon className={`w-6 h-6 md:w-8 md:h-8 transition-colors duration-500 ${
-          isActive || isCompleted ? 'text-[#8A2BE2]' : 'text-muted-foreground/70'
+          isActive || isCompleted ? 'text-[#8A2BE2]' : 'text-slate-600'
         }`} />
         
         <motion.div
@@ -172,7 +172,7 @@ function StepNode({
       >
         <div className="flex items-center gap-2 md:gap-3 mb-2">
           <span className={`text-xs md:text-sm font-bold transition-colors duration-500 ${
-            isActive ? 'text-[#8A2BE2]' : 'text-muted-foreground'
+            isActive ? 'text-[#8A2BE2]' : 'text-slate-700'
           }`}>
             Step {step.number}
           </span>
@@ -187,12 +187,12 @@ function StepNode({
           )}
         </div>
         <h3 className={`text-base md:text-lg font-semibold mb-1 md:mb-2 transition-colors duration-500 ${
-          isActive || isCompleted ? 'text-[#0D0D0D]' : 'text-muted-foreground'
+          isActive || isCompleted ? 'text-[#0D0D0D]' : 'text-slate-700'
         }`}>
           {step.title}
         </h3>
         <p className={`text-xs md:text-sm leading-relaxed transition-colors duration-500 ${
-          isActive ? 'text-muted-foreground' : 'text-muted-foreground'
+          isActive ? 'text-slate-700' : 'text-slate-700'
         }`}>
           {step.description}
         </p>
@@ -259,7 +259,7 @@ export default function HowItWorks() {
           >
             {c.title}
           </motion.h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-slate-700 text-lg max-w-2xl mx-auto">
             {c.subtitle}
           </p>
         </motion.div>

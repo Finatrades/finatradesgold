@@ -130,7 +130,7 @@ export default function ValueProps() {
                 <h3 className="text-lg font-semibold text-[#0D0D0D] mb-3 group-hover:text-[#8A2BE2] transition-colors">
                   {card.title}
                 </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
+                <p className="text-slate-700 text-sm leading-relaxed">
                   {card.description}
                 </p>
               </div>
