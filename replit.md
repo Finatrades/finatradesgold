@@ -46,3 +46,16 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - Session: PostgreSQL-backed (connect-pg-simple)
 - Integrations: Redis (Upstash), BullMQ job queues, Cloudflare R2 storage, Brevo email, Wingold partner webhooks
 - RBAC, document verification (AI), PDF generation, MRZ scanning
+
+### Finatrades Mobile App (`artifacts/finatrades-mobile/`)
+- **Kind**: mobile (Expo / React Native)
+- **Preview path**: `/mobile/`
+- **Port**: 26026 (assigned dynamically, reads `$PORT`)
+- React Native companion app for the Finatrades platform
+- Screens: Login, Dashboard (gold balance), FinaVault (holdings), Certificates, Profile
+- Bottom tab navigation with NativeTabs (iOS 26 liquid glass) + classic BlurView fallback
+- Brand: purple `#8A2BE2`, gold `#D4AF37`, dark bg `#07070A` — synced from web app CSS
+- Connects to existing API server at `/api/*` endpoints via `EXPO_PUBLIC_API_BASE` env
+- Uses `@react-native-async-storage/async-storage` for auth session persistence
+- React Query for all server state fetching
+- Fonts: Inter (400/500/600/700) via `@expo-google-fonts/inter`

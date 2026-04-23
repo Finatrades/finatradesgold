@@ -1,0 +1,8 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "hCWy_pf5yKDaQJitnq41S"
+uri = "file://artifacts/finatrades-mobile/assets/images/icon.png"
+type = "image"
+title = "finatrades app icon"
