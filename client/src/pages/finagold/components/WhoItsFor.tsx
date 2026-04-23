@@ -70,7 +70,7 @@ export default function WhoItsFor() {
                   <div className="w-6 h-6 rounded-full bg-[#8A2BE2]/10 flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#8A2BE2]/20 transition-colors">
                     <CheckCircle2 className="w-4 h-4 text-[#8A2BE2]" />
                   </div>
-                  <p className="text-slate-800 leading-relaxed">{item}</p>
+                  <p className="text-slate-800 dark:text-slate-200 leading-relaxed">{item}</p>
                 </motion.div>
               ))}
             </motion.div>
@@ -93,17 +93,17 @@ export default function WhoItsFor() {
                   </div>
                   <div>
                     <p className="text-[#0D0D0D] font-semibold text-lg">{isPersonal ? 'Personal Gold Account' : 'Corporate Reserve Account'}</p>
-                    <p className="text-slate-700 text-sm">Swiss-regulated infrastructure</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-sm">Swiss-regulated infrastructure</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 pt-4">
                   <div className="p-4 rounded-xl bg-[#8A2BE2]/5 border border-[#8A2BE2]/10">
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Gold Held</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Gold Held</p>
                     <p className="text-[#0D0D0D] font-bold text-xl">{isPersonal ? '142.85g' : '2,450 kg'}</p>
                   </div>
                   <div className="p-4 rounded-xl bg-[#8A2BE2]/5 border border-[#8A2BE2]/10">
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Est. Value</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Est. Value</p>
                     <p className="text-[#8A2BE2] font-bold text-xl">{isPersonal ? '$10,247' : '$156.2M'}</p>
                   </div>
                 </div>
@@ -111,7 +111,7 @@ export default function WhoItsFor() {
                 <div className="flex items-center justify-between pt-4 border-t border-[#8A2BE2]/10">
                   <div className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse" />
-                    <span className="text-slate-700 text-sm">Vault Verified</span>
+                    <span className="text-slate-700 dark:text-slate-300 text-sm">Vault Verified</span>
                   </div>
                   <span className="text-[#8A2BE2] text-sm font-medium">View Certificates →</span>
                 </div>

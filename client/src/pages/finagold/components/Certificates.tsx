@@ -51,7 +51,7 @@ export default function Certificates() {
               key={`desc-${mode}`}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="text-slate-700 leading-relaxed mb-8"
+              className="text-slate-700 dark:text-slate-300 leading-relaxed mb-8"
             >
               {c.description}
             </motion.p>
@@ -94,7 +94,7 @@ export default function Certificates() {
                 <div className="flex items-center justify-between pb-4 border-b border-[#8A2BE2]/10">
                   <div>
                     <p className="text-[#8A2BE2] font-bold text-sm tracking-wider">VAULT CERTIFICATE</p>
-                    <p className="text-slate-700 text-xs mt-1">{isPersonal ? 'Personal Holding' : 'Corporate Reserve'}</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs mt-1">{isPersonal ? 'Personal Holding' : 'Corporate Reserve'}</p>
                   </div>
                   <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-50 dark:bg-green-950/200/10 border border-green-500/20">
                     <div className="w-2 h-2 rounded-full bg-green-50 dark:bg-green-950/200" />
@@ -104,19 +104,19 @@ export default function Certificates() {
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Weight</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Weight</p>
                     <p className="text-[#0D0D0D] font-semibold">{isPersonal ? '142.85 grams' : '1,000 kg'}</p>
                   </div>
                   <div>
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Purity</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Purity</p>
                     <p className="text-[#0D0D0D] font-semibold">999.9 Fine Gold</p>
                   </div>
                   <div>
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Refinery</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Refinery</p>
                     <p className="text-[#0D0D0D] font-semibold">PAMP Suisse</p>
                   </div>
                   <div>
-                    <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Serial</p>
+                    <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Serial</p>
                     <p className="text-[#0D0D0D] font-semibold">FT-2024-{isPersonal ? '00142' : '98765'}</p>
                   </div>
                 </div>
@@ -124,7 +124,7 @@ export default function Certificates() {
                 <div className="pt-4 border-t border-[#8A2BE2]/10">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-slate-700 text-xs uppercase tracking-wider mb-1">Vault Location</p>
+                      <p className="text-slate-700 dark:text-slate-300 text-xs uppercase tracking-wider mb-1">Vault Location</p>
                       <p className="text-[#0D0D0D] font-semibold">Zurich, Switzerland</p>
                     </div>
                     <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#F97316] text-white text-sm font-medium hover:bg-[#EA580C] transition-colors">

@@ -78,50 +78,50 @@ export default function Hero() {
                     <Shield className="w-5 h-5 text-red-600 dark:text-red-400" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">Trusted & Regulated</h3>
-                    <p className="text-xs text-slate-700">Complete Regulatory and Legal Information</p>
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Trusted & Regulated</h3>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">Complete Regulatory and Legal Information</p>
                   </div>
                 </div>
                 <button
                   onClick={() => setShowRegulatory(false)}
                   className="w-8 h-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted transition-colors"
                 >
-                  <X className="w-4 h-4 text-slate-700" />
+                  <X className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                 </button>
               </div>
               <div className="p-6 space-y-6">
                 {/* Company Information */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-slate-900 text-base">About Finatrades Finance SA</h4>
+                  <h4 className="font-semibold text-slate-900 dark:text-white text-base">About Finatrades Finance SA</h4>
                   <div className="bg-muted/40 rounded-lg p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <p className="text-slate-700 text-xs">Full Legal Name</p>
-                        <p className="text-slate-900 font-medium">Finatrades Finance SA</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Full Legal Name</p>
+                        <p className="text-slate-900 dark:text-white font-medium">Finatrades Finance SA</p>
                       </div>
                       <div>
-                        <p className="text-slate-700 text-xs">Website</p>
-                        <p className="text-slate-900 font-medium">finatrades.com</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Website</p>
+                        <p className="text-slate-900 dark:text-white font-medium">finatrades.com</p>
                       </div>
                       <div className="col-span-2">
-                        <p className="text-slate-700 text-xs">Registered Office</p>
-                        <p className="text-slate-900 font-medium">Rue Robert-CÉARD 6, 1204, GENEVA</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Registered Office</p>
+                        <p className="text-slate-900 dark:text-white font-medium">Rue Robert-CÉARD 6, 1204, GENEVA</p>
                       </div>
                       <div>
-                        <p className="text-slate-700 text-xs">Canton</p>
-                        <p className="text-slate-900 font-medium">GENEVA</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Canton</p>
+                        <p className="text-slate-900 dark:text-white font-medium">GENEVA</p>
                       </div>
                       <div>
-                        <p className="text-slate-700 text-xs">Company Number (UID)</p>
-                        <p className="text-slate-900 font-medium">CHE-422.960.092</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Company Number (UID)</p>
+                        <p className="text-slate-900 dark:text-white font-medium">CHE-422.960.092</p>
                       </div>
                       <div>
-                        <p className="text-slate-700 text-xs">Date of Formation</p>
-                        <p className="text-slate-900 font-medium">29.01.2019</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Date of Formation</p>
+                        <p className="text-slate-900 dark:text-white font-medium">29.01.2019</p>
                       </div>
                       <div>
-                        <p className="text-slate-700 text-xs">Type of Corporation</p>
-                        <p className="text-slate-900 font-medium">Société Anonyme LLC</p>
+                        <p className="text-slate-700 dark:text-slate-300 text-xs">Type of Corporation</p>
+                        <p className="text-slate-900 dark:text-white font-medium">Société Anonyme LLC</p>
                       </div>
                     </div>
                   </div>
@@ -131,14 +131,14 @@ export default function Hero() {
                 <div className="space-y-4">
                   <div className="flex items-center gap-2">
                     <div className="px-2 py-1 bg-red-100 dark:bg-red-900/30 rounded text-red-700 dark:text-red-300 text-xs font-semibold">FINMA</div>
-                    <h4 className="font-semibold text-slate-900 text-base">License Confirmation</h4>
+                    <h4 className="font-semibold text-slate-900 dark:text-white text-base">License Confirmation</h4>
                   </div>
                   <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 rounded-lg p-4">
                     <p className="text-xs text-purple-800 dark:text-purple-200 font-medium mb-2">SO-FIT Member No.: 1186</p>
-                    <p className="text-sm text-slate-800 leading-relaxed">
+                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed">
                       Finatrades Finance SA ("Finatrades") is an authorized member of d'Organisme de Surveillance pour Intermédiaires Financiers & Trustees (SO-FIT), and as such is subject to supervision by SO-FIT, a supervisory body officially recognized by the Swiss Financial Market Supervisory Authority (FINMA).
                     </p>
-                    <p className="text-sm text-slate-800 leading-relaxed mt-3">
+                    <p className="text-sm text-slate-800 dark:text-slate-200 leading-relaxed mt-3">
                       Finatrades' activities, including provision of its digital barter and payment platform, are carried out in compliance with the Swiss Federal Anti-Money Laundering Act (AMLA) and other applicable Swiss and international financial regulations.
                     </p>
                   </div>
@@ -146,8 +146,8 @@ export default function Hero() {
 
                 {/* AML Compliance */}
                 <div className="space-y-4">
-                  <h4 className="font-semibold text-slate-900 text-base">Anti-Money Laundering (AML)</h4>
-                  <p className="text-sm text-slate-700 leading-relaxed">
+                  <h4 className="font-semibold text-slate-900 dark:text-white text-base">Anti-Money Laundering (AML)</h4>
+                  <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                     Finatrades Finance SA is subject to the Swiss Federal Anti-Money Laundering Act (AMLA) and operates in full alignment with the Financial Action Task Force (FATF) Recommendations.
                   </p>
                   <div className="space-y-3">
@@ -162,8 +162,8 @@ export default function Hero() {
                       <div key={i} className="flex items-start gap-3">
                         <CheckCircle className="w-4 h-4 text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                         <div>
-                          <p className="text-sm font-medium text-slate-900">{item.title}</p>
-                          <p className="text-xs text-slate-700">{item.desc}</p>
+                          <p className="text-sm font-medium text-slate-900 dark:text-white">{item.title}</p>
+                          <p className="text-xs text-slate-700 dark:text-slate-300">{item.desc}</p>
                         </div>
                       </div>
                     ))}
@@ -172,8 +172,8 @@ export default function Hero() {
 
                 {/* Contact */}
                 <div className="bg-muted/40 rounded-lg p-4 mt-4">
-                  <p className="text-sm text-slate-800 font-medium mb-1">Compliance Contact</p>
-                  <p className="text-xs text-slate-700">For compliance-related inquiries: support@finatrades.com</p>
+                  <p className="text-sm text-slate-800 dark:text-slate-200 font-medium mb-1">Compliance Contact</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300">For compliance-related inquiries: support@finatrades.com</p>
                 </div>
               </div>
             </motion.div>
@@ -228,7 +228,7 @@ export default function Hero() {
                   className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                     isPersonal 
                       ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-muted'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-muted'
                   }`}
                   data-testid="toggle-personal"
                 >
@@ -239,7 +239,7 @@ export default function Hero() {
                   className={`px-4 py-2 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                     !isPersonal 
                       ? 'bg-gradient-to-r from-[#8A2BE2] to-[#A342FF] text-white shadow-md' 
-                      : 'text-slate-700 hover:text-slate-900 hover:bg-muted'
+                      : 'text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:text-white hover:bg-muted'
                   }`}
                   data-testid="toggle-business"
                 >
@@ -323,7 +323,7 @@ export default function Hero() {
                         <div className="w-1.5 h-1.5 rounded-full bg-[#A342FF]" />
                         <span className="text-white font-semibold text-xs tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
                       </div>
-                      <p className="text-slate-600 text-[8px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+                      <p className="text-slate-600 dark:text-slate-400 text-[8px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
                     </div>
                   </div>
                   
@@ -337,11 +337,11 @@ export default function Hero() {
                   {/* Bottom row: Card holder + Valid thru */}
                   <div className="flex justify-between items-end relative z-10">
                     <div>
-                      <p className="text-slate-700 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
+                      <p className="text-slate-700 dark:text-slate-300 text-[8px] uppercase tracking-wider mb-0.5">Card Holder</p>
                       <p className="text-white text-xs font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
                     </div>
                     <div>
-                      <p className="text-slate-700 text-[8px] uppercase tracking-wider mb-0.5">Valid Thru</p>
+                      <p className="text-slate-700 dark:text-slate-300 text-[8px] uppercase tracking-wider mb-0.5">Valid Thru</p>
                       <p className="text-white text-xs font-semibold">12/28</p>
                     </div>
                   </div>
@@ -418,7 +418,7 @@ export default function Hero() {
                           <div className="w-2 h-2 rounded-full bg-[#A342FF]" />
                           <span className="text-white font-semibold text-sm tracking-wide">{isPersonal ? 'PERSONAL GOLD' : 'ENTERPRISE GOLD'}</span>
                         </div>
-                        <p className="text-slate-600 text-[10px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
+                        <p className="text-slate-600 dark:text-slate-400 text-[10px] tracking-wider mt-0.5">GOLD-BACKED DIGITAL</p>
                       </div>
                     </div>
                     
@@ -433,11 +433,11 @@ export default function Hero() {
                     <div className="flex justify-between items-end relative z-10">
                       <div className="flex gap-8">
                         <div>
-                          <p className="text-slate-700 text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
+                          <p className="text-slate-700 dark:text-slate-300 text-[10px] uppercase tracking-wider mb-1">Card Holder</p>
                           <p className="text-white text-sm font-semibold">{isPersonal ? 'FINAGOLD USER' : 'FINATRADES CORPORATE'}</p>
                         </div>
                         <div>
-                          <p className="text-slate-700 text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
+                          <p className="text-slate-700 dark:text-slate-300 text-[10px] uppercase tracking-wider mb-1">Valid Thru</p>
                           <p className="text-white text-sm font-semibold">12/28</p>
                         </div>
                       </div>

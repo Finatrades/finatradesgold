@@ -50,14 +50,14 @@ export default function MobileBottomNav() {
               <motion.div
                 whileTap={{ scale: 0.95 }}
                 className={`flex flex-col items-center justify-center min-w-[56px] py-1.5 rounded-lg transition-colors ${
-                  active ? 'text-amber-400' : 'text-slate-600'
+                  active ? 'text-amber-400' : 'text-slate-600 dark:text-slate-400'
                 }`}
                 data-testid={`nav-bottom-${item.label.toLowerCase().replace(/\s+/g, '-')}`}
               >
                 <div className={`p-1 rounded-lg transition-all ${active ? 'bg-amber-400/10' : ''}`}>
                   {item.icon}
                 </div>
-                <span className={`text-[10px] mt-0.5 font-medium ${active ? 'text-amber-400' : 'text-slate-600'}`}>
+                <span className={`text-[10px] mt-0.5 font-medium ${active ? 'text-amber-400' : 'text-slate-600 dark:text-slate-400'}`}>
                   {item.label}
                 </span>
               </motion.div>

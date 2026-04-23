@@ -64,14 +64,14 @@ export default function CookieConsent() {
                     <Cookie className="w-6 h-6 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-slate-900 text-lg">You control your data</h3>
-                    <p className="text-sm text-slate-700 mt-1">
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">You control your data</h3>
+                    <p className="text-sm text-slate-700 dark:text-slate-300 mt-1">
                       We use cookies to enhance your experience and analyze site traffic.
                     </p>
                   </div>
                 </div>
 
-                <p className="text-sm text-slate-700 mb-4">
+                <p className="text-sm text-slate-700 dark:text-slate-300 mb-4">
                   By clicking "Accept all", you consent to our use of cookies. You can customize your preferences below.
                 </p>
 
@@ -95,15 +95,15 @@ export default function CookieConsent() {
                       <div className="space-y-3 py-3 border-t border-b border-border/60">
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-slate-900 text-sm">Necessary</p>
-                            <p className="text-xs text-slate-700">Required for the website to function</p>
+                            <p className="font-medium text-slate-900 dark:text-white text-sm">Necessary</p>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">Required for the website to function</p>
                           </div>
                           <Switch checked={true} disabled className="opacity-50" />
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-slate-900 text-sm">Functional</p>
-                            <p className="text-xs text-slate-700">Enhanced features and personalization</p>
+                            <p className="font-medium text-slate-900 dark:text-white text-sm">Functional</p>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">Enhanced features and personalization</p>
                           </div>
                           <Switch
                             checked={preferences.functional}
@@ -112,8 +112,8 @@ export default function CookieConsent() {
                         </div>
                         <div className="flex items-center justify-between">
                           <div>
-                            <p className="font-medium text-slate-900 text-sm">Marketing</p>
-                            <p className="text-xs text-slate-700">Personalized ads and analytics</p>
+                            <p className="font-medium text-slate-900 dark:text-white text-sm">Marketing</p>
+                            <p className="text-xs text-slate-700 dark:text-slate-300">Personalized ads and analytics</p>
                           </div>
                           <Switch
                             checked={preferences.marketing}
@@ -129,7 +129,7 @@ export default function CookieConsent() {
                   <Button
                     variant="outline"
                     onClick={handleDeclineAll}
-                    className="flex-1 rounded-full border-border text-slate-800 hover:bg-muted/40 min-h-[48px] text-base active:scale-[0.98]"
+                    className="flex-1 rounded-full border-border text-slate-800 dark:text-slate-200 hover:bg-muted/40 min-h-[48px] text-base active:scale-[0.98]"
                   >
                     Decline all
                   </Button>
@@ -150,7 +150,7 @@ export default function CookieConsent() {
                   )}
                 </div>
 
-                <p className="text-xs text-slate-600 mt-4 text-center">
+                <p className="text-xs text-slate-600 dark:text-slate-400 mt-4 text-center">
                   <a href="/privacy-policy" className="hover:text-purple-600 dark:text-purple-400 underline">Read more about cookies</a>
                 </p>
               </div>

@@ -73,7 +73,7 @@ export default function CTA() {
               )}
             </motion.h2>
             
-            <p className="text-base sm:text-lg text-slate-600 mb-10 max-w-xl mx-auto px-2 sm:px-0">
+            <p className="text-base sm:text-lg text-slate-600 dark:text-slate-400 mb-10 max-w-xl mx-auto px-2 sm:px-0">
               {isPersonal 
                 ? 'Open your personal account and start saving in real, physical gold today.'
                 : 'Partner with Finatrades to strengthen your treasury and trade operations.'}

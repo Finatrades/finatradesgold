@@ -95,7 +95,7 @@ function AnimatedVaultSequence() {
         <div className="flex items-center gap-2">
           <span>Principal gold worth locked</span>
         </div>
-        <span className="text-muted-foreground/70 text-xs">until maturity</span>
+        <span className="text-slate-600 dark:text-slate-400 text-xs">until maturity</span>
         <div className="absolute -bottom-2 right-8 w-4 h-4 bg-gray-900 rotate-45" />
       </motion.div>
 
@@ -327,7 +327,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2 }}
             >
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-slate-900 dark:text-white leading-tight">
                 BNSL –{' '}
                 <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   Buy Now
@@ -343,7 +343,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-lg text-foreground/85 font-medium"
+              className="text-lg text-slate-800 dark:text-slate-200 font-medium"
             >
               Lock the worth of your physical gold into a structured plan 
               with fixed pricing and secure buy back margin.
@@ -353,7 +353,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-muted-foreground leading-relaxed max-w-lg"
+              className="text-slate-700 dark:text-slate-300 leading-relaxed max-w-lg"
             >
               Finatrades BNSL lets you place the worth of your gold into a defined term, 
               receive quarterly growth, and keep your principal safely stored in regulated 
@@ -373,7 +373,7 @@ function HeroSection() {
               ].map((badge, i) => (
                 <span
                   key={badge.label}
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-card border border-border text-muted-foreground"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm bg-card border border-border text-slate-700 dark:text-slate-300"
                 >
                   <badge.icon className="w-4 h-4 text-purple-500" />
                   {badge.label}
@@ -458,12 +458,12 @@ function HowItWorksSection() {
             <span className="text-purple-700 dark:text-purple-300 text-sm font-medium">Step-by-Step Guide</span>
           </motion.div>
           
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             How{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">BNSL</span>{' '}
             Works
           </h2>
-          <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+          <p className="text-slate-700 dark:text-slate-300 text-lg max-w-2xl mx-auto">
             Follow the golden path to structured gold ownership
           </p>
         </motion.div>
@@ -549,7 +549,7 @@ function HowItWorksSection() {
                       }`}
                     >
                       <step.icon className={`w-5 h-5 lg:w-7 lg:h-7 transition-colors duration-500 ${
-                        isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'
+                        isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'
                       }`} />
                     </motion.div>
 
@@ -566,13 +566,13 @@ function HowItWorksSection() {
                           : 'bg-card border border-border/60 shadow-sm'
                       }`}
                     >
-                      <span className={`text-xs lg:text-sm font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'}`}>
+                      <span className={`text-xs lg:text-sm font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
                         Step {step.number}
                       </span>
-                      <h3 className={`text-base lg:text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                      <h3 className={`text-base lg:text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                         {step.title}
                       </h3>
-                      <p className={`text-xs lg:text-sm mt-2 ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                      <p className={`text-xs lg:text-sm mt-2 ${isActive ? 'text-slate-700 dark:text-slate-300' : 'text-slate-600 dark:text-slate-400'}`}>
                         {step.description}
                       </p>
                     </motion.div>
@@ -670,13 +670,13 @@ function CalculatorSection() {
             <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">BNSL Gold Buy Back Planner</span>
           </motion.div>
 
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             BNSL Gold Buy Back{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Planner
             </span>
           </h2>
-          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-lg text-slate-700 dark:text-slate-300 max-w-2xl mx-auto">
             Plan your gold buy back and projected margins over time.
           </p>
         </motion.div>
@@ -693,23 +693,23 @@ function CalculatorSection() {
                 <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground text-lg">BNSL Gold Buy Back Planner</h3>
-                <p className="text-sm text-muted-foreground">Plan your gold buy back and projected margins over time.</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">BNSL Gold Buy Back Planner</h3>
+                <p className="text-sm text-slate-700 dark:text-slate-300">Plan your gold buy back and projected margins over time.</p>
               </div>
             </div>
 
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-foreground/85 mb-2">BNSL Plan Value</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">BNSL Plan Value</label>
                 <div className="relative">
-                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-semibold text-muted-foreground/70">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-semibold text-slate-600 dark:text-slate-400">
                     $
                   </span>
                   <input
                     type="number"
                     value={planValue}
                     onChange={(e) => handleValueChange(Number(e.target.value))}
-                    className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-foreground bg-muted/40 rounded-xl border border-border focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
+                    className="w-full pl-10 pr-4 py-4 text-2xl font-bold text-slate-900 dark:text-white bg-muted/40 rounded-xl border border-border focus:border-purple-400 focus:ring-4 focus:ring-purple-100 outline-none transition-all"
                     data-testid="input-plan-value"
                   />
                 </div>
@@ -723,7 +723,7 @@ function CalculatorSection() {
                   className="w-full h-2 mt-4 bg-muted rounded-lg appearance-none cursor-pointer accent-purple-500"
                   data-testid="slider-plan-value"
                 />
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-700 dark:text-slate-300">
                   <HelpCircle className="w-3.5 h-3.5" />
                   <span>Total value of physical gold you buy and store in our vault.</span>
                 </div>
@@ -731,7 +731,7 @@ function CalculatorSection() {
 
               <div className="pt-2 border-t border-border/60">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-foreground/85">Locked-In Gold Price (per gram)</span>
+                  <span className="text-sm font-medium text-slate-800 dark:text-slate-200">Locked-In Gold Price (per gram)</span>
                   <span className="text-xs font-medium text-purple-600 dark:text-purple-400 flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse"></span>
                     Live Price
@@ -739,21 +739,21 @@ function CalculatorSection() {
                 </div>
                 <div className="flex items-center gap-3 bg-muted/40 rounded-xl p-4 border border-border/60">
                   <div className="p-2 rounded-lg bg-muted/70">
-                    <Lock className="w-4 h-4 text-muted-foreground" />
+                    <Lock className="w-4 h-4 text-slate-700 dark:text-slate-300" />
                   </div>
                   <div className="flex-1">
-                    <span className="text-2xl font-bold text-foreground">{goldPrice.toFixed(2)}</span>
-                    <span className="text-muted-foreground ml-1">/gram</span>
+                    <span className="text-2xl font-bold text-slate-900 dark:text-white">{goldPrice.toFixed(2)}</span>
+                    <span className="text-slate-700 dark:text-slate-300 ml-1">/gram</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-1.5 mt-2 text-xs text-muted-foreground">
+                <div className="flex items-center gap-1.5 mt-2 text-xs text-slate-700 dark:text-slate-300">
                   <div className="w-2 h-2 rounded-full bg-yellow-400"></div>
                   <span className="text-yellow-600 dark:text-yellow-400">Live market price — locked at plan start</span>
                 </div>
               </div>
 
               <div className="pt-2">
-                <label className="block text-sm font-medium text-foreground/85 mb-3">Plan Tenure</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">Plan Tenure</label>
                 <div className="grid grid-cols-3 gap-3">
                   {([12, 24, 36] as const).map((t) => (
                     <motion.button
@@ -764,7 +764,7 @@ function CalculatorSection() {
                       className={`py-3 px-4 rounded-xl text-sm font-semibold transition-all ${
                         tenure === t
                           ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white shadow-lg shadow-purple-200'
-                          : 'bg-muted text-foreground/85 hover:bg-muted border border-border'
+                          : 'bg-muted text-slate-800 dark:text-slate-200 hover:bg-muted border border-border'
                       }`}
                       data-testid={`btn-tenure-${t}`}
                     >
@@ -775,13 +775,13 @@ function CalculatorSection() {
               </div>
 
               <div className="pt-4 border-t border-border/60">
-                <label className="block text-sm font-medium text-foreground/85 mb-3">Estimated Gold Addition Rate</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-3">Estimated Gold Addition Rate</label>
                 <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-5 border border-purple-100">
                   <div className="flex items-baseline gap-2">
                     <span className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                       {calculations.annualRate}%
                     </span>
-                    <span className="text-muted-foreground font-medium">per annum</span>
+                    <span className="text-slate-700 dark:text-slate-300 font-medium">per annum</span>
                   </div>
                   <p className="text-sm text-purple-700 dark:text-purple-300 mt-1">
                     Fixed rate for {tenure}-month plan
@@ -802,56 +802,56 @@ function CalculatorSection() {
                 <BarChart3 className="w-5 h-5 text-green-600 dark:text-green-400" />
               </div>
               <div>
-                <h3 className="font-bold text-foreground text-lg">Gold Buy Back Projection</h3>
-                <p className="text-sm text-muted-foreground">Based on your selected parameters</p>
+                <h3 className="font-bold text-slate-900 dark:text-white text-lg">Gold Buy Back Projection</h3>
+                <p className="text-sm text-slate-700 dark:text-slate-300">Based on your selected parameters</p>
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3 lg:gap-4">
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">BNSL Plan Value</span>
+                  <span className="text-[10px] lg:text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">BNSL Plan Value</span>
                   <div className="p-1 lg:p-1.5 rounded-lg bg-purple-100 dark:bg-purple-900/30">
                     <Lock className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-purple-600 dark:text-purple-400" />
                   </div>
                 </div>
-                <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.planValue)}</p>
-                <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Value of your BNSL plan</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-white truncate">{formatCurrency(calculations.planValue)}</p>
+                <p className="text-[10px] lg:text-xs text-slate-700 dark:text-slate-300 mt-1">Value of your BNSL plan</p>
               </div>
 
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
+                  <span className="text-[10px] lg:text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Guaranteed Buy Back Margin *</span>
                   <Sparkles className="w-3 h-3 lg:w-4 lg:h-4 text-yellow-500" />
                 </div>
                 <p className="text-lg sm:text-xl lg:text-3xl font-black text-green-600 dark:text-green-400 truncate">+{formatCurrency(calculations.guaranteedMargin)}</p>
-                <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Guaranteed margin on buy back</p>
+                <p className="text-[10px] lg:text-xs text-slate-700 dark:text-slate-300 mt-1">Guaranteed margin on buy back</p>
               </div>
 
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Total Gold Value at Maturity *</span>
+                  <span className="text-[10px] lg:text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Total Gold Value at Maturity *</span>
                   <div className="p-1 lg:p-1.5 rounded-lg bg-blue-100 dark:bg-blue-900/30">
                     <BarChart3 className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
-                <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.totalValueAtMaturity)}</p>
-                <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Combined purchased and additional gold</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-white truncate">{formatCurrency(calculations.totalValueAtMaturity)}</p>
+                <p className="text-[10px] lg:text-xs text-slate-700 dark:text-slate-300 mt-1">Combined purchased and additional gold</p>
               </div>
 
               <div className="bg-card rounded-2xl p-4 lg:p-5 border border-border/60 shadow-lg">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-[10px] lg:text-xs font-semibold text-muted-foreground uppercase tracking-wide">Quarterly Paid Margin *</span>
+                  <span className="text-[10px] lg:text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Quarterly Paid Margin *</span>
                   <div className="p-1 lg:p-1.5 rounded-lg bg-orange-100 dark:bg-orange-900/30">
                     <Sparkles className="w-3 h-3 lg:w-3.5 lg:h-3.5 text-orange-600 dark:text-orange-400" />
                   </div>
                 </div>
-                <p className="text-lg sm:text-xl lg:text-3xl font-black text-foreground truncate">{formatCurrency(calculations.quarterlyMargin)}</p>
-                <p className="text-[10px] lg:text-xs text-muted-foreground mt-1">Margin paid every quarter + Principal paid after locking period.</p>
+                <p className="text-lg sm:text-xl lg:text-3xl font-black text-slate-900 dark:text-white truncate">{formatCurrency(calculations.quarterlyMargin)}</p>
+                <p className="text-[10px] lg:text-xs text-slate-700 dark:text-slate-300 mt-1">Margin paid every quarter + Principal paid after locking period.</p>
               </div>
             </div>
 
-            <p className="text-xs text-muted-foreground italic flex items-center gap-1">
+            <p className="text-xs text-slate-700 dark:text-slate-300 italic flex items-center gap-1">
               <ExternalLink className="w-3 h-3" />
               *Terms and Conditions
             </p>
@@ -935,13 +935,13 @@ function PlanComparisonSection() {
           <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             Plan Options
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             Choose Your{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               BNSL Plan
             </span>
           </h2>
-          <p className="text-muted-foreground text-lg">Select the tenure that aligns with your gold accumulation goals.</p>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">Select the tenure that aligns with your gold accumulation goals.</p>
         </motion.div>
 
         <div className="grid md:grid-cols-3 gap-6">
@@ -966,7 +966,7 @@ function PlanComparisonSection() {
               )}
 
               <div className="text-center mb-6">
-                <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
+                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
                   {plan.category}
                 </span>
               </div>
@@ -983,17 +983,17 @@ function PlanComparisonSection() {
                 </div>
               </div>
 
-              <p className="text-center text-muted-foreground mb-6">{plan.description}</p>
+              <p className="text-center text-slate-700 dark:text-slate-300 mb-6">{plan.description}</p>
 
               <div className="text-center mb-4">
                 <div className="text-5xl font-black bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   ~{plan.rate}%
                 </div>
-                <p className="text-muted-foreground text-sm">p.a. growth in gold worth</p>
+                <p className="text-slate-700 dark:text-slate-300 text-sm">p.a. growth in gold worth</p>
               </div>
 
               <div className="mb-6">
-                <div className="flex items-center justify-between text-sm text-muted-foreground mb-2">
+                <div className="flex items-center justify-between text-sm text-slate-700 dark:text-slate-300 mb-2">
                   <span>Growth Cycles</span>
                   <span className="font-semibold">{plan.quarters} quarters</span>
                 </div>
@@ -1013,7 +1013,7 @@ function PlanComparisonSection() {
 
               <ul className="space-y-3 mb-8">
                 {plan.features.map((feature, j) => (
-                  <li key={j} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <li key={j} className="flex items-start gap-2 text-sm text-slate-700 dark:text-slate-300">
                     <div className="w-1.5 h-1.5 rounded-full bg-purple-50 dark:bg-purple-950/200 mt-1.5 flex-shrink-0" />
                     {feature}
                   </li>
@@ -1084,7 +1084,7 @@ function BenefitsSection() {
           <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             Key Benefits
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             Why Users Prefer the{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               BNSL Plan
@@ -1106,8 +1106,8 @@ function BenefitsSection() {
               <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center mb-5">
                 <benefit.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-lg font-bold text-foreground mb-2">{benefit.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{benefit.description}</p>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{benefit.title}</h3>
+              <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">{benefit.description}</p>
             </motion.div>
           ))}
         </div>
@@ -1144,13 +1144,13 @@ function FAQSection() {
           <span className="text-sm font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-4 block">
             FAQ
           </span>
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             Frequently Asked{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Questions
             </span>
           </h2>
-          <p className="text-muted-foreground text-lg">Everything you need to know about BNSL</p>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">Everything you need to know about BNSL</p>
         </motion.div>
 
         <div className="space-y-4">
@@ -1168,11 +1168,11 @@ function FAQSection() {
                 className="w-full flex items-center justify-between p-5 text-left"
                 data-testid={`faq-${i}`}
               >
-                <span className="font-medium text-foreground">{faq.q}</span>
+                <span className="font-medium text-slate-900 dark:text-white">{faq.q}</span>
                 {openIndex === i ? (
                   <ChevronUp className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 ) : (
-                  <ChevronDown className="w-5 h-5 text-muted-foreground/70" />
+                  <ChevronDown className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                 )}
               </button>
               <AnimatePresence>
@@ -1184,7 +1184,7 @@ function FAQSection() {
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <p className="px-5 pb-5 text-muted-foreground">{faq.a}</p>
+                    <p className="px-5 pb-5 text-slate-700 dark:text-slate-300">{faq.a}</p>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -1219,14 +1219,14 @@ function RiskDisclosureSection() {
               <AlertTriangle className="w-6 h-6 text-amber-600 dark:text-amber-400 shrink-0" />
             </div>
             <div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">Important Risk Disclosures</h3>
-              <p className="text-sm text-muted-foreground">Please review these risks before participating in any BNSL plan.</p>
+              <h3 className="text-xl font-semibold text-slate-900 dark:text-white mb-2">Important Risk Disclosures</h3>
+              <p className="text-sm text-slate-700 dark:text-slate-300">Please review these risks before participating in any BNSL plan.</p>
             </div>
           </div>
           
           <ul className="space-y-3">
             {risks.map((risk, i) => (
-              <li key={i} className="flex items-start gap-3 text-foreground/85">
+              <li key={i} className="flex items-start gap-3 text-slate-800 dark:text-slate-200">
                 <span className="w-1.5 h-1.5 rounded-full bg-amber-50 dark:bg-amber-950/200 mt-2 shrink-0" />
                 {risk}
               </li>
@@ -1274,30 +1274,30 @@ function TermsSection() {
               className="w-full max-w-2xl max-h-[80vh] overflow-hidden rounded-2xl bg-card border border-border shadow-2xl"
             >
               <div className="flex items-center justify-between p-6 border-b border-border/60">
-                <h3 className="text-xl font-semibold text-foreground">BNSL Terms & Conditions</h3>
-                <button onClick={() => setShowModal(false)} className="text-muted-foreground/70 hover:text-muted-foreground">
+                <h3 className="text-xl font-semibold text-slate-900 dark:text-white">BNSL Terms & Conditions</h3>
+                <button onClick={() => setShowModal(false)} className="text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300">
                   <X className="w-6 h-6" />
                 </button>
               </div>
               <div className="p-6 overflow-y-auto max-h-[60vh]">
                 <div className="prose prose-sm max-w-none">
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold">1. Plan Overview</h4>
-                  <p className="text-muted-foreground">The BNSL (Buy Now Sell Later) Plan is a structured gold holding program that allows participants to lock physical gold at a fixed price and receive quarterly payouts in additional gold units.</p>
+                  <p className="text-slate-700 dark:text-slate-300">The BNSL (Buy Now Sell Later) Plan is a structured gold holding program that allows participants to lock physical gold at a fixed price and receive quarterly payouts in additional gold units.</p>
                   
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">2. Locked-In Price</h4>
-                  <p className="text-muted-foreground">The Locked-In Price is established at the time of plan activation and remains fixed for the entire duration. All calculations, payouts, and settlements are based on this price.</p>
+                  <p className="text-slate-700 dark:text-slate-300">The Locked-In Price is established at the time of plan activation and remains fixed for the entire duration. All calculations, payouts, and settlements are based on this price.</p>
                   
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">3. Quarterly Payouts</h4>
-                  <p className="text-muted-foreground">Payouts are distributed every three months based on the indicative annual profit rate divided into quarterly installments. All payouts are made in gold units, not fiat currency.</p>
+                  <p className="text-slate-700 dark:text-slate-300">Payouts are distributed every three months based on the indicative annual profit rate divided into quarterly installments. All payouts are made in gold units, not fiat currency.</p>
                   
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">4. Early Termination</h4>
-                  <p className="text-muted-foreground">Early exit from the plan results in penalties, forfeiture of all future payouts, and settlement at current market price rather than the Locked-In Price.</p>
+                  <p className="text-slate-700 dark:text-slate-300">Early exit from the plan results in penalties, forfeiture of all future payouts, and settlement at current market price rather than the Locked-In Price.</p>
                   
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">5. Settlement</h4>
-                  <p className="text-muted-foreground">At maturity, your original gold principal plus accumulated payouts are settled in-kind to your Finatrades wallet within 3 business days.</p>
+                  <p className="text-slate-700 dark:text-slate-300">At maturity, your original gold principal plus accumulated payouts are settled in-kind to your Finatrades wallet within 3 business days.</p>
                   
                   <h4 className="text-purple-600 dark:text-purple-400 font-semibold mt-4">6. Risk Acknowledgment</h4>
-                  <p className="text-muted-foreground">By participating, you acknowledge that projections are indicative, returns are not guaranteed, and the plan is subject to counterparty performance.</p>
+                  <p className="text-slate-700 dark:text-slate-300">By participating, you acknowledge that projections are indicative, returns are not guaranteed, and the plan is subject to counterparty performance.</p>
                 </div>
               </div>
             </motion.div>
@@ -1331,14 +1331,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-foreground">
+          <h2 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white">
             Start Your BNSL Gold Plan{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Today
             </span>
           </h2>
           
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto">
             Lock your gold at a fixed price and begin earning quarterly payouts.
           </p>
 

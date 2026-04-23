@@ -150,7 +150,7 @@ function HeroSection() {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
             >
-              <h1 className="text-5xl md:text-7xl font-bold text-foreground leading-tight">
+              <h1 className="text-5xl md:text-7xl font-bold text-slate-900 dark:text-white leading-tight">
                 Fina
                 <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                   Vault
@@ -162,7 +162,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4 }}
-              className="text-xl md:text-2xl text-foreground/85"
+              className="text-xl md:text-2xl text-slate-800 dark:text-slate-200"
             >
               Your Digital Gold Reserve Vault
             </motion.p>
@@ -171,7 +171,7 @@ function HeroSection() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.5 }}
-              className="text-muted-foreground leading-relaxed max-w-xl"
+              className="text-slate-700 dark:text-slate-300 leading-relaxed max-w-xl"
             >
               Store, track, verify and manage physical gold with secure, real-time vaulting technology. 
               Backed by world-class vault providers and fully integrated with your FinaWallet.
@@ -187,7 +187,7 @@ function HeroSection() {
                 Open Vault
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/sign-in" className="flex items-center gap-2 border border-purple-300 text-foreground/85 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all">
+              <Link href="/sign-in" className="flex items-center gap-2 border border-purple-300 text-slate-800 dark:text-slate-200 px-8 py-4 rounded-full text-base font-semibold hover:bg-purple-50 dark:bg-purple-950/20 hover:border-purple-400 transition-all">
                 <FileCheck className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                 View Certificate
               </Link>
@@ -244,8 +244,8 @@ function ValuePillarsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Core Value Pillars</h2>
-          <p className="text-muted-foreground text-lg">The foundation of secure gold custody</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">Core Value Pillars</h2>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">The foundation of secure gold custody</p>
         </motion.div>
 
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -266,8 +266,8 @@ function ValuePillarsSection() {
               >
                 <pillar.icon className="w-8 h-8 text-purple-600 dark:text-purple-400" />
               </motion.div>
-              <h3 className="text-lg font-semibold text-foreground mb-2">{pillar.title}</h3>
-              <p className="text-sm text-muted-foreground">{pillar.description}</p>
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-white mb-2">{pillar.title}</h3>
+              <p className="text-sm text-slate-700 dark:text-slate-300">{pillar.description}</p>
               
               <motion.div
                 initial={{ scaleX: 0 }}
@@ -297,13 +297,13 @@ function CertificateSection() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
               Full Transparency,{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Every Gram Verified
               </span>
             </h2>
-            <p className="text-muted-foreground text-lg leading-relaxed">
+            <p className="text-slate-700 dark:text-slate-300 text-lg leading-relaxed">
               Real certificates, live batch data, bar numbers, and storage details — all digitally accessible. 
               Every piece of gold in your vault comes with complete documentation.
             </p>
@@ -327,8 +327,8 @@ function CertificateSection() {
                     <CheckCircle className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <p className="font-medium text-foreground">{item.label}</p>
-                    <p className="text-sm text-muted-foreground">{item.desc}</p>
+                    <p className="font-medium text-slate-900 dark:text-white">{item.label}</p>
+                    <p className="text-sm text-slate-700 dark:text-slate-300">{item.desc}</p>
                   </div>
                 </motion.div>
               ))}
@@ -357,27 +357,27 @@ function CertificateSection() {
               
               <div className="space-y-6">
                 <div>
-                  <p className="text-xs text-muted-foreground uppercase tracking-wider">Certificate ID</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300 uppercase tracking-wider">Certificate ID</p>
                   <p className="text-lg font-mono bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">FV-2024-1234567</p>
                 </div>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-xs text-muted-foreground">Purity</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">Purity</p>
                     <motion.p
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
-                      className="text-2xl font-bold text-foreground"
+                      className="text-2xl font-bold text-slate-900 dark:text-white"
                     >
                       999.9
                     </motion.p>
                   </div>
                   <div>
-                    <p className="text-xs text-muted-foreground">Weight</p>
+                    <p className="text-xs text-slate-700 dark:text-slate-300">Weight</p>
                     <motion.p
                       initial={{ opacity: 0 }}
                       whileInView={{ opacity: 1 }}
-                      className="text-2xl font-bold text-foreground"
+                      className="text-2xl font-bold text-slate-900 dark:text-white"
                     >
                       1 KG
                     </motion.p>
@@ -385,13 +385,13 @@ function CertificateSection() {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-muted-foreground">Serial Number</p>
-                  <p className="font-mono text-foreground/85">AU-2024-CH-0089321</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300">Serial Number</p>
+                  <p className="font-mono text-slate-800 dark:text-slate-200">AU-2024-CH-0089321</p>
                 </div>
                 
                 <div>
-                  <p className="text-xs text-muted-foreground">Vault Location</p>
-                  <p className="text-foreground/85">Geneva Secure Vault</p>
+                  <p className="text-xs text-slate-700 dark:text-slate-300">Vault Location</p>
+                  <p className="text-slate-800 dark:text-slate-200">Geneva Secure Vault</p>
                 </div>
                 
                 <div className="pt-4 border-t border-border/60">
@@ -408,8 +408,8 @@ function CertificateSection() {
               transition={{ duration: 5, repeat: Infinity, delay: 0.5 }}
               className="absolute -bottom-6 -right-6 w-48 h-32 rounded-xl bg-card border border-border/60 shadow-lg p-4"
             >
-              <p className="text-xs text-muted-foreground">Assay Report</p>
-              <p className="text-sm text-foreground mt-1">LBMA Certified</p>
+              <p className="text-xs text-slate-700 dark:text-slate-300">Assay Report</p>
+              <p className="text-sm text-slate-900 dark:text-white mt-1">LBMA Certified</p>
               <div className="mt-2 h-1 bg-purple-100 dark:bg-purple-900/30 rounded-full overflow-hidden">
                 <motion.div
                   animate={{ x: ['-100%', '100%'] }}
@@ -455,8 +455,8 @@ function VaultOperationsSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Vault Operations</h2>
-          <p className="text-muted-foreground text-lg">A seamless 4-step vaulting process</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">Vault Operations</h2>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">A seamless 4-step vaulting process</p>
         </motion.div>
 
         <div className="relative">
@@ -497,7 +497,7 @@ function VaultOperationsSection() {
                     }`}
                   >
                     <step.icon className={`w-8 h-8 transition-colors ${
-                      isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'
+                      isActive || isCompleted ? 'text-purple-600 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'
                     }`} />
                     
                     <motion.div
@@ -515,13 +515,13 @@ function VaultOperationsSection() {
                     transition={{ delay: i * 0.15 + 0.2 }}
                     className="mt-6"
                   >
-                    <span className={`text-xs font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-muted-foreground/70'}`}>
+                    <span className={`text-xs font-bold ${isActive ? 'text-purple-600 dark:text-purple-400' : 'text-slate-600 dark:text-slate-400'}`}>
                       Step {i + 1}
                     </span>
-                    <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    <h3 className={`text-lg font-semibold mt-1 ${isActive || isCompleted ? 'text-slate-900 dark:text-white' : 'text-slate-700 dark:text-slate-300'}`}>
                       {step.title}
                     </h3>
-                    <p className={`text-sm mt-2 ${isActive ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                    <p className={`text-sm mt-2 ${isActive ? 'text-slate-700 dark:text-slate-300' : 'text-slate-600 dark:text-slate-400'}`}>
                       {step.description}
                     </p>
                   </motion.div>
@@ -605,13 +605,13 @@ function SecuritySection() {
             viewport={{ once: true }}
             className="space-y-8"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-foreground">
+            <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white">
               Bank-Grade{' '}
               <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
                 Security
               </span>
             </h2>
-            <p className="text-muted-foreground text-lg">
+            <p className="text-slate-700 dark:text-slate-300 text-lg">
               Your gold is protected by multiple layers of physical and digital security measures.
             </p>
             
@@ -628,7 +628,7 @@ function SecuritySection() {
                   <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-100 flex items-center justify-center">
                     <feature.icon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
-                  <span className="text-foreground font-medium">{feature.title}</span>
+                  <span className="text-slate-900 dark:text-white font-medium">{feature.title}</span>
                 </motion.div>
               ))}
             </div>
@@ -656,8 +656,8 @@ function GlobalNetworkSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">A Global Network for Gold Storage</h2>
-          <p className="text-muted-foreground text-lg">Secure vault locations worldwide</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">A Global Network for Gold Storage</h2>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">Secure vault locations worldwide</p>
         </motion.div>
 
         <div className="relative aspect-[2/1] rounded-2xl bg-card border border-border/60 shadow-lg overflow-hidden">
@@ -755,8 +755,8 @@ function LiveBalanceSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">Real-Time Gold Balance</h2>
-          <p className="text-muted-foreground text-lg">Track your holdings with precision</p>
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">Real-Time Gold Balance</h2>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">Track your holdings with precision</p>
         </motion.div>
 
         <motion.div
@@ -767,25 +767,25 @@ function LiveBalanceSection() {
         >
           <div className="grid md:grid-cols-3 gap-8">
             <div className="text-center md:text-left">
-              <p className="text-sm text-muted-foreground mb-2">Your Gold Storage</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Your Gold Storage</p>
               <div className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent font-mono">
                 {balance.toFixed(4)}
               </div>
-              <p className="text-muted-foreground mt-1">Grams</p>
+              <p className="text-slate-700 dark:text-slate-300 mt-1">Grams</p>
             </div>
             
             <div className="text-center">
-              <p className="text-sm text-muted-foreground mb-2">Estimated Value</p>
-              <div className="text-3xl font-bold text-foreground">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Estimated Value</p>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">
                 ${(balance * 85.23).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
               <p className="text-green-600 dark:text-green-400 text-sm mt-1">+2.34% today</p>
             </div>
             
             <div className="text-center md:text-right">
-              <p className="text-sm text-muted-foreground mb-2">Total Bars</p>
-              <div className="text-3xl font-bold text-foreground">3</div>
-              <p className="text-muted-foreground mt-1">Stored in vaults</p>
+              <p className="text-sm text-slate-700 dark:text-slate-300 mb-2">Total Bars</p>
+              <div className="text-3xl font-bold text-slate-900 dark:text-white">3</div>
+              <p className="text-slate-700 dark:text-slate-300 mt-1">Stored in vaults</p>
             </div>
           </div>
           
@@ -818,10 +818,10 @@ function IntegrationSection() {
           viewport={{ once: true }}
           className="text-center mb-16"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+          <h2 className="text-4xl md:text-5xl font-bold text-slate-900 dark:text-white mb-4">
             FinaVault → FinaPay Integration
           </h2>
-          <p className="text-muted-foreground text-lg">Deposit physical gold → Instantly usable in your wallet</p>
+          <p className="text-slate-700 dark:text-slate-300 text-lg">Deposit physical gold → Instantly usable in your wallet</p>
         </motion.div>
 
         <div className="flex flex-col md:flex-row items-center justify-center gap-8">
@@ -832,7 +832,7 @@ function IntegrationSection() {
             className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center transition-all"
           >
             <Lock className="w-12 h-12 text-purple-600 dark:text-purple-400 mb-2" />
-            <span className="text-foreground font-semibold">FinaVault</span>
+            <span className="text-slate-900 dark:text-white font-semibold">FinaVault</span>
           </motion.div>
 
           <div className="relative w-32 h-8 md:w-48 md:h-8">
@@ -866,7 +866,7 @@ function IntegrationSection() {
             className="w-40 h-40 rounded-2xl bg-card border border-border/60 shadow-lg hover:border-purple-200 dark:border-purple-800/40 flex flex-col items-center justify-center transition-all"
           >
             <Wallet className="w-12 h-12 text-purple-600 dark:text-purple-400 mb-2" />
-            <span className="text-foreground font-semibold">FinaPay</span>
+            <span className="text-slate-900 dark:text-white font-semibold">FinaPay</span>
           </motion.div>
         </div>
       </div>
@@ -894,14 +894,14 @@ function FinalCTASection() {
           viewport={{ once: true }}
           className="space-y-8"
         >
-          <h2 className="text-4xl md:text-6xl font-bold text-foreground">
+          <h2 className="text-4xl md:text-6xl font-bold text-slate-900 dark:text-white">
             Secure Your Gold with{' '}
             <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">
               Confidence
             </span>
           </h2>
           
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-xl text-slate-700 dark:text-slate-300 max-w-2xl mx-auto">
             Manage physical gold on the world's most advanced digital vaulting platform.
           </p>
 
@@ -932,7 +932,7 @@ export default function FinaVaultLanding() {
         description="Store your gold in Swiss-regulated FinaVault. Fully allocated, insured, and audited physical gold storage with instant liquidity and digital certificate of ownership."
         canonical="/finagold/finavault"
       />
-      <div className="finavault-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-foreground" data-testid="finavault-landing">
+      <div className="finavault-landing min-h-screen bg-gradient-to-b from-[#FAFBFF] via-white to-[#F8F9FC] text-slate-900 dark:text-white" data-testid="finavault-landing">
         <style>{`
           .finavault-landing {
             --purple-deep: #8A2BE2;

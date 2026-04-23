@@ -153,7 +153,7 @@ function ProductCard({ product, index }: { product: { icon: any; title: string; 
         {product.title}
       </h3>
 
-      <p className="text-slate-700 text-sm leading-relaxed mb-6 flex-grow relative z-10">
+      <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed mb-6 flex-grow relative z-10">
         {product.description}
       </p>
 

@@ -65,7 +65,7 @@ export default function ContactForm() {
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#0D0D0D] mb-4 text-balance">
             Contact <span className="bg-gradient-to-r from-[#8A2BE2] to-[#FF2FBF] bg-clip-text text-transparent">Us</span>
           </h2>
-          <p className="text-slate-700 max-w-2xl mx-auto">
+          <p className="text-slate-700 dark:text-slate-300 max-w-2xl mx-auto">
             Have questions about our gold-backed financial services? Our team is here to help you get started.
           </p>
         </motion.div>
@@ -83,7 +83,7 @@ export default function ContactForm() {
               <form onSubmit={handleSubmit} className="space-y-5">
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-800 mb-2">
+                    <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
                       <User className="w-4 h-4 inline mr-2" />
                       Full Name *
                     </label>
@@ -99,7 +99,7 @@ export default function ContactForm() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-800 mb-2">
+                    <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
                       <Mail className="w-4 h-4 inline mr-2" />
                       Email Address *
                     </label>
@@ -118,7 +118,7 @@ export default function ContactForm() {
 
                 <div className="grid sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-800 mb-2">
+                    <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
                       <Phone className="w-4 h-4 inline mr-2" />
                       Phone Number
                     </label>
@@ -134,7 +134,7 @@ export default function ContactForm() {
                   </div>
                   {!isPersonal && (
                     <div>
-                      <label className="block text-sm font-medium text-slate-800 mb-2">
+                      <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">
                         <Building2 className="w-4 h-4 inline mr-2" />
                         Company Name
                       </label>
@@ -152,7 +152,7 @@ export default function ContactForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-2">Subject *</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">Subject *</label>
                   <select
                     name="subject"
                     value={formData.subject}
@@ -174,7 +174,7 @@ export default function ContactForm() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-800 mb-2">Message *</label>
+                  <label className="block text-sm font-medium text-slate-800 dark:text-slate-200 mb-2">Message *</label>
                   <textarea
                     name="message"
                     value={formData.message}
@@ -235,7 +235,7 @@ export default function ContactForm() {
 
             <div className="bg-card rounded-2xl p-8 border border-[#8A2BE2]/10 shadow-xl shadow-[#8A2BE2]/5">
               <h3 className="text-xl font-bold text-[#0D0D0D] mb-4">Business Hours</h3>
-              <div className="space-y-3 text-slate-700">
+              <div className="space-y-3 text-slate-700 dark:text-slate-300">
                 <div className="flex justify-between">
                   <span>Monday - Friday</span>
                   <span className="font-medium text-[#0D0D0D]">9:00 AM - 6:00 PM</span>
@@ -246,10 +246,10 @@ export default function ContactForm() {
                 </div>
                 <div className="flex justify-between">
                   <span>Sunday</span>
-                  <span className="font-medium text-slate-600">Closed</span>
+                  <span className="font-medium text-slate-600 dark:text-slate-400">Closed</span>
                 </div>
               </div>
-              <p className="text-sm text-slate-700 mt-4">
+              <p className="text-sm text-slate-700 dark:text-slate-300 mt-4">
                 * All times are in Gulf Standard Time (GST)
               </p>
             </div>
