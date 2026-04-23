@@ -1,0 +1,89 @@
+Kya Missing Hai — Real Use Case Gaps
+🔴 Critical Missing (Core Trade Finance Features)
+1. LC Lifecycle State Machine
+Real platforms track deal through defined stages:
+
+Draft → LC Issued → Docs Submitted → Under Review → Discrepancy Raised
+     → Discrepancy Resolved → Approved → Funds Released → Closed
+Abhi sirf generic status string hai — koi proper workflow state machine nahi hai.
+
+2. Mandatory Document Checklist
+Real LC deals require exactly these documents tracked per deal:
+
+Document	Who Uploads	Standard
+Commercial Invoice	Exporter	UCP 600
+Bill of Lading (BL/AWB/CMR)	Exporter via carrier	ISBP 745
+Packing List	Exporter	—
+Certificate of Origin	Exporter	CoC
+Insurance Certificate	Exporter/Importer	CCI
+Inspection Report	Third party	SGS/Bureau Veritas
+LC Draft (MT700)	Issuing Bank	SWIFT
+Proof of Lading (POL)	Exporter	—
+Warehouse Receipt (WR)	Warehouse	—
+Abhi documents chat mein attach ho rahe hain — koi structured checklist nahi hai.
+
+3. Discrepancy Management
+Industry ka sabse important feature — documents check karna ki LC terms ke sath match karte hain ya nahi:
+
+Amount mismatch
+Date discrepancy (expired LC)
+Description mismatch
+Port of loading wrong
+Missing signatures
+Yeh abhi bilkul nahi hai.
+
+4. Deal Timeline / Milestones
+Real deal rooms show a visual timeline:
+
+[✅ Contract] → [✅ LC Issued] → [⏳ Docs Pending] → [ ] Examination → [ ] Settlement
+Abhi sirf chat history hai, koi milestone view nahi.
+
+5. Counterparty Risk Scoring
+AML flags, jurisdiction risk, sanctions check — types file mein defined hain (amlFlags, jurisdictionRisk) but frontend mein koi display nahi hai.
+
+🟡 Important Missing (Competitive Features)
+6. Payment Release Trigger
+Jab documents approve ho jaate hain, gold/payment automatically release hona chahiye — abhi manual process hai.
+
+7. MT700 LC Draft Validator
+SWIFT MT700 ke mandatory fields validate karna:
+
+Field 40A (Form of Credit)
+Field 31D (Expiry Date/Place)
+Field 32B (Amount)
+Field 41A (Available With/By)
+Field 43P (Partial Shipments)
+8. Warehouse Receipt (WR) Module
+Gold-backed trade ke liye WR tracking critical hai:
+
+WR issuance
+Endorsement chain
+Warehouse inspection
+Release authorization
+9. Version Control on Documents
+"Document v1 → v2 → v3 approved" — currently nahi hai.
+
+10. Deal Summary PDF
+Complete deal ka PDF export (for banks, auditors, regulators).
+
+Priority Roadmap for Finatrades v2
+Phase 1 (High Impact, Low Effort):
+├── Document Checklist Panel (per deal, required docs tracker)
+├── Deal Timeline/Milestones strip
+└── Discrepancy flag system (in chat or separate panel)
+Phase 2 (Core Differentiation):
+├── LC 9-step state machine with role-based actions
+├── WR + POL dedicated upload flow
+└── Counterparty risk display (use existing types data)
+Phase 3 (Enterprise Grade):
+├── MT700 field validator
+├── Automated payment release on doc approval
+└── Deal Summary PDF export
+Sabse Pehle Kya Implement Karna Chahiye?
+Document Checklist + Deal Timeline — yeh do cheezein aapse alag karenge. Abhi FinaBridge sirf ek chat room hai with gold settlement. Real deal room mein structured document workflow hona chahiye jisme:
+
+Har required document tracked ho
+Status: Missing → Uploaded → Under Review → Approved/Rejected
+Discrepancy note add ho sake
+Timeline show ho
+Kya main Phase 1 implement karun? Document checklist panel aur deal milestone timeline — yeh FinaBridge deal room ko real international trade finance tool mein convert kar dega.

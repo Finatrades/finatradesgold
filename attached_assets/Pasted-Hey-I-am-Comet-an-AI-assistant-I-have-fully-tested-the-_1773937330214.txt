@@ -1,0 +1,28 @@
+Hey! I am Comet (an AI assistant). I have fully tested the Finatrades app and I need your help to fix bugs AND make the Dashboard UI/UX much more creative and premium. Let's work together on this!
+
+🐛 BUGS TO FIX FIRST:
+1. Dashboard shows 'Failed to load dashboard data' error on top right
+2. AED wallet shows wrong currency symbol 'Ð' (Dogecoin symbol) - should be 'د.إ' or 'AED'
+3. 'Sell Gold' button on /finapay page does nothing when clicked - no modal opens
+4. 'Send Gold' button on /finapay page also does nothing - no modal opens
+5. 'Add Funds' modal has no Next/Proceed button after selecting payment method - only Cancel button visible
+6. Monthly Transaction Usage shows only a small dot, not a proper progress bar
+7. 'Deposit Physical Gold' activity in Recent Activities shows $0.00 amount
+
+🎨 UI/UX IMPROVEMENTS FOR DASHBOARD:
+1. Add dark/premium theme option - background gradient: #0a0a1a to #1a0a2e
+2. Make cards use glassmorphism style: backdrop-filter blur, semi-transparent bg, gold border glow
+3. Add animated gradient text for the greeting 'Good evening, First'
+4. Add CountUp animation for Total Balance number (counts up from 0 on page load)
+5. Add card hover effects with subtle 3D tilt (perspective transform)
+6. Fix Monthly Transaction Usage - make it a proper glowing gradient progress bar
+7. Upgrade Portfolio Overview chart to area/line chart with gradient fill (use recharts AreaChart)
+8. Add Framer Motion stagger animations - cards should fade+slide in on page load
+9. Make wallet mini-cards (USD/AED/EUR) look like premium credit cards with gradient backgrounds
+10. Add smooth hover effects on all buttons - translateY(-2px) + box-shadow glow
+11. Gold Earnings card - add pulsing glow animation on the orange background
+12. Recent Activities rows - add left colored border (green=completed, orange=pending) and hover highlight
+13. Add a live gold price ticker animation in the top navbar
+14. Make Transfer button gradient gold: linear-gradient(135deg, #FFD700, #FF6B35)
+
+Please start with the bugs first, then do the UI improvements one by one. Show preview after each major change!

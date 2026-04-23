@@ -1,62 +1,49 @@
-node_modules
+# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+
+# compiled output
 dist
+tmp
+out-tsc
+*.tsbuildinfo
+.expo
+.expo-shared
+
+# dependencies
+node_modules
+
+# IDEs and editors
+/.idea
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# IDE - VSCode
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# misc
+/.sass-cache
+/connect.lock
+/coverage
+/libpeerconnection.log
+npm-debug.log
+yarn-error.log
+testem.log
+/typings
+
+# System Files
 .DS_Store
-server/public
-vite.config.ts.*
-*.tar.gz
+Thumbs.db
 
-# Logs
-logs/
-*.log
-npm-debug.log*
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
 
-# Uploads (user-generated content)
-uploads/
-
-# Attached assets (screenshots, documents from development)
-attached_assets/
-
-# Test artifacts
-user_admin_test/
-
-# Cache
+# Replit
 .cache/
-
-# Temporary files
-*.tmp
-*.bak
-*.swp
-
-# IDE
-.idea/
-.vscode/
-
-# Environment files (secrets should not be committed)
-.env.local
-.env.production
-
-# Build artifacts
-build/
-
-# Test coverage
-coverage/
-
-# Database backups (never commit — contain production data)
-*.sql
-*.sql.gz
-
-# Key and credential reference files (store secrets in env vars only)
-*SSO_KEYS*.txt
-*KEYS*.txt
-*.ppk
-*.pem
-
-# Screenshots / generated media dumped in root
-dashboard-*.png
-dashboard-*.jpg
-
-# Mockup sandbox artifacts
-artifacts/
-
-# Large generated PDFs (VC proposals, guides)
-FinaBridge_*Chairman*.pdf
+.local/

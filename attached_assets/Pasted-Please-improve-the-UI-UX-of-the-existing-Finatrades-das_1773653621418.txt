@@ -1,0 +1,27 @@
+Please improve the UI/UX of the existing Finatrades dashboard with the following fixes:
+
+1. HEADER: Split the top bar into 2 rows — Row 1 (dark ticker bar): Gold Price on left, Settlement Assurance center, Enable 2FA button (red) on right. Row 2 (white user bar): 'Up to date' badge left, notification bell with dropdown panel center-right, user avatar + name + account type on far right.
+
+2. SIDEBAR: Add active state (violet #7C3AED background, white text) for current page. Add hover state (light purple) for all nav items. Add left-border accent on active item. Sidebar collapses to icon-only on tablet (768px).
+
+3. QUICK ACTION BUTTONS: Make all 6 buttons (Add Fund, Buy Gold Bar, Deposit Gold, Send Payment, Request Payment, BNSL) uniform — same icon size (24px), same padding, same pill shape. On mobile, make them horizontally scrollable.
+
+4. STATS CARDS: Establish consistent color system — Gold-related cards use amber/yellow tones, Wallet cards use green tones, BNSL cards use purple tones. Remove random colors. Add tooltip on hover for all info (ℹ) icons.
+
+5. VIRTUAL CARD: Remove the overlapping layout. Give the virtual FINAGOLD card its own dedicated column/section. It should NOT overlap other cards.
+
+6. BALANCE CLARITY: Add clear labels to differentiate 'Card Wallet' vs 'FinaPay Wallet' vs 'Gold Balance' so users understand why values differ. Add a small helper text under each card explaining what it represents.
+
+7. RECENT TRANSACTIONS: Add a filter dropdown (All / Buy Gold / Swap / Lock) and a date range picker above the transaction list.
+
+8. CERTIFICATES: Add a clickable row style with hover highlight and a '→' arrow on each row to indicate it's clickable.
+
+9. FINACARD 'Coming Soon': Change to a greyed-out/disabled style card with a small 'Notify Me' button instead of showing empty balance fields.
+
+10. NOTIFICATION BELL: Clicking the bell opens a dropdown panel showing the latest 5 notifications with icons, message, and timestamp.
+
+11. RESPONSIVE: Ensure full mobile responsiveness — stack all card grids to 1 column below 768px.
+
+12. TYPOGRAPHY: Use Inter font throughout. Ensure consistent font sizes — headings 20px, card titles 14px, values 24px bold, subtitles 12px gray.
+
+Apply all these improvements to the existing dashboard without breaking any existing backend functionality.
