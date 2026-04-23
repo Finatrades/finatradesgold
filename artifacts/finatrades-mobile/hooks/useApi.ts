@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
-const API_BASE = process.env.EXPO_PUBLIC_API_BASE || "";
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+const API_BASE = domain ? `https://${domain}` : "";
 
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API_BASE}${path}`, {

@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React from "react";
 import {
   Alert,
@@ -26,6 +27,7 @@ const KYC_CONFIG: Record<string, { color: string; label: string; icon: string }>
 export default function ProfileScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const { data: profileData } = useUserProfile(user?.id);
 
@@ -45,6 +47,7 @@ export default function ProfileScreen() {
         style: "destructive",
         onPress: async () => {
           await logout();
+          router.replace("/login");
         },
       },
     ]);
