@@ -1,0 +1,3063 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Separator } from '@/components/ui/separator';
+import { useAuth } from '@/context/AuthContext';
+import { usePlatform } from '@/context/PlatformContext';
+import { Copy, Building, CheckCircle2, ArrowRight, DollarSign, Loader2, CreditCard, Wallet, Upload, X, Image, Coins, Bitcoin, Check, Clock, FileText, Sparkles, Shield, Zap, Globe, TrendingUp, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { apiRequest } from '@/lib/queryClient';
+import { preloadNGeniusSDK } from '@/lib/ngenius-sdk-loader';
+import HybridCardPayment from '../HybridCardPayment';
+import { type GoldWalletType } from '../WalletTypeSelector';
+import { useFinaPay } from '@/context/FinaPayContext';
+import MobileFullScreenPage from '@/components/mobile/MobileFullScreenPage';
+import { useMediaQuery } from '@/hooks/use-media-query';
+
+interface FeeInfo {
+  feeKey: string;
+  feeName: string;
+  feeType: string;
+  feeValue: string;
+  minAmount: string | null;
+  maxAmount: string | null;
+}
+
+interface GoldPriceInfo {
+  pricePerGram: number;
+  currency: string;
+}
+
+interface PlatformBankAccount {
+  id: string;
+  bankName: string;
+  accountName: string;
+  accountNumber: string;
+  routingNumber: string | null;
+  swiftCode: string | null;
+  iban: string | null;
+  currency: string;
+  country: string;
+  status: 'Active' | 'Inactive';
+}
+
+interface CryptoWallet {
+  id: string;
+  network: string;
+  networkLabel: string;
+  currency: string;
+  walletAddress: string;
+  memo: string | null;
+  instructions: string | null;
+  isActive: boolean;
+  qrCodeImage: string | null;
+}
+
+interface DepositModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+type PaymentMethod = 'bank' | 'card' | 'crypto';
+type Step = 'amount' | 'method' | 'select' | 'details' | 'submitted' | 'card-amount' | 'card-processing' | 'card-embedded' | 'card-success' | 'crypto-amount' | 'crypto-select-wallet' | 'crypto-address' | 'crypto-submit-proof' | 'crypto-submitted';
+
+export default function DepositModal({ isOpen, onClose }: DepositModalProps) {
+  const { user } = useAuth();
+  const { settings: platformSettings } = usePlatform();
+  const { refreshTransactions } = useFinaPay();
+  const [bankAccounts, setBankAccounts] = useState<PlatformBankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [step, setStep] = useState<Step>('method');
+  const [cardFormKey, setCardFormKey] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
+  const [selectedAccount, setSelectedAccount] = useState<PlatformBankAccount | null>(null);
+  const [amount, setAmount] = useState('');
+  const [senderBankName, setSenderBankName] = useState('');
+  const [senderAccountName, setSenderAccountName] = useState('');
+  const [proofOfPayment, setProofOfPayment] = useState<string | null>(null);
+  const [proofFileName, setProofFileName] = useState<string>('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState('');
+  const [ngeniusEnabled, setNgeniusEnabled] = useState(false);
+  const [checkingNgenius, setCheckingNgenius] = useState(true);
+  const [depositFee, setDepositFee] = useState<FeeInfo | null>(null);
+  const [goldPrice, setGoldPrice] = useState<GoldPriceInfo | null>(null);
+  
+  // Crypto payment state
+  const [cryptoWallets, setCryptoWallets] = useState<CryptoWallet[]>([]);
+  const [selectedCryptoWallet, setSelectedCryptoWallet] = useState<CryptoWallet | null>(null);
+  const [transactionHash, setTransactionHash] = useState('');
+  const [copiedAddress, setCopiedAddress] = useState(false);
+  const [cryptoPaymentRequestId, setCryptoPaymentRequestId] = useState<string | null>(null);
+  const [cryptoReceipt, setCryptoReceipt] = useState<string | null>(null);
+  const [cryptoReceiptFileName, setCryptoReceiptFileName] = useState<string>('');
+  const cryptoReceiptInputRef = useRef<HTMLInputElement>(null);
+  
+  // Gold-first input mode state (GOLD-ONLY COMPLIANCE)
+  const [inputMode, setInputMode] = useState<'gold' | 'usd'>('gold');
+  const [goldAmount, setGoldAmount] = useState('');
+  
+  // Preserve base USD amount for correct gold gram calculations when using non-USD bank accounts
+  const [baseUsdAmount, setBaseUsdAmount] = useState<number>(0);
+  
+  // LGPW/FGPW wallet type selection
+  const [selectedWalletType, setSelectedWalletType] = useState<GoldWalletType>('LGPW');
+  
+  // Terms and conditions
+  const [termsAccepted, setTermsAccepted] = useState(false);
+  const [termsContent, setTermsContent] = useState<{ title: string; terms: string; enabled: boolean } | null>(null);
+
+  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  const fetchTerms = async () => {
+    try {
+      const response = await fetch('/api/terms/deposit');
+      const data = await response.json();
+      setTermsContent(data);
+    } catch (error) {
+      console.error('Failed to load terms');
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      // Reset form state first before fetching data
+      resetForm();
+      
+      checkNgeniusStatus();
+      fetchBankAccounts();
+      fetchCryptoWallets();
+      fetchFees();
+      fetchGoldPrice();
+      fetchTerms();
+      fetchExchangeRates();
+      
+      // Preload NGenius SDK in background when modal opens
+      preloadNGeniusSDK().catch(() => {
+        // Silently fail - SDK will be loaded when needed
+      });
+    }
+  }, [isOpen]);
+
+  const fetchFees = async () => {
+    try {
+      const response = await fetch('/api/fees/FinaPay');
+      const data = await response.json();
+      const fee = (data.fees || []).find((f: FeeInfo) => f.feeKey === 'deposit_fee');
+      setDepositFee(fee || null);
+    } catch (error) {
+      console.error('Failed to load fees');
+    }
+  };
+
+  const fetchGoldPrice = async () => {
+    try {
+      const response = await fetch('/api/gold-price');
+      const data = await response.json();
+      setGoldPrice({ pricePerGram: data.pricePerGram, currency: data.currency });
+    } catch (error) {
+      console.error('Failed to load gold price');
+    }
+  };
+
+  // Exchange rates state (fetched from API)
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({ AED: 3.6725 });
+  const [rateSource, setRateSource] = useState<string>('default');
+  
+  // Fetch live exchange rates
+  const fetchExchangeRates = async () => {
+    try {
+      const response = await fetch('/api/exchange-rates');
+      const data = await response.json();
+      if (data.rates) {
+        setExchangeRates(data.rates);
+        setRateSource('live');
+        console.log('[Currency] Live rates loaded:', data.rates.AED);
+      }
+    } catch (error) {
+      console.warn('[Currency] Failed to fetch rates, using defaults');
+    }
+  };
+  
+  // Get exchange rate for a currency (from USD base)
+  const getRate = (currency: string): number => {
+    const curr = currency?.toUpperCase();
+    if (!curr || curr === 'USD') return 1;
+    return exchangeRates[curr] || 1;
+  };
+  
+  // Get currency symbol for display
+  const getCurrencySymbol = (currency: string): string => {
+    switch (currency?.toUpperCase()) {
+      case 'AED': return 'AED ';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'SAR': return 'SAR ';
+      case 'QAR': return 'QAR ';
+      default: return '$';
+    }
+  };
+  
+  // Convert amount to USD for internal calculations
+  const convertToUsd = (amount: number, currency: string): number => {
+    if (!currency || currency.toUpperCase() === 'USD') return amount;
+    const rate = getRate(currency);
+    return amount / rate;
+  };
+
+  const calculateFee = (amountValue: number): number => {
+    if (!depositFee || amountValue <= 0) return 0;
+    let fee = 0;
+    if (depositFee.feeType === 'percentage') {
+      fee = amountValue * (parseFloat(depositFee.feeValue) / 100);
+    } else {
+      fee = parseFloat(depositFee.feeValue);
+    }
+    if (depositFee.minAmount) fee = Math.max(fee, parseFloat(depositFee.minAmount));
+    if (depositFee.maxAmount) fee = Math.min(fee, parseFloat(depositFee.maxAmount));
+    return fee;
+  };
+
+  const getDepositSummary = () => {
+    const amountNum = parseFloat(amount) || 0;
+    const accountCurrency = selectedAccount?.currency || 'USD';
+    const amountInUsd = convertToUsd(amountNum, accountCurrency);
+    const feeAmount = calculateFee(amountInUsd); // Fee calculated in USD
+    const netDepositUsd = amountInUsd - feeAmount;
+    const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
+    
+    // Convert fee back to original currency for display
+    const feeInOriginalCurrency = accountCurrency.toUpperCase() !== 'USD' ? feeAmount * getRate(accountCurrency) : feeAmount;
+    const netDepositOriginal = amountNum - feeInOriginalCurrency;
+    
+    return { 
+      amountNum, 
+      amountInUsd,
+      feeAmount, 
+      feeInOriginalCurrency,
+      netDeposit: netDepositOriginal, 
+      netDepositUsd,
+      goldGrams,
+      currency: accountCurrency,
+      currencySymbol: getCurrencySymbol(accountCurrency)
+    };
+  };
+
+  const resetForm = () => {
+    setStep('method');
+    setPaymentMethod(null);
+    setSelectedAccount(null);
+    setAmount('');
+    setGoldAmount('');
+    setBaseUsdAmount(0);
+    setInputMode('gold');
+    setSenderBankName('');
+    setSenderAccountName('');
+    setProofOfPayment(null);
+    setProofFileName('');
+    setReferenceNumber('');
+    setSelectedCryptoWallet(null);
+    setTransactionHash('');
+    setCopiedAddress(false);
+    setCryptoPaymentRequestId(null);
+    setSelectedWalletType('LGPW');
+    setCryptoReceipt(null);
+    setCryptoReceiptFileName('');
+    setTermsAccepted(false);
+  };
+  
+  // Get effective USD amount from gold or USD input (GOLD-ONLY COMPLIANCE)
+  const getEffectiveUsdAmount = (): number => {
+    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+      const goldGrams = parseFloat(goldAmount) || 0;
+      return goldGrams * goldPrice.pricePerGram;
+    }
+    return parseFloat(amount) || 0;
+  };
+  
+  // Get effective gold grams from gold or USD input
+  const getEffectiveGoldGrams = (): number => {
+    if (inputMode === 'gold') {
+      return parseFloat(goldAmount) || 0;
+    }
+    if (goldPrice?.pricePerGram) {
+      return (parseFloat(amount) || 0) / goldPrice.pricePerGram;
+    }
+    return 0;
+  };
+  
+  const handleCryptoReceiptUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error("File size must be less than 5MB");
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setCryptoReceipt(reader.result as string);
+        setCryptoReceiptFileName(file.name);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  
+  const fetchCryptoWallets = async () => {
+    try {
+      const response = await fetch('/api/crypto-wallets/active');
+      const data = await response.json();
+      setCryptoWallets(data.wallets || []);
+    } catch (error) {
+      console.error('Failed to load crypto wallets');
+    }
+  };
+  
+  const copyToClipboardCrypto = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedAddress(true);
+    toast.success("Address copied to clipboard");
+    setTimeout(() => setCopiedAddress(false), 2000);
+  };
+  
+  const handleCryptoCreatePayment = async () => {
+    if (!user || !selectedCryptoWallet || !amount) return;
+    
+    const amountNum = parseFloat(amount);
+    const minDeposit = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      // Apply fee deduction before calculating gold grams (Universal Bank Rule)
+      const feeAmount = calculateFee(amountNum);
+      const netDepositUsd = amountNum - feeAmount;
+      const goldGramsAfterFee = goldPrice ? (netDepositUsd / goldPrice.pricePerGram) : 0;
+      
+      const response = await apiRequest('POST', '/api/crypto-payments', {
+        userId: user.id,
+        walletConfigId: selectedCryptoWallet.id,
+        amountUsd: amountNum.toFixed(2),
+        goldGrams: goldGramsAfterFee.toFixed(6),
+        goldPriceAtTime: goldPrice?.pricePerGram.toFixed(2) || '0',
+        paymentType: 'deposit',
+      });
+      
+      const data = await response.json();
+      
+      setCryptoPaymentRequestId(data.paymentRequest.id);
+      setStep('crypto-address');
+      refreshTransactions();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+  
+  const handleCryptoSubmitProof = async () => {
+    if (!cryptoPaymentRequestId || !transactionHash.trim()) {
+      toast.error("Please enter your transaction hash");
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      const response = await apiRequest('PATCH', `/api/crypto-payments/${cryptoPaymentRequestId}/submit-proof`, {
+        transactionHash: transactionHash.trim(),
+        proofImageUrl: cryptoReceipt,
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || 'Failed to submit proof');
+      }
+      
+      setStep('crypto-submitted');
+      toast.success("Payment submitted for verification");
+      refreshTransactions();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to submit proof");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') {
+      toast.error("Please upload an image or PDF file");
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size must be less than 5MB");
+      return;
+    }
+
+    setProofFileName(file.name);
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const base64 = e.target?.result as string;
+      setProofOfPayment(base64);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeProof = () => {
+    setProofOfPayment(null);
+    setProofFileName('');
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const checkNgeniusStatus = async () => {
+    setCheckingNgenius(true);
+    try {
+      const response = await fetch('/api/ngenius/status');
+      const data = await response.json();
+      setNgeniusEnabled(data.enabled);
+    } catch (error) {
+      setNgeniusEnabled(false);
+    } finally {
+      setCheckingNgenius(false);
+    }
+  };
+
+  const fetchBankAccounts = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/bank-accounts/active');
+      const data = await response.json();
+      setBankAccounts(data.accounts || []);
+    } catch (error) {
+      toast.error("Failed to load bank accounts");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    toast.success("Copied to clipboard", {
+      description: `${label} copied`
+    });
+  };
+
+  const handleSelectMethod = (method: PaymentMethod) => {
+    setPaymentMethod(method);
+    setStep('amount');
+  };
+  
+  const handleAmountContinue = () => {
+    const minDeposit = platformSettings.minDeposit || 50;
+    const effectiveUsd = getEffectiveUsdAmount();
+    
+    if (effectiveUsd < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
+      return;
+    }
+    
+    // Sync the USD amount for downstream use
+    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+      setAmount(effectiveUsd.toFixed(2));
+    }
+    
+    // Navigate downstream based on pre-selected method
+    if (paymentMethod === 'bank') {
+      setStep('select');
+    } else if (paymentMethod === 'card') {
+      handleCardPayment();
+    } else if (paymentMethod === 'crypto') {
+      setStep('crypto-select-wallet');
+    }
+  };
+
+  const handleSelectAccount = (account: PlatformBankAccount) => {
+    setSelectedAccount(account);
+    
+    // Calculate and preserve the base USD amount for gold gram calculations
+    // This ensures correct gold calculations regardless of display currency
+    let usdBase = 0;
+    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+      // User entered gold grams - calculate USD value
+      usdBase = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+    } else {
+      // User entered USD amount
+      usdBase = parseFloat(amount || '0');
+    }
+    setBaseUsdAmount(usdBase);
+    
+    // Convert the amount to the bank's currency for display
+    // But keep the base USD amount for calculations
+    if (account.currency !== 'USD' && usdBase > 0) {
+      const rate = exchangeRates[account.currency] || 1;
+      const convertedAmount = (usdBase * rate).toFixed(2);
+      setAmount(convertedAmount);
+      // Note: inputMode stays as is - we use baseUsdAmount for calculations
+    }
+    
+    setStep('details');
+  };
+
+  const handleSubmit = async () => {
+    if (!selectedAccount || !user || !amount) return;
+    
+    const amountNum = parseFloat(amount);
+    if (isNaN(amountNum) || amountNum <= 0) {
+      toast.error("Please enter a valid amount");
+      return;
+    }
+
+    if (!proofOfPayment) {
+      toast.error("Please upload proof of payment");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Use baseUsdAmount for non-USD banks to send the correct USD value (not the converted currency value)
+      const actualUsdAmount = selectedAccount.currency !== 'USD' && baseUsdAmount > 0 
+        ? baseUsdAmount 
+        : parseFloat(amount);
+      
+      // Calculate expected gold values for pending state display (informational only)
+      const currentGoldPrice = goldPrice?.pricePerGram || 0;
+      const feePercent = depositFee?.feeType === 'percentage' ? parseFloat(depositFee.feeValue) : 0;
+      const feeAmount = calculateFee(actualUsdAmount);
+      const netDepositUsd = actualUsdAmount - feeAmount;
+      const expectedGoldGrams = currentGoldPrice > 0 ? netDepositUsd / currentGoldPrice : 0;
+      
+      const res = await apiRequest('POST', '/api/deposit-requests', {
+        userId: user.id,
+        bankAccountId: selectedAccount.id,
+        amountUsd: actualUsdAmount.toString(),
+        targetBankName: selectedAccount.bankName,
+        targetAccountName: selectedAccount.accountName,
+        targetAccountNumber: selectedAccount.accountNumber,
+        targetSwiftCode: selectedAccount.swiftCode || null,
+        targetIban: selectedAccount.iban || null,
+        targetCurrency: selectedAccount.currency,
+        senderBankName: senderBankName || null,
+        senderAccountName: senderAccountName || null,
+        proofOfPayment: proofOfPayment,
+        goldWalletType: selectedWalletType,
+        expectedGoldGrams: expectedGoldGrams.toFixed(6),
+        priceSnapshotUsdPerGram: currentGoldPrice.toFixed(2),
+        feePercentSnapshot: feePercent.toFixed(2),
+      });
+      const data = await res.json();
+      
+      setReferenceNumber(data.request.referenceNumber);
+      setStep('submitted');
+      toast.success("Deposit request submitted");
+    } catch (error: any) {
+      // Check if this is a KYC error
+      if (error?.code === 'KYC_REQUIRED' || error?.message?.includes('KYC')) {
+        toast.error('Identity Verification Required', {
+          description: 'Please complete your identity verification to access this feature.',
+          action: {
+            label: 'Verify Now',
+            onClick: () => window.location.href = '/kyc',
+          },
+        });
+        onClose();
+      } else {
+        const errorMessage = error?.message || "Failed to submit deposit request";
+        toast.error(errorMessage, {
+          description: 'Please check your details and try again.',
+          action: {
+            label: 'Retry',
+            onClick: () => handleSubmit(),
+          },
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCardPayment = async () => {
+    if (!user || !amount) return;
+    
+    const amountNum = parseFloat(amount);
+    const minDeposit = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDeposit) {
+      toast.error(`Minimum deposit amount is $${minDeposit}`);
+      return;
+    }
+
+    const maxCardDeposit = Math.min(platformSettings.maxDepositSingle || 100000, 10000);
+    if (amountNum > maxCardDeposit) {
+      toast.error(`Maximum card deposit is $${maxCardDeposit.toLocaleString()}. For larger amounts, please use bank transfer.`);
+      return;
+    }
+
+    // Use embedded card form (SDK is preloaded when modal opened)
+    setCardFormKey(prev => prev + 1); // Force remount to clear NGenius SDK state
+    setStep('card-embedded');
+  };
+  
+  const handleCardSuccess = (result: { goldGrams: string; amountUsd: number }) => {
+    toast.success(`Successfully deposited $${result.amountUsd.toFixed(2)} (${result.goldGrams}g gold)`);
+    setStep('card-success');
+  };
+  
+  const handleCardError = (error: string) => {
+    toast.error(error || "Card payment failed");
+    setStep('card-amount');
+  };
+
+  const handleClose = () => {
+    resetForm();
+    onClose();
+  };
+
+  const handleBack = () => {
+    if (step === 'method') {
+      handleClose();
+    } else if (step === 'amount') {
+      setStep('method');
+      setPaymentMethod(null);
+    } else if (step === 'select' || step === 'card-amount' || step === 'crypto-amount' || step === 'crypto-select-wallet' || step === 'details' || step === 'card-embedded' || step === 'crypto-address') {
+      setStep('amount');
+      setSelectedAccount(null);
+      setSelectedCryptoWallet(null);
+      setTransactionHash('');
+      setCryptoReceipt(null);
+      setCryptoReceiptFileName('');
+    }
+  };
+
+  const handleCryptoConfirm = async () => {
+    if (!user || !selectedCryptoWallet) return;
+    
+    const amountNum = parseFloat(amount);
+    const minDepositForCrypto = platformSettings.minDeposit || 50;
+    if (isNaN(amountNum) || amountNum < minDepositForCrypto) {
+      toast.error(`Minimum deposit amount is $${minDepositForCrypto}`);
+      return;
+    }
+    
+    setSubmitting(true);
+    try {
+      // Apply fee deduction before calculating gold grams (Universal Bank Rule)
+      const feeAmount = calculateFee(amountNum);
+      const netDepositUsd = amountNum - feeAmount;
+      const goldGramsAfterFee = goldPrice ? (netDepositUsd / goldPrice.pricePerGram) : 0;
+      
+      const response = await apiRequest('POST', '/api/crypto-payments', {
+        userId: user.id,
+        walletConfigId: selectedCryptoWallet.id,
+        amountUsd: amountNum.toFixed(2),
+        goldGrams: goldGramsAfterFee.toFixed(6),
+        goldPriceAtTime: goldPrice?.pricePerGram?.toFixed(2) || '0',
+        paymentType: 'deposit',
+      });
+      const data = await response.json();
+      setCryptoPaymentRequestId(data.paymentRequest.id);
+      setStep('crypto-address');
+      refreshTransactions();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create payment request");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const isCardPayment = step === 'card-embedded';
+
+  // Mobile content for MobileFullScreenPage
+  const mobileContent = (
+    <div className="space-y-6">
+      {step === 'method' && (
+        <>
+          {/* Progress Stepper — Method (active) → Amount → Confirm */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+              <span className="text-sm font-medium text-foreground">Method</span>
+            </div>
+            <div className="w-8 h-0.5 bg-muted"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+              <span className="text-sm font-medium text-muted-foreground">Amount</span>
+            </div>
+            <div className="w-8 h-0.5 bg-muted"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+              <span className="text-sm font-medium text-muted-foreground">Confirm</span>
+            </div>
+          </div>
+          <p className="text-sm font-semibold text-foreground text-center">Choose your payment method</p>
+          <div className="space-y-3">
+            {/* Bank Transfer — always available */}
+            <button
+              type="button"
+              onClick={() => handleSelectMethod('bank')}
+              className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 dark:bg-slate-950/20 hover:border-primary hover:bg-primary/5 transition-all"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                <Building className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="font-semibold text-foreground">Bank Transfer</p>
+                <p className="text-xs text-muted-foreground">Wire / SWIFT / Local bank</p>
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
+            </button>
+            {/* Card — only when N-Genius is enabled */}
+            {ngeniusEnabled && (
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('card')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 dark:bg-slate-950/20 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-foreground">Debit / Credit Card</p>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
+            {/* Crypto — only when wallets are configured */}
+            {cryptoWallets.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleSelectMethod('crypto')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-transparent bg-slate-50 dark:bg-slate-950/20 hover:border-primary hover:bg-primary/5 transition-all"
+              >
+                <div className="w-12 h-12 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center flex-shrink-0">
+                  <Bitcoin className="w-6 h-6 text-amber-600 dark:text-amber-400" />
+                </div>
+                <div className="flex-1 text-left">
+                  <p className="font-semibold text-foreground">Cryptocurrency</p>
+                  <p className="text-xs text-muted-foreground">USDT, BTC, ETH and more</p>
+                </div>
+                <ChevronRight className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
+          </div>
+        </>
+      )}
+      {step === 'amount' && (
+        <>
+          {/* Progress Stepper — Method ✓ → Amount (active) → Confirm */}
+          <div className="flex items-center justify-center gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                <Check className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium text-primary">Method</span>
+            </div>
+            <div className="w-8 h-0.5 bg-primary"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+              <span className="text-sm font-medium text-foreground">Amount</span>
+            </div>
+            <div className="w-8 h-0.5 bg-muted"></div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+              <span className="text-sm font-medium text-muted-foreground">Confirm</span>
+            </div>
+          </div>
+          
+          {/* Unit Toggle */}
+          <div className="flex justify-center">
+            <div className="inline-flex bg-slate-100 dark:bg-slate-800/60 rounded-full p-1">
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputMode !== 'usd') {
+                    setInputMode('usd');
+                    if (goldPrice?.pricePerGram && goldAmount && parseFloat(goldAmount) > 0) {
+                      const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
+                      setAmount(usdValue.toFixed(2));
+                    } else {
+                      setAmount('');
+                      setGoldAmount('');
+                    }
+                  }
+                }}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                  inputMode === 'usd' 
+                    ? 'bg-emerald-50 dark:bg-emerald-950/200 text-white shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                USD
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (inputMode !== 'gold') {
+                    setInputMode('gold');
+                    if (goldPrice?.pricePerGram && amount && parseFloat(amount) > 0) {
+                      const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
+                      setGoldAmount(goldValue.toFixed(4));
+                    } else {
+                      setAmount('');
+                      setGoldAmount('');
+                    }
+                  }
+                }}
+                className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                  inputMode === 'gold' 
+                    ? 'bg-purple-50 dark:bg-purple-950/200 text-white shadow-md' 
+                    : 'text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                Grams
+              </button>
+            </div>
+          </div>
+          
+          {/* Amount Input */}
+          <div className={`border-2 rounded-xl bg-card transition-colors ${
+            inputMode === 'usd' ? 'border-emerald-200 dark:border-emerald-800/40 focus-within:border-emerald-500' : 'border-purple-200 dark:border-purple-800/40 focus-within:border-purple-500'
+          }`}>
+            <div className="flex items-center justify-center py-6 px-4">
+              <span className="text-3xl font-bold mr-2 text-foreground">
+                {inputMode === 'usd' ? '$' : ''}
+              </span>
+              <Input
+                type="number"
+                step={inputMode === 'usd' ? '0.01' : '0.0001'}
+                placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                value={inputMode === 'usd' ? amount : goldAmount}
+                onChange={(e) => {
+                  if (inputMode === 'usd') {
+                    setAmount(e.target.value);
+                    if (goldPrice?.pricePerGram && e.target.value) {
+                      const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
+                      setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
+                    } else {
+                      setGoldAmount('');
+                    }
+                  } else {
+                    setGoldAmount(e.target.value);
+                    if (goldPrice?.pricePerGram && e.target.value) {
+                      const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
+                      setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+                    } else {
+                      setAmount('');
+                    }
+                  }
+                }}
+                className="h-14 text-4xl font-bold text-center border-0 focus-visible:ring-0 bg-transparent w-full max-w-[200px] p-0 rounded-xl"
+              />
+              <span className={`text-xl font-semibold ml-2 ${inputMode === 'usd' ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
+                {inputMode === 'gold' ? 'g' : ''}
+              </span>
+            </div>
+          </div>
+          
+          {/* Conversion */}
+          <div className="h-8 flex items-center justify-center">
+            {goldPrice && (
+              <p className="text-sm text-muted-foreground">
+                {inputMode === 'usd' && amount && parseFloat(amount) > 0 ? (
+                  <>≈ <span className="font-semibold text-purple-600 dark:text-purple-400">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span> gold</>
+                ) : inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0 ? (
+                  <>≈ <span className="font-semibold text-emerald-600 dark:text-emerald-400">${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</span> USD</>
+                ) : (
+                  <span className="text-muted-foreground/50">Enter amount to see conversion</span>
+                )}
+              </p>
+            )}
+          </div>
+          
+          {goldPrice && (
+            <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
+              <div className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse"></div>
+              <span>Live: <span className="font-semibold text-foreground">${(goldPrice?.pricePerGram ?? 0).toFixed(2)}/g</span></span>
+            </div>
+          )}
+          
+          {/* Summary Card */}
+          {goldPrice && ((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+            (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+            <div className="bg-slate-50 dark:bg-slate-950/20 rounded-xl p-4 border border-slate-200 dark:border-slate-800/40 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">You'll receive:</span>
+                <span className="text-lg font-bold text-foreground">
+                  {inputMode === 'gold' 
+                    ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toFixed(4)
+                    : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toFixed(4)}g gold
+                </span>
+              </div>
+              
+              {depositFee && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Processing fee ({depositFee.feeValue}%):</span>
+                  <span className="text-red-500">
+                    {inputMode === 'gold' 
+                      ? `-${(parseFloat(goldAmount) * parseFloat(depositFee.feeValue) / 100).toFixed(4)}g`
+                      : `-$${calculateFee(parseFloat(amount) || 0).toFixed(2)}`
+                    }
+                  </span>
+                </div>
+              )}
+              
+              <p className="text-xs text-muted-foreground pt-2 border-t border-slate-200 dark:border-slate-800/40">
+                Final rate confirmed upon fund receipt. Gold deposited to LGPW.
+              </p>
+            </div>
+          )}
+          
+          {/* Payment Method Selection */}
+          {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+            (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+            <div className="space-y-4">
+              <p className="text-sm font-semibold text-center text-foreground">Choose payment method</p>
+              
+              {/* Bank Transfer Section */}
+              {(bankAccounts.filter(a => a.status === 'Active').length > 0) && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 px-1">
+                    <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                    <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Bank Transfer</span>
+                    <span className="text-xs text-muted-foreground">• 1-3 days • No fees</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {bankAccounts.filter(a => a.currency === 'AED' && a.status === 'Active').length > 0 && (
+                      <button
+                        onClick={() => {
+                          const minDeposit = platformSettings.minDeposit || 50;
+                          const effectiveUsd = getEffectiveUsdAmount();
+                          if (effectiveUsd < minDeposit) {
+                            toast.error(`Minimum deposit: $${minDeposit}`);
+                            return;
+                          }
+                          if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                            setAmount(effectiveUsd.toFixed(2));
+                          }
+                          const aedAccount = bankAccounts.find(a => a.currency === 'AED' && a.status === 'Active');
+                          if (aedAccount) {
+                            setPaymentMethod('bank');
+                            handleSelectAccount(aedAccount);
+                          }
+                        }}
+                        className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-teal-400 hover:bg-teal-50 dark:bg-teal-950/20/50 transition-all"
+                      >
+                        <span className="font-bold text-foreground">AED</span>
+                        <span className="text-xs text-muted-foreground">Dirham</span>
+                      </button>
+                    )}
+                    
+                    {bankAccounts.filter(a => a.currency === 'USD' && a.status === 'Active').length > 0 && (
+                      <button
+                        onClick={() => {
+                          const minDeposit = platformSettings.minDeposit || 50;
+                          const effectiveUsd = getEffectiveUsdAmount();
+                          if (effectiveUsd < minDeposit) {
+                            toast.error(`Minimum deposit: $${minDeposit}`);
+                            return;
+                          }
+                          if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                            setAmount(effectiveUsd.toFixed(2));
+                          }
+                          const usdAccount = bankAccounts.find(a => a.currency === 'USD' && a.status === 'Active');
+                          if (usdAccount) {
+                            setPaymentMethod('bank');
+                            handleSelectAccount(usdAccount);
+                          }
+                        }}
+                        className="h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-blue-400 hover:bg-blue-50 dark:bg-blue-950/20/50 transition-all"
+                      >
+                        <span className="font-bold text-foreground">USD</span>
+                        <span className="text-xs text-muted-foreground">Dollar</span>
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {/* Other Payment Methods */}
+              <div className="grid grid-cols-2 gap-2">
+                {ngeniusEnabled && (
+                  <button
+                    onClick={() => {
+                      const minDeposit = platformSettings.minDeposit || 50;
+                      const effectiveUsd = getEffectiveUsdAmount();
+                      if (effectiveUsd < minDeposit) {
+                        toast.error(`Minimum deposit: $${minDeposit}`);
+                        return;
+                      }
+                      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                        setAmount(effectiveUsd.toFixed(2));
+                      }
+                      setPaymentMethod('card');
+                      handleCardPayment();
+                    }}
+                    className="h-14 flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/20/50 transition-all"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-emerald-50 dark:bg-emerald-950/200 flex items-center justify-center flex-shrink-0">
+                      <CreditCard className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm text-foreground">Card</p>
+                      <p className="text-xs text-muted-foreground">Instant • 2.5%</p>
+                    </div>
+                  </button>
+                )}
+                
+                {cryptoWallets.length > 0 && (
+                  <button
+                    onClick={() => {
+                      const minDeposit = platformSettings.minDeposit || 50;
+                      const effectiveUsd = getEffectiveUsdAmount();
+                      if (effectiveUsd < minDeposit) {
+                        toast.error(`Minimum deposit: $${minDeposit}`);
+                        return;
+                      }
+                      if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                        setAmount(effectiveUsd.toFixed(2));
+                      }
+                      setPaymentMethod('crypto');
+                      setStep('crypto-select-wallet');
+                    }}
+                    className="h-14 flex items-center gap-3 p-3 rounded-xl border-2 border-slate-200 dark:border-slate-800/40 hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20/50 transition-all"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-purple-600 flex items-center justify-center flex-shrink-0">
+                      <Bitcoin className="w-5 h-5 text-white" />
+                    </div>
+                    <div className="text-left">
+                      <p className="font-semibold text-sm text-foreground">Crypto</p>
+                      <p className="text-xs text-muted-foreground">~30 min • No fees</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+      
+      {step === 'details' && selectedAccount && (
+        <div className="space-y-4">
+          <div className="bg-emerald-50 dark:bg-emerald-950/20 rounded-xl p-4 border border-emerald-200 dark:border-emerald-800/40">
+            <p className="text-sm font-semibold text-emerald-800 dark:text-emerald-200 mb-2">Transfer to this account:</p>
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Bank:</span>
+                <span className="font-medium">{selectedAccount.bankName}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Account:</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">{selectedAccount.accountNumber}</span>
+                  <button onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')} className="text-emerald-600 dark:text-emerald-400">
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              {selectedAccount.iban && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">IBAN:</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-xs">{selectedAccount.iban}</span>
+                    <button onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')} className="text-emerald-600 dark:text-emerald-400">
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
+              {selectedAccount.swiftCode && (
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">SWIFT:</span>
+                  <span className="font-medium">{selectedAccount.swiftCode}</span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">Amount ({selectedAccount.currency})</Label>
+              <Input
+                type="text"
+                value={`${getCurrencySymbol(selectedAccount.currency)}${amount}`}
+                disabled
+                className="h-14 rounded-xl bg-slate-50 dark:bg-slate-950/20 mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Your Bank Name (Optional)</Label>
+              <Input
+                type="text"
+                placeholder="Enter your bank name"
+                value={senderBankName}
+                onChange={(e) => setSenderBankName(e.target.value)}
+                className="h-14 rounded-xl mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Your Account Name (Optional)</Label>
+              <Input
+                type="text"
+                placeholder="Enter your account name"
+                value={senderAccountName}
+                onChange={(e) => setSenderAccountName(e.target.value)}
+                className="h-14 rounded-xl mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Proof of Payment *</Label>
+              <div className="mt-2">
+                {proofOfPayment ? (
+                  <div className="flex items-center justify-between p-3 bg-emerald-50 dark:bg-emerald-950/20 rounded-xl border border-emerald-200 dark:border-emerald-800/40">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                      <span className="text-sm text-emerald-800 dark:text-emerald-200 truncate max-w-[200px]">{proofFileName}</span>
+                    </div>
+                    <button onClick={removeProof} className="text-red-500">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="w-full h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 hover:border-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/20/50 transition-all"
+                  >
+                    <Upload className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Upload receipt or screenshot</span>
+                  </button>
+                )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+            
+            {termsContent?.enabled && (
+              <div className="flex items-start gap-3 p-3 bg-slate-50 dark:bg-slate-950/20 rounded-xl">
+                <Checkbox
+                  id="terms-mobile"
+                  checked={termsAccepted}
+                  onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                  className="mt-1"
+                />
+                <Label htmlFor="terms-mobile" className="text-xs text-muted-foreground leading-relaxed">
+                  {termsContent.terms}
+                </Label>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {step === 'crypto-select-wallet' && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground text-center">Select a network to deposit with</p>
+          <div className="space-y-2">
+            {cryptoWallets.map((wallet) => (
+              <button
+                key={wallet.id}
+                onClick={() => setSelectedCryptoWallet(wallet)}
+                className={`w-full h-14 flex items-center gap-3 p-3 rounded-xl border-2 transition-all ${
+                  selectedCryptoWallet?.id === wallet.id
+                    ? 'border-purple-500 bg-purple-50 dark:bg-purple-950/20'
+                    : 'border-slate-200 dark:border-slate-800/40 hover:border-purple-300'
+                }`}
+              >
+                <Bitcoin className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                <div className="text-left flex-1">
+                  <p className="font-semibold text-sm">{wallet.networkLabel}</p>
+                  <p className="text-xs text-muted-foreground">{wallet.currency}</p>
+                </div>
+                {selectedCryptoWallet?.id === wallet.id && (
+                  <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {step === 'crypto-address' && selectedCryptoWallet && (
+        <div className="space-y-4">
+          <div className="bg-purple-50 dark:bg-purple-950/20 rounded-xl p-4 border border-purple-200 dark:border-purple-800/40">
+            <p className="text-sm font-semibold text-purple-800 dark:text-purple-200 mb-3">Send {selectedCryptoWallet.currency} to:</p>
+            <div className="bg-card rounded-lg p-3 border border-purple-200 dark:border-purple-800/40">
+              <p className="text-xs font-mono break-all text-center">{selectedCryptoWallet.walletAddress}</p>
+            </div>
+            <button
+              onClick={() => copyToClipboardCrypto(selectedCryptoWallet.walletAddress)}
+              className="w-full h-14 mt-3 flex items-center justify-center gap-2 rounded-xl bg-purple-600 text-white font-semibold hover:bg-purple-700 transition-all"
+            >
+              {copiedAddress ? <Check className="w-5 h-5" /> : <Copy className="w-5 h-5" />}
+              {copiedAddress ? 'Copied!' : 'Copy Address'}
+            </button>
+            {selectedCryptoWallet.memo && (
+              <div className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-950/20 rounded-lg border border-yellow-200 dark:border-yellow-800/40">
+                <p className="text-xs text-yellow-800 dark:text-yellow-200">Memo/Tag: <span className="font-mono">{selectedCryptoWallet.memo}</span></p>
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-3">
+            <div>
+              <Label className="text-sm font-medium">Transaction Hash *</Label>
+              <Input
+                type="text"
+                placeholder="Enter your transaction hash"
+                value={transactionHash}
+                onChange={(e) => setTransactionHash(e.target.value)}
+                className="h-14 rounded-xl mt-1"
+              />
+            </div>
+            
+            <div>
+              <Label className="text-sm font-medium">Receipt Screenshot (Optional)</Label>
+              <div className="mt-2">
+                {cryptoReceipt ? (
+                  <div className="flex items-center justify-between p-3 bg-purple-50 dark:bg-purple-950/20 rounded-xl border border-purple-200 dark:border-purple-800/40">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      <span className="text-sm text-purple-800 dark:text-purple-200 truncate max-w-[200px]">{cryptoReceiptFileName}</span>
+                    </div>
+                    <button onClick={() => { setCryptoReceipt(null); setCryptoReceiptFileName(''); }} className="text-red-500">
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => cryptoReceiptInputRef.current?.click()}
+                    className="w-full h-14 flex items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20/50 transition-all"
+                  >
+                    <Upload className="w-5 h-5 text-muted-foreground" />
+                    <span className="text-sm text-muted-foreground">Upload screenshot</span>
+                  </button>
+                )}
+                <input
+                  ref={cryptoReceiptInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleCryptoReceiptUpload}
+                  className="hidden"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {step === 'card-embedded' && (
+        <div className="space-y-4">
+          <HybridCardPayment
+            key={cardFormKey}
+            amount={parseFloat(amount) || 0}
+            goldWalletType={selectedWalletType}
+            onSuccess={handleCardSuccess}
+            onError={handleCardError}
+            onCancel={handleBack}
+          />
+        </div>
+      )}
+      
+      {step === 'submitted' && (
+        <div className="text-center space-y-4 py-8">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground">Deposit Submitted</h3>
+          <p className="text-muted-foreground">Your deposit request has been submitted and is pending review.</p>
+          {referenceNumber && (
+            <div className="bg-slate-50 dark:bg-slate-950/20 rounded-xl p-4 border border-slate-200 dark:border-slate-800/40">
+              <p className="text-sm text-muted-foreground">Reference Number</p>
+              <p className="text-lg font-mono font-bold text-foreground">{referenceNumber}</p>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {step === 'crypto-submitted' && (
+        <div className="text-center space-y-4 py-8">
+          <div className="w-16 h-16 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mx-auto">
+            <Clock className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground">Payment Submitted</h3>
+          <p className="text-muted-foreground">Your crypto payment has been submitted for verification. This typically takes 30 minutes.</p>
+        </div>
+      )}
+      
+      {step === 'card-success' && (
+        <div className="text-center space-y-4 py-8">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-8 h-8 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <h3 className="text-xl font-bold text-foreground">Payment Successful</h3>
+          <p className="text-muted-foreground">Your card payment was processed successfully. Gold has been added to your wallet.</p>
+        </div>
+      )}
+    </div>
+  );
+
+  // Mobile footer button
+  const mobileFooterButton = (
+    <>
+      {step === 'amount' && (
+        <div className="flex gap-3 w-full">
+          <Button 
+            variant="outline"
+            onClick={handleBack}
+            className="flex-1 h-14 rounded-xl font-semibold"
+          >
+            Back
+          </Button>
+          <Button 
+            onClick={handleAmountContinue}
+            disabled={
+              inputMode === 'gold'
+                ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                : !amount || parseFloat(amount) < (platformSettings.minDeposit || 50)
+            }
+            className="flex-[2] h-14 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
+          >
+            <ArrowRight className="w-4 h-4 mr-2" />
+            Continue
+          </Button>
+        </div>
+      )}
+      {step === 'details' && (
+        <Button 
+          onClick={() => {
+            if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+              const usdValue = getEffectiveUsdAmount();
+              setAmount(usdValue.toFixed(2));
+            }
+            handleSubmit();
+          }} 
+          disabled={!proofOfPayment || submitting || (termsContent?.enabled && !termsAccepted)}
+          className="w-full h-14 rounded-xl bg-emerald-50 dark:bg-emerald-950/200 hover:bg-emerald-600 text-white font-semibold"
+        >
+          {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+          Submit Deposit Request
+        </Button>
+      )}
+      {step === 'crypto-select-wallet' && (
+        <Button 
+          onClick={handleCryptoConfirm}
+          disabled={!selectedCryptoWallet || submitting}
+          className="w-full h-14 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+        >
+          {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+          Continue
+        </Button>
+      )}
+      {step === 'crypto-address' && (
+        <Button 
+          onClick={handleCryptoSubmitProof}
+          disabled={!transactionHash.trim() || submitting}
+          className="w-full h-14 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-semibold"
+        >
+          {submitting ? <Loader2 className="w-5 h-5 mr-2 animate-spin" /> : null}
+          Submit for Verification
+        </Button>
+      )}
+      {(step === 'submitted' || step === 'crypto-submitted' || step === 'card-success') && (
+        <Button 
+          onClick={handleClose}
+          className="w-full h-14 rounded-xl bg-emerald-50 dark:bg-emerald-950/200 hover:bg-emerald-600 text-white font-semibold"
+        >
+          Done
+        </Button>
+      )}
+    </>
+  );
+
+  // Mobile rendering
+  if (isMobile) {
+    return (
+      <MobileFullScreenPage 
+        isOpen={isOpen} 
+        onClose={handleClose} 
+        title="Add Funds" 
+        subtitle="Deposit to your account" 
+        headerColor="green" 
+        footer={mobileFooterButton}
+      >
+        <div className="p-4">{mobileContent}</div>
+      </MobileFullScreenPage>
+    );
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className={`bg-card border-border text-foreground overflow-x-hidden ${
+        isCardPayment 
+          ? 'w-[95vw] max-w-xl overflow-hidden' 
+          : 'w-[95vw] max-w-4xl max-h-[90vh] overflow-y-auto'
+      }`}>
+        <DialogHeader>
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-primary" />
+            <span>Deposit Funds</span>
+          </DialogTitle>
+          <p className="font-bold text-foreground text-sm">(Fund your account through buying equivalent amount of gold)</p>
+          <DialogDescription className="text-muted-foreground">
+            {step === 'amount' && "Fund your account through buying equivalent amount of gold"}
+            {step === 'method' && "Choose your preferred deposit method"}
+            {step === 'select' && "Select a bank account to deposit to"}
+            {step === 'details' && "Enter deposit details and make your transfer"}
+            {step === 'submitted' && "Deposit request submitted successfully"}
+            {step === 'card-amount' && "Enter the amount to deposit via card"}
+            {step === 'card-processing' && "Redirecting to secure payment..."}
+            {step === 'card-embedded' && "Enter your card details securely"}
+            {step === 'card-success' && "Payment completed successfully"}
+            {step === 'crypto-amount' && "Enter the amount to deposit via crypto"}
+            {step === 'crypto-select-wallet' && "Select a cryptocurrency network"}
+            {step === 'crypto-address' && "Send crypto and submit your transaction hash for verification"}
+            {step === 'crypto-submitted' && "Payment submitted for verification"}
+          </DialogDescription>
+        </DialogHeader>
+
+        {step === 'amount' ? (
+          <div className="space-y-6 py-4">
+            {/* Progress Stepper — Method ✓ → Amount → Confirm */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
+              </div>
+            </div>
+            
+            {/* Modern Fintech Amount Input */}
+            <div className="space-y-4">
+              {/* Unit Toggle */}
+              <div className="flex justify-center">
+                <div className="inline-flex bg-slate-100 dark:bg-slate-800/60 rounded-full p-1">
+                  <button
+                    type="button"
+                    data-testid="toggle-usd"
+                    onClick={() => {
+                      if (inputMode !== 'usd') {
+                        setInputMode('usd');
+                        // Sync: convert gold to USD or clear if empty
+                        if (goldPrice?.pricePerGram && goldAmount && parseFloat(goldAmount) > 0) {
+                          const usdValue = parseFloat(goldAmount) * goldPrice.pricePerGram;
+                          setAmount(usdValue.toFixed(2));
+                        } else {
+                          setAmount('');
+                          setGoldAmount('');
+                        }
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                      inputMode === 'usd' 
+                        ? 'bg-primary text-white shadow-md' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    USD
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="toggle-grams"
+                    onClick={() => {
+                      if (inputMode !== 'gold') {
+                        setInputMode('gold');
+                        // Sync: convert USD to gold or clear if empty
+                        if (goldPrice?.pricePerGram && amount && parseFloat(amount) > 0) {
+                          const goldValue = parseFloat(amount) / goldPrice.pricePerGram;
+                          setGoldAmount(goldValue.toFixed(4));
+                        } else {
+                          setAmount('');
+                          setGoldAmount('');
+                        }
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-full text-sm font-semibold transition-all ${
+                      inputMode === 'gold' 
+                        ? 'bg-purple-50 dark:bg-purple-950/200 text-white shadow-md' 
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    Grams
+                  </button>
+                </div>
+              </div>
+              
+              {/* Single Large Input */}
+              <div className="relative">
+                <div className={`border-2 rounded-2xl bg-card transition-colors ${
+                  inputMode === 'usd' ? 'border-primary/30 focus-within:border-primary' : 'border-purple-300 focus-within:border-purple-500'
+                }`}>
+                  <div className="flex items-center justify-center py-6 px-4">
+                    <span className="text-3xl font-bold mr-2 text-foreground">
+                      {inputMode === 'usd' ? '$' : ''}
+                    </span>
+                    <Input
+                      type="number"
+                      step={inputMode === 'usd' ? '0.01' : '0.0001'}
+                      placeholder={inputMode === 'usd' ? '0.00' : '0.0000'}
+                      value={inputMode === 'usd' ? amount : goldAmount}
+                      onChange={(e) => {
+                        if (inputMode === 'usd') {
+                          setAmount(e.target.value);
+                          if (goldPrice?.pricePerGram && e.target.value) {
+                            const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
+                            setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
+                          } else {
+                            setGoldAmount('');
+                          }
+                        } else {
+                          setGoldAmount(e.target.value);
+                          if (goldPrice?.pricePerGram && e.target.value) {
+                            const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
+                            setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+                          } else {
+                            setAmount('');
+                          }
+                        }
+                      }}
+                      className="text-4xl font-bold text-center border-0 focus-visible:ring-0 bg-transparent w-full max-w-[200px] p-0"
+                      data-testid={inputMode === 'usd' ? 'input-usd-amount' : 'input-gold-amount'}
+                    />
+                    <span className={`text-xl font-semibold ml-2 ${inputMode === 'usd' ? 'text-primary' : 'text-purple-600 dark:text-purple-400'}`}>
+                      {inputMode === 'gold' ? 'g' : ''}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Conversion Row - Always Visible (Stable Height) */}
+              <div className="h-8 flex items-center justify-center">
+                {goldPrice && (
+                  <p className="text-sm text-muted-foreground">
+                    {inputMode === 'usd' && amount && parseFloat(amount) > 0 ? (
+                      <>≈ <span className="font-semibold text-purple-600 dark:text-purple-400">{(parseFloat(amount) / goldPrice.pricePerGram).toFixed(4)}g</span> gold</>
+                    ) : inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0 ? (
+                      <>≈ <span className="font-semibold text-primary">${(parseFloat(goldAmount) * goldPrice.pricePerGram).toFixed(2)}</span> USD</>
+                    ) : (
+                      <span className="text-muted-foreground/50">Enter amount to see conversion</span>
+                    )}
+                  </p>
+                )}
+              </div>
+              
+              {/* Quick Preset Amounts - Dynamic based on mode */}
+              <div className="flex flex-wrap justify-center gap-2">
+                {inputMode === 'usd' ? (
+                  [50, 100, 250, 500, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      data-testid={`preset-amount-${preset}`}
+                      onClick={() => {
+                        setAmount(preset.toString());
+                        if (goldPrice?.pricePerGram) {
+                          setGoldAmount((preset / goldPrice.pricePerGram).toFixed(4));
+                        }
+                      }}
+                      className="px-4 py-2 rounded-full border border-slate-200 dark:border-slate-800/40 hover:border-primary hover:bg-primary/5 text-sm font-medium text-foreground transition-all"
+                    >
+                      ${preset}
+                    </button>
+                  ))
+                ) : (
+                  [1, 10, 31.1, 100, 1000].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      data-testid={`preset-gold-${preset}`}
+                      onClick={() => {
+                        setGoldAmount(preset.toString());
+                        if (goldPrice?.pricePerGram) {
+                          setAmount((preset * goldPrice.pricePerGram).toFixed(2));
+                        }
+                      }}
+                      className="px-4 py-2 rounded-full border border-purple-200 dark:border-purple-800/40 hover:border-purple-500 hover:bg-purple-50 dark:bg-purple-950/20 text-sm font-medium text-foreground transition-all"
+                    >
+                      {preset === 1000 ? '1kg' : `${preset}g`}
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Compact Summary Card - Only shows when amount entered */}
+            {goldPrice && ((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+              <div className="bg-slate-50 dark:bg-slate-950/20 rounded-xl p-4 border border-slate-200 dark:border-slate-800/40 space-y-3">
+                {/* You'll Receive - Main highlight */}
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">You'll receive:</span>
+                  <span className="text-lg font-bold text-foreground">
+                    {inputMode === 'gold' 
+                      ? (parseFloat(goldAmount) * (1 - parseFloat(depositFee?.feeValue || '0') / 100)).toFixed(4)
+                      : (((parseFloat(amount) || 0) - calculateFee(parseFloat(amount) || 0)) / goldPrice.pricePerGram).toFixed(4)}g gold
+                  </span>
+                </div>
+                
+                {/* Fee info - small text */}
+                {depositFee && (
+                  <div className="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>Processing fee ({depositFee.feeValue}%):</span>
+                    <span className="text-red-500">
+                      {inputMode === 'gold' 
+                        ? `-${(parseFloat(goldAmount) * parseFloat(depositFee.feeValue) / 100).toFixed(4)}g`
+                        : `-$${calculateFee(parseFloat(amount) || 0).toFixed(2)}`
+                      }
+                    </span>
+                  </div>
+                )}
+                
+                {/* Notice */}
+                <p className="text-xs text-muted-foreground pt-2 border-t border-slate-200 dark:border-slate-800/40">
+                  Final rate confirmed upon fund receipt. Gold deposited to LGPW.
+                </p>
+              </div>
+            )}
+            
+            {/* Selected method badge — read-only, method was chosen on previous screen */}
+            {paymentMethod && (
+              <div className="flex items-center gap-2 px-3 py-2 bg-slate-50 dark:bg-slate-950/20 rounded-xl border border-slate-200 dark:border-slate-800/40">
+                {paymentMethod === 'bank' && <Building className="w-4 h-4 text-blue-600 dark:text-blue-400" />}
+                {paymentMethod === 'card' && <CreditCard className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />}
+                {paymentMethod === 'crypto' && <Bitcoin className="w-4 h-4 text-amber-600 dark:text-amber-400" />}
+                <span className="text-sm font-medium text-foreground">
+                  {paymentMethod === 'bank' && 'Bank Transfer'}
+                  {paymentMethod === 'card' && 'Debit / Credit Card'}
+                  {paymentMethod === 'crypto' && 'Cryptocurrency'}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => { setStep('method'); setPaymentMethod(null); }}
+                  className="ml-auto text-xs text-primary hover:underline"
+                >
+                  Change
+                </button>
+              </div>
+            )}
+            
+            {/* Legacy Conversion Display - kept for compatibility */}
+            {goldPrice && false && (
+              <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-5 border border-slate-200 dark:border-slate-800/40 shadow-sm space-y-4">
+                {/* Conversion Result */}
+                {((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+                  (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+                  <div className="bg-card rounded-lg p-4 border border-slate-200 dark:border-slate-800/40">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {inputMode === 'gold' ? (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                              <Coins className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">You're buying</p>
+                              <p className="text-lg font-bold text-foreground">{parseFloat(goldAmount).toFixed(4)}g gold</p>
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                              <DollarSign className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-muted-foreground">You're depositing</p>
+                              <p className="text-lg font-bold text-foreground">${parseFloat(amount).toFixed(2)} USD</p>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                      <ChevronRight className="w-5 h-5 text-muted-foreground" />
+                      <div className="text-right">
+                        {inputMode === 'gold' ? (
+                          <>
+                            <p className="text-xs text-muted-foreground">Estimated cost</p>
+                            <p className="text-lg font-bold text-foreground">≈ ${(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0)).toFixed(2)}</p>
+                          </>
+                        ) : (
+                          <>
+                            <p className="text-xs text-muted-foreground">You'll receive</p>
+                            <p className="text-lg font-bold text-foreground">≈ {(parseFloat(amount) / (goldPrice?.pricePerGram || 1)).toFixed(4)}g</p>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Wallet Destination Badge */}
+                <div className="flex items-center justify-center gap-2 py-2 px-4 bg-primary/5 rounded-lg border border-primary/10">
+                  <Wallet className="w-4 h-4 text-primary" />
+                  <span className="text-xs font-medium text-primary">Gold will be credited to your Live Gold Price Wallet (LGPW)</span>
+                </div>
+              </div>
+            )}
+
+
+            {/* Minimum Deposit Notice */}
+            <p className="text-xs text-center text-muted-foreground pt-2">
+              Minimum deposit: <span className="font-semibold">${platformSettings.minDeposit || 50} USD</span>
+            </p>
+          </div>
+        ) : (loading || checkingNgenius) && step === 'method' ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-primary" />
+          </div>
+        ) : step === 'method' ? (
+          <div className="space-y-6 py-4">
+            {/* Progress Stepper — Method → Amount → Confirm */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">1</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">2</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-muted"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-muted-foreground hidden sm:inline">Confirm</span>
+              </div>
+            </div>
+
+            <h3 className="text-sm font-semibold text-foreground text-center">Choose your payment method</h3>
+            
+            {/* Payment Method Cards - Premium Design */}
+            <div className="space-y-3">
+              {/* Bank Transfer */}
+              <button
+                onClick={() => handleSelectMethod('bank')}
+                className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-blue-400 hover:bg-blue-50 dark:bg-blue-950/20/30 transition-all duration-200 text-left relative overflow-hidden"
+                data-testid="button-select-bank-transfer"
+              >
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-200 group-hover:shadow-blue-300 transition-shadow">
+                    <Building className="w-7 h-7 text-white" />
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <h4 className="font-bold text-foreground text-lg">Bank Transfer</h4>
+                      <span className="px-2 py-0.5 text-[10px] font-bold bg-blue-100 dark:bg-blue-900/30 text-foreground rounded-full uppercase">Recommended</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground mt-0.5">Transfer from your bank account</p>
+                    <div className="flex items-center gap-4 mt-2">
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <Clock className="w-3 h-3" />
+                        <span>1-3 business days</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-green-600 dark:text-green-400">
+                        <Check className="w-3 h-3" />
+                        <span>No fees</span>
+                      </div>
+                    </div>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-blue-500 group-hover:translate-x-1 transition-all" />
+                </div>
+              </button>
+
+              {/* Card Payment */}
+              {ngeniusEnabled && (
+                <button
+                  onClick={() => handleSelectMethod('card')}
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-emerald-400 hover:bg-emerald-50 dark:bg-emerald-950/20/30 transition-all duration-200 text-left relative overflow-hidden"
+                  data-testid="button-select-card-payment"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-emerald-200 group-hover:shadow-emerald-300 transition-shadow">
+                      <CreditCard className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-foreground text-lg">Card Payment</h4>
+                        <span className="px-2 py-0.5 text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-foreground rounded-full uppercase flex items-center gap-0.5">
+                          <Zap className="w-2.5 h-2.5" />
+                          Instant
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">Pay with Visa or Mastercard</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>Instant credit</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Shield className="w-3 h-3" />
+                          <span>3D Secure</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-emerald-500 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </button>
+              )}
+
+              {/* Crypto Payment */}
+              {cryptoWallets.length > 0 && (
+                <button
+                  onClick={() => handleSelectMethod('crypto')}
+                  className="w-full group border-2 border-border rounded-xl p-5 bg-card hover:border-purple-400 hover:bg-purple-50 dark:bg-purple-950/20/30 transition-all duration-200 text-left relative overflow-hidden"
+                  data-testid="button-select-crypto-payment"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-purple-500 flex items-center justify-center shadow-lg shadow-purple-200 group-hover:shadow-purple-300 transition-shadow">
+                      <Bitcoin className="w-7 h-7 text-white" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <h4 className="font-bold text-foreground text-lg">Cryptocurrency</h4>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5">Bitcoin, Ethereum, USDT & more</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>Manual verification</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Globe className="w-3 h-3" />
+                          <span>Multiple networks</span>
+                        </div>
+                      </div>
+                    </div>
+                    <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-purple-600 dark:text-purple-400 group-hover:translate-x-1 transition-all" />
+                  </div>
+                </button>
+              )}
+            </div>
+
+            {/* Trust Badge */}
+            <div className="flex items-center justify-center gap-2 pt-3 text-xs text-muted-foreground">
+              <Shield className="w-4 h-4 text-green-600 dark:text-green-400" />
+              <span>All transactions are secured with industry-standard encryption</span>
+            </div>
+          </div>
+        ) : step === 'select' ? (
+          <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            {bankAccounts.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Building className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                <p>No bank accounts available for deposit at this time.</p>
+                <p className="text-sm">Please try again later or contact support.</p>
+              </div>
+            ) : (
+              bankAccounts.map((account) => (
+                <button
+                  key={account.id}
+                  onClick={() => handleSelectAccount(account)}
+                  className="w-full border border-border rounded-xl p-4 bg-muted/10 hover:bg-muted/30 transition-colors text-left"
+                  data-testid={`button-select-bank-${account.id}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="font-bold text-foreground">{account.bankName}</h4>
+                      <p className="text-sm text-muted-foreground">{account.accountName}</p>
+                      <p className="text-xs text-muted-foreground">{account.country} | {account.currency}</p>
+                    </div>
+                    <ArrowRight className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        ) : step === 'details' && selectedAccount ? (
+          <div className="py-4">
+            <div className="grid md:grid-cols-5 gap-6">
+              {/* Left Panel - Premium Bank Details Card - Takes 3/5 of width */}
+              <div className="md:col-span-3 relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6 shadow-xl">
+                {/* Decorative Elements */}
+                <div className="absolute top-0 right-0 w-40 h-40 bg-gradient-to-br from-purple-400/20 to-transparent rounded-full blur-2xl -translate-y-10 translate-x-10"></div>
+                <div className="absolute bottom-0 left-0 w-32 h-32 bg-gradient-to-tr from-purple-500/10 to-transparent rounded-full blur-xl translate-y-6 -translate-x-6"></div>
+                
+                {/* Header */}
+                <div className="relative flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-4">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg">
+                      <Building className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-lg">Transfer To</h4>
+                      <p className="text-sm text-slate-400">{selectedAccount.bankName}</p>
+                    </div>
+                  </div>
+                  <span className="px-4 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-bold rounded-full shadow-lg">
+                    {selectedAccount.currency}
+                  </span>
+                </div>
+                
+                {/* Bank Details - Vertical Stack for Maximum Readability */}
+                <div className="relative space-y-3">
+                  {/* Beneficiary - Full Width */}
+                  <div className="group">
+                    <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">BENEFICIARY NAME</span>
+                    <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
+                      <span className="font-semibold text-lg text-white leading-tight">{selectedAccount.accountName}</span>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-50 dark:bg-purple-950/200/20 text-purple-300 hover:text-white hover:bg-purple-50 dark:bg-purple-950/200/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountName, 'Beneficiary')}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Account Number - Full Width */}
+                  <div className="group">
+                    <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">ACCOUNT NUMBER</span>
+                    <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
+                      <span className="font-mono text-xl font-bold text-purple-200 tracking-wide">{selectedAccount.accountNumber}</span>
+                      <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-50 dark:bg-purple-950/200/20 text-purple-300 hover:text-white hover:bg-purple-50 dark:bg-purple-950/200/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.accountNumber, 'Account Number')}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* SWIFT Code - Full Width */}
+                  {selectedAccount.swiftCode && (
+                    <div className="group">
+                      <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">SWIFT CODE</span>
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
+                        <span className="font-mono text-xl font-bold text-white tracking-widest">{selectedAccount.swiftCode}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-50 dark:bg-purple-950/200/20 text-purple-300 hover:text-white hover:bg-purple-50 dark:bg-purple-950/200/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.swiftCode!, 'SWIFT')}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* IBAN - Full Width with Wrap */}
+                  {selectedAccount.iban && (
+                    <div className="group">
+                      <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">IBAN</span>
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
+                        <span className="font-mono text-xl font-bold text-purple-200 tracking-wide break-all leading-relaxed">{selectedAccount.iban}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-50 dark:bg-purple-950/200/20 text-purple-300 hover:text-white hover:bg-purple-50 dark:bg-purple-950/200/40 rounded-lg ml-2" onClick={() => copyToClipboard(selectedAccount.iban!, 'IBAN')}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Routing Number - Full Width */}
+                  {selectedAccount.routingNumber && (
+                    <div className="group">
+                      <span className="text-xs text-purple-300 uppercase tracking-wider font-semibold block mb-1.5">ROUTING NUMBER</span>
+                      <div className="flex items-center justify-between bg-card/10 backdrop-blur-sm p-3.5 rounded-xl border border-purple-500/40 hover:bg-card/15 transition-colors">
+                        <span className="font-mono text-xl font-bold text-white tracking-wide">{selectedAccount.routingNumber}</span>
+                        <Button variant="ghost" size="icon" className="h-9 w-9 flex-shrink-0 bg-purple-50 dark:bg-purple-950/200/20 text-purple-300 hover:text-white hover:bg-purple-50 dark:bg-purple-950/200/40 rounded-lg" onClick={() => copyToClipboard(selectedAccount.routingNumber!, 'Routing')}>
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Right Panel - Summary + Upload (Vertical Stack) - Takes 2/5 of width */}
+              <div className="md:col-span-2 space-y-4">
+                {/* Deposit Summary */}
+                <div className="text-center">
+                  <h4 className="font-semibold text-foreground text-sm">Deposit Summary</h4>
+                  <p className="text-xs text-muted-foreground">Your deposit details</p>
+                </div>
+                
+                {/* Gold Amount - Read Only */}
+                <div className="bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl p-4 border border-purple-200 dark:border-purple-800/40">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                        <Coins className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-purple-800 dark:text-purple-200">Gold You'll Receive</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setStep('amount')}
+                      className="text-xs text-purple-700 dark:text-purple-300 hover:text-purple-900 hover:bg-purple-100 dark:bg-purple-900/30 h-6 px-2"
+                      data-testid="button-edit-amount"
+                    >
+                      Edit
+                    </Button>
+                  </div>
+                  <p className="text-2xl font-bold text-purple-800 dark:text-purple-200 text-center">
+                    {(() => {
+                      const feeRate = parseFloat(depositFee?.feeValue || '0') / 100;
+                      // For gold input mode, fee is deducted from gold (universal bank rule)
+                      if (inputMode === 'gold') {
+                        const grossGold = parseFloat(goldAmount || '0');
+                        const netGold = grossGold * (1 - feeRate);
+                        return netGold.toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                      }
+                      // For USD input mode with non-USD bank accounts, use baseUsdAmount
+                      if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0 && goldPrice?.pricePerGram) {
+                        const netUsd = baseUsdAmount * (1 - feeRate);
+                        return (netUsd / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                      }
+                      // For USD input with USD bank, calculate from amount
+                      if (goldPrice?.pricePerGram) {
+                        const usdAmount = parseFloat(amount) || 0;
+                        const netUsd = usdAmount * (1 - feeRate);
+                        return (netUsd / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 });
+                      }
+                      return '0.0000';
+                    })()}g
+                  </p>
+                </div>
+                
+                {/* Fee Breakdown */}
+                <div className="border border-purple-300 rounded-lg p-3 bg-card space-y-2 text-sm">
+                  {/* Deposit Amount (gross) */}
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Deposit Amount:</span>
+                    <span className="font-medium">
+                      {(() => {
+                        // For gold input mode, show gold amount and USD equivalent
+                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                          const goldValue = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+                          return `$${goldValue.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        // For USD input with non-USD bank account, use baseUsdAmount
+                        if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
+                          return `$${baseUsdAmount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        // For USD mode, use amount directly
+                        return `$${(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      })()}
+                    </span>
+                  </div>
+                  
+                  {/* Processing Fee - DEDUCTED (universal bank rule) */}
+                  {depositFee && (
+                    <div className="flex justify-between text-red-500">
+                      <span>Processing Fee ({depositFee.feeValue}%):</span>
+                      <span className="font-medium">
+                        -{(() => {
+                          // Calculate fee based on deposit amount
+                          if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                            const goldValue = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+                            return `$${calculateFee(goldValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          }
+                          // For USD input with non-USD bank account
+                          if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
+                            return `$${calculateFee(baseUsdAmount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                          }
+                          return `$${calculateFee(parseFloat(amount) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        })()}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {/* Total to Pay = Deposit Amount (no fee added, fee is deducted from what user receives) */}
+                  <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800/40 mt-2">
+                    <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-semibold">
+                      <DollarSign className="w-4 h-4" />
+                      Total to Pay:
+                    </span>
+                    <span className="text-lg font-bold text-foreground">
+                      {(() => {
+                        // Calculate total based on input mode (fee is deducted from deposit, not added to payment)
+                        let depositUsd = 0;
+                        if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                          depositUsd = parseFloat(goldAmount || '0') * goldPrice.pricePerGram;
+                        } else if (selectedAccount?.currency !== 'USD' && baseUsdAmount > 0) {
+                          depositUsd = baseUsdAmount;
+                        } else {
+                          depositUsd = parseFloat(amount) || 0;
+                        }
+                        
+                        // Total to pay is the deposit amount (fee is deducted from gold received, not added to payment)
+                        const totalUsd = depositUsd;
+                        
+                        const accountCurrency = selectedAccount?.currency || 'USD';
+                        if (accountCurrency !== 'USD') {
+                          const rate = getRate(accountCurrency);
+                          const totalInCurrency = totalUsd * rate;
+                          return `${getCurrencySymbol(accountCurrency)}${totalInCurrency.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                        }
+                        return `$${totalUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+                      })()}
+                    </span>
+                  </div>
+                  
+                  {goldPrice?.pricePerGram && (
+                    <p className="text-xs text-muted-foreground pt-2 border-t border-purple-200 dark:border-purple-800/40 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse"></span>
+                      Live gold price: ${goldPrice.pricePerGram.toFixed(2)}/gram
+                    </p>
+                  )}
+                </div>
+
+                {/* Upload Proof Section */}
+                <div className="text-center">
+                  <h4 className="font-semibold text-foreground text-sm">Upload Proof</h4>
+                  <p className="text-xs text-muted-foreground">Transfer confirmation</p>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-medium">Proof of Payment *</Label>
+                  <input 
+                    type="file" 
+                    ref={fileInputRef}
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                    data-testid="input-proof-file"
+                  />
+                  
+                  {!proofOfPayment ? (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="w-full border-2 border-dashed border-border rounded-lg p-3 hover:border-primary/50 hover:bg-muted/30 transition-colors text-center mt-1"
+                      data-testid="button-upload-proof"
+                    >
+                      <Upload className="w-5 h-5 mx-auto mb-1 text-muted-foreground" />
+                      <p className="text-xs font-medium text-foreground">Click to upload</p>
+                      <p className="text-[10px] text-muted-foreground">PNG, JPG, PDF</p>
+                    </button>
+                  ) : (
+                    <div className="border border-success/30 rounded-lg p-2 bg-success-muted mt-1">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 bg-success/10 rounded flex items-center justify-center">
+                            <Image className="w-3 h-3 text-success" />
+                          </div>
+                          <div>
+                            <p className="text-xs font-medium text-foreground truncate max-w-[100px]">{proofFileName}</p>
+                            <p className="text-[10px] text-success">Uploaded</p>
+                          </div>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={removeProof}
+                          className="h-6 w-6 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          data-testid="button-remove-proof"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="bg-warning-muted text-warning-muted-foreground text-[10px] p-2 rounded-lg flex items-start gap-1.5">
+                   <div className="mt-0.5">⚠️</div>
+                   <p>Deposit reviewed within 1-3 business days.</p>
+                </div>
+                
+                <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-[10px] p-2 rounded-lg">
+                   <p className="font-semibold mb-0.5">Notice</p>
+                   <p>Gold price is tentative. Final rate confirmed upon fund receipt.</p>
+                </div>
+                
+                {/* Terms and Conditions Checkbox */}
+                {termsContent?.enabled && (
+                  <div className="border border-border rounded-lg p-3 bg-muted/30">
+                    <div className="flex items-start gap-3">
+                      <Checkbox 
+                        id="deposit-terms"
+                        checked={termsAccepted}
+                        onCheckedChange={(checked) => setTermsAccepted(checked === true)}
+                        className="mt-0.5"
+                        data-testid="checkbox-deposit-terms"
+                      />
+                      <div className="flex-1">
+                        <label htmlFor="deposit-terms" className="text-sm font-medium cursor-pointer flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-primary" />
+                          I accept the Terms & Conditions
+                        </label>
+                        <details className="mt-2">
+                          <summary className="text-xs text-primary cursor-pointer hover:underline">View Terms</summary>
+                          <div className="mt-2 text-xs text-muted-foreground whitespace-pre-line bg-card p-2 rounded border max-h-32 overflow-y-auto">
+                            {termsContent.terms}
+                          </div>
+                        </details>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : step === 'card-amount' ? (
+          <div className="space-y-6 py-4">
+            <div className="border border-border rounded-xl p-4 bg-success-muted/30">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-success-muted rounded-full flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 text-success" />
+                </div>
+                <div>
+                  <h4 className="font-bold text-foreground">Card Payment</h4>
+                  <p className="text-xs text-muted-foreground">Visa, Mastercard accepted</p>
+                </div>
+              </div>
+              
+              {/* Input Mode Toggle - GOLD-ONLY COMPLIANCE */}
+              {/* Deposits always go to LGPW - user can transfer to FGPW later */}
+              <div className="flex gap-2 mb-4">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inputMode === 'gold' ? 'default' : 'outline'}
+                  onClick={() => setInputMode('gold')}
+                  className={`flex-1 ${inputMode === 'gold' ? 'bg-purple-50 dark:bg-purple-950/200 hover:bg-purple-600' : ''}`}
+                  data-testid="button-card-input-mode-gold"
+                >
+                  <Coins className="w-4 h-4 mr-1" /> Enter in Gold (g)
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={inputMode === 'usd' ? 'default' : 'outline'}
+                  onClick={() => setInputMode('usd')}
+                  className="flex-1"
+                  data-testid="button-card-input-mode-usd"
+                >
+                  <DollarSign className="w-4 h-4 mr-1" /> Enter in USD
+                </Button>
+              </div>
+              
+              {inputMode === 'gold' ? (
+                <div>
+                  <Label className="text-sm text-purple-700 dark:text-purple-300 font-semibold">Amount (Gold Grams) *</Label>
+                  <div className="relative mt-1">
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-500" />
+                    <Input 
+                      type="number"
+                      value={goldAmount}
+                      onChange={(e) => setGoldAmount(e.target.value)}
+                      placeholder="0.000"
+                      className="pl-9 bg-card border-purple-300 focus:border-purple-500"
+                      step="0.001"
+                      min="0.001"
+                      data-testid="input-card-gold-amount"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Current price: ${goldPrice?.pricePerGram?.toFixed(2) || '—'}/gram
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-sm">Amount (USD) *</Label>
+                  <div className="relative mt-1">
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                    <Input 
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0.00"
+                      className="pl-9 bg-card"
+                      min={platformSettings.minDeposit || 50}
+                      max={Math.min(platformSettings.maxDepositSingle || 100000, 10000)}
+                      data-testid="input-card-amount"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Min: ${platformSettings.minDeposit || 50} | Max: ${Math.min(platformSettings.maxDepositSingle || 100000, 10000).toLocaleString()}</p>
+                </div>
+              )}
+
+              {/* Equivalent Display */}
+              {((inputMode === 'gold' && parseFloat(goldAmount) > 0) || (inputMode === 'usd' && parseFloat(amount) > 0)) && goldPrice?.pricePerGram && (
+                <div className="border border-purple-300 rounded-lg p-3 bg-gradient-to-r from-purple-50 to-violet-50 mt-3">
+                  <div className="flex justify-between items-start">
+                    <span className="flex items-center gap-1 text-purple-700 dark:text-purple-300 text-sm font-medium">
+                      {inputMode === 'gold' ? (
+                        <><DollarSign className="w-4 h-4" /> USD Equivalent:</>
+                      ) : (
+                        <><Coins className="w-4 h-4" /> Gold You'll Receive:</>
+                      )}
+                    </span>
+                    <div className="text-right">
+                      {inputMode === 'gold' ? (
+                        <>
+                          <p className="font-bold text-foreground text-lg">
+                            {parseFloat(goldAmount).toFixed(4)}g gold
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ≈ ${getEffectiveUsdAmount().toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <p className="font-bold text-foreground text-lg">
+                            {getEffectiveGoldGrams().toFixed(4)}g gold
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ≈ ${parseFloat(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+            
+            <div className="bg-purple-50 dark:bg-purple-950/20 border border-purple-200 dark:border-purple-800/40 text-purple-800 dark:text-purple-200 text-xs p-3 rounded-lg flex items-start gap-2">
+              <Coins className="w-4 h-4 mt-0.5 text-purple-600 dark:text-purple-400 flex-shrink-0" />
+              <p>Your real balance is gold. USD is an equivalent value calculated at current market price.</p>
+            </div>
+            
+            <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
+               <div className="mt-0.5">ℹ️</div>
+               <p>Enter your card details securely on the next screen. Your wallet will be credited instantly upon successful payment.</p>
+            </div>
+            
+            <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
+               <p className="font-semibold mb-1">Important Notice</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your Live Gold Price Wallet (LGPW) at the final confirmed rate.</p>
+            </div>
+          </div>
+        ) : step === 'card-processing' ? (
+          <div className="py-12 text-center space-y-4">
+            <Loader2 className="w-12 h-12 animate-spin text-primary mx-auto" />
+            <div>
+              <h3 className="text-lg font-bold text-foreground">Processing...</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Redirecting you to secure payment page
+              </p>
+            </div>
+          </div>
+        ) : step === 'card-embedded' ? (
+          <div className="py-2 w-full max-w-full overflow-hidden">
+            <HybridCardPayment
+              key={`card-form-${cardFormKey}`}
+              amount={parseFloat(amount) || 0}
+              goldWalletType={selectedWalletType}
+              onSuccess={handleCardSuccess}
+              onError={handleCardError}
+              onCancel={handleBack}
+            />
+          </div>
+        ) : step === 'card-success' ? (
+          <div className="py-12 text-center space-y-6">
+            <CheckCircle2 className="w-20 h-20 text-success mx-auto" />
+            <div>
+              <h3 className="text-2xl font-bold text-foreground">Payment Successful!</h3>
+              <p className="text-muted-foreground mt-2">
+                Your gold has been credited to your Live Gold Price Wallet (LGPW).
+              </p>
+            </div>
+            <Button 
+              onClick={handleClose}
+              className="bg-primary"
+            >
+              Done
+            </Button>
+          </div>
+        ) : step === 'crypto-amount' ? (
+          <div className="space-y-6 py-4">
+            {/* Hero Section */}
+            <div className="text-center space-y-3 pb-2">
+              <div className="w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center shadow-lg">
+                <Bitcoin className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-semibold text-foreground">How much gold would you like?</h3>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">Enter amount in gold grams or USD. We'll convert it at live market rates.</p>
+            </div>
+            
+            {/* Dual Amount Inputs - Both Visible with Auto-Conversion */}
+            <div className="grid grid-cols-2 gap-4">
+              {/* Gold Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-purple-700 dark:text-purple-300 flex items-center gap-2">
+                  <Coins className="w-4 h-4" />
+                  Gold (grams)
+                </Label>
+                <div className="relative group">
+                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-400 to-purple-600 rounded-xl transition-opacity ${inputMode === 'gold' ? 'opacity-30' : 'opacity-10'}`}></div>
+                  <div className={`relative bg-card rounded-lg border-2 transition-colors ${inputMode === 'gold' ? 'border-purple-400' : 'border-purple-200 dark:border-purple-800/40'}`}>
+                    <Coins className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-purple-500" />
+                    <Input
+                      type="number"
+                      step="0.0001"
+                      placeholder="0.0000"
+                      value={goldAmount}
+                      onChange={(e) => {
+                        setInputMode('gold');
+                        setGoldAmount(e.target.value);
+                        if (goldPrice?.pricePerGram && e.target.value) {
+                          const usdValue = parseFloat(e.target.value) * goldPrice.pricePerGram;
+                          setAmount(usdValue > 0 ? usdValue.toFixed(2) : '');
+                        } else {
+                          setAmount('');
+                        }
+                      }}
+                      onFocus={() => setInputMode('gold')}
+                      className="pl-11 pr-8 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      data-testid="input-crypto-gold-amount"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-purple-600 dark:text-purple-400">g</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* USD Input */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold text-emerald-700 dark:text-emerald-300 flex items-center gap-2">
+                  <DollarSign className="w-4 h-4" />
+                  USD Amount
+                </Label>
+                <div className="relative group">
+                  <div className={`absolute -inset-0.5 bg-gradient-to-r from-emerald-400 to-emerald-600 rounded-xl transition-opacity ${inputMode === 'usd' ? 'opacity-30' : 'opacity-10'}`}></div>
+                  <div className={`relative bg-card rounded-lg border-2 transition-colors ${inputMode === 'usd' ? 'border-emerald-400' : 'border-emerald-200 dark:border-emerald-800/40'}`}>
+                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-emerald-500" />
+                    <Input
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      value={amount}
+                      onChange={(e) => {
+                        setInputMode('usd');
+                        setAmount(e.target.value);
+                        if (goldPrice?.pricePerGram && e.target.value) {
+                          const goldValue = parseFloat(e.target.value) / goldPrice.pricePerGram;
+                          setGoldAmount(goldValue > 0 ? goldValue.toFixed(4) : '');
+                        } else {
+                          setGoldAmount('');
+                        }
+                      }}
+                      onFocus={() => setInputMode('usd')}
+                      className="pl-11 pr-12 h-14 text-xl font-bold border-0 focus-visible:ring-0 bg-transparent"
+                      data-testid="input-crypto-amount"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-base font-semibold text-emerald-600 dark:text-emerald-400">USD</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Deposit Summary Preview */}
+            {goldPrice && ((inputMode === 'gold' && goldAmount && parseFloat(goldAmount) > 0) || 
+              (inputMode === 'usd' && amount && parseFloat(amount) > 0)) && (
+              <div className="bg-gradient-to-br from-purple-50 via-purple-50 to-violet-50 rounded-xl p-5 border border-purple-200 dark:border-purple-800/40 shadow-sm">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-400 to-purple-600 flex items-center justify-center">
+                    <Coins className="w-4 h-4 text-white" />
+                  </div>
+                  <h4 className="font-bold text-purple-800 dark:text-purple-200">Deposit Summary</h4>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between bg-card/80 rounded-lg p-3 border border-purple-200 dark:border-purple-800/40">
+                    <span className="flex items-center gap-2 text-purple-700 dark:text-purple-300 font-medium">
+                      <Coins className="w-4 h-4" />
+                      Gold You'll Receive:
+                    </span>
+                    <span className="text-xl font-bold text-foreground">
+                      {inputMode === 'gold' 
+                        ? parseFloat(goldAmount).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })
+                        : ((parseFloat(amount) || 0) / goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 4, maximumFractionDigits: 4 })}g
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-sm text-muted-foreground">
+                    <span>Gold Value:</span>
+                    <span className="font-medium">
+                      ${inputMode === 'gold' 
+                        ? (parseFloat(goldAmount) * goldPrice.pricePerGram).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                  
+                  {depositFee && (
+                    <div className="flex items-center justify-between text-sm text-purple-600 dark:text-purple-400">
+                      <span>Processing Fee ({depositFee.feeValue}%):</span>
+                      <span className="font-medium">
+                        +${(inputMode === 'gold' 
+                          ? calculateFee(parseFloat(goldAmount) * (goldPrice?.pricePerGram || 0))
+                          : calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  )}
+                  
+                  {depositFee && (
+                    <div className="flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 rounded-lg p-3 border border-emerald-200 dark:border-emerald-800/40 mt-2">
+                      <span className="flex items-center gap-2 text-emerald-700 dark:text-emerald-300 font-semibold">
+                        <DollarSign className="w-4 h-4" />
+                        Total to Pay:
+                      </span>
+                      <span className="text-lg font-bold text-foreground">
+                        ${(inputMode === 'gold' 
+                          ? (parseFloat(goldAmount) * goldPrice.pricePerGram) + calculateFee(parseFloat(goldAmount) * goldPrice.pricePerGram)
+                          : parseFloat(amount) + calculateFee(parseFloat(amount) || 0)
+                        ).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} (USD)
+                      </span>
+                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between text-xs text-muted-foreground pt-2 border-t border-purple-200 dark:border-purple-800/40">
+                    <span className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-green-50 dark:bg-green-950/200 animate-pulse"></span>
+                      Live gold price:
+                    </span>
+                    <span className="font-medium">${goldPrice.pricePerGram.toFixed(2)}/gram</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div className="bg-warning-muted text-warning-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
+              <div className="mt-0.5">ℹ️</div>
+              <p>After entering the amount, you'll select a crypto network and send payment to our wallet address.</p>
+            </div>
+            
+            <div className="bg-warning-muted border border-warning/30 text-warning-muted-foreground text-xs p-3 rounded-lg">
+               <p className="font-semibold mb-1">Important Notice</p>
+               <p>Gold price shown is tentative. Final rate will be recalculated upon fund receipt. After verification, gold will be deposited to your Live Gold Price Wallet (LGPW) at the final confirmed rate.</p>
+            </div>
+          </div>
+        ) : step === 'crypto-select-wallet' ? (
+          <div className="space-y-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            {/* Progress Stepper */}
+            <div className="flex items-center justify-center gap-2 mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Amount</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
+                  <Check className="w-4 h-4" />
+                </div>
+                <span className="text-sm font-medium text-primary hidden sm:inline">Method</span>
+              </div>
+              <div className="w-8 h-0.5 bg-primary"></div>
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">3</div>
+                <span className="text-sm font-medium text-foreground hidden sm:inline">Network</span>
+              </div>
+            </div>
+
+            {/* Amount Summary */}
+            <div className="bg-gradient-to-r from-purple-50 to-purple-50 rounded-xl p-4 border border-purple-100">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                    <Coins className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Deposit Amount</p>
+                    <p className="text-lg font-bold text-foreground">
+                      {inputMode === 'gold' ? `${parseFloat(goldAmount || '0').toFixed(4)}g gold` : `$${parseFloat(amount || '0').toFixed(2)} USD`}
+                    </p>
+                  </div>
+                </div>
+                <div className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-full">
+                  <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Crypto Payment</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">Select Cryptocurrency Network</h3>
+              <p className="text-sm text-muted-foreground">Choose your preferred network to make the payment</p>
+            </div>
+
+            {cryptoWallets.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Bitcoin className="w-12 h-12 mx-auto mb-4 text-muted-foreground/50" />
+                <p>No crypto wallets available at this time.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-3">
+                {cryptoWallets.map((wallet) => {
+                  const getCryptoStyle = (network: string | undefined | null, currency: string | undefined | null) => {
+                    const n = (network || '').toLowerCase();
+                    const c = (currency || '').toLowerCase();
+                    if (n.includes('bitcoin') || c === 'btc') {
+                      return { 
+                        bg: 'from-purple-500 to-violet-600', 
+                        border: 'border-purple-300 hover:border-purple-400',
+                        hoverBg: 'hover:bg-purple-50 dark:bg-purple-950/20',
+                        icon: '₿',
+                        color: 'text-purple-600 dark:text-purple-400'
+                      };
+                    }
+                    if (n.includes('ethereum') || c === 'eth') {
+                      return { 
+                        bg: 'from-indigo-500 to-indigo-600', 
+                        border: 'border-indigo-300 hover:border-indigo-400',
+                        hoverBg: 'hover:bg-indigo-50 dark:bg-indigo-950/20',
+                        icon: 'Ξ',
+                        color: 'text-indigo-600 dark:text-indigo-400'
+                      };
+                    }
+                    if (c === 'usdt' || c.includes('tether')) {
+                      return { 
+                        bg: 'from-teal-500 to-teal-600', 
+                        border: 'border-teal-300 hover:border-teal-400',
+                        hoverBg: 'hover:bg-teal-50 dark:bg-teal-950/20',
+                        icon: '₮',
+                        color: 'text-teal-600 dark:text-teal-400'
+                      };
+                    }
+                    if (c === 'usdc') {
+                      return { 
+                        bg: 'from-blue-500 to-blue-600', 
+                        border: 'border-blue-300 hover:border-blue-400',
+                        hoverBg: 'hover:bg-blue-50 dark:bg-blue-950/20',
+                        icon: '$',
+                        color: 'text-blue-600 dark:text-blue-400'
+                      };
+                    }
+                    if (n.includes('binance') || n.includes('bep20') || n.includes('bnb')) {
+                      return { 
+                        bg: 'from-yellow-500 to-yellow-600', 
+                        border: 'border-yellow-300 hover:border-yellow-400',
+                        hoverBg: 'hover:bg-yellow-50 dark:bg-yellow-950/20',
+                        icon: 'B',
+                        color: 'text-yellow-600 dark:text-yellow-400'
+                      };
+                    }
+                    if (n.includes('tron') || n.includes('trc')) {
+                      return { 
+                        bg: 'from-red-500 to-red-600', 
+                        border: 'border-red-300 hover:border-red-400',
+                        hoverBg: 'hover:bg-red-50 dark:bg-red-950/20',
+                        icon: 'T',
+                        color: 'text-red-600 dark:text-red-400'
+                      };
+                    }
+                    return { 
+                      bg: 'from-gray-500 to-gray-600', 
+                      border: 'border-border hover:border-gray-400',
+                      hoverBg: 'hover:bg-muted/40',
+                      icon: '◇',
+                      color: 'text-muted-foreground'
+                    };
+                  };
+                  
+                  const style = getCryptoStyle(wallet.network, wallet.currency);
+                  
+                  return (
+                    <button
+                      key={wallet.id}
+                      onClick={() => setSelectedCryptoWallet(wallet)}
+                      disabled={submitting}
+                      className={`group relative border-2 rounded-xl p-4 transition-all duration-200 text-left bg-card ${style.border} ${style.hoverBg} ${
+                        selectedCryptoWallet?.id === wallet.id ? 'ring-2 ring-primary ring-offset-2 bg-primary/5' : ''
+                      }`}
+                      data-testid={`button-select-crypto-${wallet.id}`}
+                    >
+                      <div className="flex flex-col items-center text-center gap-3">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${style.bg} flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform`}>
+                          <span className="text-2xl font-bold text-white">{style.icon}</span>
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-foreground text-sm">{wallet.networkLabel}</h4>
+                          <p className={`text-xs font-medium ${style.color}`}>{wallet.currency}</p>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          <span>~10-30 min</span>
+                        </div>
+                        {selectedCryptoWallet?.id === wallet.id && (
+                          <div className="absolute top-2 right-2">
+                            <Check className="w-4 h-4 text-primary" />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        ) : step === 'crypto-address' && selectedCryptoWallet ? (
+          <div className="space-y-4 py-4 max-h-[70vh] overflow-y-auto">
+            {/* Wallet Address Section */}
+            <div className="p-4 bg-warning-muted border border-warning/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-3">
+                <Bitcoin className="w-5 h-5 text-primary" />
+                <span className="font-semibold">{selectedCryptoWallet.networkLabel}</span>
+              </div>
+              
+              <div className="space-y-3">
+                {/* QR Code Display */}
+                {selectedCryptoWallet.qrCodeImage && (
+                  <div className="flex justify-center">
+                    <div className="p-3 bg-card rounded-lg border">
+                      <img 
+                        src={selectedCryptoWallet.qrCodeImage} 
+                        alt="Scan to pay" 
+                        className="w-32 h-32 object-contain"
+                        loading="lazy"
+                        data-testid="img-crypto-qrcode"
+                      />
+                    </div>
+                  </div>
+                )}
+                
+                <div>
+                  <Label className="text-xs text-muted-foreground">Send to this address:</Label>
+                  <div className="mt-1 p-3 bg-card rounded-lg border flex items-center gap-2">
+                    <code className="text-sm font-mono flex-1 break-all">{selectedCryptoWallet.walletAddress}</code>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => copyToClipboardCrypto(selectedCryptoWallet.walletAddress)}
+                    >
+                      {copiedAddress ? (
+                        <Check className="w-4 h-4 text-success" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+                
+                {selectedCryptoWallet.memo && (
+                  <div>
+                    <Label className="text-xs text-muted-foreground">Memo/Tag (required):</Label>
+                    <div className="mt-1 p-2 bg-card rounded-lg border text-sm font-mono">
+                      {selectedCryptoWallet.memo}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedCryptoWallet.instructions && (
+                  <p className="text-xs text-warning-muted-foreground">{selectedCryptoWallet.instructions}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Transaction Hash Section */}
+            <div>
+              <Label>Transaction Hash / TX ID</Label>
+              <Textarea 
+                placeholder="Enter your transaction hash..."
+                className="mt-2 font-mono text-sm"
+                value={transactionHash}
+                onChange={(e) => setTransactionHash(e.target.value)}
+                rows={2}
+                data-testid="input-transaction-hash"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                This is the unique ID of your transaction on the blockchain.
+              </p>
+            </div>
+            
+            {/* Receipt Upload Section */}
+            <div>
+              <Label>Transaction Receipt (Optional)</Label>
+              <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                ref={cryptoReceiptInputRef}
+                onChange={handleCryptoReceiptUpload}
+                className="hidden"
+                data-testid="input-crypto-receipt"
+              />
+              <div className="mt-2">
+                {cryptoReceipt ? (
+                  <div className="border rounded-lg p-3 bg-muted/20">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-4 h-4 text-success" />
+                        <span className="text-sm truncate max-w-[200px]">{cryptoReceiptFileName}</span>
+                      </div>
+                      <Button 
+                        variant="ghost" 
+                        size="sm"
+                        onClick={() => {
+                          setCryptoReceipt(null);
+                          setCryptoReceiptFileName('');
+                        }}
+                      >
+                        <X className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => cryptoReceiptInputRef.current?.click()}
+                    data-testid="button-upload-crypto-receipt"
+                  >
+                    <Upload className="w-4 h-4 mr-2" />
+                    Upload Receipt Screenshot
+                  </Button>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Upload a screenshot of your transaction for faster verification.
+              </p>
+            </div>
+            
+            {/* Deposit Summary - Same as Bank Transfer */}
+            {(() => {
+              const amountNum = parseFloat(amount) || 0;
+              const feeAmount = calculateFee(amountNum);
+              const netDepositUsd = amountNum - feeAmount;
+              const goldGrams = goldPrice?.pricePerGram && netDepositUsd > 0 ? netDepositUsd / goldPrice.pricePerGram : 0;
+              const feePercentage = depositFee?.feeType === 'percentage' ? parseFloat(depositFee.feeValue) : null;
+              
+              return (
+                <div className="bg-muted/30 rounded-lg border p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Network:</span>
+                    <span className="font-medium">{selectedCryptoWallet.networkLabel}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Deposit Amount:</span>
+                    <span className="font-medium">${amountNum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between text-destructive">
+                    <span>Fee Deducted {feePercentage ? `(-${feePercentage}%)` : ''}:</span>
+                    <span>-${feeAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <Separator className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <span className="text-muted-foreground">Net Deposit:</span>
+                    <span className="text-primary">${netDepositUsd.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {goldPrice?.pricePerGram && (
+                    <div className="flex justify-between font-bold">
+                      <span className="text-muted-foreground">Gold to Receive:</span>
+                      <span className="text-purple-600 dark:text-purple-400">{goldGrams.toFixed(4)}g</span>
+                    </div>
+                  )}
+                  <p className="text-xs text-muted-foreground mt-2 pt-2 border-t">
+                    Gold price: ${goldPrice?.pricePerGram?.toFixed(2)}/g
+                  </p>
+                </div>
+              );
+            })()}
+          </div>
+        ) : step === 'crypto-submitted' ? (
+          <div className="text-center py-8 space-y-4">
+            <div className="w-16 h-16 mx-auto bg-success-muted rounded-full flex items-center justify-center">
+              <CheckCircle2 className="w-8 h-8 text-success" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-lg">Payment Submitted</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your payment is being reviewed. Your wallet will be credited once verified.
+              </p>
+            </div>
+            <div className="p-3 bg-warning-muted border border-warning/30 rounded-lg text-sm text-warning-muted-foreground flex items-start gap-2">
+              <Clock className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <span>Verification typically takes 1-24 hours depending on network confirmations.</span>
+            </div>
+          </div>
+        ) : step === 'submitted' ? (
+          <div className="py-6 space-y-6">
+            <div className="text-center">
+              <div className="w-20 h-20 bg-success-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle2 className="w-10 h-10 text-success" />
+              </div>
+              <h3 className="text-xl font-bold text-foreground">Request Submitted Successfully!</h3>
+              <p className="text-sm text-muted-foreground mt-2">
+                Your deposit is now being processed by our team.
+              </p>
+            </div>
+            
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 text-center">
+              <p className="text-xs text-muted-foreground mb-1">Your Reference Number</p>
+              <p className="font-mono font-bold text-xl text-primary">{referenceNumber}</p>
+              <button 
+                onClick={() => {
+                  navigator.clipboard.writeText(referenceNumber);
+                  toast.success("Reference copied!");
+                }}
+                className="text-xs text-primary hover:underline mt-2 flex items-center justify-center gap-1 mx-auto"
+              >
+                <Copy className="w-3 h-3" /> Copy Reference
+              </button>
+            </div>
+            
+            <div className="bg-muted/30 rounded-xl p-4 space-y-3">
+              <h4 className="font-semibold text-foreground flex items-center gap-2">
+                <Clock className="w-4 h-4 text-primary" /> What Happens Next?
+              </h4>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">1</span>
+                  <span>Complete your bank transfer with the reference number in the description</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">2</span>
+                  <span>Our team will verify your payment (1-3 business days)</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-xs flex items-center justify-center flex-shrink-0 mt-0.5">3</span>
+                  <span>You'll receive a notification when your gold is credited</span>
+                </li>
+              </ol>
+            </div>
+            
+            <div className="bg-info-muted text-info-muted-foreground text-xs p-3 rounded-lg flex items-start gap-2">
+              <Check className="w-4 h-4 flex-shrink-0 mt-0.5" />
+              <p>You can track your deposit status in the Transaction History section of your dashboard.</p>
+            </div>
+          </div>
+        ) : null}
+
+        <DialogFooter>
+          {step === 'amount' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={handleAmountContinue}
+                disabled={
+                  inputMode === 'gold'
+                    ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                    : !amount || parseFloat(amount) < (platformSettings.minDeposit || 50)
+                }
+                data-testid="button-continue-amount"
+              >
+                <ArrowRight className="w-4 h-4 mr-2" />
+                Continue
+              </Button>
+            </>
+          )}
+          {(step === 'select' || step === 'card-amount') && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              {step === 'card-amount' && (
+                <Button 
+                  onClick={() => {
+                    // Sync USD amount from gold input for downstream use
+                    if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                      const usdValue = getEffectiveUsdAmount();
+                      setAmount(usdValue.toFixed(2));
+                    }
+                    handleCardPayment();
+                  }} 
+                  disabled={
+                    inputMode === 'gold'
+                      ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                      : !amount || submitting
+                  }
+                  data-testid="button-proceed-card-payment"
+                >
+                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CreditCard className="w-4 h-4 mr-2" />}
+                  Proceed to Payment
+                </Button>
+              )}
+            </>
+          )}
+          {step === 'details' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={() => {
+                  // Sync USD amount from gold input for downstream use
+                  if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                    const usdValue = getEffectiveUsdAmount();
+                    setAmount(usdValue.toFixed(2));
+                  }
+                  handleSubmit();
+                }} 
+                disabled={
+                  inputMode === 'gold'
+                    ? !goldAmount || submitting || (termsContent?.enabled && !termsAccepted)
+                    : !amount || submitting || (termsContent?.enabled && !termsAccepted)
+                }
+                data-testid="button-submit-deposit"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                Submit Deposit Request
+              </Button>
+            </>
+          )}
+          {step === 'crypto-amount' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={() => {
+                  // Sync USD amount from gold input for downstream use
+                  if (inputMode === 'gold' && goldPrice?.pricePerGram) {
+                    const usdValue = getEffectiveUsdAmount();
+                    setAmount(usdValue.toFixed(2));
+                  }
+                  setStep('crypto-select-wallet');
+                }} 
+                disabled={
+                  inputMode === 'gold' 
+                    ? !goldAmount || getEffectiveUsdAmount() < (platformSettings.minDeposit || 50)
+                    : !amount || parseFloat(amount) < (platformSettings.minDeposit || 50)
+                }
+                data-testid="button-proceed-crypto-select"
+              >
+                <Bitcoin className="w-4 h-4 mr-2" />
+                Select Crypto Network
+              </Button>
+            </>
+          )}
+          {step === 'crypto-select-wallet' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={handleCryptoConfirm}
+                disabled={!selectedCryptoWallet || submitting}
+                data-testid="button-continue-crypto"
+              >
+                {submitting ? (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                ) : (
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                )}
+                Continue
+              </Button>
+            </>
+          )}
+          {step === 'crypto-address' && (
+            <>
+              <Button variant="outline" onClick={handleBack}>Back</Button>
+              <Button 
+                onClick={handleCryptoSubmitProof}
+                disabled={!transactionHash.trim() || submitting}
+                data-testid="button-submit-crypto-proof"
+              >
+                {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle2 className="w-4 h-4 mr-2" />}
+                Submit for Verification
+              </Button>
+            </>
+          )}
+          {(step === 'submitted' || step === 'crypto-submitted') && (
+            <Button onClick={handleClose} data-testid="button-close-deposit">Done</Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

@@ -1,0 +1,156 @@
+import React from 'react';
+import { motion } from 'framer-motion';
+import { Shield, ArrowRight, Sparkles, User, Building2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Link } from 'wouter';
+import { useLanguage } from '@/context/LanguageContext';
+import { useAccountType } from '@/context/AccountTypeContext';
+
+export default function PremiumHeroSection() {
+  const { t } = useLanguage();
+  const { accountType } = useAccountType();
+
+  return (
+    <section className="relative min-h-[auto] lg:min-h-[90vh] py-16 lg:py-0 flex items-center overflow-hidden bg-gradient-to-br from-white via-purple-50/50 to-purple-50/30">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 right-0 w-[600px] h-[600px] bg-purple-200/30 blur-[150px] rounded-full" />
+        <div className="absolute bottom-0 left-1/4 w-[500px] h-[500px] bg-purple-200/20 blur-[120px] rounded-full" />
+        <div className="absolute top-0 left-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/30 blur-[100px] rounded-full" />
+      </div>
+
+      <div className="container mx-auto px-6 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 shadow-sm mb-6">
+              <Sparkles className="w-4 h-4 text-white" />
+              <span className="text-sm font-medium text-white">{t('hero.swissRegulated')}</span>
+              <div className="w-2 h-2 rounded-full bg-card animate-pulse" />
+            </div>
+
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-card border border-border shadow-sm mb-8">
+              {accountType === 'personal' ? (
+                <>
+                  <User className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-medium text-foreground">Personal Account</span>
+                </>
+              ) : (
+                <>
+                  <Building2 className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                  <span className="text-sm font-medium text-foreground">Business Account</span>
+                </>
+              )}
+            </div>
+
+            <h1 className="text-5xl lg:text-6xl font-bold tracking-tight mb-6 leading-tight">
+              <span className="bg-gradient-to-r from-purple-500 to-purple-500 bg-clip-text text-transparent">
+                FinaGold
+              </span>
+              <br />
+              <span className="text-foreground">
+                {accountType === 'personal' 
+                  ? 'Your Digital Gold for Financial Transactions'
+                  : 'Regulated Gold-Backed Financial Infrastructure'}
+              </span>
+            </h1>
+
+            <p className="text-lg text-muted-foreground mb-8 max-w-xl leading-relaxed">
+              {accountType === 'personal' 
+                ? 'Save, store, and use real gold value through a secure, modern online account. Finatrades gives you the power of gold — send, receive, spend anywhere, and earn more through BNSL plans.'
+                : 'Designed for corporates, importers, exporters, trading houses, and institutional partners.'}
+            </p>
+            
+            <p className="text-sm text-muted-foreground mb-8 max-w-lg">
+              Thanks to a strategic partnership with Wingold and Metals DMCC, Finatrades transforms physical gold into a settlement-ready financial instruments.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Link href="/login">
+                <Button 
+                  variant="outline"
+                  size="lg" 
+                  className="h-12 px-8 rounded-full border-border text-foreground/85 hover:bg-muted/40"
+                  data-testid="button-hero-signin"
+                >
+                  Sign In
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+              <Link href="/register">
+                <Button 
+                  size="lg" 
+                  className="h-12 px-8 bg-gradient-to-r from-[#FF6B2F] to-[#FF8F5F] hover:opacity-90 text-white rounded-full shadow-lg shadow-purple-200"
+                  data-testid="button-hero-register"
+                >
+                  Get Started
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="relative hidden lg:block"
+          >
+            <div className="absolute -top-4 right-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600 shadow-sm z-10">
+              <div className="w-2 h-2 rounded-full bg-card" />
+              <span className="text-xs font-medium text-white">Swiss-Regulated Platform</span>
+            </div>
+            
+            <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-3xl p-8 shadow-2xl overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 dark:bg-purple-950/200/20 blur-2xl rounded-full" />
+              
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] rounded-lg" />
+                  <span className="text-white font-semibold text-sm">FINATRADES</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full bg-green-400" />
+                  <span className="text-green-400 text-xs">ACTIVE</span>
+                </div>
+              </div>
+              
+              <div className="mb-4">
+                <span className="text-purple-300 text-xs uppercase tracking-wide">Enterprise Gold</span>
+                <p className="text-muted-foreground/70 text-xs">Gold-Backed Digital</p>
+              </div>
+              
+              <div className="flex gap-4 mb-6">
+                <div className="flex-1 bg-card/10 rounded-xl p-4">
+                  <span className="text-3xl font-bold text-white">5892</span>
+                </div>
+                <div className="flex-1 bg-card/10 rounded-xl p-4">
+                  <span className="text-3xl font-bold text-white">7821</span>
+                </div>
+              </div>
+              
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-muted-foreground/70 text-xs uppercase">Card Holder</p>
+                  <p className="text-white font-medium">FINATRADES CORPORATE</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-muted-foreground/70 text-xs uppercase">Valid Thru</p>
+                  <p className="text-white font-medium">12/28</p>
+                </div>
+                <div className="flex items-center gap-1 px-3 py-1.5 bg-card/10 rounded-full">
+                  <Shield className="w-3 h-3 text-green-400" />
+                  <span className="text-green-400 text-xs">SECURED</span>
+                </div>
+              </div>
+              
+              <div className="absolute bottom-4 left-4 w-12 h-10 bg-gradient-to-br from-[#D4AF37] to-[#F4E4BC] rounded-md" />
+            </div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}

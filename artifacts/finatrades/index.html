@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Finatrades — Gold-Backed Trade Finance Platform</title>
+    <meta name="description" content="Swiss-regulated gold-backed trade finance platform offering gold savings plans, FinaBridge LC financing, FinaCard, and FinaPay for international commodity transactions." />
+
+    <!-- Site-wide social constants (non-route-specific); per-route title/description/canonical/OG managed by react-helmet-async -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Finatrades" />
+    <meta property="og:image" content="https://finatrades.com/opengraph.jpg" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@finatrades" />
+    <meta name="twitter:image" content="https://finatrades.com/opengraph.jpg" />
+
+    <link rel="icon" type="image/webp" href="/favicon.webp" />
+
+    <!-- Pre-hydration theme script: prevents FOUC (flash of wrong theme) on refresh.
+         Runs synchronously BEFORE React hydrates, so the correct theme class is on <html>
+         from the very first paint. Must match next-themes storageKey + attribute config in App.tsx. -->
+    <script>
+      (function () {
+        try {
+          var stored = localStorage.getItem('finatrades-theme');
+          var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          var theme = stored || 'system';
+          var resolved = theme === 'system' ? (prefersDark ? 'dark' : 'light') : theme;
+          var root = document.documentElement;
+          root.classList.remove('light', 'dark');
+          root.classList.add(resolved);
+          root.style.colorScheme = resolved;
+        } catch (e) {}
+      })();
+    </script>
+    <style>
+      /* Match body background to theme immediately to prevent any flash */
+      html { background-color: #ffffff; }
+      html.dark { background-color: #0a0a0a; }
+    </style>
+
+    <!-- NGenius SDK loaded dynamically only when needed for payments -->
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Manrope:wght@400;500;600;700;800&family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap" rel="stylesheet" />
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Finatrades",
+      "url": "https://finatrades.com",
+      "logo": "https://finatrades.com/finatrades-logo-purple.png",
+      "description": "Swiss-regulated gold-backed trade finance platform offering structured gold savings plans, international trade finance (Letters of Credit), gold-backed payments, and commodity sourcing.",
+      "foundingLocation": {
+        "@type": "Place",
+        "name": "Geneva, Switzerland"
+      },
+      "sameAs": [
+        "https://twitter.com/finatrades"
+      ],
+      "contactPoint": {
+        "@type": "ContactPoint",
+        "email": "support@finatrades.com",
+        "contactType": "customer support"
+      }
+    }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

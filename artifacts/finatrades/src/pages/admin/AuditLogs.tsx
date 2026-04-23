@@ -1,0 +1,393 @@
+import React, { useState, useEffect } from 'react';
+import AdminLayout from './AdminLayout';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { Search, RefreshCw, FileText, Filter, User, Calendar, Activity, Eye } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { apiRequest } from '@/lib/queryClient';
+
+interface AuditLog {
+  id: string;
+  entityType: string;
+  entityId: string;
+  action: string;
+  performedBy?: string;
+  previousData?: Record<string, any>;
+  newData?: Record<string, any>;
+  ipAddress?: string;
+  userAgent?: string;
+  createdAt: string;
+}
+
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+
+export default function AuditLogs() {
+  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [users, setUsers] = useState<Record<string, User>>({});
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [entityFilter, setEntityFilter] = useState<string>('all');
+  const [actionFilter, setActionFilter] = useState<string>('all');
+  const [selectedLog, setSelectedLog] = useState<AuditLog | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const fetchLogs = async () => {
+    setIsLoading(true);
+    try {
+      const response = await apiRequest('GET', '/api/admin/audit-logs');
+      const data = await response.json();
+      setLogs(data.logs || []);
+      
+      const usersResponse = await apiRequest('GET', '/api/admin/users');
+      const usersData = await usersResponse.json();
+      const usersMap: Record<string, User> = {};
+      (usersData.users || []).forEach((user: User) => {
+        usersMap[user.id] = user;
+      });
+      setUsers(usersMap);
+    } catch (error: any) {
+      if (error?.isAccessDenied || error?.message?.includes('Access Denied')) {
+        toast.error("Access Denied: You do not have permission for this action. Please contact Admin IT.");
+      } else {
+        toast.error("Failed to load audit logs");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchLogs();
+    // Auto-refresh every 30 seconds
+    const interval = setInterval(fetchLogs, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleViewDetails = (log: AuditLog) => {
+    setSelectedLog(log);
+    setIsDetailModalOpen(true);
+  };
+
+  const getActionBadge = (action: string) => {
+    const styles: Record<string, string> = {
+      'create': 'bg-green-100 text-green-800',
+      'update': 'bg-blue-100 text-blue-800',
+      'delete': 'bg-red-100 text-red-800',
+      'approve': 'bg-emerald-100 text-emerald-800',
+      'reject': 'bg-purple-100 text-purple-800',
+      'login': 'bg-purple-100 text-purple-800',
+      'logout': 'bg-muted text-foreground',
+    };
+    const actionKey = action.toLowerCase().split('_')[0];
+    return <Badge className={styles[actionKey] || 'bg-muted'}>{action}</Badge>;
+  };
+
+  const getEntityIcon = (entityType: string) => {
+    const icons: Record<string, React.ReactNode> = {
+      'user': <User className="h-4 w-4" />,
+      'transaction': <Activity className="h-4 w-4" />,
+      'kyc': <FileText className="h-4 w-4" />,
+    };
+    return icons[entityType.toLowerCase()] || <FileText className="h-4 w-4" />;
+  };
+
+  const uniqueEntityTypes = Array.from(new Set(logs.map(log => log.entityType)));
+  const uniqueActions = Array.from(new Set(logs.map(log => log.action)));
+
+  const filteredLogs = logs.filter(log => {
+    const matchesSearch = 
+      log.entityId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      log.entityType.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (log.performedBy && users[log.performedBy]?.email.toLowerCase().includes(searchQuery.toLowerCase()));
+    
+    const matchesEntity = entityFilter === 'all' || log.entityType === entityFilter;
+    const matchesAction = actionFilter === 'all' || log.action === actionFilter;
+    
+    return matchesSearch && matchesEntity && matchesAction;
+  });
+
+  const stats = {
+    total: logs.length,
+    today: logs.filter(l => {
+      const date = new Date(l.createdAt);
+      const today = new Date();
+      return date.toDateString() === today.toDateString();
+    }).length,
+    uniqueUsers: new Set(logs.map(l => l.performedBy).filter(Boolean)).size,
+    entityTypes: uniqueEntityTypes.length,
+  };
+
+  return (
+    <AdminLayout>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-foreground" data-testid="page-title">
+              Audit Logs
+            </h1>
+            <p className="text-muted-foreground mt-1">
+              Track all system activities and changes
+            </p>
+          </div>
+          <Button onClick={fetchLogs} variant="outline" data-testid="btn-refresh">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Refresh
+          </Button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card data-testid="stat-total">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-purple-100">
+                  <FileText className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Total Logs</p>
+                  <p className="text-2xl font-bold">{stats.total}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card data-testid="stat-today">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-blue-100">
+                  <Calendar className="h-6 w-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Today</p>
+                  <p className="text-2xl font-bold">{stats.today}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card data-testid="stat-users">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-green-100">
+                  <User className="h-6 w-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Unique Users</p>
+                  <p className="text-2xl font-bold">{stats.uniqueUsers}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+          
+          <Card data-testid="stat-entities">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-4">
+                <div className="p-3 rounded-full bg-purple-100">
+                  <Activity className="h-6 w-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-sm text-muted-foreground">Entity Types</p>
+                  <p className="text-2xl font-bold">{stats.entityTypes}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <div className="flex flex-col md:flex-row gap-4 justify-between">
+              <CardTitle>Activity Log</CardTitle>
+              <div className="flex flex-wrap gap-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/70" />
+                  <Input
+                    placeholder="Search logs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 w-64"
+                    data-testid="input-search"
+                  />
+                </div>
+                <Select value={entityFilter} onValueChange={setEntityFilter}>
+                  <SelectTrigger className="w-40" data-testid="select-entity-filter">
+                    <SelectValue placeholder="Entity Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Entities</SelectItem>
+                    {uniqueEntityTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={actionFilter} onValueChange={setActionFilter}>
+                  <SelectTrigger className="w-40" data-testid="select-action-filter">
+                    <SelectValue placeholder="Action" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Actions</SelectItem>
+                    {uniqueActions.map(action => (
+                      <SelectItem key={action} value={action}>{action}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground/70" />
+              </div>
+            ) : filteredLogs.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>No audit logs found</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full" data-testid="audit-logs-table">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Timestamp</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Entity</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Action</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Performed By</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Entity ID</th>
+                      <th className="text-left py-3 px-4 font-medium text-muted-foreground">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredLogs.map((log) => {
+                      const performer = log.performedBy ? users[log.performedBy] : null;
+                      
+                      return (
+                        <tr key={log.id} className="border-b hover:bg-muted/40" data-testid={`row-log-${log.id}`}>
+                          <td className="py-3 px-4 text-sm text-muted-foreground">
+                            {format(new Date(log.createdAt), 'MMM d, yyyy HH:mm:ss')}
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              {getEntityIcon(log.entityType)}
+                              <span className="font-medium">{log.entityType}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            {getActionBadge(log.action)}
+                          </td>
+                          <td className="py-3 px-4">
+                            {performer ? (
+                              <div>
+                                <p className="font-medium text-sm">{performer.firstName} {performer.lastName}</p>
+                                <p className="text-xs text-muted-foreground">{performer.email}</p>
+                              </div>
+                            ) : (
+                              <span className="text-muted-foreground/70">System</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4">
+                            <code className="bg-muted px-2 py-1 rounded text-xs font-mono">
+                              {log.entityId.substring(0, 12)}...
+                            </code>
+                          </td>
+                          <td className="py-3 px-4">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleViewDetails(log)}
+                              data-testid={`btn-view-${log.id}`}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={isDetailModalOpen} onOpenChange={setIsDetailModalOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Audit Log Details</DialogTitle>
+            </DialogHeader>
+            {selectedLog && (
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Timestamp</p>
+                    <p className="font-medium">{format(new Date(selectedLog.createdAt), 'MMM d, yyyy HH:mm:ss')}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Action</p>
+                    {getActionBadge(selectedLog.action)}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entity Type</p>
+                    <p className="font-medium">{selectedLog.entityType}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entity ID</p>
+                    <code className="text-sm bg-muted px-2 py-1 rounded">{selectedLog.entityId}</code>
+                  </div>
+                  {selectedLog.performedBy && users[selectedLog.performedBy] && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Performed By</p>
+                      <p className="font-medium">{users[selectedLog.performedBy].firstName} {users[selectedLog.performedBy].lastName}</p>
+                      <p className="text-sm text-muted-foreground">{users[selectedLog.performedBy].email}</p>
+                    </div>
+                  )}
+                  {selectedLog.ipAddress && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">IP Address</p>
+                      <p className="font-medium">{selectedLog.ipAddress}</p>
+                    </div>
+                  )}
+                </div>
+                
+                {selectedLog.previousData && Object.keys(selectedLog.previousData).length > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">Previous Data</p>
+                    <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-40">
+                      {JSON.stringify(selectedLog.previousData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                
+                {selectedLog.newData && Object.keys(selectedLog.newData).length > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">New Data</p>
+                    <pre className="bg-muted p-4 rounded text-xs overflow-auto max-h-40">
+                      {JSON.stringify(selectedLog.newData, null, 2)}
+                    </pre>
+                  </div>
+                )}
+                
+                {selectedLog.userAgent && (
+                  <div>
+                    <p className="text-sm text-muted-foreground mb-2">User Agent</p>
+                    <p className="text-xs text-muted-foreground break-all">{selectedLog.userAgent}</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
+  );
+}

@@ -1,0 +1,561 @@
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Plus, Pencil, Trash2, Package, Loader2, RefreshCw, Upload, ImageIcon } from 'lucide-react';
+import { toast } from 'sonner';
+import AdminLayout from './AdminLayout';
+import { useRef } from 'react';
+
+interface Product {
+  id: string;
+  wingoldProductId: string;
+  name: string;
+  weight: string;
+  weightGrams: string;
+  purity: string;
+  stock: number;
+  inStock: boolean;
+  imageUrl?: string;
+  description?: string;
+  makingFee?: string;
+  premiumFeePercent?: string;
+  vatPercent?: string;
+}
+
+interface ProductForm {
+  name: string;
+  weight: string;
+  weightGrams: string;
+  purity: string;
+  stock: number;
+  imageUrl: string;
+  description: string;
+  inStock: boolean;
+  makingFee: string;
+  premiumFeePercent: string;
+  vatPercent: string;
+}
+
+const defaultForm: ProductForm = {
+  name: '',
+  weight: '',
+  weightGrams: '',
+  purity: '999.9',
+  stock: 100,
+  imageUrl: '',
+  description: 'LBMA Certified pure gold bar with assay certificate',
+  inStock: true,
+  makingFee: '0',
+  premiumFeePercent: '0',
+  vatPercent: '5',
+};
+
+export default function WingoldProducts() {
+  const queryClient = useQueryClient();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [form, setForm] = useState<ProductForm>(defaultForm);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['/api/wingold/admin/products'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/wingold/admin/products');
+      return res.json();
+    },
+  });
+
+  const products: Product[] = data?.products || [];
+
+  const createMutation = useMutation({
+    mutationFn: async (productData: ProductForm) => {
+      const res = await apiRequest('POST', '/api/wingold/admin/products', productData);
+      if (!res.ok) throw new Error('Failed to create product');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Product created successfully');
+      queryClient.invalidateQueries({ queryKey: ['/api/wingold/admin/products'] });
+      closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to create product');
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: ProductForm }) => {
+      const res = await apiRequest('PUT', `/api/wingold/admin/products/${id}`, data);
+      if (!res.ok) throw new Error('Failed to update product');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Product updated successfully');
+      queryClient.invalidateQueries({ queryKey: ['/api/wingold/admin/products'] });
+      closeModal();
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to update product');
+    },
+  });
+
+  const toggleMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('PATCH', `/api/wingold/admin/products/${id}/toggle`);
+      if (!res.ok) throw new Error('Failed to toggle product');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Product status updated');
+      queryClient.invalidateQueries({ queryKey: ['/api/wingold/admin/products'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to toggle product');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await apiRequest('DELETE', `/api/wingold/admin/products/${id}`);
+      if (!res.ok) throw new Error('Failed to delete product');
+      return res.json();
+    },
+    onSuccess: () => {
+      toast.success('Product deleted');
+      queryClient.invalidateQueries({ queryKey: ['/api/wingold/admin/products'] });
+    },
+    onError: (error: any) => {
+      toast.error(error.message || 'Failed to delete product');
+    },
+  });
+
+  const openCreateModal = () => {
+    setEditingProduct(null);
+    setForm(defaultForm);
+    setIsModalOpen(true);
+  };
+
+  const openEditModal = (product: Product) => {
+    setEditingProduct(product);
+    setForm({
+      name: product.name,
+      weight: product.weight,
+      weightGrams: product.weightGrams,
+      purity: product.purity,
+      stock: product.stock,
+      imageUrl: product.imageUrl || '',
+      description: product.description || '',
+      inStock: product.inStock,
+      makingFee: product.makingFee || '0',
+      premiumFeePercent: product.premiumFeePercent || '0',
+      vatPercent: product.vatPercent || '5',
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingProduct(null);
+    setForm(defaultForm);
+  };
+
+  const handleSubmit = () => {
+    if (!form.name || !form.weight || !form.weightGrams) {
+      toast.error('Name, weight, and weight in grams are required');
+      return;
+    }
+
+    if (editingProduct) {
+      updateMutation.mutate({ id: editingProduct.id, data: form });
+    } else {
+      createMutation.mutate(form);
+    }
+  };
+
+  const handleDelete = (product: Product) => {
+    if (confirm(`Are you sure you want to delete "${product.name}"?`)) {
+      deleteMutation.mutate(product.id);
+    }
+  };
+
+  const ensureCsrfToken = async (): Promise<string> => {
+    const match = document.cookie.match(/csrf_token=([^;]+)/);
+    if (match && match[1]) {
+      return match[1];
+    }
+    try {
+      const res = await fetch('/api/csrf-token', { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        return data.csrfToken || '';
+      }
+    } catch (e) {
+      console.warn('Failed to fetch CSRF token:', e);
+    }
+    return '';
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, WebP, or GIF)');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Image must be less than 5MB');
+      return;
+    }
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const csrfToken = await ensureCsrfToken();
+
+      const res = await fetch('/api/wingold/admin/products/upload-image', {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'x-csrf-token': csrfToken || '',
+          'x-requested-with': 'XMLHttpRequest',
+        },
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}));
+        throw new Error(errorData.error || errorData.message || 'Failed to upload image');
+      }
+
+      const data = await res.json();
+      setForm({ ...form, imageUrl: data.imageUrl });
+      toast.success('Image uploaded successfully');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to upload image');
+    } finally {
+      setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
+  return (
+    <AdminLayout>
+      <div className="p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Package className="w-6 h-6" />
+              Gold Bar Products
+            </h1>
+            <p className="text-muted-foreground">Manage gold bar products shown in Buy Gold Bar modal</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => refetch()} data-testid="button-refresh-products">
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+            <Button onClick={openCreateModal} data-testid="button-add-product">
+              <Plus className="w-4 h-4 mr-2" />
+              Add Product
+            </Button>
+          </div>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Products ({products.length})</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {isLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Package className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                <p>No products found. Add your first gold bar product.</p>
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Image</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Weight</TableHead>
+                    <TableHead>Purity</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {products.map((product) => (
+                    <TableRow key={product.id} data-testid={`product-row-${product.id}`}>
+                      <TableCell>
+                        <div className="w-12 h-12 rounded bg-amber-50 flex items-center justify-center overflow-hidden">
+                          {product.imageUrl ? (
+                            <img src={product.imageUrl} alt={product.name} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <Package className="w-6 h-6 text-amber-600" />
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{product.name}</TableCell>
+                      <TableCell>{product.weight} ({product.weightGrams}g)</TableCell>
+                      <TableCell>{product.purity}</TableCell>
+                      <TableCell>{product.stock}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Switch
+                            checked={product.inStock}
+                            onCheckedChange={() => toggleMutation.mutate(product.id)}
+                            data-testid={`toggle-status-${product.id}`}
+                          />
+                          <Badge variant={product.inStock ? 'default' : 'secondary'}>
+                            {product.inStock ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => openEditModal(product)}
+                            data-testid={`button-edit-${product.id}`}
+                          >
+                            <Pencil className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="text-red-500 hover:text-red-700"
+                            onClick={() => handleDelete(product)}
+                            data-testid={`button-delete-${product.id}`}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
+
+        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {editingProduct ? 'Edit Product' : 'Add New Product'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">Product Name *</Label>
+                <Input
+                  id="name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g., 1g Gold Bar - Wingold"
+                  data-testid="input-product-name"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weight">Weight Label *</Label>
+                  <Input
+                    id="weight"
+                    value={form.weight}
+                    onChange={(e) => setForm({ ...form, weight: e.target.value })}
+                    placeholder="e.g., 1g, 10g, 100g, 1kg"
+                    data-testid="input-weight"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="weightGrams">Weight in Grams *</Label>
+                  <Input
+                    id="weightGrams"
+                    value={form.weightGrams}
+                    onChange={(e) => setForm({ ...form, weightGrams: e.target.value })}
+                    placeholder="e.g., 1.0000, 10.0000"
+                    data-testid="input-weight-grams"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="purity">Purity</Label>
+                  <Input
+                    id="purity"
+                    value={form.purity}
+                    onChange={(e) => setForm({ ...form, purity: e.target.value })}
+                    placeholder="e.g., 999.9"
+                    data-testid="input-purity"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="stock">Stock</Label>
+                  <Input
+                    id="stock"
+                    type="number"
+                    value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })}
+                    data-testid="input-stock"
+                  />
+                </div>
+              </div>
+              
+              {/* Fee Configuration */}
+              <div className="border rounded-lg p-4 space-y-4 bg-amber-50/50">
+                <h4 className="font-medium text-sm text-amber-800">Fee Configuration</h4>
+                <div className="grid grid-cols-3 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="makingFee">Making Fee (USD)</Label>
+                    <Input
+                      id="makingFee"
+                      type="number"
+                      step="0.01"
+                      value={form.makingFee}
+                      onChange={(e) => setForm({ ...form, makingFee: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-making-fee"
+                    />
+                    <p className="text-xs text-muted-foreground">Flat fee per bar</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="premiumFeePercent">Premium (%)</Label>
+                    <Input
+                      id="premiumFeePercent"
+                      type="number"
+                      step="0.01"
+                      value={form.premiumFeePercent}
+                      onChange={(e) => setForm({ ...form, premiumFeePercent: e.target.value })}
+                      placeholder="0.00"
+                      data-testid="input-premium-fee"
+                    />
+                    <p className="text-xs text-muted-foreground">% of gold price</p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="vatPercent">VAT (%)</Label>
+                    <Input
+                      id="vatPercent"
+                      type="number"
+                      step="0.01"
+                      value={form.vatPercent}
+                      onChange={(e) => setForm({ ...form, vatPercent: e.target.value })}
+                      placeholder="5.00"
+                      data-testid="input-vat-percent"
+                    />
+                    <p className="text-xs text-muted-foreground">Applied to total</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Product Image</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="imageUrl"
+                    value={form.imageUrl}
+                    onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
+                    placeholder="Image URL or upload"
+                    className="flex-1"
+                    data-testid="input-image-url"
+                  />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                    data-testid="input-image-file"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    data-testid="button-upload-image"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Upload className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+                {form.imageUrl && (
+                  <div className="mt-2 rounded-lg border overflow-hidden w-20 h-20 bg-amber-50">
+                    <img 
+                      src={form.imageUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="description">Description</Label>
+                <Textarea
+                  id="description"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Product description..."
+                  rows={3}
+                  data-testid="input-description"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="inStock"
+                  checked={form.inStock}
+                  onCheckedChange={(checked) => setForm({ ...form, inStock: checked })}
+                  data-testid="toggle-in-stock"
+                />
+                <Label htmlFor="inStock">Available for purchase</Label>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={closeModal}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleSubmit}
+                disabled={createMutation.isPending || updateMutation.isPending}
+                data-testid="button-save-product"
+              >
+                {(createMutation.isPending || updateMutation.isPending) && (
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                )}
+                {editingProduct ? 'Update' : 'Create'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </div>
+    </AdminLayout>
+  );
+}

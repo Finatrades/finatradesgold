@@ -1,0 +1,424 @@
+import React, { useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Loader2, ShoppingCart, Plus, Minus, Trash2, ExternalLink, Package } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+import { useToast } from '@/hooks/use-toast';
+
+interface BuyGoldBarModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+}
+
+interface GoldProduct {
+  productId: string;
+  name: string;
+  weight: string;
+  weightGrams: string;
+  purity: string;
+  livePrice: string;
+  livePriceAed: string;
+  stock: number;
+  inStock: boolean;
+  imageUrl?: string;
+  description?: string;
+  makingFee?: string;
+  premiumFeePercent?: string;
+  vatPercent?: string;
+}
+
+// AED/USD conversion rate
+const AED_USD_RATE = 3.67;
+
+// Calculate price breakdown for a product (all in AED)
+// VAT is applied only to making fee
+function calculatePriceBreakdown(product: GoldProduct, quantity: number = 1) {
+  // Use AED price as base (convert from USD if needed)
+  const basePriceAed = parseFloat(product.livePriceAed) || (parseFloat(product.livePrice) || 0) * AED_USD_RATE;
+  const makingFeePerUnit = parseFloat(product.makingFee || '0') * AED_USD_RATE; // Making fee stored in USD, convert to AED
+  const makingFee = makingFeePerUnit * quantity;
+  const premiumPercent = parseFloat(product.premiumFeePercent || '0');
+  const vatPercent = parseFloat(product.vatPercent || '0');
+  
+  const goldPrice = basePriceAed * quantity;
+  const premium = (goldPrice * premiumPercent) / 100;
+  // VAT applies only to making fee
+  const vat = (makingFee * vatPercent) / 100;
+  const total = goldPrice + makingFee + premium + vat;
+  
+  return {
+    goldPrice,
+    makingFee,
+    premium,
+    vat,
+    total,
+    vatPercent,
+    premiumPercent,
+  };
+}
+
+interface CartItem {
+  product: GoldProduct;
+  quantity: number;
+}
+
+const GOLD_BAR_IMAGES: Record<string, string> = {
+  '1g': '/images/gold-bars/1g_gold_bar_product_photo.png',
+  '10g': '/images/gold-bars/10g_gold_bar_product_photo.png',
+  '100g': '/images/gold-bars/100g_gold_bar_product_photo.png',
+  '1kg': '/images/gold-bars/1kg_gold_bar_product_photo.png',
+};
+
+function getProductImage(product: GoldProduct): string {
+  if (product.imageUrl) return product.imageUrl;
+  const weight = product.weight?.toLowerCase().replace(/\s+/g, '');
+  if (weight && GOLD_BAR_IMAGES[weight]) return GOLD_BAR_IMAGES[weight];
+  return 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&h=400&fit=crop';
+}
+
+export default function BuyGoldBarModal({ isOpen, onClose }: BuyGoldBarModalProps) {
+  const { toast } = useToast();
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+
+  const { data: productsData, isLoading } = useQuery({
+    queryKey: ['wingold-products'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/wingold/products');
+      return res.json();
+    },
+    enabled: isOpen,
+  });
+
+  const products: GoldProduct[] = productsData?.products || [];
+
+  const addToCart = (product: GoldProduct) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.productId === product.productId);
+      if (existing) {
+        return prev.map(item =>
+          item.product.productId === product.productId
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+    toast({
+      title: 'Added to Cart',
+      description: `${product.name} added to your cart`,
+    });
+  };
+
+  const updateQuantity = (productId: string, delta: number) => {
+    setCart(prev => 
+      prev.map(item => {
+        if (item.product.productId === productId) {
+          const newQty = Math.max(0, item.quantity + delta);
+          return { ...item, quantity: newQty };
+        }
+        return item;
+      }).filter(item => item.quantity > 0)
+    );
+  };
+
+  const removeFromCart = (productId: string) => {
+    setCart(prev => prev.filter(item => item.product.productId !== productId));
+  };
+
+  const clearCart = () => setCart([]);
+
+  // Calculate cart totals with fee breakdown (all in AED)
+  const cartBreakdown = cart.reduce((totals, item) => {
+    const breakdown = calculatePriceBreakdown(item.product, item.quantity);
+    return {
+      goldPrice: totals.goldPrice + breakdown.goldPrice,
+      makingFee: totals.makingFee + breakdown.makingFee,
+      premium: totals.premium + breakdown.premium,
+      vat: totals.vat + breakdown.vat,
+      total: totals.total + breakdown.total,
+    };
+  }, { goldPrice: 0, makingFee: 0, premium: 0, vat: 0, total: 0 });
+
+  const cartTotal = cartBreakdown.total;
+
+  const cartTotalGrams = cart.reduce((sum, item) => {
+    return sum + parseFloat(item.product.weightGrams) * item.quantity;
+  }, 0);
+
+  const handleCheckout = async () => {
+    if (cart.length === 0) {
+      toast({
+        title: 'Cart Empty',
+        description: 'Please add items to your cart before checkout',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Redirect directly to Wingold website
+    window.open('https://wingoldandmetals.com', '_blank');
+    toast({
+      title: 'Redirecting to Wingold',
+      description: 'Complete your purchase on Wingold & Metals',
+    });
+    clearCart();
+    onClose();
+  };
+
+  const handleClose = () => {
+    onClose();
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleClose}>
+      <DialogContent className="max-w-6xl h-[90vh] p-0 flex flex-col overflow-hidden">
+        <DialogHeader className="px-6 py-4 border-b bg-gradient-to-r from-purple-50 to-violet-50 shrink-0">
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="flex items-center gap-2 text-xl font-bold text-purple-900">
+                <Package className="w-6 h-6" />
+                Buy Gold Bars
+              </DialogTitle>
+              <DialogDescription className="text-purple-700 dark:text-purple-300 mt-1 text-xs leading-relaxed">
+                Finatrades Finance SA operates in partnership with Wingold & Metals DMCC for use of the Finatrades digital platform to facilitate the sale, purchase, allocation, and other structured buy-and-sell plans related to physical gold. All gold transactions executed by Wingold & Metals DMCC through the Platform are processed, recorded, and maintained within the Finatrades system, and the Platform serves solely as a technology and execution infrastructure for such gold-based services.
+              </DialogDescription>
+            </div>
+            {cart.length > 0 && (
+              <Badge className="bg-purple-600 text-white px-3 py-1">
+                <ShoppingCart className="w-4 h-4 mr-1" />
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+              </Badge>
+            )}
+          </div>
+        </DialogHeader>
+
+        <div className="flex-1 flex overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-6">
+            {isLoading ? (
+              <div className="flex items-center justify-center h-full">
+                <Loader2 className="w-8 h-8 animate-spin text-purple-600 dark:text-purple-400" />
+              </div>
+            ) : products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
+                <Package className="w-16 h-16 mb-4 opacity-50" />
+                <p className="text-lg font-medium">No products available</p>
+                <p className="text-sm">Check back later for gold bar offerings</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-3 gap-4">
+                {products.map((product) => {
+                  const unitBreakdown = calculatePriceBreakdown(product, 1);
+                  return (
+                    <Card 
+                      key={product.productId} 
+                      className="overflow-hidden hover:shadow-md transition-shadow border-purple-100 flex flex-col"
+                      data-testid={`product-card-${product.productId}`}
+                    >
+                      {/* Product Image */}
+                      <div className="h-40 bg-gradient-to-br from-purple-50 to-violet-50 flex items-center justify-center p-3">
+                        <img
+                          src={getProductImage(product)}
+                          alt={product.name}
+                          className="max-w-full max-h-full object-contain"
+                          loading="lazy"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1610375461246-83df859d849d?w=400&h=400&fit=crop';
+                          }}
+                        />
+                      </div>
+                      
+                      {/* Product Details */}
+                      <CardContent className="flex-1 p-4 flex flex-col">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <h3 className="font-semibold text-foreground text-sm leading-tight">{product.name}</h3>
+                          {product.inStock ? (
+                            <Badge variant="outline" className="bg-purple-50 dark:bg-purple-950/20 text-purple-700 dark:text-purple-300 border-purple-200 dark:border-purple-800/40 text-xs shrink-0">
+                              In Stock
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-red-50 dark:bg-red-950/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800/40 text-xs shrink-0">
+                              Out of Stock
+                            </Badge>
+                          )}
+                        </div>
+                        
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {product.weight} • {product.purity} Purity
+                        </p>
+                        
+                        {/* Price Section - AED only */}
+                        <p className="text-lg font-bold text-foreground mb-3">
+                          AED {unitBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                        
+                        {/* Add to Cart button */}
+                        <Button
+                          onClick={() => addToCart(product)}
+                          disabled={!product.inStock}
+                          className="w-full bg-purple-600 hover:bg-purple-700 text-white"
+                          data-testid={`add-to-cart-${product.productId}`}
+                        >
+                          <ShoppingCart className="w-4 h-4 mr-2" />
+                          Add to Cart
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="w-80 border-l bg-muted/40 flex flex-col shrink-0">
+            <div className="p-4 border-b bg-card">
+              <h3 className="font-semibold flex items-center gap-2">
+                <ShoppingCart className="w-5 h-5" />
+                Your Cart
+              </h3>
+            </div>
+
+            <ScrollArea className="flex-1 p-4">
+              {cart.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <ShoppingCart className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                  <p className="text-sm">Your cart is empty</p>
+                  <p className="text-xs">Add gold bars to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {cart.map((item) => {
+                    const itemBreakdown = calculatePriceBreakdown(item.product, item.quantity);
+                    const unitPrice = calculatePriceBreakdown(item.product, 1).total;
+                    return (
+                      <div
+                        key={item.product.productId}
+                        className="bg-card rounded-lg p-3 shadow-sm border"
+                        data-testid={`cart-item-${item.product.productId}`}
+                      >
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <p className="font-medium text-sm">{item.product.weight} Gold Bar</p>
+                            <p className="text-xs text-muted-foreground">
+                              AED {unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} each
+                            </p>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-red-500 hover:text-red-700 dark:text-red-300 hover:bg-red-50 dark:bg-red-950/20"
+                            onClick={() => removeFromCart(item.product.productId)}
+                            data-testid={`button-remove-${item.product.productId}`}
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.product.productId, -1)}
+                              data-testid={`button-decrease-${item.product.productId}`}
+                            >
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="w-8 text-center font-medium" data-testid={`text-quantity-${item.product.productId}`}>{item.quantity}</span>
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateQuantity(item.product.productId, 1)}
+                              data-testid={`button-increase-${item.product.productId}`}
+                            >
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <p className="font-semibold text-purple-600 dark:text-purple-400">
+                            AED {itemBreakdown.total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </ScrollArea>
+
+            {cart.length > 0 && (
+              <div className="p-4 border-t bg-card space-y-3">
+                <div className="space-y-1.5 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Total Gold</span>
+                    <span className="font-medium" data-testid="text-total-grams">{cartTotalGrams.toFixed(2)}g</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Gold Price</span>
+                    <span data-testid="text-gold-price">AED {cartBreakdown.goldPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  {cartBreakdown.makingFee > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Making Fee</span>
+                      <span data-testid="text-making-fee">AED {cartBreakdown.makingFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  {/* Premium hidden from user view - included in Gold Price */}
+                  {cartBreakdown.vat > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">VAT</span>
+                      <span data-testid="text-vat">AED {cartBreakdown.vat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    </div>
+                  )}
+                  <div className="border-t pt-2 flex justify-between">
+                    <span className="font-medium">Total</span>
+                    <span className="text-lg font-bold text-foreground" data-testid="text-total-aed">
+                      AED {cartTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </span>
+                  </div>
+                </div>
+                
+                <Button
+                  className="w-full bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-700 hover:to-violet-700 text-white font-semibold"
+                  onClick={handleCheckout}
+                  disabled={isCheckingOut}
+                  data-testid="button-checkout"
+                >
+                  {isCheckingOut ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Checkout on Wingold
+                    </>
+                  )}
+                </Button>
+                
+                <p className="text-xs text-center text-muted-foreground">
+                  You will be redirected to Wingold & Metals to complete your purchase
+                </p>
+                
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-muted-foreground"
+                  onClick={clearCart}
+                  data-testid="button-clear-cart"
+                >
+                  Clear Cart
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

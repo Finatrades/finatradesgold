@@ -1,0 +1,1068 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Savior AI - Personal Assistant Blueprint</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+    @media print {
+      .page-break { page-break-after: always; }
+      .no-print { display: none; }
+    }
+    .gradient-text {
+      background: linear-gradient(135deg, #10B981 0%, #3B82F6 50%, #8B5CF6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .glow-green { box-shadow: 0 0 40px rgba(16, 185, 129, 0.3); }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 min-h-screen">
+  
+  <!-- Cover Page -->
+  <div class="min-h-screen flex flex-col items-center justify-center p-8 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full opacity-20">
+      <div class="absolute top-20 left-20 w-72 h-72 bg-emerald-500 rounded-full blur-3xl"></div>
+      <div class="absolute bottom-20 right-20 w-96 h-96 bg-blue-500 rounded-full blur-3xl"></div>
+      <div class="absolute top-1/2 left-1/2 w-64 h-64 bg-purple-500 rounded-full blur-3xl"></div>
+    </div>
+    
+    <div class="relative z-10 text-center">
+      <div class="mb-8">
+        <div class="inline-flex items-center gap-4 bg-white/10 backdrop-blur-lg px-10 py-6 rounded-3xl border border-white/20 glow-green">
+          <span class="text-6xl">🛡️</span>
+          <div class="text-left">
+            <h1 class="text-5xl font-extrabold text-white">SAVIOR</h1>
+            <p class="text-emerald-400 text-lg font-medium tracking-wider">AI PERSONAL ASSISTANT</p>
+          </div>
+        </div>
+      </div>
+      
+      <h2 class="text-3xl font-semibold text-white/80 mb-4">Complete Development Blueprint</h2>
+      <p class="text-xl text-white/60 mb-12 max-w-2xl mx-auto">
+        Build your own 24/7 AI assistant for reminders, finances, health goals, and smart home control
+      </p>
+      
+      <div class="flex gap-4 justify-center mb-16 flex-wrap">
+        <div class="bg-emerald-500/20 border border-emerald-500/30 px-6 py-3 rounded-full">
+          <span class="text-emerald-400 font-semibold">📅 Reminders</span>
+        </div>
+        <div class="bg-blue-500/20 border border-blue-500/30 px-6 py-3 rounded-full">
+          <span class="text-blue-400 font-semibold">💰 Finance</span>
+        </div>
+        <div class="bg-pink-500/20 border border-pink-500/30 px-6 py-3 rounded-full">
+          <span class="text-pink-400 font-semibold">❤️ Health</span>
+        </div>
+        <div class="bg-purple-500/20 border border-purple-500/30 px-6 py-3 rounded-full">
+          <span class="text-purple-400 font-semibold">🏠 Smart Home</span>
+        </div>
+      </div>
+      
+      <div class="text-white/40 text-sm">
+        <p>Blueprint Version 1.0 | January 2026</p>
+        <p>Personal AI Assistant Development Guide</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Table of Contents -->
+  <div class="min-h-screen p-12 bg-white">
+    <div class="max-w-4xl mx-auto">
+      <h2 class="text-4xl font-bold text-gray-800 mb-12 pb-4 border-b-4 border-emerald-500">
+        📋 Table of Contents
+      </h2>
+      
+      <div class="space-y-4">
+        <a href="#overview" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">1</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">What is Savior?</span>
+          </div>
+          <span class="text-gray-400">Page 3</span>
+        </a>
+        
+        <a href="#features" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">2</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">Core Features</span>
+          </div>
+          <span class="text-gray-400">Page 4-7</span>
+        </a>
+        
+        <a href="#architecture" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">3</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">System Architecture</span>
+          </div>
+          <span class="text-gray-400">Page 8</span>
+        </a>
+        
+        <a href="#tech-stack" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">4</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">Technology Stack</span>
+          </div>
+          <span class="text-gray-400">Page 9</span>
+        </a>
+        
+        <a href="#database" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">5</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">Database Schema</span>
+          </div>
+          <span class="text-gray-400">Page 10</span>
+        </a>
+        
+        <a href="#api" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">6</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">API Endpoints</span>
+          </div>
+          <span class="text-gray-400">Page 11</span>
+        </a>
+        
+        <a href="#integrations" class="flex items-center justify-between p-4 bg-gray-50 rounded-xl hover:bg-emerald-50 transition group">
+          <div class="flex items-center gap-4">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center text-emerald-600 font-bold">7</span>
+            <span class="text-xl font-semibold text-gray-700 group-hover:text-emerald-600">External Integrations</span>
+          </div>
+          <span class="text-gray-400">Page 12</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- What is Savior -->
+  <div id="overview" class="min-h-screen p-12 bg-gradient-to-br from-emerald-50 to-blue-50">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-8">
+        <span class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">1</span>
+        <h2 class="text-4xl font-bold text-gray-800">What is Savior?</h2>
+      </div>
+      
+      <div class="glass-card rounded-2xl p-8 mb-8">
+        <div class="flex items-start gap-6">
+          <div class="text-6xl">🛡️</div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800 mb-4">Your Personal AI Guardian</h3>
+            <p class="text-gray-600 leading-relaxed text-lg mb-6">
+              Savior is your intelligent personal assistant that runs 24/7, helping you manage every aspect of your life. 
+              From daily reminders and financial tracking to health goals and smart home control - Savior has you covered.
+            </p>
+            <div class="flex flex-wrap gap-3">
+              <span class="px-4 py-2 bg-emerald-100 text-emerald-700 rounded-full font-medium">Always Available</span>
+              <span class="px-4 py-2 bg-blue-100 text-blue-700 rounded-full font-medium">Learns Your Habits</span>
+              <span class="px-4 py-2 bg-purple-100 text-purple-700 rounded-full font-medium">Privacy-First</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6">
+        <div class="glass-card rounded-2xl p-6">
+          <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+            <span class="text-2xl">🎯</span> Key Benefits
+          </h4>
+          <ul class="space-y-3 text-gray-600">
+            <li class="flex items-center gap-3">
+              <span class="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-sm">✓</span>
+              Never forget important tasks or appointments
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-sm">✓</span>
+              Track spending and reach savings goals
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-sm">✓</span>
+              Monitor health metrics and stay motivated
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-sm">✓</span>
+              Control your home with voice commands
+            </li>
+            <li class="flex items-center gap-3">
+              <span class="w-6 h-6 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-600 text-sm">✓</span>
+              Get intelligent suggestions based on your patterns
+            </li>
+          </ul>
+        </div>
+        
+        <div class="glass-card rounded-2xl p-6">
+          <h4 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-3">
+            <span class="text-2xl">💡</span> How It Works
+          </h4>
+          <div class="space-y-4">
+            <div class="flex items-start gap-3">
+              <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">1</span>
+              <div>
+                <div class="font-semibold text-gray-800">Talk Naturally</div>
+                <div class="text-sm text-gray-500">Chat or speak to Savior like a friend</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">2</span>
+              <div>
+                <div class="font-semibold text-gray-800">AI Understands</div>
+                <div class="text-sm text-gray-500">Powered by advanced language models</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">3</span>
+              <div>
+                <div class="font-semibold text-gray-800">Takes Action</div>
+                <div class="text-sm text-gray-500">Executes tasks and provides insights</div>
+              </div>
+            </div>
+            <div class="flex items-start gap-3">
+              <span class="w-8 h-8 bg-blue-500 text-white rounded-lg flex items-center justify-center font-bold text-sm">4</span>
+              <div>
+                <div class="font-semibold text-gray-800">Learns & Improves</div>
+                <div class="text-sm text-gray-500">Gets smarter with every interaction</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Core Features -->
+  <div id="features" class="min-h-screen p-12 bg-white">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">2</span>
+        <h2 class="text-4xl font-bold text-gray-800">Core Features</h2>
+      </div>
+      
+      <!-- Reminders & Schedule -->
+      <div class="glass-card rounded-2xl p-8 mb-8 border-l-4 border-emerald-500">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">📅</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">Reminders & Schedule Management</h3>
+            <p class="text-gray-500">Never miss an appointment or task again</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Features</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>• Create one-time or recurring reminders</li>
+              <li>• Natural language scheduling ("remind me tomorrow at 3pm")</li>
+              <li>• Smart notifications via push, email, or SMS</li>
+              <li>• Calendar integration (Google, Outlook, Apple)</li>
+              <li>• Location-based reminders</li>
+              <li>• Snooze and reschedule with voice</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Example Commands</h4>
+            <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm">
+              <div class="text-emerald-400 mb-2">"Remind me to call mom at 6pm"</div>
+              <div class="text-emerald-400 mb-2">"What's on my schedule today?"</div>
+              <div class="text-emerald-400 mb-2">"Set a weekly meeting every Monday 10am"</div>
+              <div class="text-emerald-400">"Reschedule my dentist to next week"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Personal Finance -->
+      <div class="glass-card rounded-2xl p-8 mb-8 border-l-4 border-blue-500">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-blue-400 to-blue-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">💰</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">Personal Finance Tracking</h3>
+            <p class="text-gray-500">Take control of your money</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Features</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>• Track income and expenses</li>
+              <li>• Create and monitor budgets by category</li>
+              <li>• Set savings goals with progress tracking</li>
+              <li>• Bill payment reminders</li>
+              <li>• Spending insights and trends</li>
+              <li>• Monthly/yearly financial reports</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Example Commands</h4>
+            <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm">
+              <div class="text-blue-400 mb-2">"I spent $45 on groceries"</div>
+              <div class="text-blue-400 mb-2">"How much did I spend this month?"</div>
+              <div class="text-blue-400 mb-2">"Set a $500 budget for dining out"</div>
+              <div class="text-blue-400">"Am I on track for my vacation savings?"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Health & Fitness -->
+      <div class="glass-card rounded-2xl p-8 mb-8 border-l-4 border-pink-500">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-pink-400 to-pink-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">❤️</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">Health & Fitness Goals</h3>
+            <p class="text-gray-500">Your personal wellness coach</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Features</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>• Track water intake, steps, sleep</li>
+              <li>• Log meals and calories</li>
+              <li>• Set fitness goals (weight, exercise)</li>
+              <li>• Medication reminders</li>
+              <li>• Mood and habit tracking</li>
+              <li>• Weekly health summaries</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Example Commands</h4>
+            <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm">
+              <div class="text-pink-400 mb-2">"Log 8 glasses of water today"</div>
+              <div class="text-pink-400 mb-2">"I walked 5000 steps"</div>
+              <div class="text-pink-400 mb-2">"Remind me to take vitamins at 9am"</div>
+              <div class="text-pink-400">"How's my sleep this week?"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Smart Home -->
+      <div class="glass-card rounded-2xl p-8 border-l-4 border-purple-500">
+        <div class="flex items-center gap-4 mb-6">
+          <div class="w-16 h-16 bg-gradient-to-br from-purple-400 to-purple-600 rounded-2xl flex items-center justify-center">
+            <span class="text-3xl">🏠</span>
+          </div>
+          <div>
+            <h3 class="text-2xl font-bold text-gray-800">Smart Home Control</h3>
+            <p class="text-gray-500">Command your home with your voice</p>
+          </div>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-6">
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Features</h4>
+            <ul class="space-y-2 text-gray-600">
+              <li>• Control lights, thermostats, locks</li>
+              <li>• Create automation routines</li>
+              <li>• "Good morning" / "Good night" scenes</li>
+              <li>• Security camera monitoring</li>
+              <li>• Energy usage tracking</li>
+              <li>• Works with Home Assistant, Google, Alexa</li>
+            </ul>
+          </div>
+          <div>
+            <h4 class="font-semibold text-gray-700 mb-4">Example Commands</h4>
+            <div class="bg-slate-900 rounded-xl p-4 font-mono text-sm">
+              <div class="text-purple-400 mb-2">"Turn off all lights"</div>
+              <div class="text-purple-400 mb-2">"Set thermostat to 72 degrees"</div>
+              <div class="text-purple-400 mb-2">"Lock the front door"</div>
+              <div class="text-purple-400">"Start my morning routine"</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- System Architecture -->
+  <div id="architecture" class="min-h-screen p-12 bg-gradient-to-br from-slate-900 to-slate-800">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-emerald-600 font-bold text-xl">3</span>
+        <h2 class="text-4xl font-bold text-white">System Architecture</h2>
+      </div>
+      
+      <div class="bg-white/10 backdrop-blur-lg rounded-3xl p-8 border border-white/20">
+        
+        <!-- User Layer -->
+        <div class="text-center mb-8">
+          <div class="inline-flex gap-4">
+            <div class="bg-gradient-to-br from-emerald-500 to-blue-500 rounded-2xl p-6 text-center">
+              <div class="text-3xl mb-2">👤</div>
+              <div class="text-white font-bold">YOU</div>
+              <div class="text-white/70 text-sm">Voice / Chat / App</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-8">
+          <div class="w-1 h-12 bg-gradient-to-b from-emerald-500 to-blue-500"></div>
+        </div>
+        
+        <!-- Interface Layer -->
+        <div class="grid grid-cols-4 gap-4 mb-8">
+          <div class="bg-emerald-500/20 border border-emerald-500/30 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">📱</div>
+            <div class="text-white font-semibold text-sm">Mobile App</div>
+          </div>
+          <div class="bg-blue-500/20 border border-blue-500/30 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">💬</div>
+            <div class="text-white font-semibold text-sm">Web Chat</div>
+          </div>
+          <div class="bg-purple-500/20 border border-purple-500/30 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">🎤</div>
+            <div class="text-white font-semibold text-sm">Voice</div>
+          </div>
+          <div class="bg-pink-500/20 border border-pink-500/30 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">✈️</div>
+            <div class="text-white font-semibold text-sm">Telegram</div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-8">
+          <div class="w-1 h-12 bg-gradient-to-b from-blue-500 to-purple-500"></div>
+        </div>
+        
+        <!-- Core Engine -->
+        <div class="bg-white rounded-2xl p-6 mb-8">
+          <div class="text-center mb-6">
+            <span class="text-2xl font-bold text-gray-800">🛡️ SAVIOR CORE ENGINE</span>
+          </div>
+          <div class="grid grid-cols-5 gap-4">
+            <div class="bg-emerald-50 rounded-xl p-4 text-center">
+              <div class="text-2xl mb-2">🧠</div>
+              <div class="font-semibold text-emerald-700 text-sm">AI Engine</div>
+              <div class="text-xs text-gray-500">GPT-5 / Claude</div>
+            </div>
+            <div class="bg-blue-50 rounded-xl p-4 text-center">
+              <div class="text-2xl mb-2">💾</div>
+              <div class="font-semibold text-blue-700 text-sm">Memory</div>
+              <div class="text-xs text-gray-500">PostgreSQL</div>
+            </div>
+            <div class="bg-purple-50 rounded-xl p-4 text-center">
+              <div class="text-2xl mb-2">⚡</div>
+              <div class="font-semibold text-purple-700 text-sm">Actions</div>
+              <div class="text-xs text-gray-500">Task Executor</div>
+            </div>
+            <div class="bg-pink-50 rounded-xl p-4 text-center">
+              <div class="text-2xl mb-2">⏰</div>
+              <div class="font-semibold text-pink-700 text-sm">Scheduler</div>
+              <div class="text-xs text-gray-500">Cron Jobs</div>
+            </div>
+            <div class="bg-amber-50 rounded-xl p-4 text-center">
+              <div class="text-2xl mb-2">🔔</div>
+              <div class="font-semibold text-amber-700 text-sm">Notifications</div>
+              <div class="text-xs text-gray-500">Push / Email</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="flex justify-center mb-8">
+          <div class="w-1 h-12 bg-gradient-to-b from-purple-500 to-pink-500"></div>
+        </div>
+        
+        <!-- Feature Modules -->
+        <div class="grid grid-cols-4 gap-4">
+          <div class="bg-emerald-500 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">📅</div>
+            <div class="text-white font-semibold">Reminders</div>
+          </div>
+          <div class="bg-blue-500 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">💰</div>
+            <div class="text-white font-semibold">Finance</div>
+          </div>
+          <div class="bg-pink-500 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">❤️</div>
+            <div class="text-white font-semibold">Health</div>
+          </div>
+          <div class="bg-purple-500 rounded-xl p-4 text-center">
+            <div class="text-2xl mb-2">🏠</div>
+            <div class="text-white font-semibold">Smart Home</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Technology Stack -->
+  <div id="tech-stack" class="min-h-screen p-12 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">4</span>
+        <h2 class="text-4xl font-bold text-gray-800">Technology Stack</h2>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-8">
+        <!-- Frontend -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">🎨</span>
+            Frontend
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/react/react-original.svg" class="w-8 h-8" alt="React">
+              <div>
+                <div class="font-semibold text-gray-800">React 18</div>
+                <div class="text-sm text-gray-500">UI Framework</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/typescript/typescript-original.svg" class="w-8 h-8" alt="TypeScript">
+              <div>
+                <div class="font-semibold text-gray-800">TypeScript</div>
+                <div class="text-sm text-gray-500">Type Safety</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tailwindcss/tailwindcss-original.svg" class="w-8 h-8" alt="Tailwind">
+              <div>
+                <div class="font-semibold text-gray-800">Tailwind CSS</div>
+                <div class="text-sm text-gray-500">Styling</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-purple-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">RQ</div>
+              <div>
+                <div class="font-semibold text-gray-800">React Query</div>
+                <div class="text-sm text-gray-500">Data Fetching</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Backend -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="w-10 h-10 bg-emerald-100 rounded-lg flex items-center justify-center">⚙️</span>
+            Backend
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/nodejs/nodejs-original.svg" class="w-8 h-8" alt="Node.js">
+              <div>
+                <div class="font-semibold text-gray-800">Node.js + Express</div>
+                <div class="text-sm text-gray-500">API Server</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <img src="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/postgresql/postgresql-original.svg" class="w-8 h-8" alt="PostgreSQL">
+              <div>
+                <div class="font-semibold text-gray-800">PostgreSQL</div>
+                <div class="text-sm text-gray-500">Database</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">D</div>
+              <div>
+                <div class="font-semibold text-gray-800">Drizzle ORM</div>
+                <div class="text-sm text-gray-500">Database Access</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-green-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">AI</div>
+              <div>
+                <div class="font-semibold text-gray-800">OpenAI GPT-5</div>
+                <div class="text-sm text-gray-500">AI Engine</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Infrastructure -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">☁️</span>
+            Infrastructure
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">R</div>
+              <div>
+                <div class="font-semibold text-gray-800">Replit</div>
+                <div class="text-sm text-gray-500">Hosting & Deployment</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">🔔</div>
+              <div>
+                <div class="font-semibold text-gray-800">Web Push API</div>
+                <div class="text-sm text-gray-500">Notifications</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-indigo-500 rounded-lg flex items-center justify-center text-white font-bold text-sm">⏰</div>
+              <div>
+                <div class="font-semibold text-gray-800">node-cron</div>
+                <div class="text-sm text-gray-500">Scheduled Tasks</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Integrations -->
+        <div class="glass-card rounded-2xl p-6">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+            <span class="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">🔌</span>
+            Integrations
+          </h3>
+          <div class="space-y-4">
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-blue-400 rounded-lg flex items-center justify-center text-white text-lg">✈️</div>
+              <div>
+                <div class="font-semibold text-gray-800">Telegram Bot API</div>
+                <div class="text-sm text-gray-500">Messaging</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-cyan-500 rounded-lg flex items-center justify-center text-white text-lg">🏠</div>
+              <div>
+                <div class="font-semibold text-gray-800">Home Assistant API</div>
+                <div class="text-sm text-gray-500">Smart Home</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-4 p-3 bg-gray-50 rounded-lg">
+              <div class="w-8 h-8 bg-red-400 rounded-lg flex items-center justify-center text-white text-lg">📅</div>
+              <div>
+                <div class="font-semibold text-gray-800">Google Calendar API</div>
+                <div class="text-sm text-gray-500">Calendar Sync</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- Database Schema -->
+  <div id="database" class="min-h-screen p-12 bg-gradient-to-br from-slate-50 to-emerald-50">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">5</span>
+        <h2 class="text-4xl font-bold text-gray-800">Database Schema</h2>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6">
+        <!-- Users Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">👤</span> users
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-white">email</div>
+            <div class="text-white">passwordHash</div>
+            <div class="text-white">name</div>
+            <div class="text-white">timezone</div>
+            <div class="text-white">preferences <span class="text-gray-500">(JSON)</span></div>
+            <div class="text-gray-500">createdAt, updatedAt</div>
+          </div>
+        </div>
+        
+        <!-- Reminders Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">📅</span> reminders
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">title</div>
+            <div class="text-white">description</div>
+            <div class="text-white">dueAt <span class="text-gray-500">(timestamp)</span></div>
+            <div class="text-white">recurrence <span class="text-gray-500">(none/daily/weekly/monthly)</span></div>
+            <div class="text-white">status <span class="text-gray-500">(pending/completed/snoozed)</span></div>
+            <div class="text-gray-500">createdAt, updatedAt</div>
+          </div>
+        </div>
+        
+        <!-- Transactions Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">💰</span> transactions
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">type <span class="text-gray-500">(income/expense)</span></div>
+            <div class="text-white">amount <span class="text-gray-500">(decimal)</span></div>
+            <div class="text-white">category</div>
+            <div class="text-white">description</div>
+            <div class="text-white">date</div>
+            <div class="text-gray-500">createdAt</div>
+          </div>
+        </div>
+        
+        <!-- Budgets Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">📊</span> budgets
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">category</div>
+            <div class="text-white">monthlyLimit <span class="text-gray-500">(decimal)</span></div>
+            <div class="text-white">spent <span class="text-gray-500">(decimal)</span></div>
+            <div class="text-white">period <span class="text-gray-500">(YYYY-MM)</span></div>
+            <div class="text-gray-500">createdAt, updatedAt</div>
+          </div>
+        </div>
+        
+        <!-- Health Logs Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">❤️</span> health_logs
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">type <span class="text-gray-500">(water/steps/sleep/weight/mood)</span></div>
+            <div class="text-white">value <span class="text-gray-500">(decimal)</span></div>
+            <div class="text-white">unit</div>
+            <div class="text-white">date</div>
+            <div class="text-white">notes</div>
+            <div class="text-gray-500">createdAt</div>
+          </div>
+        </div>
+        
+        <!-- Smart Home Devices Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">🏠</span> smart_devices
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">name</div>
+            <div class="text-white">type <span class="text-gray-500">(light/thermostat/lock/etc)</span></div>
+            <div class="text-white">room</div>
+            <div class="text-white">externalId</div>
+            <div class="text-white">provider <span class="text-gray-500">(homeassistant/google/alexa)</span></div>
+            <div class="text-white">state <span class="text-gray-500">(JSON)</span></div>
+            <div class="text-gray-500">createdAt, updatedAt</div>
+          </div>
+        </div>
+        
+        <!-- Conversations Table -->
+        <div class="bg-white rounded-2xl p-6 shadow-lg col-span-2">
+          <h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="text-xl">💬</span> conversations
+          </h3>
+          <div class="bg-slate-900 rounded-xl p-4 font-mono text-xs">
+            <div class="text-purple-400">id</div>
+            <div class="text-blue-400">userId <span class="text-gray-500">→ users.id</span></div>
+            <div class="text-white">role <span class="text-gray-500">(user/assistant)</span></div>
+            <div class="text-white">content <span class="text-gray-500">(text)</span></div>
+            <div class="text-white">intent <span class="text-gray-500">(reminder/finance/health/smarthome/general)</span></div>
+            <div class="text-white">actionTaken <span class="text-gray-500">(JSON - what Savior did)</span></div>
+            <div class="text-gray-500">createdAt</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- API Endpoints -->
+  <div id="api" class="min-h-screen p-12 bg-white">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-gradient-to-br from-emerald-500 to-blue-500 rounded-xl flex items-center justify-center text-white font-bold text-xl">6</span>
+        <h2 class="text-4xl font-bold text-gray-800">API Endpoints</h2>
+      </div>
+      
+      <div class="space-y-6">
+        <!-- Chat -->
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">🤖 AI Chat</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/chat</code>
+              <span class="text-gray-500 text-sm">Send message to Savior AI</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/conversations</code>
+              <span class="text-gray-500 text-sm">Get chat history</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Reminders -->
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">📅 Reminders</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/reminders</code>
+              <span class="text-gray-500 text-sm">List all reminders</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/reminders</code>
+              <span class="text-gray-500 text-sm">Create reminder</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-amber-500 text-white rounded font-mono text-sm">PATCH</span>
+              <code class="text-gray-700">/api/reminders/:id</code>
+              <span class="text-gray-500 text-sm">Update reminder</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-red-500 text-white rounded font-mono text-sm">DELETE</span>
+              <code class="text-gray-700">/api/reminders/:id</code>
+              <span class="text-gray-500 text-sm">Delete reminder</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Finance -->
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">💰 Finance</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/transactions</code>
+              <span class="text-gray-500 text-sm">List transactions</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/transactions</code>
+              <span class="text-gray-500 text-sm">Log transaction</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/budgets</code>
+              <span class="text-gray-500 text-sm">Get budgets</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/finance/summary</code>
+              <span class="text-gray-500 text-sm">Get spending summary</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Health -->
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">❤️ Health</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/health/logs</code>
+              <span class="text-gray-500 text-sm">Get health logs</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/health/logs</code>
+              <span class="text-gray-500 text-sm">Log health metric</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/health/summary</code>
+              <span class="text-gray-500 text-sm">Weekly health summary</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Smart Home -->
+        <div class="glass-card rounded-xl p-6">
+          <h3 class="text-lg font-bold text-gray-800 mb-4">🏠 Smart Home</h3>
+          <div class="space-y-3">
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-blue-500 text-white rounded font-mono text-sm">GET</span>
+              <code class="text-gray-700">/api/devices</code>
+              <span class="text-gray-500 text-sm">List devices</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/devices/:id/control</code>
+              <span class="text-gray-500 text-sm">Control device</span>
+            </div>
+            <div class="flex items-center gap-4">
+              <span class="px-3 py-1 bg-emerald-500 text-white rounded font-mono text-sm">POST</span>
+              <code class="text-gray-700">/api/routines/:id/execute</code>
+              <span class="text-gray-500 text-sm">Run routine</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <!-- External Integrations -->
+  <div id="integrations" class="min-h-screen p-12 bg-gradient-to-br from-slate-900 to-slate-800">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex items-center gap-4 mb-12">
+        <span class="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-emerald-600 font-bold text-xl">7</span>
+        <h2 class="text-4xl font-bold text-white">External Integrations</h2>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-6">
+        <!-- OpenAI -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-emerald-500 rounded-xl flex items-center justify-center text-white text-xl">🧠</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">OpenAI</h3>
+              <p class="text-white/60 text-sm">AI Engine</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Powers natural language understanding and response generation</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Required:</div>
+            <div class="text-emerald-400">OPENAI_API_KEY</div>
+          </div>
+        </div>
+        
+        <!-- Telegram -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center text-white text-xl">✈️</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Telegram</h3>
+              <p class="text-white/60 text-sm">Messaging</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Chat with Savior via Telegram for mobile access</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Required:</div>
+            <div class="text-blue-400">TELEGRAM_BOT_TOKEN</div>
+          </div>
+        </div>
+        
+        <!-- Home Assistant -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-cyan-500 rounded-xl flex items-center justify-center text-white text-xl">🏠</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Home Assistant</h3>
+              <p class="text-white/60 text-sm">Smart Home</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Control lights, thermostats, locks, and more</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Required:</div>
+            <div class="text-cyan-400">HOME_ASSISTANT_URL</div>
+            <div class="text-cyan-400">HOME_ASSISTANT_TOKEN</div>
+          </div>
+        </div>
+        
+        <!-- Google Calendar -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-red-500 rounded-xl flex items-center justify-center text-white text-xl">📅</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Google Calendar</h3>
+              <p class="text-white/60 text-sm">Calendar Sync</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Sync reminders with your Google Calendar</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Required:</div>
+            <div class="text-red-400">GOOGLE_CLIENT_ID</div>
+            <div class="text-red-400">GOOGLE_CLIENT_SECRET</div>
+          </div>
+        </div>
+        
+        <!-- Twilio -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-pink-500 rounded-xl flex items-center justify-center text-white text-xl">📱</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Twilio</h3>
+              <p class="text-white/60 text-sm">SMS Notifications</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Send SMS reminders for critical alerts</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Required:</div>
+            <div class="text-pink-400">TWILIO_ACCOUNT_SID</div>
+            <div class="text-pink-400">TWILIO_AUTH_TOKEN</div>
+          </div>
+        </div>
+        
+        <!-- Plaid -->
+        <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20">
+          <div class="flex items-center gap-4 mb-4">
+            <div class="w-12 h-12 bg-amber-500 rounded-xl flex items-center justify-center text-white text-xl">🏦</div>
+            <div>
+              <h3 class="text-xl font-bold text-white">Plaid (Optional)</h3>
+              <p class="text-white/60 text-sm">Bank Sync</p>
+            </div>
+          </div>
+          <p class="text-white/70 mb-4">Auto-import transactions from bank accounts</p>
+          <div class="bg-slate-800 rounded-lg p-3 font-mono text-xs">
+            <div class="text-gray-400">Optional:</div>
+            <div class="text-amber-400">PLAID_CLIENT_ID</div>
+            <div class="text-amber-400">PLAID_SECRET</div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Getting Started -->
+      <div class="mt-12 bg-gradient-to-r from-emerald-500/20 to-blue-500/20 rounded-2xl p-8 border border-emerald-500/30">
+        <h3 class="text-2xl font-bold text-white mb-6">🚀 Ready to Build Savior?</h3>
+        <div class="grid grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">1</div>
+            <div class="text-white font-semibold">Create Replit Project</div>
+            <div class="text-white/60 text-sm">Start a new Node.js/React project</div>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">2</div>
+            <div class="text-white font-semibold">Setup Database</div>
+            <div class="text-white/60 text-sm">Create PostgreSQL tables</div>
+          </div>
+          <div class="text-center">
+            <div class="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4 text-3xl">3</div>
+            <div class="text-white font-semibold">Add AI & Deploy</div>
+            <div class="text-white/60 text-sm">Connect OpenAI & publish</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Button -->
+  <div class="fixed bottom-8 right-8 no-print">
+    <button onclick="window.print()" class="bg-gradient-to-r from-emerald-500 to-blue-500 text-white px-8 py-4 rounded-xl shadow-2xl hover:shadow-emerald-500/50 transition flex items-center gap-3 font-semibold">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path>
+      </svg>
+      Print Document
+    </button>
+  </div>
+
+</body>
+</html>

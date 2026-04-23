@@ -1,0 +1,991 @@
+/**
+ * SSO Routes - Single Sign-On Integration with Wingold & Metals
+ * 
+ * Uses RSA asymmetric cryptography (RS256):
+ * - Finatrades holds the PRIVATE key (signs tokens)
+ * - Wingold only needs the PUBLIC key (verifies tokens)
+ * 
+ * This is more secure than shared secrets because:
+ * - Wingold cannot forge tokens even if compromised
+ * - Key rotation is simpler (just share new public key)
+ */
+
+import { Router, Request, Response } from "express";
+import jwt from "jsonwebtoken";
+import crypto from "crypto";
+import { db } from "./db";
+import { eq, lt, and } from "drizzle-orm";
+import { users, wingoldVaultLocations, wingoldCheckoutSessions, kycSubmissions, finatradesPersonalKyc, finatradesCorporateKyc } from "@shared/schema";
+import { storage } from "./storage";
+import { WingoldIntegrationService } from "./wingold-integration-service";
+
+const router = Router();
+
+const WINGOLD_URL = process.env.WINGOLD_URL || "https://wingoldandmetals--imcharanpratap.replit.app";
+
+function getPrivateKey(): string {
+  const privateKey = process.env.FINATRADES_PRIVATE_KEY || process.env.SSO_PRIVATE_KEY;
+  if (!privateKey) {
+    throw new Error("FINATRADES_PRIVATE_KEY environment variable is required for SSO functionality");
+  }
+  
+  let formattedKey = privateKey
+    .replace(/\\n/g, '\n')
+    .replace(/\\r/g, '')
+    .trim();
+  
+  if (!formattedKey.includes('-----BEGIN')) {
+    formattedKey = `-----BEGIN PRIVATE KEY-----\n${formattedKey}\n-----END PRIVATE KEY-----`; // gitleaks:allow
+  }
+  
+  if (!formattedKey.includes('\n')) {
+    const header = '-----BEGIN PRIVATE KEY-----'; // gitleaks:allow
+    const footer = '-----END PRIVATE KEY-----'; // gitleaks:allow
+    const keyContent = formattedKey.replace(header, '').replace(footer, '').trim();
+    const chunks = keyContent.match(/.{1,64}/g) || [];
+    formattedKey = `${header}\n${chunks.join('\n')}\n${footer}`;
+  }
+  
+  return formattedKey;
+}
+
+function ensureAuthenticated(req: Request, res: Response, next: any) {
+  if (!(req as any).session?.userId) {
+    return res.status(401).json({ message: "Authentication required" });
+  }
+  next();
+}
+
+async function getUserKycTier(userId: string): Promise<string | null> {
+  try {
+    const [kycSubmission] = await db.select({ tier: kycSubmissions.tier })
+      .from(kycSubmissions)
+      .where(and(
+        eq(kycSubmissions.userId, userId),
+        eq(kycSubmissions.status, 'Approved')
+      ))
+      .limit(1);
+    return kycSubmission?.tier || null;
+  } catch (error) {
+    console.error("Error fetching KYC tier:", error);
+    return null;
+  }
+}
+
+async function getActiveVerifiableCredential(userId: number): Promise<{ credentialId: string } | null> {
+  try {
+    const credential = await storage.getActiveUserCredential(String(userId));
+    if (credential && credential.vcJwt) {
+      return {
+        credentialId: credential.credentialId,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Error fetching verifiable credential:", error);
+    return null;
+  }
+}
+
+router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
+  try {
+    console.log('[SSO] Starting token generation...');
+    const session = (req as any).session;
+    const userId = session.userId;
+    console.log('[SSO] User ID:', userId);
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      console.log('[SSO] User not found for ID:', userId);
+      return res.status(404).json({ error: "User not found" });
+    }
+    console.log('[SSO] User found:', user.email);
+
+    if (user.kycStatus === 'Approved') {
+      WingoldIntegrationService.syncKycToWingold(userId)
+        .then(result => console.log('[SSO] KYC sync result:', result))
+        .catch(err => console.error('[SSO] KYC sync error:', err));
+    }
+
+    const vcData = await getActiveVerifiableCredential(userId);
+    console.log('[SSO] VC data:', vcData ? 'present' : 'none');
+
+    const payload: Record<string, any> = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+      },
+      iss: "finatrades.com",
+    };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    console.log('[SSO] Getting private key...');
+    let privateKey: string;
+    try {
+      privateKey = getPrivateKey();
+      console.log('[SSO] Private key loaded, length:', privateKey.length);
+    } catch (keyError: any) {
+      console.error('[SSO] Private key error:', keyError.message);
+      return res.status(500).json({ error: "SSO configuration error" });
+    }
+
+    console.log('[SSO] Signing JWT...');
+    const token = jwt.sign(payload, privateKey, { 
+      algorithm: "RS256",
+      expiresIn: "5m",
+    });
+    console.log('[SSO] JWT signed successfully');
+
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
+
+    res.json({ 
+      redirectUrl,
+      expiresIn: 300,
+      hasVerifiableCredential: !!vcData,
+    });
+  } catch (error: any) {
+    console.error("[SSO] Token generation error:", error.message);
+    console.error("[SSO] Stack trace:", error.stack);
+    res.status(500).json({ error: "Failed to generate SSO token" });
+  }
+});
+
+router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.redirect("/login?error=user_not_found");
+    }
+
+    // Pre-sync KYC to Wingold if user is approved (non-blocking)
+    if (user.kycStatus === 'Approved') {
+      WingoldIntegrationService.syncKycToWingold(userId)
+        .then(result => console.log('[SSO] KYC sync result:', result))
+        .catch(err => console.error('[SSO] KYC sync error:', err));
+    }
+
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+      },
+      iss: "finatrades.com",
+    };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "5m",
+    });
+
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
+    res.redirect(redirectUrl);
+  } catch (error: any) {
+    console.error("SSO redirect error:", error);
+    res.redirect("/dashboard?error=sso_failed");
+  }
+});
+
+router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.redirect("/login?error=user_not_found");
+    }
+
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+      },
+      iss: "finatrades.com",
+    };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "5m",
+    });
+
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
+    res.redirect(redirectUrl);
+  } catch (error: any) {
+    console.error("SSO redirect error:", error);
+    res.redirect("/dashboard?error=sso_failed");
+  }
+});
+
+router.get("/api/sso/public-key", (req, res) => {
+  try {
+    // Try to derive public key from private key first
+    const privateKey = getPrivateKey();
+    const keyObject = crypto.createPrivateKey(privateKey);
+    const publicKey = crypto.createPublicKey(keyObject).export({ type: 'spki', format: 'pem' }) as string;
+    
+    res.json({ 
+      publicKey,
+      algorithm: "RS256",
+      issuer: "finatrades.com",
+      audience: "wingoldandmetals.com",
+      note: "Configure this public key in Wingold to verify SSO tokens from Finatrades"
+    });
+  } catch (error: any) {
+    console.error("Failed to derive public key:", error);
+    
+    // Fallback to SSO_PUBLIC_KEY env var if private key derivation fails
+    const publicKey = process.env.SSO_PUBLIC_KEY;
+    if (!publicKey) {
+      return res.status(500).json({ error: "Could not derive public key. Check FINATRADES_PRIVATE_KEY configuration." });
+    }
+    res.json({ 
+      publicKey: publicKey.replace(/\\n/g, '\n'),
+      algorithm: "RS256",
+      issuer: "finatrades.com"
+    });
+  }
+});
+
+/**
+ * Token verification endpoint for debugging
+ * Wingold can POST a token here to verify it's configured correctly
+ */
+router.post("/api/sso/verify-token", (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ 
+        valid: false, 
+        error: "Token is required in request body" 
+      });
+    }
+    
+    const privateKey = getPrivateKey();
+    const keyObject = crypto.createPrivateKey(privateKey);
+    const publicKey = crypto.createPublicKey(keyObject).export({ type: 'spki', format: 'pem' }) as string;
+    
+    const decoded = jwt.verify(token, publicKey, {
+      algorithms: ['RS256'],
+      issuer: 'finatrades.com',
+      audience: 'wingoldandmetals.com'
+    });
+    
+    res.json({
+      valid: true,
+      payload: {
+        sub: (decoded as any).sub,
+        email: (decoded as any).email,
+        nonce: (decoded as any).nonce,
+        jti: (decoded as any).jti,
+        exp: (decoded as any).exp,
+        iat: (decoded as any).iat,
+        iss: (decoded as any).iss,
+        aud: (decoded as any).aud,
+      },
+      message: "Token verified successfully. Use the same public key and verification options in Wingold."
+    });
+  } catch (error: any) {
+    console.error("Token verification failed:", error.message);
+    res.status(401).json({ 
+      valid: false, 
+      error: error.message,
+      hint: "Ensure you are using RS256 algorithm, issuer: 'finatrades.com', audience: 'wingoldandmetals.com'"
+    });
+  }
+});
+
+/**
+ * SSO redirect specifically for Buy Gold Bar flow
+ * Includes permitted_delivery constraint to enforce SecureVault-only on Wingold
+ */
+router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    if (!user) {
+      return res.redirect("/login?error=user_not_found");
+    }
+
+    const vcData = await getActiveVerifiableCredential(userId);
+
+    const payload: Record<string, any> = {
+      sub: String(user.id),
+      jti: crypto.randomUUID(),
+      aud: "wingoldandmetals.com",
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+      },
+      permitted_delivery: ['SECURE_VAULT'],
+      source: 'finavault_buy_gold_bar',
+      iss: "finatrades.com",
+    };
+
+    if (vcData) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "15m",
+    });
+
+    const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}&redirect=/shop`;
+    res.redirect(redirectUrl);
+  } catch (error: any) {
+    console.error("SSO shop redirect error:", error);
+    res.redirect("/finavault?error=sso_failed");
+  }
+});
+
+const GOLD_PRICE_MARGIN = 0.02;
+const VALID_BAR_SIZES: Record<string, number> = {
+  '1g': 1,
+  '10g': 10,
+  '100g': 100,
+  '1kg': 1000,
+};
+
+async function getServerGoldPrice(): Promise<number> {
+  try {
+    const res = await fetch('https://metals-api.com/api/latest?access_key=' + process.env.METALS_API_KEY + '&base=USD&symbols=XAU');
+    const data = await res.json();
+    if (data.success && data.rates?.XAU) {
+      return 1 / data.rates.XAU;
+    }
+  } catch (e) {
+    console.error('[SSO Checkout] Failed to fetch gold price:', e);
+  }
+  return 148;
+}
+
+// Database-backed checkout sessions (production-ready)
+// Clean up expired sessions every 30 minutes
+setInterval(async () => {
+  try {
+    const now = new Date();
+    await db.delete(wingoldCheckoutSessions)
+      .where(
+        and(
+          eq(wingoldCheckoutSessions.status, 'pending'),
+          lt(wingoldCheckoutSessions.expiresAt, now)
+        )
+      );
+    console.log('[SSO Cleanup] Cleaned up expired checkout sessions');
+  } catch (error) {
+    console.error('[SSO Cleanup] Error:', error);
+  }
+}, 30 * 60 * 1000);
+
+/**
+ * SSO endpoint for Wingold checkout with redirect flow
+ * Returns a URL that redirects user to Wingold for payment
+ * After payment, Wingold redirects back to our callback URL
+ * Server-side validates and recalculates all prices for security
+ */
+router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) => {
+  try {
+    const session = (req as any).session;
+    const userId = session.userId;
+    const { cartItems, vaultLocationId } = req.body;
+
+    if (!cartItems || !Array.isArray(cartItems) || cartItems.length === 0) {
+      return res.status(400).json({ error: "Cart items are required" });
+    }
+
+    const user = await db.query.users.findFirst({
+      where: eq(users.id, userId),
+    });
+
+    console.log('[SSO Checkout] User lookup:', { userId, user: user ? { id: user.id, email: user.email, kycStatus: user.kycStatus } : null });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    if (user.kycStatus !== 'Approved') {
+      console.log('[SSO Checkout] KYC not approved:', { userId, kycStatus: user.kycStatus });
+      return res.status(403).json({ error: "KYC approval required" });
+    }
+
+    const goldPricePerGram = await getServerGoldPrice();
+    const USD_TO_AED = 3.67;
+
+    const validatedItems: Array<{
+      barSize: string;
+      grams: number;
+      quantity: number;
+      priceUsd: number;
+      priceAed: number;
+    }> = [];
+
+    let serverTotalGrams = 0;
+    let serverTotalUsd = 0;
+
+    for (const item of cartItems) {
+      const barSize = String(item.barSize);
+      const grams = VALID_BAR_SIZES[barSize];
+      
+      if (!grams) {
+        return res.status(400).json({ error: `Invalid bar size: ${barSize}` });
+      }
+
+      const quantity = Math.max(1, Math.min(100, parseInt(item.quantity) || 1));
+      const itemPriceUsd = grams * goldPricePerGram * (1 + GOLD_PRICE_MARGIN);
+      const itemPriceAed = itemPriceUsd * USD_TO_AED;
+
+      validatedItems.push({
+        barSize,
+        grams,
+        quantity,
+        priceUsd: itemPriceUsd,
+        priceAed: itemPriceAed,
+      });
+
+      serverTotalGrams += grams * quantity;
+      serverTotalUsd += itemPriceUsd * quantity;
+    }
+
+    const serverTotalAed = serverTotalUsd * USD_TO_AED;
+
+    let validatedVaultId: string | null = null;
+    if (vaultLocationId) {
+      const vaultLocations = await db.select().from(wingoldVaultLocations).where(eq(wingoldVaultLocations.isActive, true));
+      const validVault = vaultLocations.find((v) => v.id === vaultLocationId);
+      if (!validVault) {
+        console.log('[SSO Checkout] Vault validation failed:', { 
+          receivedVaultId: vaultLocationId, 
+          availableVaults: vaultLocations.map((v) => ({ id: v.id, name: v.name }))
+        });
+        return res.status(400).json({ error: "Invalid vault location" });
+      }
+      validatedVaultId = validVault.id;
+    }
+
+    const vcData = await getActiveVerifiableCredential(userId);
+    const kycTier = await getUserKycTier(String(user.id));
+
+    const orderId = crypto.randomUUID();
+    const nonce = crypto.randomBytes(16).toString('hex');
+
+    // Build the callback URL for redirect flow
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+    const callbackUrl = `${baseUrl}/wingold/callback`;
+
+    const payload: Record<string, any> = {
+      sub: String(user.id),
+      jti: orderId,
+      nonce,
+      aud: "wingoldandmetals.com",
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      finatradesId: user.id,
+      accountType: user.accountType,
+      phone: user.phoneNumber,
+      country: user.country,
+      kyc: {
+        status: user.kycStatus,
+        isApproved: user.kycStatus === 'Approved',
+        emailVerified: user.isEmailVerified,
+        tier: kycTier || 'tier_1_basic',
+      },
+      permitted_delivery: ['SECURE_VAULT'],
+      source: 'finatrades_redirect_checkout',
+      embedded: false,
+      callbackUrl,
+      iss: "finatrades.com",
+      cart: {
+        items: validatedItems,
+        vaultLocationId: validatedVaultId,
+        totalGrams: serverTotalGrams,
+        totalUsd: serverTotalUsd,
+        totalAed: serverTotalAed,
+        goldPricePerGram,
+        calculatedAt: new Date().toISOString(),
+      },
+    };
+
+    if (vcData) {
+      payload.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    const token = jwt.sign(payload, getPrivateKey(), { 
+      algorithm: "RS256",
+      expiresIn: "30m",
+    });
+
+    // Store the pending order in database for verification on callback (production-ready)
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
+    await db.insert(wingoldCheckoutSessions).values({
+      id: orderId,
+      userId: String(user.id),
+      nonce,
+      totalGrams: String(serverTotalGrams),
+      totalUsd: String(serverTotalUsd),
+      totalAed: String(serverTotalAed),
+      items: validatedItems,
+      vaultLocationId: validatedVaultId,
+      status: 'pending',
+      expiresAt,
+    });
+
+    // Use redirect checkout URL (full page, not embedded)
+    const checkoutUrl = `${WINGOLD_URL}/checkout?token=${encodeURIComponent(token)}`;
+
+    console.log('[SSO Checkout] Generated redirect checkout:', { orderId, checkoutUrl: checkoutUrl.substring(0, 100) + '...' });
+
+    res.json({ 
+      checkoutUrl,
+      expiresIn: 1800,
+      orderId,
+      nonce,
+      callbackUrl,
+      serverCalculatedTotal: {
+        grams: serverTotalGrams,
+        usd: serverTotalUsd,
+        aed: serverTotalAed,
+      },
+    });
+  } catch (error: any) {
+    console.error("SSO redirect checkout error:", error);
+    res.status(500).json({ error: "Failed to generate checkout URL" });
+  }
+});
+
+/**
+ * Callback endpoint for Wingold to redirect back after payment
+ * Verifies the order and updates status
+ */
+router.get("/api/sso/wingold/callback", async (req, res) => {
+  try {
+    const { orderId, status, signature, referenceNumber, error: errorMsg } = req.query;
+
+    console.log('[Wingold Callback] Received:', { orderId, status, referenceNumber });
+
+    if (!orderId || typeof orderId !== 'string') {
+      return res.redirect('/dashboard?error=missing_order_id');
+    }
+
+    // Fetch order from database
+    const [pendingOrder] = await db.select()
+      .from(wingoldCheckoutSessions)
+      .where(eq(wingoldCheckoutSessions.id, orderId))
+      .limit(1);
+      
+    if (!pendingOrder) {
+      console.log('[Wingold Callback] Order not found:', orderId);
+      return res.redirect('/dashboard?error=order_not_found');
+    }
+
+    // Check if order expired
+    if (new Date() > pendingOrder.expiresAt) {
+      console.log('[Wingold Callback] Order expired:', orderId);
+      return res.redirect('/dashboard?error=order_expired');
+    }
+
+    // Verify the signature from Wingold (HMAC-SHA256 with webhook secret)
+    const webhookSecret = process.env.WINGOLD_WEBHOOK_SECRET;
+    if (webhookSecret && signature) {
+      const expectedSignature = crypto
+        .createHmac('sha256', webhookSecret)
+        .update(`${orderId}:${status}:${pendingOrder.nonce}`)
+        .digest('hex');
+      
+      if (signature !== expectedSignature) {
+        console.log('[Wingold Callback] Signature mismatch:', { expected: expectedSignature, received: signature });
+        return res.redirect('/dashboard?error=invalid_signature');
+      }
+    }
+
+    const totalGrams = parseFloat(pendingOrder.totalGrams);
+    const totalUsd = parseFloat(pendingOrder.totalUsd);
+
+    // Update order status in database
+    if (status === 'success') {
+      await db.update(wingoldCheckoutSessions)
+        .set({ 
+          status: 'completed', 
+          wingoldReferenceNumber: String(referenceNumber || ''),
+          completedAt: new Date() 
+        })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
+      console.log('[Wingold Callback] Payment successful:', { orderId, referenceNumber });
+      
+      // Redirect to success page with order details
+      const successParams = new URLSearchParams({
+        orderId: orderId,
+        referenceNumber: String(referenceNumber || ''),
+        grams: String(totalGrams),
+        usd: totalUsd.toFixed(2),
+      });
+      return res.redirect(`/wingold/callback?status=success&${successParams.toString()}`);
+      
+    } else if (status === 'cancelled') {
+      await db.update(wingoldCheckoutSessions)
+        .set({ status: 'cancelled' })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
+      console.log('[Wingold Callback] Payment cancelled:', { orderId });
+      return res.redirect('/wingold/callback?status=cancelled');
+      
+    } else {
+      await db.update(wingoldCheckoutSessions)
+        .set({ status: 'failed', errorMessage: String(errorMsg || 'Payment failed') })
+        .where(eq(wingoldCheckoutSessions.id, orderId));
+      
+      console.log('[Wingold Callback] Payment failed:', { orderId, error: errorMsg });
+      return res.redirect(`/wingold/callback?status=failed&error=${encodeURIComponent(String(errorMsg || 'Payment failed'))}`);
+    }
+  } catch (error: any) {
+    console.error('[Wingold Callback] Error:', error);
+    return res.redirect('/dashboard?error=callback_error');
+  }
+});
+
+/**
+ * API endpoint for checking order status (for frontend polling)
+ */
+router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    const session = (req as any).session;
+    const userId = String(session.userId);
+
+    const [order] = await db.select()
+      .from(wingoldCheckoutSessions)
+      .where(eq(wingoldCheckoutSessions.id, orderId))
+      .limit(1);
+      
+    if (!order) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+
+    // Verify the order belongs to this user
+    if (order.userId !== userId) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    res.json({
+      orderId: order.id,
+      status: order.status,
+      totalGrams: parseFloat(order.totalGrams),
+      totalUsd: parseFloat(order.totalUsd),
+      totalAed: parseFloat(order.totalAed),
+      createdAt: order.createdAt,
+      wingoldReferenceNumber: order.wingoldReferenceNumber,
+    });
+  } catch (error: any) {
+    console.error('[Order Status] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch order status' });
+  }
+});
+
+// Returns allowed origins for postMessage validation
+router.get("/api/sso/wingold/allowed-origins", (req, res) => {
+  // Build the allowed origins list from configured WINGOLD_URL and additional known domains
+  const origins = [
+    WINGOLD_URL,
+    'https://wingoldandmetals.com',
+    'https://www.wingoldandmetals.com',
+    'https://wingoldandmetals.replit.app',
+  ];
+  
+  // Add any additional origins from environment (comma-separated)
+  const additionalOrigins = process.env.WINGOLD_ALLOWED_ORIGINS;
+  if (additionalOrigins) {
+    origins.push(...additionalOrigins.split(',').map(o => o.trim()).filter(Boolean));
+  }
+  
+  // Remove duplicates and return
+  const uniqueOrigins = Array.from(new Set(origins));
+  res.json({ 
+    origins: uniqueOrigins,
+    primary: WINGOLD_URL
+  });
+});
+
+/**
+ * Partner KYC API - Secure endpoint for Wingold to fetch full KYC details
+ * 
+ * Authentication: Bearer token (WINGOLD_PARTNER_API_KEY)
+ * 
+ * Use Cases:
+ * 1. Compliance verification - Wingold needs full KYC for regulatory requirements
+ * 2. Enhanced due diligence - When SSO token isn't sufficient
+ * 3. Order fulfillment - Verify user identity before physical delivery
+ */
+router.get("/api/partner/kyc/:finatradesId", async (req, res) => {
+  try {
+    // Verify partner API key
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'Missing or invalid authorization header' });
+    }
+
+    const providedKey = authHeader.substring(7);
+    const expectedKey = process.env.WINGOLD_PARTNER_API_KEY;
+    
+    if (!expectedKey) {
+      console.error('[Partner KYC API] WINGOLD_PARTNER_API_KEY not configured');
+      return res.status(500).json({ error: 'Partner API not configured' });
+    }
+
+    // Constant-time comparison to prevent timing attacks
+    // First check lengths match to avoid timingSafeEqual length error
+    const providedBuffer = Buffer.from(providedKey);
+    const expectedBuffer = Buffer.from(expectedKey);
+    
+    if (providedBuffer.length !== expectedBuffer.length) {
+      console.warn('[Partner KYC API] Invalid API key attempt (length mismatch)');
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+    
+    const cryptoModule = await import('crypto');
+    if (!cryptoModule.timingSafeEqual(providedBuffer, expectedBuffer)) {
+      console.warn('[Partner KYC API] Invalid API key attempt');
+      return res.status(401).json({ error: 'Invalid API key' });
+    }
+
+    const { finatradesId } = req.params;
+    
+    // Fetch user
+    const [user] = await db.select().from(users).where(eq(users.id, finatradesId)).limit(1);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Fetch KYC tier using the helper (approved submissions only)
+    const kycTier = await getUserKycTier(finatradesId);
+
+    // Base response structure
+    const response: Record<string, any> = {
+      finatradesId: user.id,
+      email: user.email,
+      accountType: user.accountType,
+      kycStatus: user.kycStatus,
+      kycTier: kycTier || 'tier_1_basic',
+      emailVerified: user.isEmailVerified,
+      createdAt: user.createdAt,
+    };
+
+    // Fetch detailed KYC data based on account type
+    // 'business' accounts use corporate KYC, 'personal' accounts use personal KYC
+    if (user.accountType === 'business') {
+      // Corporate KYC
+      const [corporateKyc] = await db.select()
+        .from(finatradesCorporateKyc)
+        .where(eq(finatradesCorporateKyc.userId, finatradesId))
+        .limit(1);
+
+      if (corporateKyc) {
+        response.corporate = {
+          companyName: corporateKyc.companyName,
+          registrationNumber: corporateKyc.registrationNumber,
+          incorporationDate: corporateKyc.incorporationDate,
+          countryOfIncorporation: corporateKyc.countryOfIncorporation,
+          companyType: corporateKyc.companyType,
+          natureOfBusiness: corporateKyc.natureOfBusiness,
+          numberOfEmployees: corporateKyc.numberOfEmployees,
+          headOfficeAddress: corporateKyc.headOfficeAddress,
+          telephoneNumber: corporateKyc.telephoneNumber,
+          website: corporateKyc.website,
+          emailAddress: corporateKyc.emailAddress,
+          tradingContact: {
+            name: corporateKyc.tradingContactName,
+            email: corporateKyc.tradingContactEmail,
+            phone: corporateKyc.tradingContactPhone,
+          },
+          financeContact: {
+            name: corporateKyc.financeContactName,
+            email: corporateKyc.financeContactEmail,
+            phone: corporateKyc.financeContactPhone,
+          },
+          beneficialOwners: corporateKyc.beneficialOwners,
+          hasPepOwners: corporateKyc.hasPepOwners,
+          pepDetails: corporateKyc.pepDetails,
+          livenessVerified: corporateKyc.livenessVerified,
+          livenessVerifiedAt: corporateKyc.livenessVerifiedAt,
+          status: corporateKyc.status,
+          documents: {
+            hasTradeicense: !!corporateKyc.documents?.tradeLicense?.url,
+            hasCertificateOfIncorporation: !!corporateKyc.documents?.certificateOfIncorporation?.url,
+            hasShareholderList: !!corporateKyc.documents?.shareholderList?.url,
+            hasUboPassports: !!corporateKyc.documents?.uboPassports?.url,
+            hasBankReferenceLetter: !!corporateKyc.documents?.bankReferenceLetter?.url,
+          },
+          documentExpiry: {
+            tradeLicenseExpiryDate: corporateKyc.tradeLicenseExpiryDate,
+            directorPassportExpiryDate: corporateKyc.directorPassportExpiryDate,
+          },
+        };
+      }
+    } else {
+      // Personal KYC
+      const [personalKyc] = await db.select()
+        .from(finatradesPersonalKyc)
+        .where(eq(finatradesPersonalKyc.userId, finatradesId))
+        .limit(1);
+
+      if (personalKyc) {
+        response.personal = {
+          fullName: personalKyc.fullName,
+          dateOfBirth: personalKyc.dateOfBirth,
+          nationality: personalKyc.nationality,
+          country: personalKyc.country,
+          city: personalKyc.city,
+          address: personalKyc.address,
+          postalCode: personalKyc.postalCode,
+          phone: personalKyc.phone,
+          occupation: personalKyc.occupation,
+          sourceOfFunds: personalKyc.sourceOfFunds,
+          livenessVerified: personalKyc.livenessVerified,
+          livenessVerifiedAt: personalKyc.livenessVerifiedAt,
+          status: personalKyc.status,
+          documents: {
+            hasIdFront: !!personalKyc.idFrontUrl,
+            hasIdBack: !!personalKyc.idBackUrl,
+            hasPassport: !!personalKyc.passportUrl,
+            hasAddressProof: !!personalKyc.addressProofUrl,
+          },
+          documentExpiry: {
+            passportExpiryDate: personalKyc.passportExpiryDate,
+          },
+        };
+      }
+    }
+
+    // Add Verifiable Credential reference if available
+    const vcData = await storage.getActiveUserCredential(user.id);
+    if (vcData && vcData.credentialId) {
+      const baseUrl = `${req.protocol}://${req.get('host')}`;
+      response.verifiableCredential = {
+        id: vcData.credentialId,
+        statusEndpoint: `${baseUrl}/api/vc/status/${vcData.credentialId}`,
+        fetchEndpoint: `${baseUrl}/api/vc/partner/credential/${vcData.credentialId}`,
+      };
+    }
+
+    // Log the access for audit trail
+    console.log('[Partner KYC API] Access granted:', { 
+      finatradesId, 
+      accountType: user.accountType,
+      kycStatus: user.kycStatus 
+    });
+
+    res.json(response);
+  } catch (error: any) {
+    console.error('[Partner KYC API] Error:', error);
+    res.status(500).json({ error: 'Failed to fetch KYC data' });
+  }
+});
+
+export function registerSsoRoutes(app: any) {
+  app.use(router);
+}
+
+export { getPrivateKey, WINGOLD_URL };

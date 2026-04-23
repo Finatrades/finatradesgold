@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Digital Identity - Preview | Finatrades</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: linear-gradient(135deg, #f8f4ff 0%, #fff 100%);
+      min-height: 100vh;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    .header h1 {
+      color: #8A2BE2;
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+    .header p {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    /* Credential Card */
+    .credential-card {
+      background: linear-gradient(135deg, #8A2BE2 0%, #6B1FA8 50%, #4A1578 100%);
+      border-radius: 20px;
+      padding: 30px;
+      color: white;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(138, 43, 226, 0.3);
+      margin-bottom: 30px;
+    }
+    .credential-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      right: -30%;
+      width: 80%;
+      height: 200%;
+      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+    }
+    .credential-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 25px;
+      position: relative;
+      z-index: 1;
+    }
+    .credential-logo {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .logo-icon {
+      width: 50px;
+      height: 50px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .logo-text {
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 1px;
+    }
+    .status-badge {
+      background: rgba(82, 196, 26, 0.9);
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .status-badge.revoked { background: rgba(255, 77, 79, 0.9); }
+    .status-badge.expired { background: rgba(250, 173, 20, 0.9); }
+    
+    .credential-body {
+      position: relative;
+      z-index: 1;
+    }
+    .user-info {
+      margin-bottom: 25px;
+    }
+    .user-name {
+      font-size: 26px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .user-email {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+    
+    .credential-details {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    }
+    .detail-item {
+      text-align: left;
+    }
+    .detail-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      opacity: 0.7;
+      margin-bottom: 4px;
+    }
+    .detail-value {
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .credential-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 25px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+      position: relative;
+      z-index: 1;
+    }
+    .credential-id {
+      font-size: 11px;
+      font-family: monospace;
+      opacity: 0.7;
+    }
+    .issuer-info {
+      text-align: right;
+      font-size: 11px;
+      opacity: 0.7;
+    }
+    
+    /* Info Cards */
+    .info-section {
+      background: white;
+      border-radius: 16px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+      border: 1px solid #eee;
+    }
+    .info-section h3 {
+      color: #333;
+      font-size: 16px;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 15px;
+    }
+    .info-item {
+      padding: 12px;
+      background: #fafafa;
+      border-radius: 10px;
+    }
+    .info-item .label {
+      font-size: 11px;
+      color: #999;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 4px;
+    }
+    .info-item .value {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+    .info-item .value.verified {
+      color: #52c41a;
+    }
+    
+    /* Verification Badges */
+    .verification-badges {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      background: #f0fff4;
+      border: 1px solid #b7eb8f;
+      border-radius: 20px;
+      font-size: 13px;
+      color: #389e0d;
+    }
+    .badge.pending {
+      background: #fffbe6;
+      border-color: #ffe58f;
+      color: #d48806;
+    }
+    
+    /* Action Buttons */
+    .actions {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    .btn {
+      flex: 1;
+      padding: 14px 24px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      border: none;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #8A2BE2 0%, #6B1FA8 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(138, 43, 226, 0.3);
+    }
+    .btn-secondary {
+      background: white;
+      color: #8A2BE2;
+      border: 2px solid #8A2BE2;
+    }
+    .btn-secondary:hover {
+      background: #f8f4ff;
+    }
+    .btn-outline {
+      background: transparent;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+    .btn-outline:hover {
+      background: #fafafa;
+      border-color: #ccc;
+    }
+    
+    /* QR Code Section */
+    .qr-section {
+      text-align: center;
+      padding: 30px;
+      background: #fafafa;
+      border-radius: 16px;
+      margin-top: 20px;
+    }
+    .qr-placeholder {
+      width: 150px;
+      height: 150px;
+      background: white;
+      border: 2px dashed #ddd;
+      border-radius: 12px;
+      margin: 0 auto 15px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    .qr-section p {
+      color: #666;
+      font-size: 13px;
+    }
+    
+    /* History Section */
+    .history-item {
+      display: flex;
+      align-items: center;
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+    }
+    .history-item:last-child {
+      border-bottom: none;
+    }
+    .history-icon {
+      width: 36px;
+      height: 36px;
+      background: #f0f5ff;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 12px;
+    }
+    .history-details {
+      flex: 1;
+    }
+    .history-title {
+      font-size: 14px;
+      color: #333;
+      font-weight: 500;
+    }
+    .history-date {
+      font-size: 12px;
+      color: #999;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 5px;
+      background: #f0f0f0;
+      padding: 4px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px 16px;
+      text-align: center;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab.active {
+      background: white;
+      color: #8A2BE2;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    /* No Credential State */
+    .no-credential {
+      text-align: center;
+      padding: 60px 40px;
+      background: white;
+      border-radius: 20px;
+      border: 2px dashed #e0d4f5;
+    }
+    .no-credential-icon {
+      width: 80px;
+      height: 80px;
+      background: #f8f4ff;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 20px;
+      font-size: 36px;
+    }
+    .no-credential h3 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    .no-credential p {
+      color: #666;
+      font-size: 14px;
+      margin-bottom: 25px;
+    }
+    
+    /* Preview Note */
+    .preview-note {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 30px;
+      text-align: center;
+      font-size: 13px;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="preview-note">
+      This is a design preview of the Digital Identity page for Finatrades users.
+    </div>
+    
+    <div class="header">
+      <h1>My Digital Identity</h1>
+      <p>Your verified digital credential powered by W3C Verifiable Credentials</p>
+    </div>
+    
+    <!-- Main Credential Card -->
+    <div class="credential-card">
+      <div class="credential-header">
+        <div class="credential-logo">
+          <div class="logo-icon">F</div>
+          <span class="logo-text">FINATRADES</span>
+        </div>
+        <span class="status-badge">Verified</span>
+      </div>
+      
+      <div class="credential-body">
+        <div class="user-info">
+          <div class="user-name">John Anderson Smith</div>
+          <div class="user-email">john.smith@example.com</div>
+        </div>
+        
+        <div class="credential-details">
+          <div class="detail-item">
+            <div class="detail-label">Credential Type</div>
+            <div class="detail-value">KYC Identity</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Issued Date</div>
+            <div class="detail-value">Jan 15, 2026</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Expires</div>
+            <div class="detail-value">Jan 15, 2027</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="credential-footer">
+        <div class="credential-id">ID: vc_ft_abc123xyz789</div>
+        <div class="issuer-info">
+          Issued by: did:web:finatrades.com
+        </div>
+      </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active">Overview</div>
+      <div class="tab">Verification Details</div>
+      <div class="tab">History</div>
+    </div>
+    
+    <!-- Verification Status -->
+    <div class="info-section">
+      <h3>Verification Status</h3>
+      <div class="verification-badges">
+        <span class="badge">Identity Verified</span>
+        <span class="badge">Address Verified</span>
+        <span class="badge">AML Passed</span>
+        <span class="badge">Document Verified</span>
+      </div>
+    </div>
+    
+    <!-- Credential Details -->
+    <div class="info-section">
+      <h3>Credential Information</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <div class="label">Full Name</div>
+          <div class="value">John Anderson Smith</div>
+        </div>
+        <div class="info-item">
+          <div class="label">KYC Level</div>
+          <div class="value verified">Tier 3 - Fully Verified</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Country</div>
+          <div class="value">United Arab Emirates</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Account Type</div>
+          <div class="value">Personal</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Signature Algorithm</div>
+          <div class="value" style="font-family: monospace;">RS256</div>
+        </div>
+        <div class="info-item">
+          <div class="label">Presentation Count</div>
+          <div class="value">3 times shared</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- QR Code for Sharing -->
+    <div class="info-section">
+      <h3>Share Your Credential</h3>
+      <div class="qr-section">
+        <div class="qr-placeholder">QR</div>
+        <p>Partners can scan this QR code to verify your identity</p>
+      </div>
+    </div>
+    
+    <!-- Presentation History -->
+    <div class="info-section">
+      <h3>Presentation History</h3>
+      <div class="history-item">
+        <div class="history-icon">🤝</div>
+        <div class="history-details">
+          <div class="history-title">Shared with Wingold Partner</div>
+          <div class="history-date">Jan 20, 2026 at 2:34 PM</div>
+        </div>
+      </div>
+      <div class="history-item">
+        <div class="history-icon">🔍</div>
+        <div class="history-details">
+          <div class="history-title">Verified by External Service</div>
+          <div class="history-date">Jan 18, 2026 at 11:15 AM</div>
+        </div>
+      </div>
+      <div class="history-item">
+        <div class="history-icon">✨</div>
+        <div class="history-details">
+          <div class="history-title">Credential Issued</div>
+          <div class="history-date">Jan 15, 2026 at 9:00 AM</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Action Buttons -->
+    <div class="actions">
+      <button class="btn btn-primary">
+        <span>Download Credential</span>
+      </button>
+      <button class="btn btn-secondary">
+        <span>Share</span>
+      </button>
+      <button class="btn btn-outline">
+        <span>Verify Status</span>
+      </button>
+    </div>
+    
+    <hr style="margin: 50px 0; border: none; border-top: 1px dashed #ddd;">
+    
+    <!-- No Credential State (Alternative) -->
+    <h2 style="color: #666; font-size: 16px; margin-bottom: 20px;">State: No Credential (KYC not completed)</h2>
+    <div class="no-credential">
+      <div class="no-credential-icon">🪪</div>
+      <h3>No Digital Identity Yet</h3>
+      <p>Complete your KYC verification to receive your verified digital identity credential.</p>
+      <button class="btn btn-primary" style="max-width: 200px; margin: 0 auto;">
+        Start KYC Verification
+      </button>
+    </div>
+  </div>
+</body>
+</html>

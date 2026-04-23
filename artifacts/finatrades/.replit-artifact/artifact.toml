@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Finatrades"
+version = "1.0.0"
+id = "artifacts/finatrades"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 21928
+
+[services.development]
+run = "pnpm --filter @workspace/finatrades run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/finatrades", "run", "build" ]
+publicDir = "artifacts/finatrades/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "21928"
+BASE_PATH = "/"
