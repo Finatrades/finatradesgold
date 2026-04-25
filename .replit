@@ -20,14 +20,6 @@ path = "scripts/post-merge.sh"
 timeoutMs = 20000
 
 [[ports]]
-localPort = 5000
-externalPort = 80
-
-[[ports]]
-localPort = 5001
-externalPort = 3000
-
-[[ports]]
 localPort = 8080
 externalPort = 8080
 
@@ -36,13 +28,9 @@ localPort = 8081
 externalPort = 8081
 
 [[ports]]
-localPort = 8082
-externalPort = 3003
-
-[[ports]]
 localPort = 21928
-externalPort = 3002
+externalPort = 80
 
 [[ports]]
 localPort = 26026
-externalPort = 3001
+externalPort = 3000
