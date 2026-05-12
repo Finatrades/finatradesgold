@@ -1302,8 +1302,6 @@ export async function registerRoutes(
           fpgwLockedBnslGrams: parseFloat(vaultSummary?.fpgwLockedBnslGrams || '0'),
           fpgwReservedTradeGrams: parseFloat(vaultSummary?.fpgwReservedTradeGrams || '0'),
           fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0'),
-          bnslWalletGoldGrams,
-          bnslWalletValueUsd,
           finacardGoldGrams,
           finacardValueUsd: finacardGoldValueUsd
         },
