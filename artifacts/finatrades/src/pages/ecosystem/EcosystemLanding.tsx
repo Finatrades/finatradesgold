@@ -1254,7 +1254,6 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
         <div className="relative z-10">
           <div className="flex justify-center mb-2.5">{logo}</div>
           {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-          <p className="text-[11px] font-bold text-[#1A1A1A] uppercase tracking-wider leading-tight mb-1">{label}</p>
           <p className="text-[9px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
           <p className="text-[9px] text-[#666660] leading-relaxed">{desc}</p>
         </div>
@@ -1433,7 +1432,6 @@ function ConnectedEcosystemSection() {
             >
               <div className="flex justify-center mb-3">{node.logo}</div>
               {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wide mb-0.5">{node.label}</p>
               <p className="text-xs font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{node.role}</p>
               <p className="text-xs text-[#666660] leading-relaxed">{node.desc}</p>
             </motion.div>
