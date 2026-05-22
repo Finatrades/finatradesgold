@@ -926,72 +926,107 @@ function MarketplaceSection() {
               <div className="absolute inset-8 rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(199,59,34,0.09) 0%, transparent 68%)', filter: 'blur(40px)' }} />
 
-              {/* Map image */}
-              <motion.img
-                src={africaTradeMap}
-                alt="Finatrades African Trade Hub Network"
+              {/* Map image — 3D perspective tilt */}
+              <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-                className="relative w-full select-none"
+                className="relative w-full"
                 style={{
+                  perspective: '1200px',
                   height: '700px',
-                  objectFit: 'contain',
-                  filter: 'drop-shadow(0 32px 64px rgba(199,59,34,0.14)) drop-shadow(0 4px 16px rgba(0,0,0,0.07))',
                 }}
-                draggable={false}
-              />
-
-              {/* 14 Active Hubs badge — top LEFT corner */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, x: -12 }}
-                whileInView={{ opacity: 1, scale: 1, x: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
-                className="absolute top-4 left-0 lg:left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF0EC' }}>
-                  <MapPin size={16} className="text-[#C73B22]" />
-                </div>
-                <div>
-                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">14 Active Hubs</p>
-                  <p className="text-[11px] text-[#888880]">Across Africa</p>
-                </div>
+                <img
+                  src={africaTradeMap}
+                  alt="Finatrades African Trade Hub Network"
+                  className="w-full h-full select-none"
+                  style={{
+                    objectFit: 'contain',
+                    transform: 'rotateY(-6deg) rotateX(3deg) scale(1.04)',
+                    transformStyle: 'preserve-3d',
+                    transformOrigin: 'center center',
+                    filter: 'drop-shadow(-12px 24px 48px rgba(199,59,34,0.18)) drop-shadow(0 8px 24px rgba(0,0,0,0.12))',
+                    transition: 'transform 0.4s ease',
+                  }}
+                  draggable={false}
+                />
               </motion.div>
 
-              {/* 100% Verified Listings badge — top RIGHT corner */}
+              {/* TOP-RIGHT badge — 100% Verified Listings */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.8, x: 12 }}
-                whileInView={{ opacity: 1, scale: 1, x: 0 }}
+                initial={{ opacity: 0, scale: 0.75, x: 16, y: -8 }}
+                whileInView={{ opacity: 1, scale: 1, x: 0, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 22 }}
-                className="absolute top-4 right-0 lg:right-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+                transition={{ delay: 0.45, type: 'spring', stiffness: 240, damping: 20 }}
+                className="absolute top-6 right-2 flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(240,253,244,0.95) 100%)',
+                  border: '1px solid rgba(5,150,105,0.2)',
+                  boxShadow: '0 8px 32px rgba(5,150,105,0.15), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(12px)',
+                  transform: 'translateZ(20px)',
+                }}
               >
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#ECFDF5' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%)', boxShadow: '0 2px 8px rgba(5,150,105,0.25)' }}>
                   <CheckCircle2 size={16} className="text-[#059669]" />
                 </div>
                 <div>
                   <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified</p>
-                  <p className="text-[11px] text-[#888880]">Listings</p>
+                  <p className="text-[11px] font-medium" style={{ color: '#059669' }}>Listings</p>
                 </div>
               </motion.div>
 
-              {/* Map legend — absolute bottom centre inside image area */}
+              {/* BOTTOM-LEFT badge — 14 Active Hubs */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75, x: -16, y: 8 }}
+                whileInView={{ opacity: 1, scale: 1, x: 0, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 240, damping: 20 }}
+                className="absolute bottom-10 left-2 flex items-center gap-3 px-4 py-3 rounded-2xl"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,0.95) 0%, rgba(254,240,236,0.95) 100%)',
+                  border: '1px solid rgba(199,59,34,0.2)',
+                  boxShadow: '0 8px 32px rgba(199,59,34,0.15), 0 2px 8px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                  backdropFilter: 'blur(12px)',
+                  transform: 'translateZ(20px)',
+                }}
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'linear-gradient(135deg, #FEE2D5 0%, #FECBB5 100%)', boxShadow: '0 2px 8px rgba(199,59,34,0.25)' }}>
+                  <MapPin size={16} className="text-[#C73B22]" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">14 Active Hubs</p>
+                  <p className="text-[11px] font-medium" style={{ color: '#C73B22' }}>Across Africa</p>
+                </div>
+              </motion.div>
+
+              {/* Map legend — bottom centre */}
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
-                transition={{ delay: 0.7, duration: 0.4 }}
+                transition={{ delay: 0.75, duration: 0.4 }}
                 className="absolute bottom-0 left-0 right-0 flex justify-center"
               >
-                <div className="flex items-center gap-5 px-5 py-2.5 rounded-xl border border-gray-200/70 bg-white/90 backdrop-blur-sm shadow-md">
+                <div className="flex items-center gap-5 px-5 py-2.5 rounded-xl"
+                  style={{
+                    background: 'rgba(255,255,255,0.92)',
+                    border: '1px solid rgba(0,0,0,0.08)',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.9)',
+                    backdropFilter: 'blur(10px)',
+                  }}>
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#C73B22', boxShadow: '0 0 0 3px rgba(199,59,34,0.2)' }} />
-                    <span className="text-[11.5px] text-[#555550] font-medium tracking-wide">Entry points</span>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: '#C73B22', boxShadow: '0 0 0 3px rgba(199,59,34,0.22), 0 2px 6px rgba(199,59,34,0.4)' }} />
+                    <span className="text-[11.5px] text-[#444440] font-medium tracking-wide">Entry points</span>
                   </div>
                   <div className="w-px h-3.5 bg-gray-200" />
                   <div className="flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#1D4ED8', boxShadow: '0 0 0 3px rgba(29,78,216,0.2)' }} />
-                    <span className="text-[11.5px] text-[#555550] font-medium tracking-wide">Trade &amp; logistics nodes</span>
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0"
+                      style={{ background: '#1D4ED8', boxShadow: '0 0 0 3px rgba(29,78,216,0.22), 0 2px 6px rgba(29,78,216,0.4)' }} />
+                    <span className="text-[11.5px] text-[#444440] font-medium tracking-wide">Trade &amp; logistics nodes</span>
                   </div>
                 </div>
               </motion.div>
