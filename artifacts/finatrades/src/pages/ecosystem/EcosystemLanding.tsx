@@ -60,7 +60,7 @@ function Navbar() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-[#0F0F0F]/95 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/30' : 'bg-transparent'
+        scrolled ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-xl shadow-gray-300/60' : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -71,7 +71,7 @@ function Navbar() {
         <div className="hidden lg:flex items-center gap-1">
           {NAV_LINKS.map(l => (
             <a key={l.label} href={l.href}
-              className="px-3 py-1.5 text-sm text-white/70 hover:text-white rounded-md hover:bg-white/5 transition-colors">
+              className="px-3 py-1.5 text-sm text-[#444440] hover:text-[#1A1A1A] rounded-md hover:bg-gray-100 transition-colors">
               {l.label}
             </a>
           ))}
@@ -79,7 +79,7 @@ function Navbar() {
 
         <div className="hidden lg:flex items-center gap-3">
           <Link href="/login">
-            <button className="px-4 py-2 text-sm text-white/80 hover:text-white transition-colors">Sign In</button>
+            <button className="px-4 py-2 text-sm text-[#333330] hover:text-[#1A1A1A] transition-colors">Sign In</button>
           </Link>
           <Link href="/register">
             <button className="px-4 py-2 text-sm font-semibold bg-[#22C55E] hover:bg-[#16A34A] text-white rounded-lg transition-colors">
@@ -88,23 +88,23 @@ function Navbar() {
           </Link>
         </div>
 
-        <button className="lg:hidden text-white/70 hover:text-white" onClick={() => setOpen(!open)}>
+        <button className="lg:hidden text-[#444440] hover:text-[#1A1A1A]" onClick={() => setOpen(!open)}>
           {open ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
 
       {open && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden bg-[#0F0F0F]/98 backdrop-blur-xl border-t border-white/5 px-6 py-4 space-y-1">
+          className="lg:hidden bg-white/98 backdrop-blur-xl border-t border-gray-200 px-6 py-4 space-y-1">
           {NAV_LINKS.map(l => (
             <a key={l.label} href={l.href} onClick={() => setOpen(false)}
-              className="block px-3 py-2.5 text-sm text-white/70 hover:text-white rounded-md hover:bg-white/5 transition-colors">
+              className="block px-3 py-2.5 text-sm text-[#444440] hover:text-[#1A1A1A] rounded-md hover:bg-gray-100 transition-colors">
               {l.label}
             </a>
           ))}
-          <div className="pt-3 border-t border-white/10 flex gap-3">
+          <div className="pt-3 border-t border-gray-300 flex gap-3">
             <Link href="/login" className="flex-1">
-              <button className="w-full px-4 py-2 text-sm text-white/80 border border-white/10 rounded-lg hover:bg-white/5 transition-colors">Sign In</button>
+              <button className="w-full px-4 py-2 text-sm text-[#333330] border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors">Sign In</button>
             </Link>
             <Link href="/register" className="flex-1">
               <button className="w-full px-4 py-2 text-sm font-semibold bg-[#22C55E] text-white rounded-lg hover:bg-[#16A34A] transition-colors">Get Started</button>
@@ -118,7 +118,7 @@ function Navbar() {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0F0F0F]">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
       <div className="absolute inset-0">
         <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#22C55E]/12 rounded-full blur-[120px]" />
         <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#E8EAE4]/8 rounded-full blur-[100px]" />
@@ -134,15 +134,15 @@ function HeroSection() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 text-[#4ADE80] text-xs font-medium mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 text-[#16A34A] text-xs font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A] animate-pulse" />
             Digital Commodity Trade Platform · 14 African Hubs
           </div>
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
-          className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+          className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1A1A1A] leading-[1.1] tracking-tight mb-6">
           Digital Gateway for{' '}
           <span className="bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#D4D4C0] bg-clip-text text-transparent">
             Commodity Trade,
@@ -152,7 +152,7 @@ function HeroSection() {
 
         <motion.p
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg text-white/60 max-w-3xl mx-auto mb-10 leading-relaxed">
+          className="text-lg text-[#555550] max-w-3xl mx-auto mb-10 leading-relaxed">
           Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and
           settlement workflows through one secure digital trade platform — from seller consignment to final payout.
         </motion.p>
@@ -166,17 +166,17 @@ function HeroSection() {
             </button>
           </Link>
           <Link href="/register?role=buyer">
-            <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors flex items-center gap-2">
+            <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
               Register as Buyer <ArrowRight size={16} />
             </button>
           </Link>
           <Link href="/register?role=government">
-            <button className="px-6 py-3 bg-[#E8EAE4]/10 hover:bg-[#E8EAE4]/15 text-[#D8D8C8] font-semibold rounded-xl border border-[#E8EAE4]/20 transition-colors flex items-center gap-2">
+            <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
               Government Access <ArrowRight size={16} />
             </button>
           </Link>
           <a href="#how-it-works">
-            <button className="px-6 py-3 text-white/60 hover:text-white font-medium rounded-xl transition-colors flex items-center gap-2">
+            <button className="px-6 py-3 text-[#555550] hover:text-[#1A1A1A] font-medium rounded-xl transition-colors flex items-center gap-2">
               Explore Platform <ChevronDown size={16} />
             </button>
           </a>
@@ -191,9 +191,9 @@ function HeroSection() {
             { value: '9-Step', label: 'Trade Workflow' },
             { value: 'Escrow', label: 'Settlement Control' },
           ].map(stat => (
-            <div key={stat.label} className="bg-white/4 border border-white/8 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
-              <div className="text-xs text-white/50">{stat.label}</div>
+            <div key={stat.label} className="bg-white/4 border border-gray-200 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-[#1A1A1A] mb-1">{stat.value}</div>
+              <div className="text-xs text-[#666660]">{stat.label}</div>
             </div>
           ))}
         </motion.div>
@@ -201,7 +201,7 @@ function HeroSection() {
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
         <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
-          <ChevronDown size={20} className="text-white/30" />
+          <ChevronDown size={20} className="text-[#999990]" />
         </motion.div>
       </div>
     </section>
@@ -210,13 +210,13 @@ function HeroSection() {
 
 function PositioningSection() {
   return (
-    <section className="bg-[#141414] py-20 border-y border-white/5">
+    <section className="bg-[#F5F5F0] py-20 border-y border-gray-200">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
             One Platform. Multiple Trade Roles. Complete Transaction Visibility.
           </h2>
-          <p className="text-white/55 max-w-3xl mx-auto text-lg">
+          <p className="text-[#555550] max-w-3xl mx-auto text-lg">
             Finatrades acts as the central digital gateway where users register, complete KYC/KYB, access verified
             inventory, submit RFQs, place orders, track warehouse consignments, manage settlement flows, and monitor
             trade execution from beginning to end.
@@ -233,12 +233,12 @@ function PositioningSection() {
             { icon: Truck, title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.' },
           ].map(({ icon: Icon, title, desc }) => (
             <motion.div key={title} variants={fadeUp}
-              className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:bg-white/5 hover:border-white/12 transition-all group">
+              className="bg-gray-50 border border-gray-200 rounded-2xl p-6 hover:bg-gray-100 hover:border-white/12 transition-all group">
               <div className="w-10 h-10 rounded-xl bg-[#22C55E]/15 flex items-center justify-center mb-4 group-hover:bg-[#22C55E]/25 transition-colors">
-                <Icon size={18} className="text-[#4ADE80]" />
+                <Icon size={18} className="text-[#16A34A]" />
               </div>
-              <h3 className="text-white font-semibold mb-2">{title}</h3>
-              <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+              <h3 className="text-[#1A1A1A] font-semibold mb-2">{title}</h3>
+              <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
             </motion.div>
           ))}
         </div>
@@ -315,14 +315,14 @@ const STEPS = [
 
 function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-[#0F0F0F] py-24">
+    <section id="how-it-works" className="bg-white py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#16A34A] text-xs font-medium mb-5">
             9-Step Trade Workflow
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">How Finatrades Works</h2>
-          <p className="text-white/50 max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">How Finatrades Works</h2>
+          <p className="text-[#666660] max-w-2xl mx-auto">
             From the moment a seller submits a consignment to when a buyer receives their goods and a seller
             receives their payout — every stage is digitally connected.
           </p>
@@ -333,26 +333,26 @@ function HowItWorksSection() {
             const Icon = step.icon;
             return (
               <motion.div key={step.num} variants={fadeUp}
-                className="group relative bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8 hover:bg-white/5 hover:border-[#22C55E]/20 transition-all overflow-hidden">
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl font-black text-white/[0.025] select-none pointer-events-none">
+                className="group relative bg-gray-50 border border-gray-200 rounded-2xl p-6 sm:p-8 hover:bg-gray-100 hover:border-[#22C55E]/20 transition-all overflow-hidden">
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl font-black text-white/[0.06] select-none pointer-events-none">
                   {step.num}
                 </div>
                 <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
                   <div className="flex-shrink-0 flex items-center gap-4">
                     <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#22C55E]/20 to-[#052E16]/20 border border-[#22C55E]/20 flex items-center justify-center">
-                      <Icon size={20} className="text-[#4ADE80]" />
+                      <Icon size={20} className="text-[#16A34A]" />
                     </div>
-                    <span className="text-xs font-bold text-[#4ADE80]/60 sm:hidden">Step {step.num}</span>
+                    <span className="text-xs font-bold text-[#16A34A]/60 sm:hidden">Step {step.num}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-2">
-                      <h3 className="text-white font-semibold text-lg leading-snug">{step.title}</h3>
-                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#4ADE80]/50 mt-1">Step {step.num}</span>
+                      <h3 className="text-[#1A1A1A] font-semibold text-lg leading-snug">{step.title}</h3>
+                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#16A34A]/50 mt-1">Step {step.num}</span>
                     </div>
-                    <p className="text-white/50 text-sm leading-relaxed mb-4">{step.desc}</p>
+                    <p className="text-[#666660] text-sm leading-relaxed mb-4">{step.desc}</p>
                     <div className="flex flex-wrap gap-2">
                       {step.tags.map(tag => (
-                        <span key={tag} className="px-2.5 py-1 text-xs bg-white/5 border border-white/8 text-white/60 rounded-lg">
+                        <span key={tag} className="px-2.5 py-1 text-xs bg-gray-100 border border-gray-200 text-[#555550] rounded-lg">
                           {tag}
                         </span>
                       ))}
@@ -375,18 +375,18 @@ const AFRICA_HUBS = [
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="bg-[#141414] py-24 border-y border-white/5">
+    <section id="marketplace" className="bg-[#F5F5F0] py-24 border-y border-gray-200">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-[#E8EAE4]/8 text-[#D8D8C8] text-xs font-medium mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
               <Globe size={12} />
               14 Strategic Hubs
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5 leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
               Verified Commodity Discovery Across 14 African Trade Hubs
             </h2>
-            <p className="text-white/55 text-base leading-relaxed mb-8">
+            <p className="text-[#555550] text-base leading-relaxed mb-8">
               Finatrades enables buyers to discover verified commodity opportunities, compare supplier offers,
               submit RFQs, and move from inquiry to structured trade execution through a transparent digital workflow.
             </p>
@@ -398,8 +398,8 @@ function MarketplaceSection() {
                 'Warehouse-backed inventory — every listing is verified',
               ].map(item => (
                 <div key={item} className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-[#4ADE80] flex-shrink-0 mt-0.5" />
-                  <span className="text-white/65 text-sm">{item}</span>
+                  <CheckCircle2 size={16} className="text-[#16A34A] flex-shrink-0 mt-0.5" />
+                  <span className="text-[#444440] text-sm">{item}</span>
                 </div>
               ))}
             </div>
@@ -413,10 +413,10 @@ function MarketplaceSection() {
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
             {AFRICA_HUBS.map((hub, i) => (
               <div key={hub}
-                className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/6 hover:border-[#22C55E]/20 transition-all">
+                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-gray-100 hover:border-[#22C55E]/20 transition-all">
                 <div className="w-2 h-2 rounded-full bg-[#22C55E] flex-shrink-0" />
-                <span className="text-white/75 text-sm font-medium">{hub}</span>
-                <MapPin size={12} className="text-white/25 ml-auto" />
+                <span className="text-[#333330] text-sm font-medium">{hub}</span>
+                <MapPin size={12} className="text-[#AAAAAA] ml-auto" />
               </div>
             ))}
           </motion.div>
@@ -434,7 +434,7 @@ const ROLES = [
     accent: '#4ADE80',
     accentBg: 'bg-[#22C55E]/10',
     accentBorder: 'border-[#22C55E]/25',
-    accentText: 'text-[#4ADE80]',
+    accentText: 'text-[#16A34A]',
     tabActiveBg: 'bg-[#22C55E]',
     title: 'Convert Physical Commodities into Verified Digital Inventory',
     subtitle: 'Submit goods on consignment. Get listed on the marketplace.',
@@ -455,7 +455,7 @@ const ROLES = [
     accent: '#E8EAE4',
     accentBg: 'bg-[#E8EAE4]/10',
     accentBorder: 'border-[#E8EAE4]/20',
-    accentText: 'text-[#D8D8C8]',
+    accentText: 'text-[#555550]',
     tabActiveBg: 'bg-[#555550]',
     title: 'Source Verified Commodities and Execute Structured Orders',
     subtitle: 'Browse, match, order, pay, and track — all in one flow.',
@@ -498,14 +498,14 @@ function RolesSection() {
   const Icon = role.icon;
 
   return (
-    <section id="for-sellers" className="bg-[#0F0F0F] py-24">
+    <section id="for-sellers" className="bg-white py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#16A34A] text-xs font-medium mb-5">
             Platform Access by Role
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Who Is Finatrades For?</h2>
-          <p className="text-white/50 max-w-2xl mx-auto">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">Who Is Finatrades For?</h2>
+          <p className="text-[#666660] max-w-2xl mx-auto">
             Each role has a dedicated workflow, module access, and onboarding path tailored to their position in the trade lifecycle.
           </p>
         </motion.div>
@@ -521,7 +521,7 @@ function RolesSection() {
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
                   isActive
                     ? `${r.tabActiveBg} text-white border-transparent shadow-lg`
-                    : 'bg-white/4 border-white/8 text-white/55 hover:text-white hover:bg-white/8'
+                    : 'bg-white/4 border-gray-200 text-[#555550] hover:text-[#1A1A1A] hover:bg-white/8'
                 }`}
               >
                 <TabIcon size={14} />
@@ -544,9 +544,9 @@ function RolesSection() {
                 <Icon size={12} />
                 {role.tab}
               </div>
-              <h3 className="text-3xl font-bold text-white mb-3 leading-tight">{role.title}</h3>
+              <h3 className="text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">{role.title}</h3>
               <p className={`${role.accentText} font-medium mb-4 text-sm`}>{role.subtitle}</p>
-              <p className="text-white/55 leading-relaxed mb-8">{role.desc}</p>
+              <p className="text-[#555550] leading-relaxed mb-8">{role.desc}</p>
               <Link href={role.ctaHref}>
                 <button className={`px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 ${role.ctaStyle}`}>
                   {role.cta} <ArrowRight size={16} />
@@ -556,9 +556,9 @@ function RolesSection() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {role.features.map(f => (
-                <div key={f} className={`flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3`}>
+                <div key={f} className={`flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3`}>
                   <CheckCircle2 size={14} className={`${role.accentText} flex-shrink-0`} />
-                  <span className="text-white/70 text-sm">{f}</span>
+                  <span className="text-[#444440] text-sm">{f}</span>
                 </div>
               ))}
             </div>
@@ -579,17 +579,17 @@ function SettlementSection() {
   ];
 
   return (
-    <section id="trade-finance" className="bg-[#0F0F0F] py-24">
+    <section id="trade-finance" className="bg-white py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-[#E8EAE4]/8 text-[#D8D8C8] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
             <Lock size={12} />
             Trade Finance & Escrow
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
             Controlled Settlement from Inventory Lock to Seller Payout
           </h2>
-          <p className="text-white/50 max-w-2xl mx-auto">
+          <p className="text-[#666660] max-w-2xl mx-auto">
             Finatrades connects buyer payment, escrow-style controls, warehouse release, logistics confirmation,
             and seller payout into one structured transaction flow with full audit visibility.
           </p>
@@ -597,14 +597,14 @@ function SettlementSection() {
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <motion.div variants={fadeUp} className="space-y-3">
-            <h3 className="text-white font-semibold text-lg mb-5">Core Settlement Rules</h3>
+            <h3 className="text-[#1A1A1A] font-semibold text-lg mb-5">Core Settlement Rules</h3>
             {rules.map(({ rule, consequence }) => (
-              <div key={rule} className="flex items-center justify-between bg-white/3 border border-white/8 rounded-xl px-5 py-4">
+              <div key={rule} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-5 py-4">
                 <div className="flex items-center gap-3">
                   <div className="w-2 h-2 rounded-full bg-red-500/70" />
-                  <span className="text-white/65 text-sm">{rule}</span>
+                  <span className="text-[#444440] text-sm">{rule}</span>
                 </div>
-                <span className="text-xs font-semibold text-white/40 bg-white/5 px-3 py-1 rounded-lg">→ {consequence}</span>
+                <span className="text-xs font-semibold text-[#888880] bg-gray-100 px-3 py-1 rounded-lg">→ {consequence}</span>
               </div>
             ))}
           </motion.div>
@@ -616,13 +616,13 @@ function SettlementSection() {
               { icon: Warehouse, title: 'Warehouse Release Instruction', desc: 'Release is only triggered after verified delivery milestones and document completion are confirmed.' },
               { icon: Handshake, title: 'Seller Payout & Audit', desc: 'Once conditions are fully satisfied, the seller receives payment and a complete audit trail is sealed.' },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex gap-4 bg-white/3 border border-white/8 rounded-2xl p-5">
+              <div key={title} className="flex gap-4 bg-gray-50 border border-gray-200 rounded-2xl p-5">
                 <div className="w-10 h-10 rounded-xl bg-[#E8EAE4]/10 border border-[#D4D4C0]/15 flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-[#D8D8C8]" />
+                  <Icon size={18} className="text-[#555550]" />
                 </div>
                 <div>
-                  <h4 className="text-white font-semibold mb-1">{title}</h4>
-                  <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+                  <h4 className="text-[#1A1A1A] font-semibold mb-1">{title}</h4>
+                  <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
                 </div>
               </div>
             ))}
@@ -635,7 +635,7 @@ function SettlementSection() {
 
 function ComplianceSection() {
   return (
-    <section id="compliance" className="bg-[#0F0F0F] py-24">
+    <section id="compliance" className="bg-white py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
@@ -651,28 +651,28 @@ function ComplianceSection() {
               'Partner Reporting',
               'Approval Workflows',
             ].map(item => (
-              <div key={item} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3">
-                <Shield size={13} className="text-[#4ADE80] flex-shrink-0" />
-                <span className="text-white/70 text-sm">{item}</span>
+              <div key={item} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
+                <Shield size={13} className="text-[#16A34A] flex-shrink-0" />
+                <span className="text-[#444440] text-sm">{item}</span>
               </div>
             ))}
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#16A34A] text-xs font-medium mb-5">
               <Shield size={12} />
               Compliance-First Infrastructure
             </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5 leading-tight">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
               Built for Compliance, Traceability and Scalable Commodity Trade
             </h2>
-            <p className="text-white/55 leading-relaxed mb-6">
+            <p className="text-[#555550] leading-relaxed mb-6">
               The Finatrades backend connects onboarding, inventory, marketplace, payments, trade finance,
               escrow, settlement, reporting, and partner integrations into one secure digital infrastructure —
               designed with compliance and auditability at the core.
             </p>
             <div className="p-5 bg-[#22C55E]/8 border border-[#22C55E]/15 rounded-2xl">
-              <p className="text-white/50 text-sm leading-relaxed italic">
+              <p className="text-[#666660] text-sm leading-relaxed italic">
                 "Access to platform services may be subject to user eligibility, jurisdictional requirements,
                 partner approval, compliance checks, and applicable laws. Finatrades does not provide investment
                 advice, public token issuance, deposit-taking services, or regulated financial services unless
@@ -703,16 +703,16 @@ function BackendSection() {
   ];
 
   return (
-    <section className="bg-[#141414] py-24 border-y border-white/5">
+    <section className="bg-[#F5F5F0] py-24 border-y border-gray-200">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#16A34A] text-xs font-medium mb-5">
             System Architecture
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
             12-Layer Digital Trade Infrastructure
           </h2>
-          <p className="text-white/50 max-w-2xl mx-auto">
+          <p className="text-[#666660] max-w-2xl mx-auto">
             Every user, document, inventory record, order, payment, warehouse release, logistics update,
             and settlement event is traceable and auditable across the full system stack.
           </p>
@@ -721,11 +721,11 @@ function BackendSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {layers.map(({ icon: Icon, label }, i) => (
             <motion.div key={label} variants={fadeUp}
-              className="bg-white/3 border border-white/8 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-white/5 hover:border-[#22C55E]/20 transition-all">
+              className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-gray-100 hover:border-[#22C55E]/20 transition-all">
               <div className="w-9 h-9 rounded-lg bg-[#22C55E]/12 flex items-center justify-center">
-                <Icon size={16} className="text-[#4ADE80]" />
+                <Icon size={16} className="text-[#16A34A]" />
               </div>
-              <span className="text-white/65 text-xs font-medium leading-snug">{label}</span>
+              <span className="text-[#444440] text-xs font-medium leading-snug">{label}</span>
             </motion.div>
           ))}
         </div>
@@ -736,16 +736,16 @@ function BackendSection() {
 
 function CTASection() {
   return (
-    <section id="contact" className="bg-[#0F0F0F] py-24">
+    <section id="contact" className="bg-white py-24">
       <AnimatedSection className="max-w-4xl mx-auto px-6 text-center">
         <motion.div variants={fadeUp}
           className="relative bg-gradient-to-br from-[#22C55E]/15 via-[#052E16]/10 to-[#D4D4C0]/8 border border-[#22C55E]/20 rounded-3xl p-12 overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-[#22C55E]/5 to-transparent rounded-3xl" />
           <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
               Start Your Commodity Trade Journey
             </h2>
-            <p className="text-white/55 text-lg mb-10 max-w-2xl mx-auto">
+            <p className="text-[#555550] text-lg mb-10 max-w-2xl mx-auto">
               Whether you are a seller submitting goods on consignment, a buyer sourcing verified inventory,
               a government entity managing strategic barter, or a partner supporting logistics, finance,
               or warehousing — Finatrades gives you a structured digital gateway for trusted commodity trade execution.
@@ -757,17 +757,17 @@ function CTASection() {
                 </button>
               </Link>
               <Link href="/register?role=buyer">
-                <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors">
+                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors">
                   Register as Buyer
                 </button>
               </Link>
               <Link href="/register?rfq=true">
-                <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors">
+                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors">
                   Submit Import Expression
                 </button>
               </Link>
               <Link href="/register?role=government">
-                <button className="px-6 py-3 bg-[#E8EAE4]/10 hover:bg-[#E8EAE4]/15 text-[#D8D8C8] font-semibold rounded-xl border border-[#E8EAE4]/20 transition-colors">
+                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors">
                   Request Government Access
                 </button>
               </Link>
@@ -781,33 +781,33 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] border-t border-white/5 py-12">
+    <footer className="bg-[#0A0A0A] border-t border-gray-200 py-12">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 sm:col-span-1">
             <img src={finatradesLogo} alt="Finatrades" className="h-7 w-auto mb-3" />
-            <p className="text-white/40 text-sm leading-relaxed">
+            <p className="text-[#888880] text-sm leading-relaxed">
               Digital gateway for commodity trade, inventory, settlement and trade finance.
             </p>
           </div>
           <div>
-            <h4 className="text-white/70 font-semibold text-sm mb-3">Platform</h4>
+            <h4 className="text-[#444440] font-semibold text-sm mb-3">Platform</h4>
             <div className="space-y-2">
               {['How It Works', 'Marketplace', 'Seller Consignment', 'Buyer Flow'].map(l => (
-                <div key={l}><a href="#how-it-works" className="text-white/40 hover:text-white/70 text-sm transition-colors">{l}</a></div>
+                <div key={l}><a href="#how-it-works" className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{l}</a></div>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-white/70 font-semibold text-sm mb-3">Services</h4>
+            <h4 className="text-[#444440] font-semibold text-sm mb-3">Services</h4>
             <div className="space-y-2">
               {['Warehouse Inventory', 'Trade Finance', 'Government Barter', 'Compliance'].map(l => (
-                <div key={l}><a href="#trade-finance" className="text-white/40 hover:text-white/70 text-sm transition-colors">{l}</a></div>
+                <div key={l}><a href="#trade-finance" className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{l}</a></div>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-white/70 font-semibold text-sm mb-3">Legal</h4>
+            <h4 className="text-[#444440] font-semibold text-sm mb-3">Legal</h4>
             <div className="space-y-2">
               {[
                 { label: 'Privacy Policy', href: '/privacy' },
@@ -815,14 +815,14 @@ function Footer() {
                 { label: 'Disclaimer', href: '/disclaimer' },
                 { label: 'Sign In', href: '/login' },
               ].map(({ label, href }) => (
-                <div key={label}><Link href={href} className="text-white/40 hover:text-white/70 text-sm transition-colors">{label}</Link></div>
+                <div key={label}><Link href={href} className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{label}</Link></div>
               ))}
             </div>
           </div>
         </div>
-        <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-white/30 text-xs">© {new Date().getFullYear()} Finatrades. All rights reserved.</p>
-          <p className="text-white/25 text-xs text-center">
+        <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[#999990] text-xs">© {new Date().getFullYear()} Finatrades. All rights reserved.</p>
+          <p className="text-[#AAAAAA] text-xs text-center">
             Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and settlement workflows through one secure digital trade platform.
           </p>
         </div>
@@ -833,7 +833,7 @@ function Footer() {
 
 export default function EcosystemLanding() {
   return (
-    <div className="min-h-screen bg-[#0F0F0F] text-white antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-white text-[#1A1A1A] antialiased overflow-x-hidden">
       <Navbar />
       <HeroSection />
       <PositioningSection />
