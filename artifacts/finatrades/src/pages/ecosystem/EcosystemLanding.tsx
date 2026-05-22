@@ -866,7 +866,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
       whileInView="visible"
       viewport={{ once: true, margin: '-40px' }}
       transition={{ delay }}
-      style={{ perspective: '1000px', height: '280px' }}
+      style={{ perspective: '1000px', height: '260px' }}
       className="cursor-pointer"
       onClick={() => setFlipped(f => !f)}
     >
@@ -875,34 +875,41 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
         transition={{ duration: 0.55, ease: [0.4, 0.0, 0.2, 1] }}
         style={{ transformStyle: 'preserve-3d', position: 'relative', width: '100%', height: '100%' }}
       >
-        {/* ── FRONT: image ── */}
+        {/* ── FRONT: full-bleed image + bottom headline ── */}
         <div
-          className="absolute inset-0 rounded-2xl overflow-hidden border border-gray-200"
-          style={{ backfaceVisibility: 'hidden', background: '#FFF0E8' }}
+          className="absolute inset-0 rounded-2xl overflow-hidden"
+          style={{ backfaceVisibility: 'hidden' }}
         >
+          {/* Full-cover image */}
           {img ? (
-            <img
-              src={img}
-              alt={label}
-              className="w-full h-full object-contain object-center"
-              style={{ padding: '20px 24px 14px' }}
-            />
+            <img src={img} alt={label} className="w-full h-full object-cover object-center" />
           ) : (
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
               <Icon size={52} className="text-white/30" />
             </div>
           )}
-          {/* Layer badge */}
+
+          {/* Dark gradient overlay — fades bottom 55% to dark */}
+          <div className="absolute inset-0"
+            style={{ background: 'linear-gradient(to top, rgba(10,10,14,0.82) 0%, rgba(10,10,14,0.28) 48%, transparent 100%)' }} />
+
+          {/* Layer badge — top left */}
           <span
-            className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
-            style={{ background: '#F5E6DC', color: '#7A3520' }}
+            className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm"
+            style={{ background: 'rgba(245,230,220,0.88)', color: '#7A3520' }}
           >
             LAYER {num}
           </span>
-          {/* Flip hint */}
-          <div className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-[#C73B22] opacity-60">
-            tap to flip <ArrowRight size={9} />
+
+          {/* Flip hint — top right */}
+          <div className="absolute top-3 right-3 flex items-center gap-0.5 text-[9px] font-medium text-white/50">
+            flip <ArrowRight size={8} />
+          </div>
+
+          {/* Headline at bottom */}
+          <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
+            <h3 className="text-white text-[13px] font-semibold leading-snug">{label}</h3>
           </div>
         </div>
 
@@ -915,16 +922,13 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
             background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)',
           }}
         >
-          {/* Top accent line */}
           <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
             style={{ background: 'linear-gradient(90deg, #C73B22, #E5602A)' }} />
 
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span
-                className="text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
-                style={{ background: '#F5E6DC', color: '#7A3520' }}
-              >
+              <span className="text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
+                style={{ background: '#F5E6DC', color: '#7A3520' }}>
                 LAYER {num}
               </span>
             </div>
@@ -938,9 +942,8 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
             <p className="text-[#666660] text-xs leading-relaxed">{desc}</p>
           </div>
 
-          {/* Flip back hint */}
           <div className="flex items-center gap-1 text-[10px] font-medium text-[#C73B22] opacity-60 self-end">
-            tap to flip back <ArrowRight size={9} style={{ transform: 'rotate(180deg)' }} />
+            flip back <ArrowRight size={9} style={{ transform: 'rotate(180deg)' }} />
           </div>
         </div>
       </motion.div>
@@ -984,7 +987,7 @@ function BackendSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
           {layers.map((layer, i) => (
             <LayerCard3D key={layer.label} {...layer} delay={i * 0.06} />
           ))}
