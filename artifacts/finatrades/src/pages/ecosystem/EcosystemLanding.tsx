@@ -34,6 +34,10 @@ import layer1 from '@/assets/layer-1.png';
 import layer2 from '@/assets/layer-2.png';
 import layer3 from '@/assets/layer-3.png';
 import layer4 from '@/assets/layer-4.png';
+import bgTradeMap from '@/assets/d429511e-fb78-4d80-96dd-e6729475e390_1779488711117.png';
+import bgWarehouseLaptop from '@/assets/0941a0fc-f779-48d5-903a-7ca2575d733a_1779488718975.png';
+import bgSecurityDocs from '@/assets/dbf1b430-f76a-446e-a9ba-4b68fdbad8b8_1779488726039.png';
+import bgConnectedGlobe from '@/assets/33ff9425-68c9-499c-89ce-57cedccc8605_1779488733621.png';
 import layer5 from '@/assets/layer-5.png';
 import layer6 from '@/assets/layer-6.png';
 import layer7 from '@/assets/layer-7.png';
@@ -897,6 +901,9 @@ const COMMODITIES = [
 function MarketplaceSection() {
   return (
     <section id="marketplace" className="relative py-24 overflow-hidden bg-white">
+      {/* Background image */}
+      <img src={bgTradeMap} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
       {/* Subtle warm background gradient */}
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(199,59,34,0.04) 0%, transparent 70%)' }} />
@@ -1502,8 +1509,11 @@ function SettlementSection() {
   ];
 
   return (
-    <section id="trade-finance" className="bg-[#FAFAFA] py-24">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
+    <section id="trade-finance" className="relative bg-[#FAFAFA] py-24 overflow-hidden">
+      {/* Background image */}
+      <img src={bgWarehouseLaptop} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-[#FAFAFA]/35 pointer-events-none" />
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* Section header */}
         <motion.div variants={fadeUp} className="text-center mb-12">
@@ -1928,6 +1938,9 @@ function ComplianceSection() {
 
   return (
     <section className="relative py-28 overflow-hidden" style={{ background: 'linear-gradient(160deg, #fff 0%, #FFF4F0 55%, #fff 100%)' }}>
+      {/* Background image */}
+      <img src={bgSecurityDocs} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
       {/* Background glows */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         <div className="absolute -left-32 top-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full opacity-[0.05]"
@@ -2221,8 +2234,11 @@ function ConnectedEcosystemSection() {
   ];
 
   return (
-    <section className="py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
-      <div className="max-w-5xl mx-auto px-6">
+    <section className="relative py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
+      {/* Background image */}
+      <img src={bgConnectedGlobe} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,240,235,0.35)' }} />
+      <div className="relative z-10 max-w-5xl mx-auto px-6">
 
         {/* ── Header ── */}
         <motion.div
@@ -2370,8 +2386,11 @@ function PartnershipsSection() {
   ];
 
   return (
-    <section className="py-24 bg-white overflow-hidden">
-      <div className="max-w-7xl mx-auto px-6">
+    <section className="relative py-24 bg-white overflow-hidden">
+      {/* Background image */}
+      <img src={bgTradeMap} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* Header */}
         <motion.div
@@ -2561,8 +2580,11 @@ function CTASection() {
   ];
 
   return (
-    <section id="contact" className="bg-white py-24">
-      <AnimatedSection className="max-w-5xl mx-auto px-6">
+    <section id="contact" className="relative bg-white py-24 overflow-hidden">
+      {/* Background image */}
+      <img src={bgConnectedGlobe} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+      <AnimatedSection className="relative z-10 max-w-5xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
             Institutional Onboarding — Apply for Access
