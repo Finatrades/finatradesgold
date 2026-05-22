@@ -970,7 +970,7 @@ function BackendSection() {
                 </div>
               )}
 
-              <div className="p-5">
+              <div className="p-5" style={{ background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)' }}>
                 <div className="flex items-start gap-3 mb-2">
                   <div className="w-7 h-7 rounded-lg bg-[#C73B22]/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-[#C73B22]/20 transition-colors">
                     <Icon size={13} className="text-[#C73B22]" />
