@@ -918,7 +918,7 @@ function MarketplaceSection() {
           {/* LEFT — Africa map with hub overlays */}
           <motion.div
             variants={fadeUp}
-            className="flex flex-col items-center order-2 lg:order-1 gap-5"
+            className="relative flex items-center justify-center order-2 lg:order-1"
           >
             {/* Map wrapper — relative for badge overlays */}
             <div className="relative w-full flex items-center justify-center" style={{ minHeight: '700px' }}>
@@ -974,26 +974,28 @@ function MarketplaceSection() {
                   <p className="text-[11px] text-[#888880]">Warehouse-receipted only</p>
                 </div>
               </motion.div>
-            </div>
 
-            {/* Map legend */}
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.7, duration: 0.4 }}
-              className="flex items-center justify-center gap-6 px-5 py-3 rounded-2xl border border-gray-100 bg-white/80 backdrop-blur-sm shadow-sm w-fit mx-auto"
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#C73B22', boxShadow: '0 0 0 3px rgba(199,59,34,0.18)' }} />
-                <span className="text-[12px] text-[#555550] font-medium">Entry points</span>
-              </div>
-              <div className="w-px h-4 bg-gray-200" />
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#1D4ED8', boxShadow: '0 0 0 3px rgba(29,78,216,0.18)' }} />
-                <span className="text-[12px] text-[#555550] font-medium">Trade &amp; logistics nodes</span>
-              </div>
-            </motion.div>
+              {/* Map legend — absolute bottom centre inside image area */}
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.7, duration: 0.4 }}
+                className="absolute bottom-0 left-0 right-0 flex justify-center"
+              >
+                <div className="flex items-center gap-5 px-5 py-2.5 rounded-xl border border-gray-200/70 bg-white/90 backdrop-blur-sm shadow-md">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#C73B22', boxShadow: '0 0 0 3px rgba(199,59,34,0.2)' }} />
+                    <span className="text-[11.5px] text-[#555550] font-medium tracking-wide">Entry points</span>
+                  </div>
+                  <div className="w-px h-3.5 bg-gray-200" />
+                  <div className="flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: '#1D4ED8', boxShadow: '0 0 0 3px rgba(29,78,216,0.2)' }} />
+                    <span className="text-[11.5px] text-[#555550] font-medium tracking-wide">Trade &amp; logistics nodes</span>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
           </motion.div>
 
           {/* RIGHT — content */}
