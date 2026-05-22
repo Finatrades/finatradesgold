@@ -1281,7 +1281,7 @@ function ConnectedEcosystemSection() {
       highlight: false,
       logo: (
         <div className="inline-flex items-center bg-black rounded-lg px-2.5 py-1.5">
-          <img src={logoRaminvest} alt="Raminvest" className="h-7 w-auto object-contain" />
+          <img src={logoRaminvest} alt="Raminvest" className="h-[50px] w-auto object-contain" />
         </div>
       ),
     },
@@ -1290,7 +1290,7 @@ function ConnectedEcosystemSection() {
       label: 'WINLOGISTICS', role: 'Logistics & Transport',
       desc: 'International logistics coordination, transport structuring and routing.',
       highlight: false,
-      logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-6 w-auto object-contain" />,
+      logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-11 w-auto object-contain" />,
     },
     {
       key: 'finatrades', px: C, py: C, w: 188, delay: 0,
@@ -1298,7 +1298,7 @@ function ConnectedEcosystemSection() {
       desc: 'Digital trade finance, settlement, FX coordination, and gold-backed clearing.',
       highlight: true,
       logo: (
-        <img src={logoFinatradesP} alt="Finatrades" className="h-10 w-auto object-contain"
+        <img src={logoFinatradesP} alt="Finatrades" className="h-[72px] w-auto object-contain"
           style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
       ),
     },
@@ -1307,14 +1307,14 @@ function ConnectedEcosystemSection() {
       label: 'WINCOMMODITIES', role: 'Commodity Operations',
       desc: 'Commodity sourcing, execution activities and trade operations support.',
       highlight: false,
-      logo: <img src={logoWincommodities} alt="WinCommodities" className="h-6 w-auto object-contain" />,
+      logo: <img src={logoWincommodities} alt="WinCommodities" className="h-11 w-auto object-contain" />,
     },
     {
       key: 'winvestnet', px: C, py: C + R, w: 158, delay: 0.4,
       label: 'WINVESTNET', role: 'Investment Network',
       desc: 'Investment connectivity, strategic capital alignment and network integration.',
       highlight: false,
-      logo: <img src={logoWinvestnet} alt="WinvestNet" className="h-6 w-auto object-contain" />,
+      logo: <img src={logoWinvestnet} alt="WinvestNet" className="h-11 w-auto object-contain" />,
     },
   ];
 
