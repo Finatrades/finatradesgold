@@ -1200,7 +1200,6 @@ const ROLES = [
     ctaStyle: 'bg-[#E5602A] hover:bg-[#C94E1C] text-white',
     image: governmentSovereign,
     imageCaption: 'Sovereign Procurement & G2G Barter Execution',
-    hideFeatures: true,
     fullLayout: true,
   },
 ];
