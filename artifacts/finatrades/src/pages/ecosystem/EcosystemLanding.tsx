@@ -10,6 +10,9 @@ import {
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import africaTradeMap from '@/assets/africa-trade-map.png';
+import partnerSigning from '@/assets/partner-signing.png';
+import partnerEvent from '@/assets/partner-event.png';
+import partnerGroup from '@/assets/partner-group.png';
 import heroBg from '@/assets/hero-bg.png';
 import section2Bg from '@/assets/section2-bg.png';
 import cardSellers from '@/assets/card-sellers.png';
@@ -2204,6 +2207,185 @@ function ConnectedEcosystemSection() {
   );
 }
 
+function PartnershipsSection() {
+  const points = [
+    {
+      num: '01',
+      title: 'Trusted partnerships',
+      desc: 'Long-term relationships with exporters, buyers, and bonded hub operators across corridors.',
+    },
+    {
+      num: '02',
+      title: 'Market expertise',
+      desc: 'On-the-ground commodity, regulatory, and corridor knowledge guiding every transaction.',
+    },
+    {
+      num: '03',
+      title: 'Transparent coordination',
+      desc: 'Clear documentation, status visibility, and accountable execution across counterparties.',
+    },
+    {
+      num: '04',
+      title: 'Relationship-driven execution',
+      desc: 'People-led problem solving alongside platform automation — not transactions in isolation.',
+    },
+  ];
+
+  return (
+    <section className="py-24 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+
+        {/* Header */}
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true }}
+          variants={stagger}
+          className="text-center mb-16"
+        >
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">
+            Institutional Relationships
+          </motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
+            Institutional Partnerships Powering<br className="hidden sm:block" /> Global Commodity Trade
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto text-base leading-relaxed">
+            Every transaction on our platform is backed by institutional-grade relationships —
+            exporters, buyers, bonded hub operators, financiers, and regulators — coordinated with
+            transparency, governance, and long-term accountability.
+          </motion.p>
+        </motion.div>
+
+        {/* Two-col: photo collage left, list right */}
+        <div className="grid lg:grid-cols-[1.15fr_1fr] gap-14 xl:gap-20 items-center">
+
+          {/* LEFT — photo collage */}
+          <motion.div
+            initial={{ opacity: 0, x: -30 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            className="relative"
+          >
+            {/* Main large image */}
+            <div className="rounded-2xl overflow-hidden shadow-2xl">
+              <img
+                src={partnerSigning}
+                alt="Institutional partnership signing — Raminvest Holding DIFC"
+                className="w-full object-cover"
+                style={{ height: '360px' }}
+              />
+            </div>
+
+            {/* Bottom row: two smaller images */}
+            <div className="grid grid-cols-2 gap-4 mt-4">
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2, duration: 0.5, ease: 'easeOut' }}
+                className="rounded-xl overflow-hidden shadow-lg"
+              >
+                <img
+                  src={partnerEvent}
+                  alt="Commodity summit — trade partners"
+                  className="w-full object-cover"
+                  style={{ height: '180px' }}
+                />
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 16 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.35, duration: 0.5, ease: 'easeOut' }}
+                className="rounded-xl overflow-hidden shadow-lg"
+              >
+                <img
+                  src={partnerGroup}
+                  alt="Group partnership — institutional delegates"
+                  className="w-full object-cover"
+                  style={{ height: '180px' }}
+                />
+              </motion.div>
+            </div>
+
+            {/* Floating label badge */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5, type: 'spring', stiffness: 300, damping: 20 }}
+              className="absolute top-4 left-4 flex items-center gap-2 px-3 py-2 rounded-xl text-[11px] font-bold text-white"
+              style={{
+                background: 'linear-gradient(135deg, #C73B22 0%, #E5602A 100%)',
+                boxShadow: '0 4px 16px rgba(199,59,34,0.35)',
+              }}
+            >
+              <ShieldCheck size={12} />
+              Verified Institutional Partners
+            </motion.div>
+          </motion.div>
+
+          {/* RIGHT — numbered list */}
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-60px' }}
+            variants={stagger}
+          >
+            <motion.p
+              variants={fadeUp}
+              className="text-[10px] font-black uppercase tracking-[0.2em] text-[#C73B22] mb-6"
+            >
+              Built on Trust & Relationships
+            </motion.p>
+
+            <div className="space-y-6">
+              {points.map((pt, i) => (
+                <motion.div
+                  key={pt.num}
+                  variants={fadeUp}
+                  custom={i}
+                  className="flex items-start gap-5 group"
+                >
+                  {/* Number bubble */}
+                  <div
+                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[11px] font-black transition-all duration-200 group-hover:scale-110"
+                    style={{
+                      background: 'linear-gradient(135deg, #FEF0EC 0%, #FFE4DC 100%)',
+                      color: '#C73B22',
+                      boxShadow: '0 2px 8px rgba(199,59,34,0.15)',
+                    }}
+                  >
+                    {pt.num}
+                  </div>
+                  <div className="pt-1">
+                    <p className="text-[15px] font-bold text-[#1A1A1A] mb-1 leading-tight group-hover:text-[#C73B22] transition-colors">
+                      {pt.title}
+                    </p>
+                    <p className="text-[13px] text-[#666660] leading-relaxed">{pt.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {/* CTA */}
+            <motion.div variants={fadeUp} className="mt-10">
+              <a
+                href="#contact"
+                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold text-white transition-all hover:scale-[1.03] hover:shadow-lg"
+                style={{
+                  background: 'linear-gradient(135deg, #C73B22 0%, #E5602A 100%)',
+                  boxShadow: '0 4px 16px rgba(199,59,34,0.28)',
+                }}
+              >
+                Start a Partnership Conversation <ArrowRight size={14} />
+              </a>
+            </motion.div>
+          </motion.div>
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function CTASection() {
   const paths = [
     {
@@ -2370,6 +2552,7 @@ export default function EcosystemLanding() {
       <MarketplaceSection />
       <SettlementSection />
       <ConnectedEcosystemSection />
+      <PartnershipsSection />
       <CTASection />
       <Footer />
     </div>
