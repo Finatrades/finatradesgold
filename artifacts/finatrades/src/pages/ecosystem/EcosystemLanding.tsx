@@ -792,11 +792,11 @@ function RolesSection() {
 
 function SettlementSection() {
   const rules = [
-    { rule: 'No verified inventory', consequence: 'No sale' },
-    { rule: 'No funded buyer', consequence: 'No lock' },
-    { rule: 'No escrow confirmation', consequence: 'No release' },
-    { rule: 'No delivery milestone', consequence: 'No final payout' },
-    { rule: 'No documents', consequence: 'No audit trail' },
+    { rule: 'Unverified inventory position', consequence: 'Transaction suspended — no sale initiated' },
+    { rule: 'Unconfirmed or insufficient buyer funds', consequence: 'Inventory lock withheld — no reservation' },
+    { rule: 'Escrow conditions not satisfied', consequence: 'Warehouse release blocked — no dispatch' },
+    { rule: 'Delivery milestone unverified', consequence: 'Final payout deferred — funds held in escrow' },
+    { rule: 'Incomplete or unsigned trade documentation', consequence: 'Audit trail void — settlement rejected' },
   ];
 
   return (
@@ -805,44 +805,61 @@ function SettlementSection() {
         <motion.div variants={fadeUp} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
             <Lock size={12} />
-            Trade Finance & Escrow
+            Structured Trade Finance & Escrow Governance
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            Controlled Settlement from Inventory Lock to Seller Payout
+            End-to-End Settlement Integrity from Inventory Lock to Verified Seller Payout
           </h2>
           <p className="text-[#666660] max-w-2xl mx-auto">
-            Finatrades connects buyer payment, escrow-style controls, warehouse release, logistics confirmation,
-            and seller payout into one structured transaction flow with full audit visibility.
+            Finatrades enforces a sequenced, condition-based settlement protocol that binds buyer payment confirmation,
+            escrow custody, warehouse release authorisation, logistics verification, and final seller disbursement
+            into a single governed transaction flow — with immutable audit visibility at every stage.
           </p>
         </motion.div>
 
         <div className="grid lg:grid-cols-2 gap-12 items-start">
           <motion.div variants={fadeUp} className="space-y-3">
-            <h3 className="text-[#1A1A1A] font-semibold text-lg mb-5">Core Settlement Rules</h3>
+            <h3 className="text-[#1A1A1A] font-semibold text-lg mb-5">Non-Negotiable Settlement Conditions</h3>
             {rules.map(({ rule, consequence }) => (
-              <div key={rule} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-5 py-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-2 h-2 rounded-full bg-red-500/70" />
+              <div key={rule} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-2 h-2 rounded-full bg-[#C73B22]/70 flex-shrink-0" />
                   <span className="text-[#444440] text-sm">{rule}</span>
                 </div>
-                <span className="text-xs font-semibold text-[#888880] bg-gray-100 px-3 py-1 rounded-lg">→ {consequence}</span>
+                <span className="text-xs font-semibold text-[#888880] bg-gray-100 px-3 py-1 rounded-lg whitespace-nowrap flex-shrink-0">→ {consequence}</span>
               </div>
             ))}
           </motion.div>
 
           <motion.div variants={fadeUp} className="space-y-5">
             {[
-              { icon: CreditCard, title: 'Payment Confirmation', desc: 'Buyer funds are verified and confirmed before any inventory is locked or reserved in the system.' },
-              { icon: Lock, title: 'Escrow-Style Control', desc: 'Inventory is reserved and locked against the order. Neither party can unilaterally release without conditions being met.' },
-              { icon: Warehouse, title: 'Warehouse Release Instruction', desc: 'Release is only triggered after verified delivery milestones and document completion are confirmed.' },
-              { icon: Handshake, title: 'Seller Payout & Audit', desc: 'Once conditions are fully satisfied, the seller receives payment and a complete audit trail is sealed.' },
+              {
+                icon: CreditCard,
+                title: 'Buyer Fund Verification & Payment Confirmation',
+                desc: 'Prior to any inventory reservation, buyer funds undergo institutional-grade verification and are confirmed as available, cleared, and allocated against the specific trade order. No inventory position may be locked until payment confirmation is received and recorded on the settlement ledger.',
+              },
+              {
+                icon: Lock,
+                title: 'Escrow Custody & Bilateral Lock Enforcement',
+                desc: 'Upon payment confirmation, the corresponding inventory is placed under escrow custody and locked against the purchase order. Neither the seller nor the buyer may unilaterally alter, release, or reassign the position — all release conditions must be independently satisfied and verified.',
+              },
+              {
+                icon: Warehouse,
+                title: 'Conditional Warehouse Release Authorisation',
+                desc: 'Warehouse release instructions are issued exclusively upon verification of delivery milestones, logistics handover documentation, quality inspection sign-off, and completion of all contractually mandated trade documents. No physical dispatch occurs outside this governed release protocol.',
+              },
+              {
+                icon: Handshake,
+                title: 'Seller Disbursement & Immutable Audit Closure',
+                desc: 'Once all settlement conditions are independently verified and confirmed, escrowed funds are released to the seller\'s designated account. The transaction is simultaneously closed with an immutable, timestamped audit trail — capturing every event, counterparty action, and document state throughout the trade lifecycle.',
+              },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="flex gap-4 bg-gray-50 border border-gray-200 rounded-2xl p-5">
                 <div className="w-10 h-10 rounded-xl bg-[#C73B22]/10 border border-[#C73B22]/15 flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-[#555550]" />
+                  <Icon size={18} className="text-[#C73B22]" />
                 </div>
                 <div>
-                  <h4 className="text-[#1A1A1A] font-semibold mb-1">{title}</h4>
+                  <h4 className="text-[#1A1A1A] font-semibold mb-1.5">{title}</h4>
                   <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
                 </div>
               </div>
