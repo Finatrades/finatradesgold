@@ -1194,30 +1194,75 @@ function ComplianceSection() {
 }
 
 function ConnectedEcosystemSection() {
-  const nodes = {
-    raminvest: { x: 50, y: 12 },
-    winlogistics: { x: 14, y: 50 },
-    wincommodities: { x: 86, y: 50 },
-    finatrades: { x: 50, y: 50 },
-    winvestnet: { x: 50, y: 88 },
-  };
+  // Hub positions in % of a fixed 560px-tall container (width = max-w-5xl ≈ 1024px)
+  // Lines are horizontal/vertical so preserveAspectRatio="none" works correctly
+  const partners = [
+    {
+      key: 'raminvest', x: 50, y: 10,
+      label: 'RAMINVEST', sub: 'HOLDING DIFC',
+      role: 'Group Governance',
+      desc: 'Strategic oversight, governance, and ecosystem direction across all group entities.',
+      delay: 0.1, highlight: false, width: '20%',
+      logo: (
+        <div className="flex justify-center items-center bg-black rounded-xl px-3 py-2">
+          <img src={logoRaminvest} alt="Raminvest" className="h-8 w-auto object-contain" />
+        </div>
+      ),
+    },
+    {
+      key: 'winlogistics', x: 10, y: 50,
+      label: 'WINLOGISTICS', sub: '',
+      role: 'Logistics & Transport',
+      desc: 'International logistics coordination, transport structuring and routing.',
+      delay: 0.2, highlight: false, width: '18%',
+      logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-7 w-auto object-contain" />,
+    },
+    {
+      key: 'finatrades', x: 50, y: 50,
+      label: 'FINATRADES', sub: 'THIS PLATFORM',
+      role: 'Trade & Settlement Hub',
+      desc: 'Digital trade finance, settlement, FX coordination, and gold-backed clearing.',
+      delay: 0, highlight: true, width: '22%',
+      logo: (
+        <img src={logoFinatradesP} alt="Finatrades" className="h-11 w-auto object-contain"
+          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
+      ),
+    },
+    {
+      key: 'wincommodities', x: 90, y: 50,
+      label: 'WINCOMMODITIES', sub: '',
+      role: 'Commodity Operations',
+      desc: 'Commodity sourcing, execution activities and trade operations support.',
+      delay: 0.3, highlight: false, width: '18%',
+      logo: <img src={logoWincommodities} alt="WinCommodities" className="h-7 w-auto object-contain" />,
+    },
+    {
+      key: 'winvestnet', x: 50, y: 90,
+      label: 'WINVESTNET', sub: '',
+      role: 'Investment Network',
+      desc: 'Investment connectivity, strategic capital alignment and network integration.',
+      delay: 0.4, highlight: false, width: '20%',
+      logo: <img src={logoWinvestnet} alt="WinvestNet" className="h-7 w-auto object-contain" />,
+    },
+  ];
 
+  // Straight lines from each satellite to center (50,50) — horizontal or vertical only
   const lines = [
-    [nodes.raminvest, nodes.finatrades],
-    [nodes.winlogistics, nodes.finatrades],
-    [nodes.wincommodities, nodes.finatrades],
-    [nodes.winvestnet, nodes.finatrades],
-    [nodes.raminvest, nodes.winlogistics],
-    [nodes.raminvest, nodes.wincommodities],
+    { x1: 50, y1: 10, x2: 50, y2: 50 },   // raminvest → center (vertical)
+    { x1: 10, y1: 50, x2: 50, y2: 50 },   // winlogistics → center (horizontal)
+    { x1: 90, y1: 50, x2: 50, y2: 50 },   // wincommodities → center (horizontal)
+    { x1: 50, y1: 90, x2: 50, y2: 50 },   // winvestnet → center (vertical)
   ];
 
   return (
     <section className="py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
       <div className="max-w-5xl mx-auto px-6">
+
+        {/* Header */}
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
-          className="text-center mb-16"
+          className="text-center mb-14"
         >
           <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Ecosystem</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
@@ -1228,104 +1273,97 @@ function ConnectedEcosystemSection() {
           </motion.p>
         </motion.div>
 
+        {/* ── Desktop hub diagram ── */}
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
           transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative"
+          className="relative hidden md:block"
+          style={{ height: '560px' }}
         >
-          <div className="relative w-full" style={{ paddingBottom: '90%' }}>
-            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ zIndex: 0 }}>
-              <circle cx="50" cy="50" r="34" fill="none" stroke="#C73B22" strokeWidth="0.3" strokeDasharray="1.2 1.8" opacity="0.35" />
-              <circle cx="50" cy="50" r="44" fill="none" stroke="#C73B22" strokeWidth="0.2" strokeDasharray="0.8 2" opacity="0.2" />
-              {lines.map(([a, b], i) => (
-                <line key={i}
-                  x1={a.x} y1={a.y} x2={b.x} y2={b.y}
-                  stroke="#C73B22" strokeWidth="0.25"
-                  strokeDasharray="1 1.5" opacity="0.4"
-                />
-              ))}
-              {Object.values(nodes).map((n, i) => (
-                <circle key={i} cx={n.x} cy={n.y} r="0.8" fill="#C73B22" opacity="0.5" />
-              ))}
-            </svg>
-
-            {[
-              {
-                key: 'raminvest', x: 50, y: 12, label: 'RAMINVEST', sub: 'HOLDING DIFC',
-                desc: 'Provides group-level strategic oversight, governance, and ecosystem direction across the platform.',
-                link: null, highlight: false,
-                logo: (
-                  <div className="flex justify-center items-center bg-black rounded-xl px-3 py-2">
-                    <img src={logoRaminvest} alt="Raminvest" className="h-10 w-auto object-contain" />
-                  </div>
-                ),
-              },
-              {
-                key: 'winlogistics', x: 14, y: 50, label: 'WINLOGISTICS', sub: '',
-                desc: 'Supports logistics coordination, transport structuring, and operational routing across international trade corridors.',
-                link: '#', highlight: false,
-                logo: (
-                  <img src={logoWinlogistics} alt="WinLogistics" className="h-8 w-auto object-contain" />
-                ),
-              },
-              {
-                key: 'wincommodities', x: 86, y: 50, label: 'WINCOMMODITIES', sub: '',
-                desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
-                link: '#', highlight: false,
-                logo: (
-                  <img src={logoWincommodities} alt="WinCommodities" className="h-8 w-auto object-contain" />
-                ),
-              },
-              {
-                key: 'finatrades', x: 50, y: 50, label: 'FINATRADES', sub: 'THIS PLATFORM',
-                desc: 'Swiss regulated Payment and Trade Finance Platform — settlement, FX coordination, and gold-backed clearing.',
-                link: null, highlight: true,
-                logo: (
-                  <img src={logoFinatradesP} alt="Finatrades" className="h-12 w-auto object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
-                ),
-              },
-              {
-                key: 'winvestnet', x: 50, y: 88, label: 'winvestnet', sub: 'Moving the world forward',
-                desc: 'Supports investment connectivity, strategic capital alignment, and network integration across the business ecosystem.',
-                link: '#', highlight: false,
-                logo: (
-                  <img src={logoWinvestnet} alt="WinvestNet" className="h-8 w-auto object-contain" />
-                ),
-              },
-            ].map(node => (
-              <div
-                key={node.key}
-                className="absolute"
-                style={{
-                  left: `${node.x}%`,
-                  top: `${node.y}%`,
-                  transform: 'translate(-50%, -50%)',
-                  width: node.key === 'wincommodities' ? '22%' : '19%',
-                  zIndex: 10,
-                }}
-              >
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 0.5, delay: 0.15, type: 'spring', stiffness: 200, damping: 20 }}
-                  className={`bg-white rounded-2xl p-3 text-center shadow-md ${node.highlight ? 'ring-2 ring-[#C73B22]' : 'border border-gray-200'}`}
-                >
-                  <div className="flex justify-center mb-2">{node.logo}</div>
-                  {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-                  <p className="text-[10px] text-[#666] leading-snug mb-2">{node.desc}</p>
-                  {node.link && (
-                    <a href={node.link} className="text-[10px] font-semibold text-[#C73B22] hover:underline flex items-center justify-center gap-0.5">
-                      Visit site <ArrowRight size={9} />
-                    </a>
-                  )}
-                </motion.div>
-              </div>
+          {/* SVG connector lines — lines are axis-aligned so preserveAspectRatio=none is fine */}
+          <svg
+            className="absolute inset-0 w-full h-full pointer-events-none"
+            viewBox="0 0 100 100"
+            preserveAspectRatio="none"
+            style={{ zIndex: 0 }}
+          >
+            {lines.map((l, i) => (
+              <line key={i}
+                x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
+                stroke="#C73B22" strokeWidth="0.35"
+                strokeDasharray="1.5 2" opacity="0.55"
+              />
             ))}
-          </div>
+            {/* Connection dots */}
+            {partners.map((p) => (
+              <rect key={p.key}
+                x={p.x - 0.7} y={p.y - 0.7} width="1.4" height="1.4"
+                rx="0.35" fill="#C73B22" opacity="0.55"
+              />
+            ))}
+          </svg>
+
+          {/* Partner cards */}
+          {partners.map((node) => (
+            <div
+              key={node.key}
+              className="absolute"
+              style={{
+                left: `${node.x}%`,
+                top: `${node.y}%`,
+                transform: 'translate(-50%, -50%)',
+                width: node.width,
+                zIndex: 10,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.75 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: node.delay, type: 'spring', stiffness: 220, damping: 22 }}
+                whileHover={{ scale: 1.04, boxShadow: '0 12px 32px -8px rgba(199,59,34,0.2)' }}
+                className={`bg-white rounded-2xl p-4 text-center cursor-default transition-shadow ${
+                  node.highlight
+                    ? 'shadow-xl ring-2 ring-[#C73B22] ring-offset-4 ring-offset-[#FDF0EB]'
+                    : 'shadow-md border border-gray-200'
+                }`}
+              >
+                <div className="flex justify-center mb-2.5">{node.logo}</div>
+                {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
+                <p className="text-[11px] font-bold text-[#1A1A1A] leading-tight mb-0.5 uppercase tracking-wide">{node.label}</p>
+                <p className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{node.role}</p>
+                <p className="text-[10px] text-[#666660] leading-relaxed">{node.desc}</p>
+              </motion.div>
+            </div>
+          ))}
         </motion.div>
+
+        {/* ── Mobile fallback: stacked cards ── */}
+        <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {partners.map((node, i) => (
+            <motion.div
+              key={node.key}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: i * 0.08, duration: 0.5 }}
+              className={`bg-white rounded-2xl p-5 text-center ${
+                node.highlight
+                  ? 'shadow-xl ring-2 ring-[#C73B22]'
+                  : 'shadow-md border border-gray-200'
+              }`}
+            >
+              <div className="flex justify-center mb-3">{node.logo}</div>
+              {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
+              <p className="text-sm font-bold text-[#1A1A1A] uppercase tracking-wide mb-0.5">{node.label}</p>
+              <p className="text-xs font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{node.role}</p>
+              <p className="text-xs text-[#666660] leading-relaxed">{node.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
       </div>
     </section>
   );
