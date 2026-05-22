@@ -973,10 +973,9 @@ function RolesSection() {
               <button
                 key={r.key}
                 onClick={() => setActive(i)}
+                style={isActive ? { background: r.accent, borderColor: 'transparent' } : { borderColor: r.accent + '55', color: r.accent }}
                 className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
-                  isActive
-                    ? `${r.tabActiveBg} text-white border-transparent shadow-lg`
-                    : 'bg-white/4 border-gray-200 text-[#555550] hover:text-[#1A1A1A] hover:bg-white/8'
+                  isActive ? 'text-white shadow-lg' : 'bg-white hover:opacity-80'
                 }`}
               >
                 <TabIcon size={14} />
@@ -991,19 +990,26 @@ function RolesSection() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className={`bg-white/2 border ${role.accentBorder} rounded-3xl p-8 sm:p-12`}
+          className="bg-white rounded-3xl p-8 sm:p-12"
+          style={{ border: `1.5px solid ${role.accent}33`, boxShadow: `0 4px 32px 0 ${role.accent}12` }}
         >
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
+          <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${role.accentBorder} ${role.accentBg} ${role.accentText} text-xs font-medium mb-5`}>
+              <div
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-5"
+                style={{ border: `1px solid ${role.accent}44`, background: role.accent + '14', color: role.accent }}
+              >
                 <Icon size={12} />
                 {role.tab}
               </div>
               <h3 className="text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">{role.title}</h3>
-              <p className={`${role.accentText} font-medium mb-4 text-sm`}>{role.subtitle}</p>
+              <p className="font-medium mb-4 text-sm" style={{ color: role.accent }}>{role.subtitle}</p>
               <p className="text-[#555550] leading-relaxed mb-8">{role.desc}</p>
               <Link href={role.ctaHref}>
-                <button className={`px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 ${role.ctaStyle}`}>
+                <button
+                  className="px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 text-white hover:opacity-90"
+                  style={{ background: role.accent }}
+                >
                   {role.cta} <ArrowRight size={16} />
                 </button>
               </Link>
@@ -1011,9 +1017,18 @@ function RolesSection() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {role.features.map(f => (
-                <div key={f} className={`flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3`}>
-                  <CheckCircle2 size={14} className={`${role.accentText} flex-shrink-0`} />
-                  <span className="text-[#444440] text-sm">{f}</span>
+                <div
+                  key={f}
+                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3.5 transition-all hover:shadow-sm"
+                  style={{ border: `1px solid ${role.accent}33`, background: role.accent + '06' }}
+                >
+                  <div
+                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                    style={{ background: role.accent + '18' }}
+                  >
+                    <CheckCircle2 size={13} style={{ color: role.accent }} />
+                  </div>
+                  <span className="text-[#2A2A2A] text-sm font-medium">{f}</span>
                 </div>
               ))}
             </div>
