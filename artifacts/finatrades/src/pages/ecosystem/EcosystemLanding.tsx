@@ -957,23 +957,26 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
         style={{ transformStyle: 'preserve-3d' }}
       >
         {img ? (
-          <div className="relative overflow-hidden" style={{ background: '#fff8f5' }}>
+          <div className="relative overflow-hidden" style={{ background: '#FFF0E8', minHeight: '200px' }}>
             <motion.img
               src={img}
               alt={label}
-              animate={{ scale: hovered ? 1.05 : 1 }}
+              animate={{ scale: hovered ? 1.04 : 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="w-full h-52 object-contain object-center block"
-              style={{ background: '#fff8f5' }}
+              className="w-full object-contain object-center block"
+              style={{ height: '196px', padding: '16px 20px 8px', display: 'block' }}
             />
             <div
               className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
               style={{
                 opacity: hovered ? 1 : 0,
-                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.18) 0%, transparent 60%)`,
+                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.22) 0%, transparent 60%)`,
               }}
             />
-            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-[#A82D16] bg-white/80 backdrop-blur-sm border border-[#C73B22]/20 px-2 py-0.5 rounded-full">
+            <span
+              className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
+              style={{ background: '#F5E6DC', color: '#7A3520', letterSpacing: '0.08em' }}
+            >
               LAYER {num}
             </span>
           </div>
