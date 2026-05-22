@@ -1408,10 +1408,10 @@ function SettlementSection() {
                 {phases.map((phase, pIdx) => (
                   <motion.div
                     key={phase}
-                    initial={{ opacity: 0, y: -12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, y: -20, scale: 0.85 }}
+                    whileInView={{ opacity: 1, y: 0, scale: 1 }}
                     viewport={{ once: true }}
-                    transition={{ delay: pIdx * 0.15, duration: 0.4, ease: 'easeOut' }}
+                    transition={{ delay: pIdx * 0.12, type: 'spring', stiffness: 380, damping: 14, mass: 0.7 }}
                     className="p-4 text-center border-r border-gray-200 last:border-r-0"
                     style={{ borderTop: `3px solid ${phaseColors[pIdx].border}` }}
                   >
@@ -1439,10 +1439,10 @@ function SettlementSection() {
 
                   {/* Actor label */}
                   <motion.div
-                    initial={{ opacity: 0, x: -16 }}
-                    whileInView={{ opacity: 1, x: 0 }}
+                    initial={{ opacity: 0, x: -20, scale: 0.9 }}
+                    whileInView={{ opacity: 1, x: 0, scale: 1 }}
                     viewport={{ once: true }}
-                    transition={{ delay: aIdx * 0.1, duration: 0.35, ease: 'easeOut' }}
+                    transition={{ delay: aIdx * 0.1, type: 'spring', stiffness: 360, damping: 14, mass: 0.7 }}
                     className="p-5 border-r border-gray-200 flex items-center gap-3 relative overflow-hidden bg-gray-50/30 group-hover:bg-gray-50 transition-colors"
                   >
                     <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: actor.color }} />
@@ -1460,13 +1460,15 @@ function SettlementSection() {
                     <div key={pIdx} className="p-3 border-r border-gray-100 last:border-r-0 relative flex items-center justify-center min-h-[110px]">
                       {actions[actor.id][pIdx] != null ? (
                         <motion.div
-                          initial={{ opacity: 0, scale: 0.88, y: 10 }}
+                          initial={{ opacity: 0, scale: 0.7, y: 18 }}
                           whileInView={{ opacity: 1, scale: 1, y: 0 }}
                           viewport={{ once: true }}
                           transition={{
-                            delay: pIdx * 0.18 + aIdx * 0.07,
-                            duration: 0.38,
-                            ease: 'easeOut',
+                            delay: (pIdx * actors.length + aIdx) * 0.08,
+                            type: 'spring',
+                            stiffness: 480,
+                            damping: 13,
+                            mass: 0.6,
                           }}
                           className="w-full h-full p-3 rounded-lg border shadow-sm hover:shadow-md transition-all flex flex-col justify-center"
                           style={{
