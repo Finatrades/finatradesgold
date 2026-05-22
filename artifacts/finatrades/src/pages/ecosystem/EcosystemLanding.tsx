@@ -7,7 +7,7 @@ import {
   Building2, Users, Truck, BarChart3, Lock, FileText,
   ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale
 } from 'lucide-react';
-import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -65,7 +65,7 @@ function Navbar() {
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
         <Link href="/">
-          <img src={finatradesLogo} alt="Finatrades" className="h-8 w-auto" />
+          <img src={finatradesLogo} alt="Finatrades" className="h-11 w-auto" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
         </Link>
 
         <div className="hidden lg:flex items-center gap-1">
@@ -785,7 +785,7 @@ function Footer() {
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 sm:col-span-1">
-            <img src={finatradesLogo} alt="Finatrades" className="h-7 w-auto mb-3" />
+            <img src={finatradesLogo} alt="Finatrades" className="h-9 w-auto mb-3" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
             <p className="text-[#888880] text-sm leading-relaxed">
               Digital gateway for commodity trade, inventory, settlement and trade finance.
             </p>
