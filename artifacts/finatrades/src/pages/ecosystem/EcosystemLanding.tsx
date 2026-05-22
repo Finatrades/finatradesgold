@@ -8,6 +8,7 @@ import {
   ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
+import heroBg from '@/assets/hero-bg.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -120,16 +121,13 @@ function HeroSection() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#C73B22]/12 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#C73B22]/5 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#3D0E05]/8 rounded-full blur-[140px]" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: `linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)`,
-            backgroundSize: '60px 60px',
-          }}
+        <img
+          src={heroBg}
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover object-center"
         />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/50 to-white/80" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-white/30" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
