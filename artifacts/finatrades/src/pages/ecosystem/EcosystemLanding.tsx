@@ -10,6 +10,12 @@ import {
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import heroBg from '@/assets/hero-bg.png';
 import section2Bg from '@/assets/section2-bg.png';
+import cardSellers from '@/assets/card-sellers.png';
+import cardBuyers from '@/assets/card-buyers.png';
+import cardGovernment from '@/assets/card-government.png';
+import cardWarehouse from '@/assets/card-warehouse.png';
+import cardFinance from '@/assets/card-finance.png';
+import cardLogistics from '@/assets/card-logistics.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -228,20 +234,26 @@ function PositioningSection() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {[
-            { icon: Users, title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.' },
-            { icon: Building2, title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.' },
-            { icon: Shield, title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.' },
-            { icon: Warehouse, title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.' },
-            { icon: TrendingUp, title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.' },
-            { icon: Truck, title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.' },
-          ].map(({ icon: Icon, title, desc }) => (
+            { icon: Users, title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.', img: cardSellers },
+            { icon: Building2, title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.', img: cardBuyers },
+            { icon: Shield, title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.', img: cardGovernment },
+            { icon: Warehouse, title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.', img: cardWarehouse },
+            { icon: TrendingUp, title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.', img: cardFinance },
+            { icon: Truck, title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.', img: cardLogistics },
+          ].map(({ icon: Icon, title, desc, img }) => (
             <motion.div key={title} variants={fadeUp}
-              className="bg-gray-50 border border-gray-200 rounded-2xl p-6 hover:bg-gray-100 hover:border-white/12 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-[#C73B22]/15 flex items-center justify-center mb-4 group-hover:bg-[#C73B22]/25 transition-colors">
-                <Icon size={18} className="text-[#A82D16]" />
+              className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#C73B22]/30 transition-all group">
+              <div className="relative h-44 overflow-hidden">
+                <img src={img} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+                <div className="absolute bottom-3 left-3 w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
+                  <Icon size={16} className="text-[#C73B22]" />
+                </div>
               </div>
-              <h3 className="text-[#1A1A1A] font-semibold mb-2">{title}</h3>
-              <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
+              <div className="p-5">
+                <h3 className="text-[#1A1A1A] font-semibold mb-2">{title}</h3>
+                <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
+              </div>
             </motion.div>
           ))}
         </div>
