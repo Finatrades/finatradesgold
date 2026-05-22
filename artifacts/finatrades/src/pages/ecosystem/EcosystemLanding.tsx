@@ -22,6 +22,15 @@ import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
 import logoWinlogistics from '@/assets/logo-winlogistics.png';
 import logoWincommodities from '@/assets/logo-wincommodities.png';
+import layer1 from '@/assets/layer-1.png';
+import layer2 from '@/assets/layer-2.png';
+import layer3 from '@/assets/layer-3.png';
+import layer4 from '@/assets/layer-4.png';
+import layer5 from '@/assets/layer-5.png';
+import layer6 from '@/assets/layer-6.png';
+import layer7 from '@/assets/layer-7.png';
+import layer8 from '@/assets/layer-8.png';
+import layer9 from '@/assets/layer-9.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -895,24 +904,24 @@ function ComplianceSection() {
 
 function BackendSection() {
   const layers = [
-    { icon: Users, label: 'User Access Layer' },
-    { icon: Shield, label: 'Identity & Compliance Layer' },
-    { icon: FileText, label: 'Document Service' },
-    { icon: Warehouse, label: 'Inventory & Consignment Engine' },
-    { icon: Search, label: 'Marketplace Connector' },
-    { icon: Package, label: 'Buyer Order Engine' },
-    { icon: CreditCard, label: 'WINVESTNET Wallet Connector' },
-    { icon: TrendingUp, label: 'Trade Finance Engine' },
-    { icon: Lock, label: 'Escrow & Settlement Engine' },
-    { icon: BarChart3, label: 'Audit & Reporting Layer' },
-    { icon: Zap, label: 'Notifications & API Orchestration' },
-    { icon: Layers, label: 'Infrastructure & Data Layer' },
+    { img: layer1, icon: Users,       label: 'User Access Layer',               num: '01', desc: 'Role-based onboarding for sellers, buyers, warehouses, logistics & finance partners.' },
+    { img: layer2, icon: Shield,      label: 'Identity & Compliance Layer',     num: '02', desc: 'KYC/AML verification, document checks, and jurisdictional eligibility screening.' },
+    { img: layer3, icon: FileText,    label: 'Document Service',                num: '03', desc: 'Digital contracts, certificates of origin, phytosanitary, inspection & trade docs.' },
+    { img: layer4, icon: Warehouse,   label: 'Inventory & Consignment Engine',  num: '04', desc: 'Warehouse receipts, stock records, consignment tracking and release workflows.' },
+    { img: layer5, icon: Search,      label: 'Marketplace Connector',           num: '05', desc: 'Live commodity listings, price discovery, offer matching and bid management.' },
+    { img: layer6, icon: Package,     label: 'Buyer Order Engine',              num: '06', desc: 'Order placement, confirmation routing, allocation, and fulfilment orchestration.' },
+    { img: layer7, icon: CreditCard,  label: 'WINVESTNET Wallet Connector',     num: '07', desc: 'Digital wallet integration, fund locking, multi-currency settlement ledger.' },
+    { img: layer8, icon: TrendingUp,  label: 'Trade Finance Engine',            num: '08', desc: 'Invoice financing, letters of credit, receivables factoring and capital facilitation.' },
+    { img: layer9, icon: Lock,        label: 'Escrow & Settlement Engine',      num: '09', desc: 'Smart escrow release on verified fulfilment milestones and dispute resolution.' },
+    { img: null,   icon: BarChart3,   label: 'Audit & Reporting Layer',         num: '10', desc: 'Full audit trails, regulatory reporting, analytics dashboards and compliance exports.' },
+    { img: null,   icon: Zap,         label: 'Notifications & API Orchestration', num: '11', desc: 'Real-time webhooks, partner API gateway, event streams and alert management.' },
+    { img: null,   icon: Layers,      label: 'Infrastructure & Data Layer',     num: '12', desc: 'Cloud-native storage, encrypted databases, CDN delivery, and disaster recovery.' },
   ];
 
   return (
     <section className="bg-[#FFF4F0] py-24 border-y border-gray-200">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <motion.div variants={fadeUp} className="text-center mb-14">
+        <motion.div variants={fadeUp} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
             System Architecture
           </div>
@@ -925,14 +934,49 @@ function BackendSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          {layers.map(({ icon: Icon, label }, i) => (
-            <motion.div key={label} variants={fadeUp}
-              className="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-gray-100 hover:border-[#C73B22]/20 transition-all">
-              <div className="w-9 h-9 rounded-lg bg-[#C73B22]/12 flex items-center justify-center">
-                <Icon size={16} className="text-[#A82D16]" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {layers.map(({ img, icon: Icon, label, num, desc }, i) => (
+            <motion.div
+              key={label}
+              variants={fadeUp}
+              whileHover={{ y: -4, transition: { duration: 0.22 } }}
+              className="group relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg hover:border-[#C73B22]/30 transition-all duration-300"
+            >
+              {img ? (
+                <div className="relative h-44 overflow-hidden">
+                  <img
+                    src={img}
+                    alt={label}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1B2E40]/80 via-[#1B2E40]/20 to-transparent" />
+                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+                    LAYER {num}
+                  </span>
+                </div>
+              ) : (
+                <div className="relative h-44 overflow-hidden flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
+                  <div className="absolute inset-0 opacity-10"
+                    style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #E5602A 0%, transparent 60%), radial-gradient(circle at 70% 60%, #C73B22 0%, transparent 50%)' }} />
+                  <Icon size={40} className="text-white/30 relative z-10" />
+                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+                    LAYER {num}
+                  </span>
+                </div>
+              )}
+
+              <div className="p-5">
+                <div className="flex items-start gap-3 mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-[#C73B22]/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-[#C73B22]/20 transition-colors">
+                    <Icon size={13} className="text-[#C73B22]" />
+                  </div>
+                  <h3 className="text-[#1A1A1A] text-sm font-semibold leading-snug">{label}</h3>
+                </div>
+                <p className="text-[#777770] text-xs leading-relaxed pl-10">{desc}</p>
               </div>
-              <span className="text-[#444440] text-xs font-medium leading-snug">{label}</span>
+
+              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#C73B22] to-[#E5602A] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-b-2xl" />
             </motion.div>
           ))}
         </div>
