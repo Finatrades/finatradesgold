@@ -24,6 +24,7 @@ import cardLogistics from '@/assets/card-logistics.png';
 import hubsBg from '@/assets/hubs-bg.png';
 import exporterWarehouse from '@/assets/exporter-warehouse.png';
 import buyerMarketplace from '@/assets/buyer-marketplace.png';
+import governmentSovereign from '@/assets/government-sovereign.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
@@ -1195,6 +1196,8 @@ const ROLES = [
     cta: 'Request Sovereign Access',
     ctaHref: '/register?role=government',
     ctaStyle: 'bg-[#E5602A] hover:bg-[#C94E1C] text-white',
+    image: governmentSovereign,
+    imageCaption: 'Sovereign Procurement & G2G Barter Execution',
   },
 ];
 
