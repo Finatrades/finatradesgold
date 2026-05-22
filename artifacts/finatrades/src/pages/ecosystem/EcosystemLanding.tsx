@@ -902,7 +902,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
         >
           {/* Full-cover image */}
           {img ? (
-            <img src={img} alt={label} className="w-full h-full object-contain object-center" style={{ background: '#FBF0E8', padding: '18px' }} />
+            <img src={img} alt={label} className="w-full h-full object-contain object-center" style={{ background: '#FBF0E8' }} />
           ) : (
             <div className="w-full h-full flex items-center justify-center"
               style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
