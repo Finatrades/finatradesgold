@@ -944,18 +944,18 @@ function ConnectedEcosystemSection() {
   const nodes = {
     raminvest: { x: 50, y: 12 },
     winlogistics: { x: 14, y: 50 },
-    wincommodities: { x: 50, y: 50 },
-    finatrades: { x: 86, y: 50 },
+    wincommodities: { x: 86, y: 50 },
+    finatrades: { x: 50, y: 50 },
     winvestnet: { x: 50, y: 88 },
   };
 
   const lines = [
-    [nodes.raminvest, nodes.wincommodities],
-    [nodes.winlogistics, nodes.wincommodities],
-    [nodes.finatrades, nodes.wincommodities],
-    [nodes.winvestnet, nodes.wincommodities],
-    [nodes.raminvest, nodes.winlogistics],
     [nodes.raminvest, nodes.finatrades],
+    [nodes.winlogistics, nodes.finatrades],
+    [nodes.wincommodities, nodes.finatrades],
+    [nodes.winvestnet, nodes.finatrades],
+    [nodes.raminvest, nodes.winlogistics],
+    [nodes.raminvest, nodes.wincommodities],
   ];
 
   return (
@@ -1018,20 +1018,17 @@ function ConnectedEcosystemSection() {
                 ),
               },
               {
-                key: 'wincommodities', x: 50, y: 50, label: 'WINCOMMODITIES', sub: 'THIS PLATFORM',
+                key: 'wincommodities', x: 86, y: 50, label: 'WINCOMMODITIES', sub: '',
                 desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
-                link: null, highlight: true,
+                link: '#', highlight: false,
                 logo: (
-                  <div className="flex flex-col items-center gap-1">
-                    <img src={logoRaminvest} alt="WinCommodities" className="h-8 w-auto object-contain bg-black rounded-lg px-2 py-1" />
-                    <span className="text-[9px] font-bold tracking-widest text-[#C73B22] uppercase">This Platform</span>
-                  </div>
+                  <img src={logoRaminvest} alt="WinCommodities" className="h-8 w-auto object-contain bg-black rounded-lg px-2 py-1" />
                 ),
               },
               {
-                key: 'finatrades', x: 86, y: 50, label: 'FINATRADES', sub: '',
+                key: 'finatrades', x: 50, y: 50, label: 'FINATRADES', sub: 'THIS PLATFORM',
                 desc: 'Swiss regulated Payment and Trade Finance Platform — settlement, FX coordination, and gold-backed clearing.',
-                link: '#', highlight: false,
+                link: null, highlight: true,
                 logo: (
                   <img src={logoFinatradesP} alt="Finatrades" className="h-8 w-auto object-contain" />
                 ),
