@@ -862,10 +862,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
   return (
     <motion.div
       variants={fadeUp}
-      initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{ delay }}
+      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
       style={{ perspective: '1000px', height: '260px' }}
       className="cursor-pointer"
       onClick={() => setFlipped(f => !f)}
@@ -987,11 +984,17 @@ function BackendSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+        <motion.div
+          className="grid grid-cols-1 sm:grid-cols-3 gap-5"
+          variants={{ hidden: {}, visible: { transition: { staggerChildren: 0.07, delayChildren: 0.1 } } }}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: '-60px' }}
+        >
           {layers.map((layer, i) => (
-            <LayerCard3D key={layer.label} {...layer} delay={i * 0.06} />
+            <LayerCard3D key={layer.label} {...layer} delay={0} />
           ))}
-        </div>
+        </motion.div>
       </AnimatedSection>
     </section>
   );
