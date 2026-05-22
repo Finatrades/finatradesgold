@@ -1436,11 +1436,11 @@ export default function EcosystemLanding() {
       <PositioningSection />
       <HowItWorksSection />
       <MarketplaceSection />
-      <RolesSection />
       <SettlementSection />
       <BackendSection />
       <ComplianceSection />
       <ConnectedEcosystemSection />
+      <RolesSection />
       <CTASection />
       <Footer />
       <FloatingAgentChat />
