@@ -31,6 +31,9 @@ import layer6 from '@/assets/layer-6.png';
 import layer7 from '@/assets/layer-7.png';
 import layer8 from '@/assets/layer-8.png';
 import layer9 from '@/assets/layer-9.png';
+import layer10 from '@/assets/layer-10.png';
+import layer11 from '@/assets/layer-11.png';
+import layer12 from '@/assets/layer-12.png';
 import backendBg from '@/assets/backend-bg.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
@@ -1035,9 +1038,9 @@ function BackendSection() {
     { img: layer7, icon: CreditCard,  label: 'WINVESTNET Wallet Connector',     num: '07', desc: 'Digital wallet integration, fund locking, multi-currency settlement ledger.' },
     { img: layer8, icon: TrendingUp,  label: 'Trade Finance Engine',            num: '08', desc: 'Invoice financing, letters of credit, receivables factoring and capital facilitation.' },
     { img: layer9, icon: Lock,        label: 'Escrow & Settlement Engine',      num: '09', desc: 'Smart escrow release on verified fulfilment milestones and dispute resolution.' },
-    { img: null,   icon: BarChart3,   label: 'Audit & Reporting Layer',         num: '10', desc: 'Full audit trails, regulatory reporting, analytics dashboards and compliance exports.' },
-    { img: null,   icon: Zap,         label: 'Notifications & API Orchestration', num: '11', desc: 'Real-time webhooks, partner API gateway, event streams and alert management.' },
-    { img: null,   icon: Layers,      label: 'Infrastructure & Data Layer',     num: '12', desc: 'Cloud-native storage, encrypted databases, CDN delivery, and disaster recovery.' },
+    { img: layer10, icon: BarChart3,   label: 'Audit & Reporting Layer',         num: '10', desc: 'Full audit trails, regulatory reporting, analytics dashboards and compliance exports.' },
+    { img: layer11, icon: Zap,         label: 'Notifications & API Orchestration', num: '11', desc: 'Real-time webhooks, partner API gateway, event streams and alert management.' },
+    { img: layer12, icon: Layers,      label: 'Infrastructure & Data Layer',     num: '12', desc: 'Cloud-native storage, encrypted databases, CDN delivery, and disaster recovery.' },
   ];
 
   return (
