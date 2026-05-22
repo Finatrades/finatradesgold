@@ -5,7 +5,8 @@ import {
   ArrowRight, Shield, Globe, Warehouse, Package, Search,
   CreditCard, Handshake, Settings, CheckCircle2, Menu, X,
   Building2, Users, Truck, BarChart3, Lock, FileText,
-  ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale
+  ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale,
+  AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import heroBg from '@/assets/hero-bg.png';
@@ -31,9 +32,9 @@ import layer6 from '@/assets/layer-6.png';
 import layer7 from '@/assets/layer-7.png';
 import layer8 from '@/assets/layer-8.png';
 import layer9 from '@/assets/layer-9.png';
-import layer10 from '@assets/edc4f2fa-7b74-4a7b-b341-2f659925981c_1779449646522.png';
-import layer11 from '@assets/6ca8f13c-7850-4a05-9620-dadac3a54cae_1779449450685.png';
-import layer12 from '@assets/17caea42-27f6-4c15-ad8b-eb19a8f7d809_1779449639917.png';
+import layer10 from '@/assets/layer-10.png';
+import layer11 from '@/assets/layer-11.png';
+import layer12 from '@/assets/layer-12.png';
 import backendBg from '@/assets/backend-bg.png';
 import compliance3d from '@/assets/compliance-3d.png';
 
@@ -1139,19 +1140,80 @@ function RolesSection() {
 }
 
 function SettlementSection() {
-  const rules = [
-    { rule: 'Unverified inventory position', consequence: 'Transaction suspended — no sale initiated' },
-    { rule: 'Unconfirmed or insufficient buyer funds', consequence: 'Inventory lock withheld — no reservation' },
-    { rule: 'Escrow conditions not satisfied', consequence: 'Warehouse release blocked — no dispatch' },
-    { rule: 'Delivery milestone unverified', consequence: 'Final payout deferred — funds held in escrow' },
-    { rule: 'Incomplete or unsigned trade documentation', consequence: 'Audit trail void — settlement rejected' },
+  const actors = [
+    { id: 'buyer',    name: 'Buyer',         color: '#1B4FDB', icon: Users },
+    { id: 'escrow',   name: 'Escrow System', color: '#C73B22', icon: ShieldCheck },
+    { id: 'warehouse',name: 'Warehouse',     color: '#2D6A4F', icon: Warehouse },
+    { id: 'seller',   name: 'Seller',        color: '#7B3F00', icon: Building2 },
   ];
 
+  const phases = ['Pre-Trade', 'Payment', 'Lock', 'Release', 'Payout'];
+
+  const conditions = [
+    { id: 1, name: 'Unverified inventory position',              consequence: 'Transaction suspended — no sale initiated',    impact: 'Buyer blocked from starting transaction' },
+    { id: 2, name: 'Unconfirmed or insufficient buyer funds',    consequence: 'Inventory lock withheld — no reservation',     impact: 'Escrow system denies inventory lock' },
+    { id: 3, name: 'Escrow conditions not satisfied',            consequence: 'Warehouse release blocked — no dispatch',      impact: 'Warehouse release authorisation withheld' },
+    { id: 4, name: 'Delivery milestone unverified',              consequence: 'Final payout deferred — funds held in escrow', impact: 'Seller payout delayed in escrow' },
+    { id: 5, name: 'Incomplete or unsigned trade documentation', consequence: 'Audit trail void — settlement rejected',       impact: 'Entire settlement rejected' },
+  ];
+
+  const actions: Record<string, (string | React.ReactNode | null)[]> = {
+    buyer: [
+      'Submit Purchase Order & KYC',
+      <div key="b-pay" className="flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-[10px] font-bold text-[#1B4FDB]"><CreditCard className="w-3 h-3" /> PAYMENT</div>
+        <span>Initiate Fund Transfer</span>
+      </div>,
+      'Receive Lock Confirmation',
+      'Verify Shipping Docs',
+      'Final Acceptance',
+    ],
+    escrow: [
+      'Verify Inventory Availability',
+      'Validate Buyer Funds',
+      <div key="e-lock" className="flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-[10px] font-bold text-[#C73B22]"><Lock className="w-3 h-3" /> CUSTODY</div>
+        <span>Enforce Bilateral Lock</span>
+      </div>,
+      'Validate Release Conditions',
+      <div key="e-pay" className="flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-[10px] font-bold text-[#C73B22]"><Handshake className="w-3 h-3" /> PAYOUT</div>
+        <span>Execute Seller Payout</span>
+      </div>,
+    ],
+    warehouse: [
+      'Confirm Physical Stock',
+      null,
+      'Segment & Secure Batch',
+      <div key="w-rel" className="flex flex-col gap-1">
+        <div className="flex items-center gap-1 text-[10px] font-bold text-[#2D6A4F]"><Warehouse className="w-3 h-3" /> RELEASE</div>
+        <span>Authorise Goods Release</span>
+      </div>,
+      'Update Inventory Ledger',
+    ],
+    seller: [
+      'Upload Batch Certificate',
+      'Review Escrow Deposit',
+      'Sign Allocation Agreement',
+      'Approve Release',
+      'Receive Verified Funds',
+    ],
+  };
+
   return (
-    <section id="trade-finance" className="bg-white py-24">
+    <section id="trade-finance" className="bg-[#FAFAFA] py-24">
+      <style>{`
+        @keyframes settlementSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .settlement-cell { animation: settlementSlideIn 0.45s ease-out forwards; }
+      `}</style>
       <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
+
+        {/* Section header */}
+        <motion.div variants={fadeUp} className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-white text-[#555550] text-xs font-medium mb-5 shadow-sm">
             <Lock size={12} />
             Structured Trade Finance & Escrow Governance
           </div>
@@ -1165,55 +1227,120 @@ function SettlementSection() {
           </p>
         </motion.div>
 
-        <div className="grid lg:grid-cols-2 gap-12 items-start">
-          <motion.div variants={fadeUp} className="space-y-3">
-            <h3 className="text-[#1A1A1A] font-semibold text-lg mb-5">Non-Negotiable Settlement Conditions</h3>
-            {rules.map(({ rule, consequence }) => (
-              <Card3D key={rule} className="flex items-center justify-between rounded-xl px-5 py-4 gap-4" accent="#C73B22" tiltStrength={5}>
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-2 h-2 rounded-full bg-[#C73B22]/70 flex-shrink-0" />
-                  <span className="text-[#444440] text-sm">{rule}</span>
-                </div>
-                <span className="text-xs font-semibold text-[#888880] bg-gray-100 px-3 py-1 rounded-lg whitespace-nowrap flex-shrink-0">→ {consequence}</span>
-              </Card3D>
-            ))}
-          </motion.div>
+        {/* Stats strip */}
+        <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-3 mb-10">
+          {[
+            { icon: Users,         label: '4 Verified Parties' },
+            { icon: ArrowRight,    label: '9 Governed Handoffs' },
+            { icon: Shield,        label: 'Zero Counterparty Risk' },
+          ].map(({ icon: Icon, label }) => (
+            <div key={label} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-full text-sm font-semibold text-[#444440] shadow-sm">
+              <Icon size={13} className="text-[#C73B22]" />
+              {label}
+            </div>
+          ))}
+        </motion.div>
 
-          <motion.div variants={fadeUp} className="space-y-5">
-            {[
-              {
-                icon: CreditCard,
-                title: 'Buyer Fund Verification & Payment Confirmation',
-                desc: 'Prior to any inventory reservation, buyer funds undergo institutional-grade verification and are confirmed as available, cleared, and allocated against the specific trade order. No inventory position may be locked until payment confirmation is received and recorded on the settlement ledger.',
-              },
-              {
-                icon: Lock,
-                title: 'Escrow Custody & Bilateral Lock Enforcement',
-                desc: 'Upon payment confirmation, the corresponding inventory is placed under escrow custody and locked against the purchase order. Neither the seller nor the buyer may unilaterally alter, release, or reassign the position — all release conditions must be independently satisfied and verified.',
-              },
-              {
-                icon: Warehouse,
-                title: 'Conditional Warehouse Release Authorisation',
-                desc: 'Warehouse release instructions are issued exclusively upon verification of delivery milestones, logistics handover documentation, quality inspection sign-off, and completion of all contractually mandated trade documents. No physical dispatch occurs outside this governed release protocol.',
-              },
-              {
-                icon: Handshake,
-                title: 'Seller Disbursement & Immutable Audit Closure',
-                desc: 'Once all settlement conditions are independently verified and confirmed, escrowed funds are released to the seller\'s designated account. The transaction is simultaneously closed with an immutable, timestamped audit trail — capturing every event, counterparty action, and document state throughout the trade lifecycle.',
-              },
-            ].map(({ icon: Icon, title, desc }) => (
-              <Card3D key={title} className="flex gap-4 rounded-2xl p-5" accent="#C73B22" tiltStrength={6}>
-                <div className="w-10 h-10 rounded-xl bg-[#C73B22]/10 border border-[#C73B22]/15 flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-[#C73B22]" />
+        {/* Swimlane map */}
+        <motion.div variants={fadeUp} className="bg-white border border-gray-200 rounded-2xl shadow-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <div className="min-w-[900px] relative">
+
+              {/* Phase headers */}
+              <div className="grid grid-cols-[180px_repeat(5,1fr)] bg-gray-50 border-b border-gray-200">
+                <div className="p-4 border-r border-gray-200 text-xs font-bold uppercase tracking-widest text-gray-400 self-center">
+                  Stakeholders
                 </div>
-                <div>
-                  <h4 className="text-[#1A1A1A] font-semibold mb-1.5">{title}</h4>
-                  <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
+                {phases.map((phase, idx) => (
+                  <div key={phase} className="p-4 text-center border-r border-gray-200 last:border-r-0">
+                    <div className="text-xs font-black uppercase tracking-[0.2em] text-[#1A1A1A] mb-1">{phase}</div>
+                    <div className="w-full h-1 bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-[#C73B22]" style={{ width: `${(idx + 1) * 20}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Actor lanes */}
+              {actors.map((actor) => (
+                <div key={actor.id} className="grid grid-cols-[180px_repeat(5,1fr)] border-b border-gray-100 last:border-b-0 group">
+                  <div className="p-5 border-r border-gray-200 flex items-center gap-3 relative overflow-hidden bg-gray-50/30 group-hover:bg-gray-50 transition-colors">
+                    <div className="absolute left-0 top-0 bottom-0 w-1.5" style={{ backgroundColor: actor.color }} />
+                    <div className="w-9 h-9 rounded-lg flex items-center justify-center text-white shadow-sm shrink-0" style={{ backgroundColor: actor.color }}>
+                      <actor.icon className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-bold text-[#1A1A1A] leading-tight">{actor.name}</div>
+                      <div className="text-[10px] text-gray-400 uppercase font-mono mt-0.5">Authorized</div>
+                    </div>
+                  </div>
+
+                  {phases.map((_, pIdx) => (
+                    <div key={pIdx} className="p-3 border-r border-gray-100 last:border-r-0 relative flex items-center justify-center min-h-[110px]">
+                      {actions[actor.id][pIdx] != null ? (
+                        <div className="settlement-cell w-full h-full p-3 rounded-lg border border-gray-100 bg-white shadow-sm hover:shadow-md hover:border-gray-200 transition-all flex flex-col justify-center">
+                          <div className="text-xs font-medium leading-relaxed text-gray-700">
+                            {actions[actor.id][pIdx]}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="w-6 h-px bg-gray-100" />
+                      )}
+                      {pIdx < phases.length - 1 && actions[actor.id][pIdx] != null && (
+                        <div className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 hidden lg:block">
+                          <ArrowRight className="w-5 h-5 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              </Card3D>
+              ))}
+
+              {/* Condition gate overlays */}
+              <div className="absolute top-[64px] bottom-0 left-[180px] right-0 pointer-events-none grid grid-cols-5">
+                {[0, 1, 2, 3, 4].map(idx => (
+                  <div key={idx} className="relative h-full">
+                    {idx < 4 && (
+                      <div className="absolute right-0 top-0 bottom-0 w-px bg-gray-200 flex flex-col items-center justify-center z-20">
+                        <div className="group/gate pointer-events-auto cursor-help bg-white border border-[#C73B22] rounded-full p-1.5 shadow-lg transform -translate-x-1/2 hover:scale-110 transition-transform">
+                          <AlertTriangle className="w-3.5 h-3.5 text-[#C73B22]" />
+                          <div className="absolute bottom-full mb-3 left-1/2 -translate-x-1/2 w-52 bg-[#1A1A1A] text-white p-3 rounded-xl text-[11px] opacity-0 group-hover/gate:opacity-100 transition-opacity pointer-events-none z-30 shadow-2xl">
+                            <div className="font-bold text-[#C73B22] mb-1">CONDITION GATE #{idx + 1}</div>
+                            <div className="font-medium text-gray-200 mb-1">{conditions[idx].name}</div>
+                            <div className="text-gray-400 leading-normal">{conditions[idx].consequence}</div>
+                            <div className="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-[#1A1A1A]" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Failure impact strip */}
+        <motion.div variants={fadeUp} className="mt-8">
+          <h3 className="text-xs font-black uppercase tracking-[0.2em] text-gray-400 mb-4 flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-[#C73B22]" />
+            Systemic Integrity: Failure Impact Analysis
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {conditions.map((cond, idx) => (
+              <div key={cond.id} className="bg-white border-l-4 border-l-[#C73B22]/30 p-4 rounded-r-xl border-y border-r border-gray-200 shadow-sm hover:border-l-[#C73B22] transition-colors">
+                <div className="text-[10px] font-bold text-[#C73B22] uppercase tracking-wider mb-1">Protocol Gate {idx + 1}</div>
+                <div className="text-xs font-bold text-[#1A1A1A] mb-2 leading-tight">{cond.name}</div>
+                <div className="flex items-start gap-2 pt-2 border-t border-gray-50">
+                  <div className="mt-1 w-1.5 h-1.5 rounded-full bg-red-500 shrink-0" />
+                  <div className="text-[10px] text-gray-500 font-medium leading-relaxed">{cond.impact}</div>
+                </div>
+              </div>
             ))}
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
+
       </AnimatedSection>
     </section>
   );
