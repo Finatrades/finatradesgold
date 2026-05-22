@@ -1321,27 +1321,28 @@ function RolesSection() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="relative rounded-2xl overflow-hidden w-full"
-                  style={{
-                    background: '#FAFAFA',
-                    border: `1.5px solid ${role.accent}22`,
-                    boxShadow: `0 8px 40px 0 ${role.accent}14`,
-                  }}
+                  className="flex flex-col gap-2 w-full"
                 >
-                  <img
-                    src={(role as typeof role & { image?: string }).image}
-                    alt={(role as typeof role & { imageCaption?: string }).imageCaption ?? role.title}
-                    className="w-full h-auto object-contain"
-                    style={{ display: 'block' }}
-                  />
                   <div
-                    className="absolute bottom-0 left-0 right-0 px-5 py-2.5 text-center"
-                    style={{ background: `linear-gradient(to top, ${role.accent}22 0%, transparent 100%)` }}
+                    className="rounded-2xl overflow-hidden w-full"
+                    style={{
+                      background: '#FAFAFA',
+                      border: `1.5px solid ${role.accent}22`,
+                      boxShadow: `0 8px 40px 0 ${role.accent}14`,
+                    }}
                   >
-                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: role.accent }}>
-                      {(role as typeof role & { imageCaption?: string }).imageCaption ?? ''}
-                    </p>
+                    <img
+                      src={(role as typeof role & { image?: string }).image}
+                      alt={(role as typeof role & { imageCaption?: string }).imageCaption ?? role.title}
+                      className="w-full h-auto object-contain"
+                      style={{ display: 'block' }}
+                    />
                   </div>
+                  {(role as typeof role & { imageCaption?: string }).imageCaption && (
+                    <p className="text-center text-[10px] font-bold uppercase tracking-widest" style={{ color: role.accent }}>
+                      {(role as typeof role & { imageCaption?: string }).imageCaption}
+                    </p>
+                  )}
                 </motion.div>
               )}
 
