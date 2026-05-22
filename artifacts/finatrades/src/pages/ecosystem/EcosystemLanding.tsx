@@ -1993,12 +1993,16 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
               : '0 4px 18px -4px rgba(0,0,0,0.12)',
         }}
         transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className={`relative rounded-2xl p-5 text-center cursor-pointer overflow-hidden ${
+        className={`relative rounded-2xl p-5 text-center cursor-pointer overflow-hidden flex flex-col justify-center ${
           highlight
             ? 'ring-2 ring-[#C73B22] ring-offset-2 ring-offset-[#F5E8E4]'
             : 'border border-[#F0E8E4]'
         }`}
-        style={{ transformStyle: 'preserve-3d', background: highlight ? '#FFF6F2' : '#FFFAF8' }}
+        style={{
+          transformStyle: 'preserve-3d',
+          background: highlight ? '#FFF6F2' : '#FFFAF8',
+          minHeight: highlight ? '260px' : '240px',
+        }}
       >
         {/* Warm radial light — always visible, brightens on hover */}
         <div
@@ -2009,10 +2013,10 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
           }}
         />
         <div className="relative z-10">
-          <div className="flex justify-center mb-3" style={{ filter: 'brightness(1.08) saturate(1.05)' }}>{logo}</div>
-          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2.5 rounded" />}
-          <p className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
-          <p className="text-[10px] text-[#666660] leading-relaxed">{desc}</p>
+          <div className="flex justify-center mb-4" style={{ filter: 'brightness(1.08) saturate(1.05)' }}>{logo}</div>
+          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-3 rounded" />}
+          <p className="text-[10px] font-bold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
+          <p className="text-[11px] text-[#666660] leading-relaxed">{desc}</p>
         </div>
       </motion.div>
     </motion.div>
