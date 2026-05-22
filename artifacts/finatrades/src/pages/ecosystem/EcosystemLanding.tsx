@@ -310,24 +310,24 @@ function HeroSection() {
 
 function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: string; img: string; accent: string; delay: number }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [flipped, setFlipped] = useState(false);
+  const rotX = useSpring(0, { stiffness: 300, damping: 22 });
+  const rotY = useSpring(0, { stiffness: 300, damping: 22 });
   const [shine, setShine] = useState({ x: 50, y: 50 });
-  const [hovered, setHovered] = useState(false);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const { left, top, width, height } = card.getBoundingClientRect();
+    if (flipped || !cardRef.current) return;
+    const { left, top, width, height } = cardRef.current.getBoundingClientRect();
     const x = (e.clientX - left) / width;
     const y = (e.clientY - top) / height;
-    setTilt({ x: (y - 0.5) * -18, y: (x - 0.5) * 18 });
+    rotX.set((y - 0.5) * -16);
+    rotY.set((x - 0.5) * 16);
     setShine({ x: x * 100, y: y * 100 });
   };
 
   const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
+    rotX.set(0); rotY.set(0);
     setShine({ x: 50, y: 50 });
-    setHovered(false);
   };
 
   return (
@@ -337,87 +337,121 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
       whileInView="visible"
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay }}
-      style={{ perspective: '1000px' }}
+      style={{ perspective: '1000px', height: '360px' }}
     >
       <motion.div
         ref={cardRef}
+        onClick={() => setFlipped(f => !f)}
         onMouseMove={handleMouseMove}
-        onMouseEnter={() => setHovered(true)}
         onMouseLeave={handleMouseLeave}
-        animate={{
-          rotateX: tilt.x,
-          rotateY: tilt.y,
-          scale: hovered ? 1.03 : 1,
-          boxShadow: hovered
-            ? `0 28px 56px -10px ${accent}30, 0 0 0 1.5px ${accent}28`
-            : `0 4px 24px -4px rgba(0,0,0,0.09)`,
-        }}
-        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        className="relative rounded-2xl overflow-hidden cursor-pointer"
         style={{
+          rotateX: flipped ? 0 : rotX,
+          rotateY: flipped ? undefined : rotY,
           transformStyle: 'preserve-3d',
-          border: `1.5px solid ${accent}18`,
+          position: 'relative',
+          width: '100%',
+          height: '100%',
+          cursor: 'pointer',
         }}
       >
-        {/* Top accent bar */}
-        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}88 60%, transparent 100%)` }} />
-
-        {/* Image area — cream bg, object-contain so full illustration shows */}
-        <div
-          className="relative overflow-hidden"
-          style={{
-            background: `linear-gradient(160deg, #FDF8F5 0%, #F8F0EC 60%, #FDF8F5 100%)`,
-            height: '220px',
-          }}
+        {/* Flip inner wrapper */}
+        <motion.div
+          animate={{ rotateY: flipped ? 180 : 0 }}
+          transition={{ duration: 0.55, ease: [0.4, 0.0, 0.2, 1] }}
+          style={{ transformStyle: 'preserve-3d', width: '100%', height: '100%', position: 'relative' }}
         >
-          {/* Radial glow matching accent */}
-          <div className="absolute inset-0 pointer-events-none"
-            style={{ background: `radial-gradient(ellipse 80% 70% at 50% 60%, ${accent}0E 0%, transparent 70%)` }} />
 
-          <motion.img
-            src={img}
-            alt={title}
-            animate={{ scale: hovered ? 1.05 : 1, y: hovered ? -4 : 0 }}
-            transition={{ duration: 0.45, ease: 'easeOut' }}
-            className="w-full h-full object-contain object-center relative z-10"
-            style={{ padding: '8px' }}
-          />
-
-          {/* Shine shimmer on hover */}
+          {/* ── FRONT: full image + bottom tagline ── */}
           <div
-            className="absolute inset-0 pointer-events-none rounded-none transition-opacity duration-300"
-            style={{
-              opacity: hovered ? 1 : 0,
-              background: `radial-gradient(ellipse 55% 45% at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.55) 0%, transparent 68%)`,
-            }}
-          />
-        </div>
+            className="absolute inset-0 rounded-2xl overflow-hidden"
+            style={{ backfaceVisibility: 'hidden', border: `1.5px solid ${accent}22` }}
+          >
+            {/* Top accent bar */}
+            <div className="absolute top-0 left-0 right-0 h-1 z-10"
+              style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}88 60%, transparent 100%)` }} />
 
-        {/* Text panel */}
-        <div
-          className="relative p-5"
-          style={{
-            background: `linear-gradient(160deg, ${accent}10 0%, #ffffff 100%)`,
-            borderTop: `1.5px solid ${accent}20`,
-          }}
-        >
-          {/* Title with accent badge dot */}
-          <div className="flex items-center gap-2 mb-2.5">
-            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent }} />
-            <p className="text-[15px] font-bold text-[#1A1A1A] leading-tight">{title}</p>
+            {/* Image — cream bg, full illustration */}
+            <div className="absolute inset-0"
+              style={{ background: 'linear-gradient(160deg, #FDF8F5 0%, #F8F0EC 60%, #FDF8F5 100%)' }}>
+              <div className="absolute inset-0 pointer-events-none"
+                style={{ background: `radial-gradient(ellipse 80% 70% at 50% 55%, ${accent}10 0%, transparent 70%)` }} />
+              <img
+                src={img}
+                alt={title}
+                className="w-full h-full object-contain object-center"
+                style={{ padding: '12px 12px 60px 12px' }}
+              />
+              {/* Shine shimmer */}
+              <div className="absolute inset-0 pointer-events-none transition-opacity duration-300"
+                style={{
+                  background: `radial-gradient(ellipse 50% 40% at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.5) 0%, transparent 65%)`,
+                }} />
+            </div>
+
+            {/* Bottom tagline bar */}
+            <div
+              className="absolute bottom-0 left-0 right-0 px-5 py-3.5 flex items-center justify-between"
+              style={{
+                background: `linear-gradient(135deg, ${accent} 0%, ${accent}DD 100%)`,
+                boxShadow: `0 -4px 20px ${accent}22`,
+              }}
+            >
+              <div>
+                <p className="text-white font-bold text-[14px] leading-tight">{title}</p>
+                <p className="text-white/70 text-[10px] font-medium mt-0.5 uppercase tracking-wider">Tap to learn more →</p>
+              </div>
+              <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <ArrowRight size={14} className="text-white" />
+              </div>
+            </div>
           </div>
 
-          <p className="text-[#555550] text-[13px] leading-relaxed">{desc}</p>
-
-          <motion.div
-            animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : -6 }}
-            transition={{ duration: 0.22 }}
-            className="mt-3.5 flex items-center gap-1.5 text-xs font-semibold"
-            style={{ color: accent }}
+          {/* ── BACK: description content ── */}
+          <div
+            className="absolute inset-0 rounded-2xl overflow-hidden flex flex-col"
+            style={{
+              backfaceVisibility: 'hidden',
+              transform: 'rotateY(180deg)',
+              background: `linear-gradient(145deg, ${accent}18 0%, ${accent}08 50%, #ffffff 100%)`,
+              border: `1.5px solid ${accent}30`,
+            }}
           >
-            Learn more <ArrowRight size={12} />
-          </motion.div>
-        </div>
+            {/* Top accent bar */}
+            <div className="h-1 w-full shrink-0"
+              style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}88 60%, transparent 100%)` }} />
+
+            <div className="flex flex-col flex-1 p-5 overflow-hidden">
+              {/* Title */}
+              <div className="flex items-center gap-2.5 mb-3">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+                  style={{ background: accent }}>
+                  <ArrowRight size={14} className="text-white" />
+                </div>
+                <p className="text-[15px] font-bold text-[#1A1A1A] leading-tight">{title}</p>
+              </div>
+
+              {/* Divider */}
+              <div className="h-px mb-3" style={{ background: `${accent}20` }} />
+
+              {/* Description */}
+              <p className="text-[#444440] text-[12.5px] leading-relaxed flex-1 overflow-hidden"
+                style={{ display: '-webkit-box', WebkitLineClamp: 7, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                {desc}
+              </p>
+
+              {/* Bottom CTA */}
+              <div className="mt-auto pt-3 flex items-center justify-between">
+                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
+                  Tap to flip back
+                </span>
+                <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent }}>
+                  Get Started <ArrowRight size={11} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </motion.div>
       </motion.div>
     </motion.div>
   );
