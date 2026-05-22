@@ -2317,11 +2317,8 @@ export default function EcosystemLanding() {
       <HeroSection />
       <PositioningSection />
       <RolesSection />
-      <HowItWorksSection />
       <MarketplaceSection />
       <SettlementSection />
-      <BackendSection />
-      <ComplianceSection />
       <ConnectedEcosystemSection />
       <CTASection />
       <Footer />
