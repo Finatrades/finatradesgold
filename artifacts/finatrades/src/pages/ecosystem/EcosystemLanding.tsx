@@ -957,13 +957,14 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
         style={{ transformStyle: 'preserve-3d' }}
       >
         {img ? (
-          <div className="relative overflow-hidden bg-[#fff8f5]">
+          <div className="relative overflow-hidden" style={{ background: '#fff8f5' }}>
             <motion.img
               src={img}
               alt={label}
               animate={{ scale: hovered ? 1.05 : 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
               className="w-full h-52 object-contain object-center block"
+              style={{ background: '#fff8f5' }}
             />
             <div
               className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
@@ -972,7 +973,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
                 background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.18) 0%, transparent 60%)`,
               }}
             />
-            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/80 bg-black/30 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-[#A82D16] bg-white/80 backdrop-blur-sm border border-[#C73B22]/20 px-2 py-0.5 rounded-full">
               LAYER {num}
             </span>
           </div>
