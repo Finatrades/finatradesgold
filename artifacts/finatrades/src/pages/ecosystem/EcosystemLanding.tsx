@@ -38,6 +38,7 @@ import bgTradeMap from '@/assets/d429511e-fb78-4d80-96dd-e6729475e390_1779488711
 import bgWarehouseLaptop from '@/assets/0941a0fc-f779-48d5-903a-7ca2575d733a_1779488718975.png';
 import bgSecurityDocs from '@/assets/dbf1b430-f76a-446e-a9ba-4b68fdbad8b8_1779488726039.png';
 import bgConnectedGlobe from '@/assets/33ff9425-68c9-499c-89ce-57cedccc8605_1779488733621.png';
+import tradeIcons3d from '@/assets/trade-icons-3d.png';
 import layer5 from '@/assets/layer-5.png';
 import layer6 from '@/assets/layer-6.png';
 import layer7 from '@/assets/layer-7.png';
@@ -871,6 +872,22 @@ function HowItWorksSection() {
           <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto">
             Unlike peer-to-peer commodity brokers or fragmented export channels, Finatrades enforces a mandatory, sequenced 9-stage protocol — every transaction must pass through compliance onboarding, warehouse verification, document authentication, escrow payment control, and audited settlement before completion.
           </motion.p>
+        </motion.div>
+
+        {/* 3D Icon strip */}
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.55, delay: 0.1 }}
+          className="flex justify-center mb-10"
+        >
+          <img
+            src={tradeIcons3d}
+            alt="Trade process icons"
+            className="w-full max-w-2xl"
+            style={{ filter: 'drop-shadow(0 8px 24px rgba(199,59,34,0.10))' }}
+          />
         </motion.div>
 
         <motion.div
@@ -1964,14 +1981,14 @@ function ComplianceSection() {
             <div className="absolute inset-8 rounded-full pointer-events-none"
               style={{ background: 'radial-gradient(circle, rgba(229,96,42,0.12) 0%, transparent 70%)', filter: 'blur(32px)' }} />
 
-            {/* Main image */}
+            {/* 3D Trade Icons grid */}
             <motion.img
-              src={compliance3d}
-              alt="Compliance Infrastructure"
-              animate={{ y: [0, -12, 0] }}
-              transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative w-full max-w-[500px]"
-              style={{ filter: 'drop-shadow(0 24px 40px rgba(199,59,34,0.13))' }}
+              src={tradeIcons3d}
+              alt="Trade Compliance Icons"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              className="relative w-full max-w-[520px]"
+              style={{ filter: 'drop-shadow(0 20px 36px rgba(199,59,34,0.10))' }}
             />
 
             {/* Badge — AML/CFT — top right */}
