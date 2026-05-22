@@ -414,57 +414,153 @@ const STEPS = [
   },
 ];
 
-function HowItWorksSection() {
+function TimelineStep({ step, index }: { step: typeof STEPS[0]; index: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const isInView = useInView(ref, { once: true, margin: '-80px' });
+  const isLeft = index % 2 === 0;
+  const Icon = step.icon;
+
+  const accentColor = index % 3 === 0 ? '#C73B22' : index % 3 === 1 ? '#1B2E40' : '#E5602A';
+
   return (
-    <section id="how-it-works" className="bg-white py-24">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            9-Step Trade Workflow
+    <div ref={ref} className="relative grid grid-cols-1 md:grid-cols-[1fr_80px_1fr] items-center gap-0 min-h-[140px]">
+      <motion.div
+        initial={{ opacity: 0, x: -60 }}
+        animate={isInView ? { opacity: 1, x: 0 } : {}}
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 }}
+        className={`${isLeft ? 'block' : 'hidden md:block'} md:pr-8`}
+      >
+        {isLeft && (
+          <div className="group bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-transparent transition-all duration-300"
+            style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+            <StepCardContent step={step} accentColor={accentColor} />
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">How Finatrades Works</h2>
-          <p className="text-[#666660] max-w-2xl mx-auto">
-            From the moment a seller submits a consignment to when a buyer receives their goods and a seller
-            receives their payout — every stage is digitally connected.
-          </p>
+        )}
+      </motion.div>
+
+      <div className="hidden md:flex flex-col items-center relative z-10">
+        <motion.div
+          initial={{ scale: 0, opacity: 0 }}
+          animate={isInView ? { scale: 1, opacity: 1 } : {}}
+          transition={{ duration: 0.5, delay: 0.2, type: 'spring', stiffness: 260, damping: 20 }}
+          className="w-14 h-14 rounded-full flex items-center justify-center border-4 border-white shadow-lg"
+          style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)` }}
+        >
+          <Icon size={20} color="#fff" />
+        </motion.div>
+        <motion.span
+          initial={{ opacity: 0, y: 6 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.4, delay: 0.35 }}
+          className="mt-2 text-xs font-bold tracking-wider"
+          style={{ color: accentColor }}
+        >
+          {step.num}
+        </motion.span>
+      </div>
+
+      <motion.div
+        initial={{ opacity: 0, x: 60 }}
+        animate={isInView ? { opacity: 1, x: 0 } : {}}
+        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 }}
+        className={`${!isLeft ? 'block' : 'hidden md:block'} md:pl-8`}
+      >
+        {!isLeft && (
+          <div className="group bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-transparent transition-all duration-300"
+            style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
+            <StepCardContent step={step} accentColor={accentColor} />
+          </div>
+        )}
+        {isLeft && (
+          <div className="hidden md:block" />
+        )}
+      </motion.div>
+
+      <div className="block md:hidden px-2 py-2">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="bg-white border border-gray-200 rounded-2xl p-5"
+          style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}
+        >
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: `${accentColor}18` }}>
+              <Icon size={18} style={{ color: accentColor }} />
+            </div>
+            <span className="text-xs font-bold tracking-wider" style={{ color: accentColor }}>Step {step.num}</span>
+          </div>
+          <StepCardContent step={step} accentColor={accentColor} />
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+function StepCardContent({ step, accentColor }: { step: typeof STEPS[0]; accentColor: string }) {
+  return (
+    <>
+      <div className="flex items-start gap-2 mb-2">
+        <div className="w-1 h-full rounded-full flex-shrink-0 self-stretch min-h-[20px]"
+          style={{ background: accentColor, minWidth: 3 }} />
+        <h3 className="text-[#1A1A1A] font-semibold text-base leading-snug">{step.title}</h3>
+      </div>
+      <p className="text-[#666660] text-sm leading-relaxed mb-4 pl-3">{step.desc}</p>
+      <div className="flex flex-wrap gap-2 pl-3">
+        {step.tags.map(tag => (
+          <span key={tag} className="px-2.5 py-1 text-xs font-medium rounded-lg border"
+            style={{ background: `${accentColor}0f`, borderColor: `${accentColor}30`, color: accentColor }}>
+            {tag}
+          </span>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function HowItWorksSection() {
+  const lineRef = useRef<HTMLDivElement>(null);
+  const isLineInView = useInView(lineRef, { once: true });
+
+  return (
+    <section id="how-it-works" className="bg-[#FAFAFA] py-24 overflow-hidden">
+      <div className="max-w-7xl mx-auto px-6">
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true }}
+          variants={stagger}
+          className="text-center mb-20"
+        >
+          <motion.div variants={fadeUp}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
+            9-Step Trade Workflow
+          </motion.div>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+            How Finatrades Works
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto">
+            From the moment a seller submits a consignment to when a buyer receives their goods and a seller receives their payout — every stage is digitally connected.
+          </motion.p>
         </motion.div>
 
-        <div className="space-y-5">
-          {STEPS.map((step, i) => {
-            const Icon = step.icon;
-            return (
-              <motion.div key={step.num} variants={fadeUp}
-                className="group relative bg-gray-50 border border-gray-200 rounded-2xl p-6 sm:p-8 hover:bg-gray-100 hover:border-[#C73B22]/20 transition-all overflow-hidden">
-                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl font-black text-white/[0.06] select-none pointer-events-none">
-                  {step.num}
-                </div>
-                <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
-                  <div className="flex-shrink-0 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#C73B22]/20 to-[#3D0E05]/20 border border-[#C73B22]/20 flex items-center justify-center">
-                      <Icon size={20} className="text-[#A82D16]" />
-                    </div>
-                    <span className="text-xs font-bold text-[#A82D16]/60 sm:hidden">Step {step.num}</span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-4 mb-2">
-                      <h3 className="text-[#1A1A1A] font-semibold text-lg leading-snug">{step.title}</h3>
-                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#A82D16]/50 mt-1">Step {step.num}</span>
-                    </div>
-                    <p className="text-[#666660] text-sm leading-relaxed mb-4">{step.desc}</p>
-                    <div className="flex flex-wrap gap-2">
-                      {step.tags.map(tag => (
-                        <span key={tag} className="px-2.5 py-1 text-xs bg-gray-100 border border-gray-200 text-[#555550] rounded-lg">
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            );
-          })}
+        <div className="relative">
+          <div ref={lineRef} className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gray-200 overflow-hidden">
+            <motion.div
+              className="w-full origin-top"
+              style={{ background: 'linear-gradient(180deg, #C73B22, #E5602A, #1B2E40)' }}
+              initial={{ scaleY: 0 }}
+              animate={isLineInView ? { scaleY: 1 } : {}}
+              transition={{ duration: 2.5, ease: 'easeInOut' }}
+            />
+          </div>
+
+          <div className="space-y-8 md:space-y-6">
+            {STEPS.map((step, i) => (
+              <TimelineStep key={step.num} step={step} index={i} />
+            ))}
+          </div>
         </div>
-      </AnimatedSection>
+      </div>
     </section>
   );
 }
