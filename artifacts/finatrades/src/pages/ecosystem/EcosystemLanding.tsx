@@ -1031,7 +1031,7 @@ function ConnectedEcosystemSection() {
                 desc: 'Swiss regulated Payment and Trade Finance Platform — settlement, FX coordination, and gold-backed clearing.',
                 link: null, highlight: true,
                 logo: (
-                  <img src={logoFinatradesP} alt="Finatrades" className="h-8 w-auto object-contain" />
+                  <img src={logoFinatradesP} alt="Finatrades" className="h-12 w-auto object-contain" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
                 ),
               },
               {
