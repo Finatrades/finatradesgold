@@ -60,7 +60,7 @@ function Navbar() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled ? 'bg-[#07070A]/95 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/30' : 'bg-transparent'
+        scrolled ? 'bg-[#0F0F0F]/95 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/30' : 'bg-transparent'
       }`}
     >
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
@@ -82,7 +82,7 @@ function Navbar() {
             <button className="px-4 py-2 text-sm text-white/80 hover:text-white transition-colors">Sign In</button>
           </Link>
           <Link href="/register">
-            <button className="px-4 py-2 text-sm font-semibold bg-[#8A2BE2] hover:bg-[#7B24CC] text-white rounded-lg transition-colors">
+            <button className="px-4 py-2 text-sm font-semibold bg-[#22C55E] hover:bg-[#16A34A] text-white rounded-lg transition-colors">
               Get Started
             </button>
           </Link>
@@ -95,7 +95,7 @@ function Navbar() {
 
       {open && (
         <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          className="lg:hidden bg-[#07070A]/98 backdrop-blur-xl border-t border-white/5 px-6 py-4 space-y-1">
+          className="lg:hidden bg-[#0F0F0F]/98 backdrop-blur-xl border-t border-white/5 px-6 py-4 space-y-1">
           {NAV_LINKS.map(l => (
             <a key={l.label} href={l.href} onClick={() => setOpen(false)}
               className="block px-3 py-2.5 text-sm text-white/70 hover:text-white rounded-md hover:bg-white/5 transition-colors">
@@ -107,7 +107,7 @@ function Navbar() {
               <button className="w-full px-4 py-2 text-sm text-white/80 border border-white/10 rounded-lg hover:bg-white/5 transition-colors">Sign In</button>
             </Link>
             <Link href="/register" className="flex-1">
-              <button className="w-full px-4 py-2 text-sm font-semibold bg-[#8A2BE2] text-white rounded-lg hover:bg-[#7B24CC] transition-colors">Get Started</button>
+              <button className="w-full px-4 py-2 text-sm font-semibold bg-[#22C55E] text-white rounded-lg hover:bg-[#16A34A] transition-colors">Get Started</button>
             </Link>
           </div>
         </motion.div>
@@ -118,11 +118,11 @@ function Navbar() {
 
 function HeroSection() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#07070A]">
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#0F0F0F]">
       <div className="absolute inset-0">
-        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#8A2BE2]/12 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#D4AF37]/8 rounded-full blur-[100px]" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#4B0082]/8 rounded-full blur-[140px]" />
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#22C55E]/12 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#E8EAE4]/8 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#052E16]/8 rounded-full blur-[140px]" />
         <div
           className="absolute inset-0 opacity-[0.03]"
           style={{
@@ -134,8 +134,8 @@ function HeroSection() {
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/10 text-[#A855F7] text-xs font-medium mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/10 text-[#4ADE80] text-xs font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#4ADE80] animate-pulse" />
             Digital Commodity Trade Platform · 14 African Hubs
           </div>
         </motion.div>
@@ -144,7 +144,7 @@ function HeroSection() {
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
           Digital Gateway for{' '}
-          <span className="bg-gradient-to-r from-[#8A2BE2] via-[#A855F7] to-[#D4AF37] bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-[#22C55E] via-[#4ADE80] to-[#D4D4C0] bg-clip-text text-transparent">
             Commodity Trade,
           </span>
           <br />Inventory & Settlement
@@ -161,7 +161,7 @@ function HeroSection() {
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
           className="flex flex-wrap gap-3 justify-center mb-16">
           <Link href="/register?role=seller">
-            <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#8A2BE2]/25 flex items-center gap-2">
+            <button className="px-6 py-3 bg-[#22C55E] hover:bg-[#16A34A] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#22C55E]/30 flex items-center gap-2">
               Register as Seller <ArrowRight size={16} />
             </button>
           </Link>
@@ -171,7 +171,7 @@ function HeroSection() {
             </button>
           </Link>
           <Link href="/register?role=government">
-            <button className="px-6 py-3 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/15 text-[#D4AF37] font-semibold rounded-xl border border-[#D4AF37]/20 transition-colors flex items-center gap-2">
+            <button className="px-6 py-3 bg-[#E8EAE4]/10 hover:bg-[#E8EAE4]/15 text-[#D8D8C8] font-semibold rounded-xl border border-[#E8EAE4]/20 transition-colors flex items-center gap-2">
               Government Access <ArrowRight size={16} />
             </button>
           </Link>
@@ -210,7 +210,7 @@ function HeroSection() {
 
 function PositioningSection() {
   return (
-    <section className="bg-[#0A0A0F] py-20 border-y border-white/5">
+    <section className="bg-[#141414] py-20 border-y border-white/5">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -234,8 +234,8 @@ function PositioningSection() {
           ].map(({ icon: Icon, title, desc }) => (
             <motion.div key={title} variants={fadeUp}
               className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:bg-white/5 hover:border-white/12 transition-all group">
-              <div className="w-10 h-10 rounded-xl bg-[#8A2BE2]/15 flex items-center justify-center mb-4 group-hover:bg-[#8A2BE2]/25 transition-colors">
-                <Icon size={18} className="text-[#A855F7]" />
+              <div className="w-10 h-10 rounded-xl bg-[#22C55E]/15 flex items-center justify-center mb-4 group-hover:bg-[#22C55E]/25 transition-colors">
+                <Icon size={18} className="text-[#4ADE80]" />
               </div>
               <h3 className="text-white font-semibold mb-2">{title}</h3>
               <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
@@ -315,10 +315,10 @@ const STEPS = [
 
 function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="bg-[#07070A] py-24">
+    <section id="how-it-works" className="bg-[#0F0F0F] py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
             9-Step Trade Workflow
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">How Finatrades Works</h2>
@@ -333,21 +333,21 @@ function HowItWorksSection() {
             const Icon = step.icon;
             return (
               <motion.div key={step.num} variants={fadeUp}
-                className="group relative bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8 hover:bg-white/5 hover:border-[#8A2BE2]/20 transition-all overflow-hidden">
+                className="group relative bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8 hover:bg-white/5 hover:border-[#22C55E]/20 transition-all overflow-hidden">
                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl font-black text-white/[0.025] select-none pointer-events-none">
                   {step.num}
                 </div>
                 <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
                   <div className="flex-shrink-0 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/20 to-[#4B0082]/20 border border-[#8A2BE2]/20 flex items-center justify-center">
-                      <Icon size={20} className="text-[#A855F7]" />
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#22C55E]/20 to-[#052E16]/20 border border-[#22C55E]/20 flex items-center justify-center">
+                      <Icon size={20} className="text-[#4ADE80]" />
                     </div>
-                    <span className="text-xs font-bold text-[#8A2BE2]/60 sm:hidden">Step {step.num}</span>
+                    <span className="text-xs font-bold text-[#4ADE80]/60 sm:hidden">Step {step.num}</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-4 mb-2">
                       <h3 className="text-white font-semibold text-lg leading-snug">{step.title}</h3>
-                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#8A2BE2]/50 mt-1">Step {step.num}</span>
+                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#4ADE80]/50 mt-1">Step {step.num}</span>
                     </div>
                     <p className="text-white/50 text-sm leading-relaxed mb-4">{step.desc}</p>
                     <div className="flex flex-wrap gap-2">
@@ -375,11 +375,11 @@ const AFRICA_HUBS = [
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="bg-[#0A0A0F] py-24 border-y border-white/5">
+    <section id="marketplace" className="bg-[#141414] py-24 border-y border-white/5">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-[#E8EAE4]/8 text-[#D8D8C8] text-xs font-medium mb-5">
               <Globe size={12} />
               14 Strategic Hubs
             </div>
@@ -398,13 +398,13 @@ function MarketplaceSection() {
                 'Warehouse-backed inventory — every listing is verified',
               ].map(item => (
                 <div key={item} className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-[#A855F7] flex-shrink-0 mt-0.5" />
+                  <CheckCircle2 size={16} className="text-[#4ADE80] flex-shrink-0 mt-0.5" />
                   <span className="text-white/65 text-sm">{item}</span>
                 </div>
               ))}
             </div>
             <Link href="/register">
-              <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+              <button className="px-6 py-3 bg-[#22C55E] hover:bg-[#16A34A] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
                 Explore Marketplace <ArrowRight size={16} />
               </button>
             </Link>
@@ -413,8 +413,8 @@ function MarketplaceSection() {
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
             {AFRICA_HUBS.map((hub, i) => (
               <div key={hub}
-                className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/6 hover:border-[#8A2BE2]/20 transition-all">
-                <div className="w-2 h-2 rounded-full bg-[#8A2BE2] flex-shrink-0" />
+                className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/6 hover:border-[#22C55E]/20 transition-all">
+                <div className="w-2 h-2 rounded-full bg-[#22C55E] flex-shrink-0" />
                 <span className="text-white/75 text-sm font-medium">{hub}</span>
                 <MapPin size={12} className="text-white/25 ml-auto" />
               </div>
@@ -431,11 +431,11 @@ const ROLES = [
     key: 'sellers',
     tab: 'Exporters & Sellers',
     icon: Package,
-    accent: '#A855F7',
-    accentBg: 'bg-[#8A2BE2]/10',
-    accentBorder: 'border-[#8A2BE2]/25',
-    accentText: 'text-[#A855F7]',
-    tabActiveBg: 'bg-[#8A2BE2]',
+    accent: '#4ADE80',
+    accentBg: 'bg-[#22C55E]/10',
+    accentBorder: 'border-[#22C55E]/25',
+    accentText: 'text-[#4ADE80]',
+    tabActiveBg: 'bg-[#22C55E]',
     title: 'Convert Physical Commodities into Verified Digital Inventory',
     subtitle: 'Submit goods on consignment. Get listed on the marketplace.',
     desc: 'Sellers submit commodities to approved warehouses, upload ownership and export documents, track inspection status, and list verified inventory on the marketplace. Trade finance eligibility is built into the workflow from day one.',
@@ -446,17 +446,17 @@ const ROLES = [
     ],
     cta: 'Register as Seller',
     ctaHref: '/register?role=seller',
-    ctaStyle: 'bg-[#8A2BE2] hover:bg-[#7B24CC] text-white',
+    ctaStyle: 'bg-[#22C55E] hover:bg-[#16A34A] text-white',
   },
   {
     key: 'buyers',
     tab: 'Importers & Buyers',
     icon: Search,
-    accent: '#D4AF37',
-    accentBg: 'bg-[#D4AF37]/10',
-    accentBorder: 'border-[#D4AF37]/25',
-    accentText: 'text-[#D4AF37]',
-    tabActiveBg: 'bg-[#D4AF37]',
+    accent: '#E8EAE4',
+    accentBg: 'bg-[#E8EAE4]/10',
+    accentBorder: 'border-[#E8EAE4]/20',
+    accentText: 'text-[#D8D8C8]',
+    tabActiveBg: 'bg-[#555550]',
     title: 'Source Verified Commodities and Execute Structured Orders',
     subtitle: 'Browse, match, order, pay, and track — all in one flow.',
     desc: 'Buyers browse verified stock, send RFQs or Import Expressions of Interest, compare supplier offers, place orders, make payment through approved channels, and track deal execution until delivery milestones are confirmed.',
@@ -467,7 +467,7 @@ const ROLES = [
     ],
     cta: 'Register as Buyer',
     ctaHref: '/register?role=buyer',
-    ctaStyle: 'bg-[#D4AF37] hover:bg-[#C5A028] text-[#07070A]',
+    ctaStyle: 'bg-[#E8EAE4] hover:bg-[#D0D0C4] text-[#0F0F0F]',
   },
   {
     key: 'government',
@@ -498,10 +498,10 @@ function RolesSection() {
   const Icon = role.icon;
 
   return (
-    <section id="for-sellers" className="bg-[#07070A] py-24">
+    <section id="for-sellers" className="bg-[#0F0F0F] py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
             Platform Access by Role
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Who Is Finatrades For?</h2>
@@ -579,10 +579,10 @@ function SettlementSection() {
   ];
 
   return (
-    <section id="trade-finance" className="bg-[#07070A] py-24">
+    <section id="trade-finance" className="bg-[#0F0F0F] py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#E8EAE4]/20 bg-[#E8EAE4]/8 text-[#D8D8C8] text-xs font-medium mb-5">
             <Lock size={12} />
             Trade Finance & Escrow
           </div>
@@ -617,8 +617,8 @@ function SettlementSection() {
               { icon: Handshake, title: 'Seller Payout & Audit', desc: 'Once conditions are fully satisfied, the seller receives payment and a complete audit trail is sealed.' },
             ].map(({ icon: Icon, title, desc }) => (
               <div key={title} className="flex gap-4 bg-white/3 border border-white/8 rounded-2xl p-5">
-                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center flex-shrink-0">
-                  <Icon size={18} className="text-[#D4AF37]" />
+                <div className="w-10 h-10 rounded-xl bg-[#E8EAE4]/10 border border-[#D4D4C0]/15 flex items-center justify-center flex-shrink-0">
+                  <Icon size={18} className="text-[#D8D8C8]" />
                 </div>
                 <div>
                   <h4 className="text-white font-semibold mb-1">{title}</h4>
@@ -635,7 +635,7 @@ function SettlementSection() {
 
 function ComplianceSection() {
   return (
-    <section id="compliance" className="bg-[#07070A] py-24">
+    <section id="compliance" className="bg-[#0F0F0F] py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
@@ -652,14 +652,14 @@ function ComplianceSection() {
               'Approval Workflows',
             ].map(item => (
               <div key={item} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3">
-                <Shield size={13} className="text-[#A855F7] flex-shrink-0" />
+                <Shield size={13} className="text-[#4ADE80] flex-shrink-0" />
                 <span className="text-white/70 text-sm">{item}</span>
               </div>
             ))}
           </motion.div>
 
           <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
               <Shield size={12} />
               Compliance-First Infrastructure
             </div>
@@ -671,7 +671,7 @@ function ComplianceSection() {
               escrow, settlement, reporting, and partner integrations into one secure digital infrastructure —
               designed with compliance and auditability at the core.
             </p>
-            <div className="p-5 bg-[#8A2BE2]/8 border border-[#8A2BE2]/15 rounded-2xl">
+            <div className="p-5 bg-[#22C55E]/8 border border-[#22C55E]/15 rounded-2xl">
               <p className="text-white/50 text-sm leading-relaxed italic">
                 "Access to platform services may be subject to user eligibility, jurisdictional requirements,
                 partner approval, compliance checks, and applicable laws. Finatrades does not provide investment
@@ -703,10 +703,10 @@ function BackendSection() {
   ];
 
   return (
-    <section className="bg-[#0A0A0F] py-24 border-y border-white/5">
+    <section className="bg-[#141414] py-24 border-y border-white/5">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#22C55E]/30 bg-[#22C55E]/8 text-[#4ADE80] text-xs font-medium mb-5">
             System Architecture
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
@@ -721,9 +721,9 @@ function BackendSection() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {layers.map(({ icon: Icon, label }, i) => (
             <motion.div key={label} variants={fadeUp}
-              className="bg-white/3 border border-white/8 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-white/5 hover:border-[#8A2BE2]/20 transition-all">
-              <div className="w-9 h-9 rounded-lg bg-[#8A2BE2]/12 flex items-center justify-center">
-                <Icon size={16} className="text-[#A855F7]" />
+              className="bg-white/3 border border-white/8 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-white/5 hover:border-[#22C55E]/20 transition-all">
+              <div className="w-9 h-9 rounded-lg bg-[#22C55E]/12 flex items-center justify-center">
+                <Icon size={16} className="text-[#4ADE80]" />
               </div>
               <span className="text-white/65 text-xs font-medium leading-snug">{label}</span>
             </motion.div>
@@ -736,11 +736,11 @@ function BackendSection() {
 
 function CTASection() {
   return (
-    <section id="contact" className="bg-[#07070A] py-24">
+    <section id="contact" className="bg-[#0F0F0F] py-24">
       <AnimatedSection className="max-w-4xl mx-auto px-6 text-center">
         <motion.div variants={fadeUp}
-          className="relative bg-gradient-to-br from-[#8A2BE2]/15 via-[#4B0082]/10 to-[#D4AF37]/8 border border-[#8A2BE2]/20 rounded-3xl p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent rounded-3xl" />
+          className="relative bg-gradient-to-br from-[#22C55E]/15 via-[#052E16]/10 to-[#D4D4C0]/8 border border-[#22C55E]/20 rounded-3xl p-12 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#22C55E]/5 to-transparent rounded-3xl" />
           <div className="relative z-10">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
               Start Your Commodity Trade Journey
@@ -752,7 +752,7 @@ function CTASection() {
             </p>
             <div className="flex flex-wrap gap-3 justify-center">
               <Link href="/register?role=seller">
-                <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                <button className="px-6 py-3 bg-[#22C55E] hover:bg-[#16A34A] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
                   Register as Seller <ArrowRight size={16} />
                 </button>
               </Link>
@@ -767,7 +767,7 @@ function CTASection() {
                 </button>
               </Link>
               <Link href="/register?role=government">
-                <button className="px-6 py-3 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/15 text-[#D4AF37] font-semibold rounded-xl border border-[#D4AF37]/20 transition-colors">
+                <button className="px-6 py-3 bg-[#E8EAE4]/10 hover:bg-[#E8EAE4]/15 text-[#D8D8C8] font-semibold rounded-xl border border-[#E8EAE4]/20 transition-colors">
                   Request Government Access
                 </button>
               </Link>
@@ -781,7 +781,7 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="bg-[#040406] border-t border-white/5 py-12">
+    <footer className="bg-[#0A0A0A] border-t border-white/5 py-12">
       <div className="max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 sm:col-span-1">
@@ -833,7 +833,7 @@ function Footer() {
 
 export default function EcosystemLanding() {
   return (
-    <div className="min-h-screen bg-[#07070A] text-white antialiased overflow-x-hidden">
+    <div className="min-h-screen bg-[#0F0F0F] text-white antialiased overflow-x-hidden">
       <Navbar />
       <HeroSection />
       <PositioningSection />
