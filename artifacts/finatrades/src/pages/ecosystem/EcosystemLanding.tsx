@@ -1254,21 +1254,24 @@ function RolesSection() {
             boxShadow: `0 8px 40px 0 ${role.accent}14, inset 0 1px 0 rgba(255,255,255,0.85)`,
           }}
         >
-          <div className="grid lg:grid-cols-2 gap-12 items-start">
-            <div>
-              <div
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-5"
-                style={{ border: `1px solid ${role.accent}44`, background: role.accent + '14', color: role.accent }}
-              >
-                <Icon size={12} />
-                {role.tab}
+          <div className="grid lg:grid-cols-2 gap-10 items-stretch">
+            {/* Left column */}
+            <div className="flex flex-col justify-between">
+              <div>
+                <div
+                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium mb-5"
+                  style={{ border: `1px solid ${role.accent}44`, background: role.accent + '14', color: role.accent }}
+                >
+                  <Icon size={12} />
+                  {role.tab}
+                </div>
+                <h3 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">{role.title}</h3>
+                <p className="font-medium mb-4 text-sm" style={{ color: role.accent }}>{role.subtitle}</p>
+                <p className="text-[#555550] leading-relaxed mb-8">{role.desc}</p>
               </div>
-              <h3 className="text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">{role.title}</h3>
-              <p className="font-medium mb-4 text-sm" style={{ color: role.accent }}>{role.subtitle}</p>
-              <p className="text-[#555550] leading-relaxed mb-8">{role.desc}</p>
               <Link href={role.ctaHref}>
                 <button
-                  className="px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 text-white hover:opacity-90"
+                  className="px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 text-white hover:opacity-90 w-fit"
                   style={{ background: role.accent }}
                 >
                   {role.cta} <ArrowRight size={16} />
@@ -1276,61 +1279,65 @@ function RolesSection() {
               </Link>
             </div>
 
-            <div className="flex flex-col gap-4">
+            {/* Right column */}
+            <div className="flex flex-col gap-4 h-full">
               {(role as typeof role & { image?: string; imageCaption?: string }).image && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
-                  className="relative rounded-2xl overflow-hidden"
+                  className="relative rounded-2xl overflow-hidden flex-1 flex flex-col"
                   style={{
-                    background: 'rgba(255,255,255,0.6)',
-                    border: `1px solid ${role.accent}22`,
-                    boxShadow: `0 4px 24px 0 ${role.accent}12`,
+                    background: '#FFFFFF',
+                    border: `1.5px solid ${role.accent}28`,
+                    boxShadow: `0 6px 32px 0 ${role.accent}16, 0 1px 0 rgba(255,255,255,0.9) inset`,
+                    minHeight: '320px',
                   }}
                 >
-                  <img
-                    src={(role as typeof role & { image?: string }).image}
-                    alt={(role as typeof role & { imageCaption?: string }).imageCaption ?? role.title}
-                    className="w-full h-auto object-contain"
-                    style={{ maxHeight: '280px', padding: '12px' }}
-                  />
+                  <div className="flex-1 flex items-center justify-center p-4">
+                    <img
+                      src={(role as typeof role & { image?: string }).image}
+                      alt={(role as typeof role & { imageCaption?: string }).imageCaption ?? role.title}
+                      className="w-full h-full object-contain"
+                      style={{ maxHeight: '340px' }}
+                    />
+                  </div>
                   <div
-                    className="absolute bottom-0 left-0 right-0 px-4 py-2.5 text-center"
-                    style={{
-                      background: `linear-gradient(to top, ${role.accent}18 0%, transparent 100%)`,
-                    }}
+                    className="px-4 py-3 text-center border-t"
+                    style={{ borderColor: `${role.accent}18`, background: `${role.accent}08` }}
                   >
-                    <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: role.accent }}>
+                    <p className="text-[10px] font-bold uppercase tracking-widest" style={{ color: role.accent }}>
                       {(role as typeof role & { imageCaption?: string }).imageCaption ?? ''}
                     </p>
                   </div>
                 </motion.div>
               )}
 
-              {!(role as typeof role & { hideFeatures?: boolean }).hideFeatures && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {role.features.map(f => (
-                  <div
-                    key={f.label}
-                    className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all"
-                    style={{
-                      background: 'rgba(255,255,255,0.75)',
-                      backdropFilter: 'blur(14px) saturate(160%)',
-                      WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-                      border: '1px solid rgba(255,255,255,0.55)',
-                      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
-                    }}
-                  >
+              {!(role as typeof role & { hideFeatures?: boolean }).hideFeatures && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {role.features.map(f => (
                     <div
-                      className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                      style={{ borderColor: f.color + '70' }}
+                      key={f.label}
+                      className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all"
+                      style={{
+                        background: 'rgba(255,255,255,0.75)',
+                        backdropFilter: 'blur(14px) saturate(160%)',
+                        WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+                        border: '1px solid rgba(255,255,255,0.55)',
+                        boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                      }}
                     >
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />
+                      <div
+                        className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                        style={{ borderColor: f.color + '70' }}
+                      >
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />
+                      </div>
+                      <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
                     </div>
-                    <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
-                  </div>
-                ))}
-              </div>}
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </motion.div>
