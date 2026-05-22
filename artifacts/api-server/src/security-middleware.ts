@@ -39,6 +39,8 @@ const CSRF_EXEMPT_ROUTES = [
   '/api/admin/branding/logo',
   '/api/documents/upload',
   '/api/admin/email-test',
+  // B2B platform - separate institutional frontend, manages its own session/auth
+  '/api/b2b/',
 ];
 
 // Generate secure CSRF token

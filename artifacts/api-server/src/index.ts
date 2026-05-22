@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerR2ProxyRoutes } from "./r2-proxy";
+import b2bRouter from "./routes/index";
 
 import { createServer } from "http";
 import { setupSocketIO } from "./socket";
@@ -484,6 +485,9 @@ app.use((req, res, next) => {
 
   // Register all HTTP routes (this also kicks off background email-template seeding internally)
   await registerRoutes(httpServer, app);
+
+  // Mount B2B platform routes
+  app.use(b2bRouter);
 
   registerR2ProxyRoutes(app);
 

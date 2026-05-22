@@ -11,6 +11,8 @@
     "db:push": "drizzle-kit push --config drizzle.config.ts"
   },
   "dependencies": {
+    "@workspace/api-zod": "workspace:*",
+    "@workspace/db": "workspace:*",
     "@aws-sdk/client-s3": "^3.958.0",
     "@opentelemetry/auto-instrumentations-node": "^0.76.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",

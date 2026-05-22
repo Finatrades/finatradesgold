@@ -3,20 +3,42 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Finatrades B2B Commodity Trade Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication & registration
+  - name: onboarding
+    description: KYC/KYB onboarding steps
+  - name: dashboard
+    description: Role-based dashboard summaries
+  - name: consignments
+    description: Seller consignment management
+  - name: inventory
+    description: Warehouse inventory & FUSD valuation
+  - name: marketplace
+    description: Commodity listings & discovery
+  - name: rfq
+    description: Request for quotation workflow
+  - name: orders
+    description: Buyer order placement & tracking
+  - name: escrow
+    description: Escrow & settlement engine
+  - name: barter
+    description: Government barter workflow
+  - name: warehouses
+    description: Warehouse network
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +46,701 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── AUTH ───────────────────────────────────────────────────────────────────
+  /b2b/auth/register:
+    post:
+      operationId: b2bRegister
+      tags: [auth]
+      summary: Register new B2B user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/B2BRegisterInput"
+      responses:
+        "201":
+          description: Registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /b2b/auth/login:
+    post:
+      operationId: b2bLogin
+      tags: [auth]
+      summary: Login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginInput"
+      responses:
+        "200":
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+
+  /b2b/auth/logout:
+    post:
+      operationId: b2bLogout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+
+  /b2b/auth/me:
+    get:
+      operationId: b2bGetMe
+      tags: [auth]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/B2BUser"
+
+  # ─── ONBOARDING ─────────────────────────────────────────────────────────────
+  /b2b/onboarding/status:
+    get:
+      operationId: getOnboardingStatus
+      tags: [onboarding]
+      summary: Get onboarding progress
+      responses:
+        "200":
+          description: Onboarding status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  /b2b/onboarding/company-profile:
+    post:
+      operationId: submitCompanyProfile
+      tags: [onboarding]
+      summary: Submit company profile (Step 4)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompanyProfileInput"
+      responses:
+        "200":
+          description: Profile saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  /b2b/onboarding/documents:
+    get:
+      operationId: getOnboardingDocuments
+      tags: [onboarding]
+      summary: Get submitted documents list
+      responses:
+        "200":
+          description: Documents list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/OnboardingDocument"
+    post:
+      operationId: submitOnboardingDocuments
+      tags: [onboarding]
+      summary: Submit KYC/KYB documents (Step 5)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentSubmissionInput"
+      responses:
+        "200":
+          description: Documents submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OnboardingStatus"
+
+  # ─── DASHBOARD ──────────────────────────────────────────────────────────────
+  /b2b/dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Role-based dashboard summary
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /b2b/dashboard/activity:
+    get:
+      operationId: getDashboardActivity
+      tags: [dashboard]
+      summary: Recent activity feed
+      responses:
+        "200":
+          description: Activity list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityItem"
+
+  /b2b/dashboard/stats:
+    get:
+      operationId: getDashboardStats
+      tags: [dashboard]
+      summary: Platform-wide trade statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlatformStats"
+
+  # ─── CONSIGNMENTS ───────────────────────────────────────────────────────────
+  /b2b/consignments:
+    get:
+      operationId: listConsignments
+      tags: [consignments]
+      summary: List my consignments
+      responses:
+        "200":
+          description: Consignments list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Consignment"
+    post:
+      operationId: createConsignment
+      tags: [consignments]
+      summary: Create new consignment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsignmentInput"
+      responses:
+        "201":
+          description: Consignment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consignment"
+
+  /b2b/consignments/{id}:
+    get:
+      operationId: getConsignment
+      tags: [consignments]
+      summary: Get consignment detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Consignment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consignment"
+
+  /b2b/consignments/{id}/status:
+    patch:
+      operationId: updateConsignmentStatus
+      tags: [consignments]
+      summary: Update consignment status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConsignmentStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consignment"
+
+  # ─── INVENTORY ──────────────────────────────────────────────────────────────
+  /b2b/inventory:
+    get:
+      operationId: listInventory
+      tags: [inventory]
+      summary: List warehouse inventory items
+      responses:
+        "200":
+          description: Inventory list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/InventoryItem"
+
+  /b2b/inventory/{id}:
+    get:
+      operationId: getInventoryItem
+      tags: [inventory]
+      summary: Get inventory item detail with FUSD valuation
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Inventory item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+
+  /b2b/inventory/{id}/status:
+    patch:
+      operationId: updateInventoryStatus
+      tags: [inventory]
+      summary: Update inventory lifecycle status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InventoryStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventoryItem"
+
+  /b2b/inventory/summary:
+    get:
+      operationId: getInventorySummary
+      tags: [inventory]
+      summary: Inventory summary by status
+      responses:
+        "200":
+          description: Summary counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InventorySummary"
+
+  # ─── MARKETPLACE ────────────────────────────────────────────────────────────
+  /b2b/marketplace/listings:
+    get:
+      operationId: listMarketplaceListings
+      tags: [marketplace]
+      summary: Browse commodity listings across 14 hubs
+      responses:
+        "200":
+          description: Listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Listing"
+
+  /b2b/marketplace/listings/{id}:
+    get:
+      operationId: getMarketplaceListing
+      tags: [marketplace]
+      summary: Get listing detail with seller info
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Listing detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Listing"
+
+  /b2b/marketplace/hubs:
+    get:
+      operationId: listHubs
+      tags: [marketplace]
+      summary: List all 14 African trade hubs
+      responses:
+        "200":
+          description: Hubs list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TradeHub"
+
+  /b2b/marketplace/commodities:
+    get:
+      operationId: listCommodities
+      tags: [marketplace]
+      summary: List commodity types
+      responses:
+        "200":
+          description: Commodities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Commodity"
+
+  # ─── RFQ ────────────────────────────────────────────────────────────────────
+  /b2b/rfq:
+    get:
+      operationId: listRfqs
+      tags: [rfq]
+      summary: List my RFQs
+      responses:
+        "200":
+          description: RFQ list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Rfq"
+    post:
+      operationId: createRfq
+      tags: [rfq]
+      summary: Create Request for Quotation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RfqInput"
+      responses:
+        "201":
+          description: RFQ created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+
+  /b2b/rfq/{id}:
+    get:
+      operationId: getRfq
+      tags: [rfq]
+      summary: Get RFQ detail with offers
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: RFQ detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+
+  /b2b/rfq/{id}/offers:
+    post:
+      operationId: submitOffer
+      tags: [rfq]
+      summary: Seller submits offer on RFQ
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferInput"
+      responses:
+        "201":
+          description: Offer submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Offer"
+
+  /b2b/rfq/{id}/accept:
+    post:
+      operationId: acceptOffer
+      tags: [rfq]
+      summary: Buyer accepts an offer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AcceptOfferInput"
+      responses:
+        "200":
+          description: Offer accepted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Rfq"
+
+  # ─── ORDERS ─────────────────────────────────────────────────────────────────
+  /b2b/orders:
+    get:
+      operationId: listOrders
+      tags: [orders]
+      summary: List my orders
+      responses:
+        "200":
+          description: Orders list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+    post:
+      operationId: createOrder
+      tags: [orders]
+      summary: Place a purchase order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OrderInput"
+      responses:
+        "201":
+          description: Order created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /b2b/orders/{id}:
+    get:
+      operationId: getOrder
+      tags: [orders]
+      summary: Get order detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Order detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  /b2b/orders/{id}/payment:
+    post:
+      operationId: confirmOrderPayment
+      tags: [orders]
+      summary: Confirm payment for order
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentConfirmInput"
+      responses:
+        "200":
+          description: Payment confirmed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+
+  # ─── ESCROW ─────────────────────────────────────────────────────────────────
+  /b2b/escrow:
+    get:
+      operationId: listEscrows
+      tags: [escrow]
+      summary: List escrow accounts
+      responses:
+        "200":
+          description: Escrow list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/EscrowAccount"
+
+  /b2b/escrow/{id}:
+    get:
+      operationId: getEscrow
+      tags: [escrow]
+      summary: Get escrow detail & milestones
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Escrow detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EscrowAccount"
+
+  /b2b/escrow/{id}/release:
+    post:
+      operationId: releaseEscrow
+      tags: [escrow]
+      summary: Release escrow funds after conditions met
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EscrowReleaseInput"
+      responses:
+        "200":
+          description: Escrow released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EscrowAccount"
+
+  # ─── BARTER ─────────────────────────────────────────────────────────────────
+  /b2b/barter:
+    get:
+      operationId: listBarterRequests
+      tags: [barter]
+      summary: List government barter requests
+      responses:
+        "200":
+          description: Barter requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/BarterRequest"
+    post:
+      operationId: createBarterRequest
+      tags: [barter]
+      summary: Create barter request (Government only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BarterRequestInput"
+      responses:
+        "201":
+          description: Barter request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BarterRequest"
+
+  /b2b/barter/{id}:
+    get:
+      operationId: getBarterRequest
+      tags: [barter]
+      summary: Get barter request detail
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Barter request detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BarterRequest"
+
+  # ─── WAREHOUSES ─────────────────────────────────────────────────────────────
+  /b2b/warehouses:
+    get:
+      operationId: listWarehouses
+      tags: [warehouses]
+      summary: List all warehouse hubs
+      responses:
+        "200":
+          description: Warehouses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Warehouse"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +748,828 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required: [message]
+
+    # ── AUTH ──
+    B2BRegisterInput:
+      type: object
+      required: [email, password, fullName, role, phone]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [exporter, importer, government]
+        phone:
+          type: string
+        companyName:
+          type: string
+
+    LoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: "#/components/schemas/B2BUser"
+        token:
+          type: string
+        message:
+          type: string
+
+    B2BUser:
+      type: object
+      required: [id, email, fullName, role, onboardingStep, onboardingComplete]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [exporter, importer, government]
+        companyName:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        onboardingStep:
+          type: integer
+        onboardingComplete:
+          type: boolean
+        kycStatus:
+          type: string
+          enum: [pending, under_review, approved, rejected]
+        createdAt:
+          type: string
+
+    # ── ONBOARDING ──
+    OnboardingStatus:
+      type: object
+      required: [currentStep, totalSteps, completedSteps, kycStatus]
+      properties:
+        currentStep:
+          type: integer
+        totalSteps:
+          type: integer
+        completedSteps:
+          type: array
+          items:
+            type: integer
+        kycStatus:
+          type: string
+          enum: [pending, under_review, approved, rejected]
+        approvalDate:
+          type: ["string", "null"]
+        rejectionReason:
+          type: ["string", "null"]
+
+    CompanyProfileInput:
+      type: object
+      required: [companyName, registrationNumber, country, address]
+      properties:
+        companyName:
+          type: string
+        registrationNumber:
+          type: string
+        country:
+          type: string
+        address:
+          type: string
+        website:
+          type: string
+        taxId:
+          type: string
+        businessType:
+          type: string
+
+    DocumentSubmissionInput:
+      type: object
+      required: [documentType, documentUrl]
+      properties:
+        documentType:
+          type: string
+          enum: [government_id, proof_of_address, business_registration, tax_id, bank_statement, shareholder_details, beneficial_ownership, authority_letter]
+        documentUrl:
+          type: string
+        notes:
+          type: string
+
+    OnboardingDocument:
+      type: object
+      required: [id, documentType, status, uploadedAt]
+      properties:
+        id:
+          type: string
+        documentType:
+          type: string
+        status:
+          type: string
+          enum: [pending, verified, rejected]
+        uploadedAt:
+          type: string
+        notes:
+          type: ["string", "null"]
+
+    # ── DASHBOARD ──
+    DashboardSummary:
+      type: object
+      required: [role, totalConsignments, activeOrders, pendingRfqs, escrowValue, inventoryValue]
+      properties:
+        role:
+          type: string
+        totalConsignments:
+          type: integer
+        activeOrders:
+          type: integer
+        pendingRfqs:
+          type: integer
+        escrowValue:
+          type: number
+        inventoryValue:
+          type: number
+        completedDeals:
+          type: integer
+        monthlyVolume:
+          type: number
+
+    ActivityItem:
+      type: object
+      required: [id, type, title, description, timestamp, status]
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+          enum: [consignment, order, rfq, escrow, kyc, payment, barter]
+        title:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+        status:
+          type: string
+
+    PlatformStats:
+      type: object
+      required: [activeBuyers, verifiedSellers, rfqsCreated, dealsMatched, totalHubs]
+      properties:
+        activeBuyers:
+          type: integer
+        verifiedSellers:
+          type: integer
+        rfqsCreated:
+          type: integer
+        dealsMatched:
+          type: integer
+        totalHubs:
+          type: integer
+        totalVolumeUsd:
+          type: number
+
+    # ── CONSIGNMENT ──
+    ConsignmentInput:
+      type: object
+      required: [commodityType, quantity, unit, warehouseId, originCountry, incoterms, expectedArrival]
+      properties:
+        commodityType:
+          type: string
+        grade:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+          enum: [MT, KG, Liters, Barrels]
+        packaging:
+          type: string
+        warehouseId:
+          type: string
+        originCountry:
+          type: string
+        incoterms:
+          type: string
+        transportMode:
+          type: string
+          enum: [sea_freight, air_cargo, road, rail]
+        expectedArrival:
+          type: string
+        description:
+          type: string
+
+    ConsignmentStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [draft, submitted, awaiting_verification, compliance_check, booking_confirmed, in_transit, arrived, verified, ready_for_trade]
+        notes:
+          type: string
+
+    Consignment:
+      type: object
+      required: [id, sellerId, commodityType, quantity, unit, status, warehouseId, createdAt]
+      properties:
+        id:
+          type: string
+        consignmentRef:
+          type: string
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        commodityType:
+          type: string
+        grade:
+          type: ["string", "null"]
+        quantity:
+          type: number
+        unit:
+          type: string
+        packaging:
+          type: ["string", "null"]
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+        originCountry:
+          type: string
+        incoterms:
+          type: string
+        transportMode:
+          type: ["string", "null"]
+        expectedArrival:
+          type: string
+        status:
+          type: string
+        documents:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    # ── INVENTORY ──
+    InventoryStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [available, reserved, pledged, released, sold]
+
+    InventoryItem:
+      type: object
+      required: [id, inventoryRef, consignmentId, commodityType, quantity, unit, status, warehouseId, fusdValue, createdAt]
+      properties:
+        id:
+          type: string
+        inventoryRef:
+          type: string
+        consignmentId:
+          type: string
+        ownerId:
+          type: string
+        ownerName:
+          type: string
+        commodityType:
+          type: string
+        grade:
+          type: ["string", "null"]
+        quantity:
+          type: number
+        unit:
+          type: string
+        grossWeight:
+          type: ["number", "null"]
+        netWeight:
+          type: ["number", "null"]
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+        status:
+          type: string
+          enum: [available, reserved, pledged, released, sold]
+        fusdValue:
+          type: number
+        fusdPerUnit:
+          type: number
+        inspectionStatus:
+          type: string
+          enum: [pending, passed, failed]
+        moisturePercent:
+          type: ["number", "null"]
+        qualityGrade:
+          type: ["string", "null"]
+        warehouseReceiptUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    InventorySummary:
+      type: object
+      required: [available, reserved, pledged, released, sold, totalFusdValue]
+      properties:
+        available:
+          type: integer
+        reserved:
+          type: integer
+        pledged:
+          type: integer
+        released:
+          type: integer
+        sold:
+          type: integer
+        totalFusdValue:
+          type: number
+
+    # ── MARKETPLACE ──
+    Listing:
+      type: object
+      required: [id, inventoryId, commodityType, quantity, unit, pricePerUnit, currency, hubId, hubName, sellerId, sellerName, status]
+      properties:
+        id:
+          type: string
+        inventoryId:
+          type: string
+        commodityType:
+          type: string
+        grade:
+          type: ["string", "null"]
+        quantity:
+          type: number
+        unit:
+          type: string
+        pricePerUnit:
+          type: number
+        currency:
+          type: string
+        hubId:
+          type: string
+        hubName:
+          type: string
+        hubCountry:
+          type: string
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        sellerRating:
+          type: ["number", "null"]
+        incoterms:
+          type: string
+        status:
+          type: string
+          enum: [active, reserved, sold, expired]
+        certifications:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+
+    TradeHub:
+      type: object
+      required: [id, name, country, city, capacity, available, commodities]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        capacity:
+          type: number
+        available:
+          type: number
+        storageType:
+          type: string
+        commodities:
+          type: array
+          items:
+            type: string
+        operator:
+          type: string
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
+
+    Commodity:
+      type: object
+      required: [id, name, category, unit, hsCode]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        category:
+          type: string
+          enum: [grains, oil_gas, minerals, food, fertilizer, other]
+        unit:
+          type: string
+        hsCode:
+          type: string
+        description:
+          type: ["string", "null"]
+
+    # ── RFQ ──
+    RfqInput:
+      type: object
+      required: [commodityType, quantity, unit, hubId, targetPricePerUnit, currency, deliveryTerms, expiresAt]
+      properties:
+        commodityType:
+          type: string
+        grade:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        hubId:
+          type: string
+        targetPricePerUnit:
+          type: number
+        currency:
+          type: string
+        deliveryTerms:
+          type: string
+        attachments:
+          type: string
+        expiresAt:
+          type: string
+        notes:
+          type: string
+
+    OfferInput:
+      type: object
+      required: [pricePerUnit, currency, availableQuantity, leadTimeDays]
+      properties:
+        pricePerUnit:
+          type: number
+        currency:
+          type: string
+        availableQuantity:
+          type: number
+        leadTimeDays:
+          type: integer
+        inventoryId:
+          type: string
+        terms:
+          type: string
+        validUntil:
+          type: string
+
+    AcceptOfferInput:
+      type: object
+      required: [offerId]
+      properties:
+        offerId:
+          type: string
+
+    Offer:
+      type: object
+      required: [id, rfqId, sellerId, sellerName, pricePerUnit, currency, availableQuantity, status, createdAt]
+      properties:
+        id:
+          type: string
+        rfqId:
+          type: string
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        pricePerUnit:
+          type: number
+        currency:
+          type: string
+        availableQuantity:
+          type: number
+        leadTimeDays:
+          type: integer
+        inventoryId:
+          type: ["string", "null"]
+        terms:
+          type: ["string", "null"]
+        validUntil:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, accepted, rejected, expired]
+        createdAt:
+          type: string
+
+    Rfq:
+      type: object
+      required: [id, rfqRef, buyerId, buyerName, commodityType, quantity, unit, hubId, status, createdAt]
+      properties:
+        id:
+          type: string
+        rfqRef:
+          type: string
+        buyerId:
+          type: string
+        buyerName:
+          type: string
+        commodityType:
+          type: string
+        grade:
+          type: ["string", "null"]
+        quantity:
+          type: number
+        unit:
+          type: string
+        hubId:
+          type: string
+        hubName:
+          type: string
+        targetPricePerUnit:
+          type: ["number", "null"]
+        currency:
+          type: string
+        deliveryTerms:
+          type: string
+        status:
+          type: string
+          enum: [open, offers_received, negotiating, confirmed, converted, expired, cancelled]
+        offers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Offer"
+        expiresAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    # ── ORDERS ──
+    OrderInput:
+      type: object
+      required: [listingId, quantity, fundingMethod]
+      properties:
+        listingId:
+          type: string
+        rfqId:
+          type: string
+        quantity:
+          type: number
+        fundingMethod:
+          type: string
+          enum: [bank_transfer, stablecoin, corporate_account, escrow_deposit]
+        incoterms:
+          type: string
+        deliveryWindow:
+          type: string
+        notes:
+          type: string
+
+    PaymentConfirmInput:
+      type: object
+      required: [paymentMethod, paymentReference]
+      properties:
+        paymentMethod:
+          type: string
+        paymentReference:
+          type: string
+        amountPaid:
+          type: number
+        currency:
+          type: string
+
+    Order:
+      type: object
+      required: [id, orderRef, buyerId, sellerId, commodity, quantity, unit, totalValue, currency, status, createdAt]
+      properties:
+        id:
+          type: string
+        orderRef:
+          type: string
+        buyerId:
+          type: string
+        buyerName:
+          type: string
+        sellerId:
+          type: string
+        sellerName:
+          type: string
+        commodity:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        unitPrice:
+          type: number
+        totalValue:
+          type: number
+        currency:
+          type: string
+        warehouseId:
+          type: string
+        warehouseName:
+          type: string
+        fundingMethod:
+          type: ["string", "null"]
+        incoterms:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, terms_agreed, payment_pending, payment_confirmed, inventory_reserved, escrow_locked, delivery_in_progress, delivered, completed, cancelled]
+        escrowId:
+          type: ["string", "null"]
+        fusdReference:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+
+    # ── ESCROW ──
+    EscrowReleaseInput:
+      type: object
+      required: [releaseReason]
+      properties:
+        releaseReason:
+          type: string
+        conditionsVerified:
+          type: array
+          items:
+            type: string
+
+    EscrowAccount:
+      type: object
+      required: [id, escrowRef, orderId, amount, currency, status, createdAt]
+      properties:
+        id:
+          type: string
+        escrowRef:
+          type: string
+        orderId:
+          type: string
+        buyerId:
+          type: string
+        sellerId:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        fusdLockId:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, locked, conditions_pending, released, settled, disputed]
+        lockDate:
+          type: ["string", "null"]
+        releaseDate:
+          type: ["string", "null"]
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/EscrowMilestone"
+        createdAt:
+          type: string
+
+    EscrowMilestone:
+      type: object
+      required: [id, title, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [pending, verified, completed]
+        completedAt:
+          type: ["string", "null"]
+
+    # ── BARTER ──
+    BarterRequestInput:
+      type: object
+      required: [offeredCommodity, offeredQuantity, requiredCommodity, requiredQuantity, governmentEntity, deliveryTerms]
+      properties:
+        offeredCommodity:
+          type: string
+        offeredQuantity:
+          type: number
+        offeredUnit:
+          type: string
+        requiredCommodity:
+          type: string
+        requiredQuantity:
+          type: number
+        requiredUnit:
+          type: string
+        governmentEntity:
+          type: string
+        mandate:
+          type: string
+        deliveryTerms:
+          type: string
+        expectedSettlementDate:
+          type: string
+        objectives:
+          type: string
+
+    BarterRequest:
+      type: object
+      required: [id, barterRef, requesterId, governmentEntity, offeredCommodity, offeredQuantity, requiredCommodity, requiredQuantity, status, createdAt]
+      properties:
+        id:
+          type: string
+        barterRef:
+          type: string
+        requesterId:
+          type: string
+        governmentEntity:
+          type: string
+        offeredCommodity:
+          type: string
+        offeredQuantity:
+          type: number
+        offeredUnit:
+          type: string
+        offeredFusdValue:
+          type: ["number", "null"]
+        requiredCommodity:
+          type: string
+        requiredQuantity:
+          type: number
+        requiredUnit:
+          type: string
+        requiredFusdValue:
+          type: ["number", "null"]
+        settlementGap:
+          type: ["number", "null"]
+        deliveryTerms:
+          type: string
+        status:
+          type: string
+          enum: [draft, submitted, sovereign_verified, counterparty_matching, negotiating, terms_agreed, execution, monitoring, completed, cancelled]
+        approvalStatus:
+          type: string
+          enum: [pending, approved, rejected]
+        createdAt:
+          type: string
+
+    # ── WAREHOUSE ──
+    Warehouse:
+      type: object
+      required: [id, name, country, city, totalCapacity, availableCapacity, storageType, operator]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        totalCapacity:
+          type: number
+        availableCapacity:
+          type: number
+        storageType:
+          type: string
+          enum: [bulk_silo, cold_storage, bonded, general]
+        operator:
+          type: string
+        isActive:
+          type: boolean
+        commodities:
+          type: array
+          items:
+            type: string
+        lat:
+          type: ["number", "null"]
+        lng:
+          type: ["number", "null"]
