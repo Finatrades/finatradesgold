@@ -36,7 +36,6 @@ import layer11 from '@assets/6ca8f13c-7850-4a05-9620-dadac3a54cae_1779449450685.
 import layer12 from '@assets/17caea42-27f6-4c15-ad8b-eb19a8f7d809_1779449639917.png';
 import backendBg from '@/assets/backend-bg.png';
 import compliance3d from '@/assets/compliance-3d.png';
-import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
   hidden: { opacity: 0, y: 32 },
@@ -2045,7 +2044,6 @@ export default function EcosystemLanding() {
       <ConnectedEcosystemSection />
       <CTASection />
       <Footer />
-      <FloatingAgentChat />
     </div>
   );
 }
