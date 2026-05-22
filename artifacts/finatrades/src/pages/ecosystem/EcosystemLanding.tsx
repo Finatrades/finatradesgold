@@ -374,188 +374,420 @@ const STEPS = [
   {
     num: '01',
     title: 'User Registration, KYC / KYB & Compliance Onboarding',
-    desc: 'Every user completes secure onboarding with account creation, role selection, email verification, document upload, KYC/KYB review, AML screening, and admin approval before accessing role-specific modules.',
+    subtitle: 'Secure onboarding for Exporters, Importers and Government users before platform access.',
     icon: FileText,
+    color: '#C73B22',
     tags: ['Account Creation', 'Document Upload', 'AML Screening', 'Admin Approval'],
+    substeps: [
+      { n: 1, label: 'Account Creation', detail: 'User signs up on FINATRADES — provides basic details and accepts terms & conditions.' },
+      { n: 2, label: 'Role Selection', detail: 'Select user type: Exporter / Importer / Government. Choose role: Admin / Manager / User.' },
+      { n: 3, label: 'Email / OTP Verification', detail: 'Verify email address, enter OTP to confirm, secure account activation.' },
+      { n: 4, label: 'Company Profile Setup', detail: 'Enter company / entity details, business address & contact information, upload logo (optional).' },
+      { n: 5, label: 'KYC / KYB Document Upload', detail: 'Upload identity & business documents, provide beneficial ownership details, ensure document clarity & validity.' },
+      { n: 6, label: 'AML / Sanctions Screening', detail: 'Automated AML screening, sanctions & watchlist verification, PEP (Politically Exposed Persons) check.' },
+      { n: 7, label: 'Risk Review & Compliance Checks', detail: 'Risk scoring & profile assessment, document authenticity verification, compliance requirement validation.' },
+      { n: 8, label: 'Admin Approval', detail: 'Internal review by FINATRADES team, additional info requested (if any), approval or rejection decision.' },
+      { n: 9, label: 'Wallet & Module Activation', detail: 'Create B2B wallet, activate allowed modules, set transaction limits (if any).' },
+      { n: 10, label: 'Dashboard Access', detail: 'Access granted to user dashboard — view announcements & tasks, start using platform modules.' },
+    ],
+    highlights: [
+      { label: 'Approval Timeline', value: '2–5 Business Days' },
+      { label: 'User Types', value: 'Exporter · Importer · Government' },
+      { label: 'Screening Standard', value: 'AML/CFT · PEP · Sanctions' },
+      { label: 'Access Control', value: 'RBAC · Module-wise permissions' },
+    ],
+    benefits: ['Secure onboarding', 'Faster approval', 'Compliance-ready', 'Role-based access', 'Audit trail', 'Global trade access'],
   },
   {
     num: '02',
     title: 'Seller Consignment Creation & Warehouse Submission',
-    desc: 'Sellers submit commodity details, quantity, origin, ownership documents, commercial invoices, certificates, and transport info. The system validates documents, checks warehouse capacity, and prepares inventory for marketplace listing.',
+    subtitle: 'Sellers send goods on consignment basis to the warehouse network for verification, storage and trade readiness.',
     icon: Package,
+    color: '#1B2E40',
     tags: ['Commodity Details', 'Document Validation', 'Warehouse Selection', 'Finance Eligibility'],
+    substeps: [
+      { n: 1, label: 'Seller Creates Consignment Request', detail: 'Log in to Finatrades Seller Portal, click "Create Consignment", enter basic seller & contact details.' },
+      { n: 2, label: 'Select Commodity & Quantity', detail: 'Select commodity type, enter quantity, unit & packaging, add product grade/specification.' },
+      { n: 3, label: 'Choose Destination Warehouse', detail: 'Select preferred warehouse hub, view warehouse capacity & availability, confirm delivery location.' },
+      { n: 4, label: 'Upload Shipping & Ownership Documents', detail: 'Commercial documents, quality & compliance certificates, ownership & export authorizations.' },
+      { n: 5, label: 'Submit Pre-Arrival Details', detail: 'Incoterms & port of loading, expected arrival date, transport mode (planned).' },
+      { n: 6, label: 'Warehouse Pre-Check', detail: 'Warehouse reviews submission, preliminary document & data check, capacity & suitability assessment.' },
+      { n: 7, label: 'Compliance Validation', detail: 'Documents verified for authenticity, export & import compliance check, quality certificate validation.' },
+      { n: 8, label: 'Booking Confirmation', detail: 'Warehouse slot reserved, consignment ID generated, confirmation sent to seller.' },
+      { n: 9, label: 'Transport Scheduling', detail: 'Arrange pickup / cargo drop-off, select carrier & transport mode, share tracking & ETA updates.' },
+      { n: 10, label: 'Consignment Accepted for Arrival', detail: 'Goods en route to warehouse, arrival expected as scheduled, ready for verification on arrival.' },
+    ],
+    highlights: [
+      { label: 'Transport Modes', value: 'Sea · Air · Road · Rail' },
+      { label: 'Warehouse Partner', value: 'WinLogistics Pan-Africa' },
+      { label: 'Document Check', value: 'Commercial Invoice · CoO · CoQ' },
+      { label: 'Status', value: 'Submitted / Awaiting Verification' },
+    ],
+    benefits: ['Structured Intake', 'Verified Ownership', 'Better Visibility', 'Storage Readiness', 'Trade Readiness', 'Finance Eligibility'],
   },
   {
     num: '03',
     title: 'Pre-Arrival Logistics, Warehouse Reception & Inventory Hub',
-    desc: 'Shipment tracking, ETA alerts, warehouse booking, customs readiness, and inspection preparation before goods arrive — ensuring nothing lands blindly at the destination warehouse.',
+    subtitle: 'Track commodities from origin to warehouse. Prepare before arrival. Control every step.',
     icon: Truck,
+    color: '#E5602A',
     tags: ['Shipment Tracking', 'Warehouse Booking', 'Customs Readiness', 'Inspection Prep'],
+    substeps: [
+      { n: 1, label: 'Shipment Creation', detail: 'Buyer creates shipment and selects destination warehouse — commodity, quantity, origin, incoterms, buyer.' },
+      { n: 2, label: 'Pre-Arrival Document Management', detail: 'Upload & verify all required documents, compliance & authenticity check, documents shared with all parties.' },
+      { n: 3, label: 'Transport & Logistics Tracking', detail: 'Track shipment in real-time, monitor location, ETA, delays, end-to-end visibility.' },
+      { n: 4, label: 'Destination Warehouse Booking', detail: 'Select & book warehouse, check capacity & conditions, confirm reservation.' },
+      { n: 5, label: 'ETA Alerts & Preparation', detail: 'Automated notifications, prepare warehouse, labor, equipment & inspection.' },
+      { n: 6, label: 'Goods Arrival', detail: 'Shipment arrives at port / border, gate entry & container verification, seal verification.' },
+      { n: 7, label: 'Inspection & Receiving', detail: 'Quantity, weight & quality check, moisture, damage & packaging check, sampling & SGS verification.' },
+      { n: 8, label: 'Inventory Registration', detail: 'Inventory ID generated, owner, warehouse, quantity recorded, status updated.' },
+      { n: 9, label: 'Digital Warehouse Receipt', detail: 'Warehouse receipt issued, ownership & storage proof, QR code / blockchain hash.' },
+      { n: 10, label: 'Inventory Management', detail: 'Manage stock status: Available, Reserved, Pledged, Released, Sold.' },
+      { n: 11, label: 'Trade / Finance / Settlement', detail: 'Trade execution, financing / pledge, payment & settlement.' },
+    ],
+    highlights: [
+      { label: 'Hub Network', value: '8 Warehouse Hubs Across Africa' },
+      { label: 'Inspection', value: 'SGS Verification · Quality & Quantity' },
+      { label: 'Receipt', value: 'Digital Warehouse Receipt + QR Code' },
+      { label: 'Powered By', value: 'WinLogistics' },
+    ],
+    benefits: ['End-to-End Visibility', 'Document Control', 'Faster Reception', 'Quality & Compliance', 'Secure & Traceable', 'Better Decisions'],
   },
   {
     num: '04',
     title: 'Warehouse Consignment Inventory Module',
-    desc: 'After arrival, inventory is recorded with owner, warehouse location, commodity type, grade, inspection status, and quantity tracking (available, reserved, pledged, released, sold). A digital warehouse receipt is generated.',
+    subtitle: 'Verified warehouse inventory is recorded as consignments with quantity, status, documents and FUSD reference visibility.',
     icon: Warehouse,
-    tags: ['Inventory ID', 'Quality Inspection', 'Digital Receipt', 'Ownership Confirmation'],
+    color: '#C73B22',
+    tags: ['Inventory ID', 'Quality Inspection', 'Digital Receipt', 'FUSD Valuation'],
+    substeps: [
+      { n: 1, label: 'Arrival Registered', detail: 'Shipment arrived at warehouse, gate entry & seal verification, arrival recorded in system.' },
+      { n: 2, label: 'Documents Matched', detail: 'Bill of Lading / Commercial Invoice, Packing List / Certificate of Origin, documents verified & matched.' },
+      { n: 3, label: 'Inspection Scheduled', detail: 'Inspection appointment set, inspector notified, inspection workflow initiated.' },
+      { n: 4, label: 'Quantity & Quality Check', detail: 'Physical count in real-time, sampling & grade verification, measurement captured.' },
+      { n: 5, label: 'Moisture / Damage Review', detail: 'Moisture level measured, damage & foreign matter check, results recorded.' },
+      { n: 6, label: 'Inventory ID Generated', detail: 'Unique Inventory ID created, system generated reference, linked to consignment.' },
+      { n: 7, label: 'Owner Assignment', detail: 'Owner / seller confirmed, ownership linked to inventory, authorization recorded.' },
+      { n: 8, label: 'FUSD Reference Value Created', detail: 'Fair & transparent valuation, FUSD reference value generated, visible for owner & partners.' },
+      { n: 9, label: 'Digital Warehouse Receipt Issued', detail: 'e-Warehouse Receipt generated, QR code / blockchain hash, secure digital issuance.' },
+      { n: 10, label: 'Inventory Status Updated', detail: 'Stock status set to Available, real-time visibility updated, accessible to all authorized parties.' },
+      { n: 11, label: 'Ready for Marketplace / Finance / Escrow', detail: 'Inventory visible on marketplace, eligible for financing & escrow, ready for trade execution.' },
+    ],
+    highlights: [
+      { label: 'Inventory Status', value: 'Available · Reserved · Pledged · Released · Sold' },
+      { label: 'Valuation', value: 'FUSD Reference (USD/MT)' },
+      { label: 'Receipt Format', value: 'Digital + QR Code / Blockchain Hash' },
+      { label: 'Inspection By', value: 'SGS Ghana Ltd.' },
+    ],
+    benefits: ['Full Inventory Control', 'Transparent Valuation', 'Audit-Ready Records', 'Finance Eligibility', 'Marketplace Ready', 'Owner Visibility'],
   },
   {
     num: '05',
     title: '14-Hub Marketplace Discovery, RFQ & Matching',
-    desc: 'Buyers browse verified commodity listings across the 14-hub African network, filter by commodity, grade, quantity, and pricing, submit RFQs or Import Expressions of Interest, and convert inquiries into formal orders.',
+    subtitle: 'Trade opportunities across Africa and global markets through the marketplace network.',
     icon: Search,
+    color: '#1B2E40',
     tags: ['14 African Hubs', 'RFQ Submission', 'Buyer-Seller Matching', 'Offer Comparison'],
+    substeps: [
+      { n: 1, label: 'Browse Commodity Listings', detail: 'Explore available commodities, view prices, specs & locations.' },
+      { n: 2, label: 'Filter by Hub / Commodity', detail: 'Select hub(s) across Africa, refine by quality, qty, price & terms.' },
+      { n: 3, label: 'View Verified Consignments', detail: 'Check seller profiles & ratings, review documents & certifications.' },
+      { n: 4, label: 'Create RFQ', detail: 'Define quantity, specs & terms, set target price & delivery terms.' },
+      { n: 5, label: 'Send Inquiry to Sellers', detail: 'RFQ sent to relevant suppliers, confidential & secure outreach.' },
+      { n: 6, label: 'Receive Offers', detail: 'Sellers submit competitive offers, compare price, terms & lead time.' },
+      { n: 7, label: 'Compare Terms', detail: 'Evaluate price, quality & logistics, check credibility & past performance.' },
+      { n: 8, label: 'Negotiate & Confirm Deal', detail: 'Negotiate terms with preferred seller, confirm deal & lock in conditions.' },
+      { n: 9, label: 'Convert to Order', detail: 'Generate Purchase Order, share documents & timelines.' },
+      { n: 10, label: 'Send to Settlement / Finance', detail: 'Route to settlement or financing, track until completion.' },
+    ],
+    highlights: [
+      { label: 'Network', value: '14 Hubs · Senegal to Egypt' },
+      { label: 'Active Buyers', value: '1,250+' },
+      { label: 'Verified Sellers', value: '3,800+' },
+      { label: 'Deals Matched', value: '8,600+' },
+    ],
+    benefits: ['Wider Reach', 'Faster Discovery', 'Verified Supply', 'Better Matching', 'RFQ Workflow', 'Cross-Border Visibility'],
   },
   {
     num: '06',
     title: 'Buyer Flow, Order Placement & Payment to WINVESTNET',
-    desc: 'Buyers register, complete compliance, browse inventory, negotiate terms, and place purchase orders. After order confirmation, payment is made to the WINVESTNET B2B Wallet, triggering escrow and inventory reservation.',
+    subtitle: 'Buyers browse inventory, place orders, secure funds and move deals toward execution.',
     icon: CreditCard,
-    tags: ['Purchase Order', 'Payment to WINVESTNET', 'Escrow Ready', 'Inventory Reserve'],
+    color: '#E5602A',
+    tags: ['Purchase Order', 'Payment to WINVESTNET', 'Escrow Ready', 'FUSD Balance'],
+    substeps: [
+      { n: 1, label: 'Buyer Registration', detail: 'Create buyer account, complete company profile, KYC verification, approval by WINVESTNET.' },
+      { n: 2, label: 'Browse Inventory & Marketplace', detail: 'Search commodities by type, origin, location — filter by quantity, price, warehouse — view live availability.' },
+      { n: 3, label: 'Review Verified Stock', detail: 'View stock details and certifications, check warehouse, availability & docs, review pricing and terms.' },
+      { n: 4, label: 'Send RFQ / Inquiry', detail: 'Send RFQ to supplier, specify quantity, target price & terms, attach requirements (if any).' },
+      { n: 5, label: 'Negotiate & Confirm Terms', detail: 'Discuss price, incoterms, delivery — confirm documents & quality — agree on payment & timeline.' },
+      { n: 6, label: 'Place Order', detail: 'Submit Purchase Order (PO), upload signed contract, confirm final order details.' },
+      { n: 7, label: 'Choose Funding Method', detail: 'Select preferred funding option — Bank Transfer, Stablecoin (USDC/USDT), Corporate Account, or Escrow Deposit.' },
+      { n: 8, label: 'Payment to WINVESTNET B2B Wallet', detail: 'Transfer funds to WINVESTNET B2B Wallet, payment verified in real-time, automatic receipt issued.' },
+      { n: 9, label: 'FUSD Balance / Reference Created', detail: 'FUSD reference generated, balance reflected in buyer wallet, funds ring-fenced for the order.' },
+      { n: 10, label: 'Ready for Escrow & Deal Execution', detail: 'Supplier notified of funded order, escrow process initiated, move to inventory reserve & release.' },
+    ],
+    highlights: [
+      { label: 'Payment Options', value: 'Bank · Stablecoin · Corporate · Escrow' },
+      { label: 'Wallet', value: 'WINVESTNET B2B Wallet' },
+      { label: 'Settlement Unit', value: 'FUSD Reference Value' },
+      { label: 'Order Flow', value: 'Inquiry → PO → Payment → Escrow' },
+    ],
+    benefits: ['Escrow Lock', 'Inventory Reserve', 'Warehouse Release', 'Delivery Milestone', 'Secure Settlement', 'Full Audit Trail'],
   },
   {
     num: '07',
     title: 'Government Commodities Barter Workflow',
-    desc: 'A dedicated optional branch for sovereign entities to exchange strategic commodities (oil, food, minerals, gold). Includes government onboarding, barter request creation, valuation comparison, counterparty matching, and settlement.',
+    subtitle: 'Optional parallel branch for sovereign entities — strategic commodity exchange with marketplace support and structured settlement.',
     icon: Scale,
+    color: '#C73B22',
     tags: ['Sovereign Verification', 'Barter Valuation', 'Counterparty Matching', 'Settlement Gap Support'],
+    substeps: [
+      { n: 1, label: 'Government Onboarding', detail: 'Register government entity, provide mandate & authority, KYC & compliance screening.' },
+      { n: 2, label: 'Sovereign Verification', detail: 'Validate mandate & authority, verify legal documentation, assign government account.' },
+      { n: 3, label: 'Create Barter Request', detail: 'Select barter type, provide overview & objectives, submit for internal review.' },
+      { n: 4, label: 'Define Offered Commodity', detail: 'Select commodity, specify quantity & quality, define delivery terms & location.' },
+      { n: 5, label: 'Define Required Commodity', detail: 'Select required commodity, specify quantity & quality, define delivery terms & location.' },
+      { n: 6, label: 'Valuation in FUSD Reference Terms', detail: 'Market price benchmarking, convert to FUSD (Reference Unit), determine value parity & gap.' },
+      { n: 7, label: 'Counterparty Matching', detail: 'Identify qualified counterparties, match supply & demand, evaluate track record & reliability.' },
+      { n: 8, label: 'Negotiate Terms & Delivery', detail: 'Negotiate quantities & quality, agree on logistics & timelines, sign Terms Sheet / MOU.' },
+      { n: 9, label: 'Settlement Difference Support', detail: 'Determine settlement gap, select settlement support option, arrange funding / support instrument.' },
+      { n: 10, label: 'Execution & Monitoring', detail: 'Execute barter agreement, monitor deliveries & milestones, close & record transaction.' },
+    ],
+    highlights: [
+      { label: 'Commodities', value: 'Oil · Gold · Food · Minerals · Fertilizer' },
+      { label: 'Valuation Unit', value: 'FUSD Reference Terms' },
+      { label: 'Settlement', value: 'Fiat · Trade Finance · Additional Commodity' },
+      { label: 'Compliance', value: 'National regulations · Internal approvals' },
+    ],
+    benefits: ['Strategic Sourcing', 'Reduced Cash Reliance', 'Valuation Clarity', 'Structured Monitoring', 'Sovereign Workflow', 'Audit Readiness'],
   },
   {
     num: '08',
     title: 'Trade Finance, Escrow, Settlement & Deal Completion',
-    desc: 'Buyer payment, inventory lock, warehouse release instruction, shipment milestone tracking, and seller payout are all connected. No goods are released until conditions are met. Every step is auditable.',
+    subtitle: 'From approved funding to inventory lock, warehouse release, delivery milestone and seller payout.',
     icon: Lock,
+    color: '#1B2E40',
     tags: ['Escrow Lock', 'Warehouse Release', 'Delivery Milestones', 'Seller Payout'],
+    substeps: [
+      { n: 1, label: 'Deal Confirmation', detail: 'Buyer & seller agree on final terms, all commercial terms locked, deal ID generated.' },
+      { n: 2, label: 'Trade Finance Review / Funding', detail: 'Buyer credit & KYC verification, facility approval & limit allocation, funds arranged by approved financiers.' },
+      { n: 3, label: 'Payment Confirmation', detail: 'Buyer funds transferred to Finatrades escrow account, payment receipt verified.' },
+      { n: 4, label: 'FUSD Lock in Escrow', detail: 'Funds locked in secure escrow, held until release conditions are met, escrow protected & monitored.' },
+      { n: 5, label: 'Inventory Reserved', detail: 'Seller reserves inventory, inventory tagged against Deal ID, stock held in bonded warehouse.' },
+      { n: 6, label: 'Order Confirmation', detail: 'Sale contract signed, all commercial documents finalized, stakeholders notified.' },
+      { n: 7, label: 'Warehouse Release Instruction', detail: 'Buyer requests release, release conditions verified, approval issued to warehouse via WinLogistics.' },
+      { n: 8, label: 'Shipment / Delivery Milestone', detail: 'Goods released & dispatched, in-transit tracking initiated, delivery milestone recorded.' },
+      { n: 9, label: 'Condition Verification', detail: 'Buyer inspects upon receipt, quality & quantity verified, inspection report uploaded.' },
+      { n: 10, label: 'Seller Payout via WINVESTNET', detail: 'Payout approved by buyer, escrow funds released, seller credited via WINVESTNET.' },
+      { n: 11, label: 'Deal Closed & Audit Trail Completed', detail: 'Deal marked as completed, all records & documents archived, audit trail secured on blockchain.' },
+    ],
+    highlights: [
+      { label: 'Finance Partner', value: 'FinaCredit Partners' },
+      { label: 'Escrow', value: 'FinaTrades Escrow Account' },
+      { label: 'Warehouse Release', value: 'WinLogistics · Approval Required' },
+      { label: 'Payout Method', value: 'WINVESTNET B2B Wallet' },
+    ],
+    benefits: ['Secure Settlement', 'Controlled Release', 'Finance Support', 'Traceability', 'Reduced Risk', 'Faster Closure'],
   },
   {
     num: '09',
     title: 'Complete Backend Flow & System Architecture',
-    desc: 'Identity, compliance, document service, inventory engine, marketplace connector, buyer order engine, WINVESTNET wallet connector, trade finance, escrow, settlement, and audit layers — all connected into one secure infrastructure.',
+    subtitle: 'How registration, inventory, marketplace, payments, trade finance, escrow and reporting connect behind the scenes.',
     icon: Settings,
+    color: '#E5602A',
     tags: ['Audit Trail', 'Compliance Layer', 'Partner APIs', 'Full Traceability'],
+    substeps: [
+      { n: 1, label: 'User Access Layer', detail: 'Web Portal · Mobile App · Partner Portal — Secure Login · MFA · Role-Based Access.' },
+      { n: 2, label: 'Identity & Compliance Layer', detail: 'KYC · KYB · AML Screening · Sanctions — Identity Verification · Compliance Checks · Ongoing Monitoring.' },
+      { n: 3, label: 'Document Service', detail: 'Document Upload · Validation · eSign · Document Vault · Version Control — Smart Validation · OCR & Data Extraction · Secure Storage.' },
+      { n: 4, label: 'Inventory / Consignment Engine', detail: 'Inventory Creation · Grading · Tagging · Stock Allocation · Real-time Updates — Inventory Verification · Quality & Quantity Check · Availability Management.' },
+      { n: 5, label: 'Marketplace Connector', detail: 'Publish Listings · Match Buyers · Offers · Negotiation · Confirmation — Listing Sync · Buyer Discovery · Deal Confirmation.' },
+      { n: 6, label: 'Buyer Order Engine', detail: 'Order Creation · Terms Agreement · Lock Inventory · Order Tracking — Order Validation · Inventory Lock · Order Status Updates.' },
+      { n: 7, label: 'WINVESTNET Wallet Connector', detail: 'Wallet Creation · Balance Check · Hold / Reserve Funds · Wallet Sync — Balance Verification · Fund Reservation · Wallet Reconciliation.' },
+      { n: 8, label: 'Trade Finance Engine', detail: 'LC · PO Finance · Invoice Discounting · Credit Scoring · Approval Workflow — Finance Request · Credit Assessment · Funding Disbursement.' },
+      { n: 9, label: 'Escrow / Settlement Engine', detail: 'Escrow Hold · Milestone Control · Release Conditions · Settlement Rules — Condition Monitoring · Secure Release.' },
+      { n: 10, label: 'Audit Trail & Reporting', detail: 'Activity Logging · Reports · Dashboards · Performance Analytics · Compliance Reports — Audit Trail Logging · Real-time Dashboards · Exportable Reports.' },
+      { n: 11, label: 'Notifications & API Orchestration', detail: 'Event Triggers · Alerts · Email / SMS · API Gateway · Webhooks · Integrations — Event Notifications · API Orchestration · Third-party Integrations.' },
+    ],
+    highlights: [
+      { label: 'Infrastructure', value: 'Cloud · Microservices · Load Balancer' },
+      { label: 'Data Security', value: 'Encrypted · Backup & DR · Security Layer' },
+      { label: 'System Rules', value: 'No verified inventory = no sale' },
+      { label: 'Integration', value: 'Finatrades + WinLogistics + Marketplace' },
+    ],
+    benefits: ['Secure', 'Compliant', 'Transparent', 'Integrated', 'Audit-Ready', 'Scalable'],
   },
 ];
 
-function TimelineStep({ step, index }: { step: typeof STEPS[0]; index: number }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const isInView = useInView(ref, { once: true, margin: '-80px' });
-  const isLeft = index % 2 === 0;
-  const Icon = step.icon;
-
-  const accentColor = index % 3 === 0 ? '#C73B22' : index % 3 === 1 ? '#1B2E40' : '#E5602A';
+function HowItWorksStepExplorer() {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const step = STEPS[activeIdx];
 
   return (
-    <div ref={ref} className="relative grid grid-cols-1 md:grid-cols-[1fr_80px_1fr] items-center gap-0 min-h-[140px]">
-      <motion.div
-        initial={{ opacity: 0, x: -60 }}
-        animate={isInView ? { opacity: 1, x: 0 } : {}}
-        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 }}
-        className={`${isLeft ? 'block' : 'hidden md:block'} md:pr-8`}
-      >
-        {isLeft && (
-          <div className="group bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-transparent transition-all duration-300"
-            style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
-            <StepCardContent step={step} accentColor={accentColor} />
-          </div>
-        )}
-      </motion.div>
-
-      <div className="hidden md:flex flex-col items-center relative z-10">
-        <motion.div
-          initial={{ scale: 0, opacity: 0 }}
-          animate={isInView ? { scale: 1, opacity: 1 } : {}}
-          transition={{ duration: 0.5, delay: 0.2, type: 'spring', stiffness: 260, damping: 20 }}
-          className="w-14 h-14 rounded-full flex items-center justify-center border-4 border-white shadow-lg"
-          style={{ background: `linear-gradient(135deg, ${accentColor}, ${accentColor}dd)` }}
-        >
-          <Icon size={20} color="#fff" />
-        </motion.div>
-        <motion.span
-          initial={{ opacity: 0, y: 6 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.4, delay: 0.35 }}
-          className="mt-2 text-xs font-bold tracking-wider"
-          style={{ color: accentColor }}
-        >
-          {step.num}
-        </motion.span>
+    <div className="relative">
+      {/* Step number navigation */}
+      <div className="flex items-center gap-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
+        {STEPS.map((s, i) => (
+          <button
+            key={s.num}
+            onClick={() => setActiveIdx(i)}
+            className={`flex-shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 border ${
+              i === activeIdx
+                ? 'text-white shadow-lg border-transparent'
+                : 'bg-white text-[#555550] border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+            }`}
+            style={i === activeIdx ? { background: s.color, borderColor: s.color } : {}}
+          >
+            <span className="font-bold">{s.num}</span>
+            <span className="hidden sm:inline max-w-[120px] truncate leading-tight text-xs">{s.title.split(' ').slice(0, 3).join(' ')}…</span>
+          </button>
+        ))}
       </div>
 
+      {/* Active step panel */}
       <motion.div
-        initial={{ opacity: 0, x: 60 }}
-        animate={isInView ? { opacity: 1, x: 0 } : {}}
-        transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94], delay: 0.1 }}
-        className={`${!isLeft ? 'block' : 'hidden md:block'} md:pl-8`}
+        key={activeIdx}
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
+        className="bg-white rounded-3xl border border-gray-200 overflow-hidden"
+        style={{ boxShadow: '0 4px 40px rgba(0,0,0,0.08)' }}
       >
-        {!isLeft && (
-          <div className="group bg-white border border-gray-200 rounded-2xl p-6 hover:shadow-xl hover:border-transparent transition-all duration-300"
-            style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}>
-            <StepCardContent step={step} accentColor={accentColor} />
+        {/* Panel header */}
+        <div className="px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start gap-4"
+          style={{ background: `linear-gradient(135deg, ${step.color}08 0%, transparent 60%)` }}>
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center flex-shrink-0"
+            style={{ background: `${step.color}18` }}>
+            <step.icon size={22} style={{ color: step.color }} />
           </div>
-        )}
-        {isLeft && (
-          <div className="hidden md:block" />
-        )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold tracking-widest uppercase" style={{ color: step.color }}>Step {step.num}</span>
+              <span className="text-gray-300">·</span>
+              <span className="text-xs text-gray-400">{step.substeps.length} stages</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-bold text-[#1A1A1A] leading-snug mb-1">{step.title}</h3>
+            <p className="text-[#666660] text-sm leading-relaxed">{step.subtitle}</p>
+          </div>
+          {/* Nav arrows */}
+          <div className="flex gap-2 flex-shrink-0">
+            <button
+              onClick={() => setActiveIdx(Math.max(0, activeIdx - 1))}
+              disabled={activeIdx === 0}
+              className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:border-gray-300 disabled:opacity-30 transition-all"
+            >
+              <ChevronDown size={16} className="rotate-90" />
+            </button>
+            <button
+              onClick={() => setActiveIdx(Math.min(STEPS.length - 1, activeIdx + 1))}
+              disabled={activeIdx === STEPS.length - 1}
+              className="w-9 h-9 rounded-xl border border-gray-200 flex items-center justify-center text-gray-400 hover:text-gray-700 hover:border-gray-300 disabled:opacity-30 transition-all"
+            >
+              <ChevronDown size={16} className="-rotate-90" />
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px]">
+          {/* Sub-steps list */}
+          <div className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {step.substeps.map((sub) => (
+                <div key={sub.n} className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50/60 transition-all group">
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs transition-colors"
+                    style={{ background: `${step.color}15`, color: step.color }}>
+                    {sub.n}
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-[#1A1A1A] font-semibold text-sm leading-snug mb-1">{sub.label}</div>
+                    <div className="text-[#888880] text-xs leading-relaxed">{sub.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Right highlights panel */}
+          <div className="border-t lg:border-t-0 lg:border-l border-gray-100 p-6 flex flex-col gap-6"
+            style={{ background: `${step.color}04` }}>
+            <div>
+              <div className="text-xs font-bold tracking-wider uppercase text-[#999990] mb-3">Key Details</div>
+              <div className="space-y-3">
+                {step.highlights.map(h => (
+                  <div key={h.label} className="flex flex-col gap-0.5">
+                    <span className="text-[#AAAAAA] text-xs">{h.label}</span>
+                    <span className="text-[#1A1A1A] text-sm font-semibold leading-snug">{h.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-bold tracking-wider uppercase text-[#999990] mb-3">Key Benefits</div>
+              <div className="flex flex-wrap gap-1.5">
+                {step.benefits.map(b => (
+                  <span key={b} className="px-2.5 py-1 text-xs font-medium rounded-lg"
+                    style={{ background: `${step.color}12`, color: step.color }}>
+                    {b}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <div className="text-xs font-bold tracking-wider uppercase text-[#999990] mb-3">Tags</div>
+              <div className="flex flex-wrap gap-1.5">
+                {step.tags.map(t => (
+                  <span key={t} className="px-2.5 py-1 text-xs font-medium rounded-lg border border-gray-200 bg-white text-[#555550]">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Progress indicator */}
+            <div className="mt-auto pt-4 border-t border-gray-100">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-[#AAAAAA]">Protocol Progress</span>
+                <span className="text-xs font-bold" style={{ color: step.color }}>{activeIdx + 1} / {STEPS.length}</span>
+              </div>
+              <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${((activeIdx + 1) / STEPS.length) * 100}%`, background: step.color }} />
+              </div>
+            </div>
+          </div>
+        </div>
       </motion.div>
 
-      <div className="block md:hidden px-2 py-2">
-        <motion.div
-          initial={{ opacity: 0, y: 30 }}
-          animate={isInView ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="bg-white border border-gray-200 rounded-2xl p-5"
-          style={{ boxShadow: '0 2px 16px rgba(0,0,0,0.06)' }}
-        >
-          <div className="flex items-center gap-3 mb-3">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: `${accentColor}18` }}>
-              <Icon size={18} style={{ color: accentColor }} />
-            </div>
-            <span className="text-xs font-bold tracking-wider" style={{ color: accentColor }}>Step {step.num}</span>
-          </div>
-          <StepCardContent step={step} accentColor={accentColor} />
-        </motion.div>
+      {/* Bottom CTA row */}
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+        <p className="text-sm text-[#888880]">
+          Every transaction must complete all 9 stages in sequence — no shortcuts, no unverified counterparties.
+        </p>
+        <Link href="/register">
+          <button className="px-5 py-2.5 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all text-sm flex items-center gap-2 hover:shadow-lg hover:shadow-[#C73B22]/25">
+            Start Onboarding <ArrowRight size={14} />
+          </button>
+        </Link>
       </div>
     </div>
   );
 }
 
-function StepCardContent({ step, accentColor }: { step: typeof STEPS[0]; accentColor: string }) {
-  return (
-    <>
-      <div className="flex items-start gap-2 mb-2">
-        <div className="w-1 h-full rounded-full flex-shrink-0 self-stretch min-h-[20px]"
-          style={{ background: accentColor, minWidth: 3 }} />
-        <h3 className="text-[#1A1A1A] font-semibold text-base leading-snug">{step.title}</h3>
-      </div>
-      <p className="text-[#666660] text-sm leading-relaxed mb-4 pl-3">{step.desc}</p>
-      <div className="flex flex-wrap gap-2 pl-3">
-        {step.tags.map(tag => (
-          <span key={tag} className="px-2.5 py-1 text-xs font-medium rounded-lg border"
-            style={{ background: `${accentColor}0f`, borderColor: `${accentColor}30`, color: accentColor }}>
-            {tag}
-          </span>
-        ))}
-      </div>
-    </>
-  );
-}
-
 function HowItWorksSection() {
-  const lineRef = useRef<HTMLDivElement>(null);
-  const isLineInView = useInView(lineRef, { once: true });
-
   return (
     <section id="how-it-works" className="py-24 overflow-hidden" style={{ background: 'linear-gradient(160deg, #FFF4F0 0%, #FFFFFF 40%, #F0F4FF 70%, #FFF8F0 100%)' }}>
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
-          className="text-center mb-20"
+          className="text-center mb-12"
         >
           <motion.div variants={fadeUp}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            End-to-End Trade Execution · 9-Stage Protocol
+            End-to-End Trade Execution · 9-Stage Protocol · Up to 11 Sub-Steps Each
           </motion.div>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
             A Fully Governed Trade Execution Protocol
@@ -565,23 +797,14 @@ function HowItWorksSection() {
           </motion.p>
         </motion.div>
 
-        <div className="relative">
-          <div ref={lineRef} className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px -translate-x-1/2 bg-gray-200 overflow-hidden">
-            <motion.div
-              className="w-full origin-top"
-              style={{ background: 'linear-gradient(180deg, #C73B22, #E5602A, #1B2E40)' }}
-              initial={{ scaleY: 0 }}
-              animate={isLineInView ? { scaleY: 1 } : {}}
-              transition={{ duration: 2.5, ease: 'easeInOut' }}
-            />
-          </div>
-
-          <div className="space-y-8 md:space-y-6">
-            {STEPS.map((step, i) => (
-              <TimelineStep key={step.num} step={step} index={i} />
-            ))}
-          </div>
-        </div>
+        <motion.div
+          initial={{ opacity: 0, y: 24 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.15 }}
+        >
+          <HowItWorksStepExplorer />
+        </motion.div>
       </div>
     </section>
   );
