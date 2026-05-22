@@ -884,7 +884,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
     <motion.div
       ref={cardRef}
       variants={fadeUp}
-      style={{ perspective: '1000px', height: '260px', rotateX: flipped ? 0 : rotX, rotateY: flipped ? undefined : rotY }}
+      style={{ perspective: '1000px', height: '340px', rotateX: flipped ? 0 : rotX, rotateY: flipped ? undefined : rotY }}
       className="cursor-pointer"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
@@ -924,8 +924,8 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
 
           {/* Layer badge — top left */}
           <span
-            className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full backdrop-blur-sm"
-            style={{ background: 'rgba(245,230,220,0.88)', color: '#7A3520' }}
+            className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
+            style={{ background: 'rgba(245,230,220,0.96)', color: '#7A3520' }}
           >
             LAYER {num}
           </span>
@@ -943,7 +943,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
 
         {/* ── BACK: details ── */}
         <div
-          className="absolute inset-0 rounded-2xl overflow-hidden border border-[#C73B22]/25 flex flex-col justify-between p-5"
+          className="absolute inset-0 rounded-2xl border border-[#C73B22]/25 flex flex-col p-5 overflow-hidden"
           style={{
             backfaceVisibility: 'hidden',
             transform: 'rotateY(180deg)',
@@ -953,25 +953,30 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
           <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
             style={{ background: 'linear-gradient(90deg, #C73B22, #E5602A)' }} />
 
-          <div>
+          {/* Header — fixed */}
+          <div className="flex-shrink-0 mb-3">
             <div className="flex items-center gap-2 mb-3">
               <span className="text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
                 style={{ background: '#F5E6DC', color: '#7A3520' }}>
                 LAYER {num}
               </span>
             </div>
-            <div className="flex items-start gap-3 mb-3">
+            <div className="flex items-start gap-3">
               <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
                 style={{ background: 'rgba(199,59,34,0.12)' }}>
                 <Icon size={15} className="text-[#C73B22]" />
               </div>
-              <h3 className="text-[#1A1A1A] text-sm font-bold leading-snug pt-1">{label}</h3>
+              <h3 className="text-[#1A1A1A] text-[14px] font-bold leading-snug pt-1">{label}</h3>
             </div>
-            <p className="text-[#666660] text-xs leading-relaxed">{desc}</p>
           </div>
 
-          <div className="flex items-center gap-1 text-[10px] font-medium text-[#C73B22] opacity-60 self-end">
-            flip back <ArrowRight size={9} style={{ transform: 'rotate(180deg)' }} />
+          {/* Scrollable description */}
+          <div className="flex-1 overflow-y-auto pr-0.5" style={{ scrollbarWidth: 'none' }}>
+            <p className="text-[#444440] text-[13px] leading-relaxed">{desc}</p>
+          </div>
+
+          <div className="flex items-center gap-1 text-[11px] font-medium text-[#C73B22] opacity-70 mt-3 flex-shrink-0">
+            flip back <ArrowRight size={10} style={{ transform: 'rotate(180deg)' }} />
           </div>
         </div>
       </motion.div>
