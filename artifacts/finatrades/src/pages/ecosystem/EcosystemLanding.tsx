@@ -882,12 +882,21 @@ function HowItWorksSection() {
           transition={{ duration: 0.55, delay: 0.1 }}
           className="flex justify-center mb-10"
         >
-          <img
-            src={tradeIcons3d}
-            alt="Trade process icons"
-            className="w-full max-w-2xl"
-            style={{ filter: 'drop-shadow(0 8px 24px rgba(199,59,34,0.10))' }}
-          />
+          <div
+            className="rounded-3xl px-8 py-6 w-full max-w-3xl"
+            style={{
+              background: 'linear-gradient(135deg, #FDF3EE 0%, #FFF8F5 50%, #FDF0E8 100%)',
+              border: '1.5px solid rgba(199,59,34,0.10)',
+              boxShadow: '0 8px 40px rgba(199,59,34,0.08)',
+            }}
+          >
+            <img
+              src={tradeIcons3d}
+              alt="Trade process icons"
+              className="w-full"
+              style={{ filter: 'drop-shadow(0 6px 18px rgba(199,59,34,0.12))' }}
+            />
+          </div>
         </motion.div>
 
         <motion.div
