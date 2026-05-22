@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.958.0",
-    "@opentelemetry/auto-instrumentations-node": "^0.67.3",
-    "@opentelemetry/exporter-trace-otlp-http": "^0.215.0",
-    "@opentelemetry/sdk-node": "^0.215.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.76.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.218.0",
+    "@opentelemetry/sdk-node": "^0.218.0",
     "bcryptjs": "^3.0.3",
     "bull": "^4.16.5",
     "bullmq": "^5.66.5",
