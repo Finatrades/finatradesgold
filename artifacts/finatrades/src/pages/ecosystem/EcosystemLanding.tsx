@@ -31,6 +31,7 @@ import layer6 from '@/assets/layer-6.png';
 import layer7 from '@/assets/layer-7.png';
 import layer8 from '@/assets/layer-8.png';
 import layer9 from '@/assets/layer-9.png';
+import backendBg from '@/assets/backend-bg.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -919,8 +920,12 @@ function BackendSection() {
   ];
 
   return (
-    <section className="bg-[#FFF4F0] py-24 border-y border-gray-200">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
+    <section className="relative py-24 border-y border-gray-200 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <img src={backendBg} alt="" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-white/70" />
+      </div>
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
             System Architecture
