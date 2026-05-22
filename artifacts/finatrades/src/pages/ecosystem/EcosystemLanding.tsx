@@ -1996,30 +1996,32 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
               : '0 4px 18px -4px rgba(0,0,0,0.12)',
         }}
         transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className={`relative rounded-2xl p-5 text-center cursor-pointer overflow-hidden flex flex-col justify-center ${
-          highlight
-            ? 'ring-2 ring-[#C73B22] ring-offset-2 ring-offset-[#F5E8E4]'
-            : 'border border-[#F0E8E4]'
-        }`}
+        className="relative rounded-2xl text-center cursor-pointer overflow-hidden flex flex-col justify-center"
         style={{
           transformStyle: 'preserve-3d',
-          background: highlight ? '#FFF6F2' : '#FFFAF8',
-          minHeight: highlight ? '260px' : '240px',
+          background: highlight ? '#FFFBF9' : '#FFFFFF',
+          minHeight: highlight ? '268px' : '248px',
+          padding: highlight ? '24px 20px' : '20px 16px',
+          border: highlight
+            ? '1.5px solid rgba(199,59,34,0.35)'
+            : '1.5px solid rgba(199,59,34,0.14)',
+          outline: highlight ? '3px solid rgba(199,59,34,0.08)' : 'none',
+          outlineOffset: '2px',
         }}
       >
         {/* Warm radial light — always visible, brightens on hover */}
         <div
           className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300"
           style={{
-            opacity: hovered ? 1 : 0.55,
-            background: `radial-gradient(ellipse 80% 70% at ${shine.x}% ${shine.y}%, rgba(255,240,230,0.72) 0%, transparent 70%)`,
+            opacity: hovered ? 1 : 0.45,
+            background: `radial-gradient(ellipse 80% 70% at ${shine.x}% ${shine.y}%, rgba(255,235,220,0.65) 0%, transparent 70%)`,
           }}
         />
-        <div className="relative z-10">
-          <div className="flex justify-center mb-4" style={{ filter: 'brightness(1.08) saturate(1.05)' }}>{logo}</div>
-          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-3 rounded" />}
-          <p className="text-[10px] font-bold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
-          <p className="text-[11px] text-[#666660] leading-relaxed">{desc}</p>
+        <div className="relative z-10 flex flex-col items-center gap-2.5">
+          <div className="flex justify-center" style={{ filter: 'brightness(1.05) saturate(1.05)' }}>{logo}</div>
+          {highlight && <div className="w-7 h-[1.5px] bg-[#C73B22] rounded" />}
+          <p className="text-[10px] font-bold text-[#C73B22] uppercase tracking-widest leading-tight">{role}</p>
+          <p className="text-[11px] text-[#5A5A55] leading-relaxed">{desc}</p>
         </div>
       </motion.div>
     </motion.div>
@@ -2027,10 +2029,10 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
 }
 
 function ConnectedEcosystemSection() {
-  // Fixed 680×680px orbital hub. Center=(340,340). Orbit radius=240px.
-  // Satellite positions: top=(340,100), right=(580,340), bottom=(340,580), left=(100,340)
-  const C = 340; // center px
-  const R = 240; // orbit radius px
+  // Fixed 800×800px orbital hub. Center=(400,400). Orbit radius=260px.
+  // Satellite positions: top=(400,140), right=(660,400), bottom=(400,660), left=(140,400)
+  const C = 400; // center px
+  const R = 260; // orbit radius px
 
   const orbitDots = Array.from({ length: 10 }, (_, i) => {
     const angle = (i / 10) * 2 * Math.PI;
@@ -2039,7 +2041,7 @@ function ConnectedEcosystemSection() {
 
   const nodes = [
     {
-      key: 'raminvest', px: C, py: C - R, w: 182, delay: 0.15,
+      key: 'raminvest', px: C, py: C - R + 20, w: 190, delay: 0.15,
       label: 'RAMINVEST', role: 'Group Governance',
       desc: 'Strategic oversight and governance across all Raminvest Holding DIFC group entities.',
       highlight: false,
@@ -2050,14 +2052,14 @@ function ConnectedEcosystemSection() {
       ),
     },
     {
-      key: 'winlogistics', px: C - R, py: C, w: 172, delay: 0.25,
+      key: 'winlogistics', px: C - R + 10, py: C, w: 180, delay: 0.25,
       label: 'WINLOGISTICS', role: 'Logistics & Transport',
       desc: 'International logistics coordination, transport structuring and routing.',
       highlight: false,
       logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-11 w-auto object-contain" />,
     },
     {
-      key: 'finatrades', px: C, py: C, w: 215, delay: 0,
+      key: 'finatrades', px: C, py: C, w: 225, delay: 0,
       label: 'FINATRADES', role: 'Trade & Settlement Hub',
       desc: 'Digital trade finance, settlement, FX coordination, and gold-backed clearing.',
       highlight: true,
@@ -2067,14 +2069,14 @@ function ConnectedEcosystemSection() {
       ),
     },
     {
-      key: 'wincommodities', px: C + R, py: C, w: 172, delay: 0.3,
+      key: 'wincommodities', px: C + R - 10, py: C, w: 180, delay: 0.3,
       label: 'WINCOMMODITIES', role: 'Commodity Operations',
       desc: 'Commodity sourcing, execution activities and trade operations support.',
       highlight: false,
       logo: <img src={logoWincommodities} alt="WinCommodities" className="h-11 w-auto object-contain" />,
     },
     {
-      key: 'winvestnet', px: C, py: C + R, w: 182, delay: 0.4,
+      key: 'winvestnet', px: C, py: C + R - 20, w: 190, delay: 0.4,
       label: 'WINVESTNET', role: 'Investment Network',
       desc: 'Investment connectivity, strategic capital alignment and network integration.',
       highlight: false,
@@ -2107,21 +2109,21 @@ function ConnectedEcosystemSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="relative mx-auto hidden md:block"
-          style={{ width: '680px', height: '680px' }}
+          style={{ width: '800px', height: '800px' }}
         >
           {/* Layer 1 – static dashed orbit ring + axis-aligned connector lines */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="680" height="680" viewBox="0 0 680 680" style={{ zIndex: 1 }}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="800" height="800" viewBox="0 0 800 800" style={{ zIndex: 1 }}>
             {/* Outer orbit ring */}
             <circle cx={C} cy={C} r={R} fill="none" stroke="#C73B22" strokeWidth="1.4" strokeDasharray="6 9" opacity="0.22" />
             {/* Inner pulse ring */}
             <circle cx={C} cy={C} r={R * 0.48} fill="none" stroke="#C73B22" strokeWidth="0.8" strokeDasharray="3 5" opacity="0.15" />
             {/* Axis connector lines */}
-            <line x1={C} y1={C - R} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C + R} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C} y1={C + R} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C - R} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C} y1={C - R + 20} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C + R - 10} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C} y1={C + R - 20} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C - R + 10} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
             {/* End dots on connector lines */}
-            {[[C, C - R], [C + R, C], [C, C + R], [C - R, C]].map(([x, y], i) => (
+            {[[C, C - R + 20], [C + R - 10, C], [C, C + R - 20], [C - R + 10, C]].map(([x, y], i) => (
               <circle key={i} cx={x} cy={y} r="4" fill="#C73B22" opacity="0.5" />
             ))}
             <circle cx={C} cy={C} r="5" fill="#C73B22" opacity="0.35" />
@@ -2134,7 +2136,7 @@ function ConnectedEcosystemSection() {
             transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
             style={{ zIndex: 2 }}
           >
-            <svg width="680" height="680" viewBox="0 0 680 680">
+            <svg width="800" height="800" viewBox="0 0 800 800">
               {orbitDots.map((d, i) => (
                 <circle key={i} cx={d.cx} cy={d.cy} r={d.big ? 5.5 : 3.5}
                   fill="#C73B22" opacity={d.big ? 0.75 : 0.38} />
@@ -2149,7 +2151,7 @@ function ConnectedEcosystemSection() {
             transition={{ duration: 44, repeat: Infinity, ease: 'linear' }}
             style={{ zIndex: 2 }}
           >
-            <svg width="680" height="680" viewBox="0 0 680 680">
+            <svg width="800" height="800" viewBox="0 0 800 800">
               {Array.from({ length: 6 }, (_, i) => {
                 const angle = (i / 6) * 2 * Math.PI;
                 const r2 = R * 0.48;
