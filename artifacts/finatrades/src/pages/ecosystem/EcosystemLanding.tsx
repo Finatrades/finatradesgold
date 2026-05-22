@@ -857,26 +857,7 @@ function SettlementSection() {
 function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
   img: string | null; icon: React.ElementType; label: string; num: string; desc: string; delay: number;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ x: 0, y: 0 });
-  const [shine, setShine] = useState({ x: 50, y: 50 });
-  const [hovered, setHovered] = useState(false);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    const card = cardRef.current;
-    if (!card) return;
-    const { left, top, width, height } = card.getBoundingClientRect();
-    const x = (e.clientX - left) / width;
-    const y = (e.clientY - top) / height;
-    setTilt({ x: (y - 0.5) * -14, y: (x - 0.5) * 14 });
-    setShine({ x: x * 100, y: y * 100 });
-  };
-
-  const handleMouseLeave = () => {
-    setTilt({ x: 0, y: 0 });
-    setShine({ x: 50, y: 50 });
-    setHovered(false);
-  };
+  const [flipped, setFlipped] = useState(false);
 
   return (
     <motion.div
@@ -885,94 +866,82 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
       whileInView="visible"
       viewport={{ once: true, margin: '-40px' }}
       transition={{ delay }}
-      style={{ perspective: '900px' }}
+      style={{ perspective: '1000px', height: '280px' }}
+      className="cursor-pointer"
+      onClick={() => setFlipped(f => !f)}
     >
       <motion.div
-        ref={cardRef}
-        onMouseMove={handleMouseMove}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={handleMouseLeave}
-        animate={{
-          rotateX: tilt.x,
-          rotateY: tilt.y,
-          scale: hovered ? 1.03 : 1,
-          boxShadow: hovered
-            ? '0 28px 56px -10px rgba(199,59,34,0.22), 0 0 0 1px rgba(199,59,34,0.12)'
-            : '0 2px 16px -4px rgba(0,0,0,0.09)',
-        }}
-        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className="relative rounded-2xl overflow-hidden cursor-pointer border border-gray-200"
-        style={{ transformStyle: 'preserve-3d' }}
+        animate={{ rotateY: flipped ? 180 : 0 }}
+        transition={{ duration: 0.55, ease: [0.4, 0.0, 0.2, 1] }}
+        style={{ transformStyle: 'preserve-3d', position: 'relative', width: '100%', height: '100%' }}
       >
-        {img ? (
-          <div className="relative overflow-hidden" style={{ background: '#FFF0E8', minHeight: '200px' }}>
-            <motion.img
+        {/* ── FRONT: image ── */}
+        <div
+          className="absolute inset-0 rounded-2xl overflow-hidden border border-gray-200"
+          style={{ backfaceVisibility: 'hidden', background: '#FFF0E8' }}
+        >
+          {img ? (
+            <img
               src={img}
               alt={label}
-              animate={{ scale: hovered ? 1.04 : 1 }}
-              transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="w-full object-contain object-center block"
-              style={{ height: '196px', padding: '16px 20px 8px', display: 'block' }}
+              className="w-full h-full object-contain object-center"
+              style={{ padding: '20px 24px 14px' }}
             />
-            <div
-              className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
-              style={{
-                opacity: hovered ? 1 : 0,
-                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.22) 0%, transparent 60%)`,
-              }}
-            />
-            <span
-              className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
-              style={{ background: '#F5E6DC', color: '#7A3520', letterSpacing: '0.08em' }}
-            >
-              LAYER {num}
-            </span>
-          </div>
-        ) : (
-          <div className="relative h-44 flex items-center justify-center overflow-hidden"
-            style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
-            <div className="absolute inset-0 opacity-10"
-              style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #E5602A 0%, transparent 60%), radial-gradient(circle at 70% 60%, #C73B22 0%, transparent 50%)' }} />
-            <div
-              className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
-              style={{
-                opacity: hovered ? 1 : 0,
-                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.12) 0%, transparent 60%)`,
-              }}
-            />
-            <Icon size={44} className="text-white/25 relative z-10" />
-            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
-              LAYER {num}
-            </span>
-          </div>
-        )}
-
-        <div
-          className="relative p-5"
-          style={{ background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)' }}
-        >
-          <div
-            className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
-            style={{
-              background: 'linear-gradient(90deg, transparent, #C73B22, #E5602A, transparent)',
-              opacity: hovered ? 1 : 0,
-            }}
-          />
-          <div className="flex items-start gap-3 mb-2">
-            <div className="w-7 h-7 rounded-lg bg-[#C73B22]/10 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors duration-200"
-              style={{ backgroundColor: hovered ? 'rgba(199,59,34,0.18)' : '' }}>
-              <Icon size={13} className="text-[#C73B22]" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center"
+              style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
+              <Icon size={52} className="text-white/30" />
             </div>
-            <h3 className="text-[#1A1A1A] text-sm font-semibold leading-snug">{label}</h3>
-          </div>
-          <p className="text-[#777770] text-xs leading-relaxed pl-10">{desc}</p>
-          <motion.div
-            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 5 }}
-            transition={{ duration: 0.22 }}
-            className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-[#C73B22] pl-10"
+          )}
+          {/* Layer badge */}
+          <span
+            className="absolute top-3 left-3 text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
+            style={{ background: '#F5E6DC', color: '#7A3520' }}
           >
-            View layer <ArrowRight size={11} />
-          </motion.div>
+            LAYER {num}
+          </span>
+          {/* Flip hint */}
+          <div className="absolute bottom-3 right-3 flex items-center gap-1 text-[10px] font-medium text-[#C73B22] opacity-60">
+            tap to flip <ArrowRight size={9} />
+          </div>
+        </div>
+
+        {/* ── BACK: details ── */}
+        <div
+          className="absolute inset-0 rounded-2xl overflow-hidden border border-[#C73B22]/25 flex flex-col justify-between p-5"
+          style={{
+            backfaceVisibility: 'hidden',
+            transform: 'rotateY(180deg)',
+            background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)',
+          }}
+        >
+          {/* Top accent line */}
+          <div className="absolute top-0 left-0 right-0 h-[3px] rounded-t-2xl"
+            style={{ background: 'linear-gradient(90deg, #C73B22, #E5602A)' }} />
+
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <span
+                className="text-[10px] font-semibold tracking-wider px-2.5 py-1 rounded-full"
+                style={{ background: '#F5E6DC', color: '#7A3520' }}
+              >
+                LAYER {num}
+              </span>
+            </div>
+            <div className="flex items-start gap-3 mb-3">
+              <div className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: 'rgba(199,59,34,0.12)' }}>
+                <Icon size={15} className="text-[#C73B22]" />
+              </div>
+              <h3 className="text-[#1A1A1A] text-sm font-bold leading-snug pt-1">{label}</h3>
+            </div>
+            <p className="text-[#666660] text-xs leading-relaxed">{desc}</p>
+          </div>
+
+          {/* Flip back hint */}
+          <div className="flex items-center gap-1 text-[10px] font-medium text-[#C73B22] opacity-60 self-end">
+            tap to flip back <ArrowRight size={9} style={{ transform: 'rotate(180deg)' }} />
+          </div>
         </div>
       </motion.div>
     </motion.div>
