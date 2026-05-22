@@ -172,7 +172,7 @@ function HeroSection() {
           <span className="bg-gradient-to-r from-[#C73B22] via-[#E5602A] to-[#F08050] bg-clip-text text-transparent">
             Verified Commodity Trade
           </span>
-          <br />Across Africa
+          <br />Across Africa & Global Markets
         </motion.h1>
 
         <motion.p
