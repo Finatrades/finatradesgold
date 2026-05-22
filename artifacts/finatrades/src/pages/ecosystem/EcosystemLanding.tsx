@@ -1143,7 +1143,6 @@ const ROLES = [
     image: exporterWarehouse,
     imageCaption: 'Warehouse-to-Marketplace Workflow',
     fullLayout: true,
-    hideFeatures: true,
   },
   {
     key: 'buyers',
