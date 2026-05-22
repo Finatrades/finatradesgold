@@ -524,7 +524,7 @@ function HowItWorksSection() {
   const isLineInView = useInView(lineRef, { once: true });
 
   return (
-    <section id="how-it-works" className="bg-[#FAFAFA] py-24 overflow-hidden">
+    <section id="how-it-works" className="py-24 overflow-hidden" style={{ background: 'linear-gradient(160deg, #FFF4F0 0%, #FFFFFF 40%, #F0F4FF 70%, #FFF8F0 100%)' }}>
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
