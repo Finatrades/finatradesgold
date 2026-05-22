@@ -426,42 +426,144 @@ function MarketplaceSection() {
   );
 }
 
-function RoleSection({
-  id, badge, icon: Icon, iconColor, title, subtitle, desc, features, cta, ctaHref,
-}: {
-  id: string; badge: string; icon: any; iconColor: string; title: string; subtitle: string;
-  desc: string; features: string[]; cta: string; ctaHref: string;
-}) {
+const ROLES = [
+  {
+    key: 'sellers',
+    tab: 'Exporters & Sellers',
+    icon: Package,
+    accent: '#A855F7',
+    accentBg: 'bg-[#8A2BE2]/10',
+    accentBorder: 'border-[#8A2BE2]/25',
+    accentText: 'text-[#A855F7]',
+    tabActiveBg: 'bg-[#8A2BE2]',
+    title: 'Convert Physical Commodities into Verified Digital Inventory',
+    subtitle: 'Submit goods on consignment. Get listed on the marketplace.',
+    desc: 'Sellers submit commodities to approved warehouses, upload ownership and export documents, track inspection status, and list verified inventory on the marketplace. Trade finance eligibility is built into the workflow from day one.',
+    features: [
+      'Consignment Creation', 'Document Upload', 'Warehouse Selection',
+      'Inspection Workflow', 'Inventory ID Generation', 'Marketplace Listing',
+      'Finance Eligibility', 'Release Tracking',
+    ],
+    cta: 'Register as Seller',
+    ctaHref: '/register?role=seller',
+    ctaStyle: 'bg-[#8A2BE2] hover:bg-[#7B24CC] text-white',
+  },
+  {
+    key: 'buyers',
+    tab: 'Importers & Buyers',
+    icon: Search,
+    accent: '#D4AF37',
+    accentBg: 'bg-[#D4AF37]/10',
+    accentBorder: 'border-[#D4AF37]/25',
+    accentText: 'text-[#D4AF37]',
+    tabActiveBg: 'bg-[#D4AF37]',
+    title: 'Source Verified Commodities and Execute Structured Orders',
+    subtitle: 'Browse, match, order, pay, and track — all in one flow.',
+    desc: 'Buyers browse verified stock, send RFQs or Import Expressions of Interest, compare supplier offers, place orders, make payment through approved channels, and track deal execution until delivery milestones are confirmed.',
+    features: [
+      'Marketplace Discovery', 'Verified Inventory Access', 'RFQ Submission',
+      'Supplier Matching', 'Purchase Order Creation', 'Payment Tracking',
+      'Inventory Reserve', 'Delivery Milestone Visibility',
+    ],
+    cta: 'Register as Buyer',
+    ctaHref: '/register?role=buyer',
+    ctaStyle: 'bg-[#D4AF37] hover:bg-[#C5A028] text-[#07070A]',
+  },
+  {
+    key: 'government',
+    tab: 'Sovereign Access',
+    icon: Shield,
+    accent: '#34D399',
+    accentBg: 'bg-emerald-500/10',
+    accentBorder: 'border-emerald-500/25',
+    accentText: 'text-emerald-400',
+    tabActiveBg: 'bg-emerald-600',
+    title: 'Strategic Commodity Barter for Government Users',
+    subtitle: 'A dedicated parallel branch for approved sovereign entities only.',
+    desc: 'Finatrades supports structured government commodity barter workflows — crude oil, fuel, food, wheat, gold, fertilizer, minerals, and more. Sovereign users submit strategic exchange requirements and monitor execution through a controlled digital process.',
+    features: [
+      'Government Onboarding', 'Sovereign Verification', 'Barter Request Creation',
+      'Valuation Comparison', 'Counterparty Matching', 'Settlement Gap Support',
+      'Mandate Review', 'Execution Monitoring',
+    ],
+    cta: 'Request Government Access',
+    ctaHref: '/register?role=government',
+    ctaStyle: 'bg-emerald-600 hover:bg-emerald-700 text-white',
+  },
+];
+
+function RolesSection() {
+  const [active, setActive] = useState(0);
+  const role = ROLES[active];
+  const Icon = role.icon;
+
   return (
-    <section id={id} className="py-20">
+    <section id="for-sellers" className="bg-[#07070A] py-24">
       <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <div className="bg-white/2 border border-white/7 rounded-3xl p-8 sm:p-12">
+        <motion.div variants={fadeUp} className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+            Platform Access by Role
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Who Is Finatrades For?</h2>
+          <p className="text-white/50 max-w-2xl mx-auto">
+            Each role has a dedicated workflow, module access, and onboarding path tailored to their position in the trade lifecycle.
+          </p>
+        </motion.div>
+
+        <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-2 mb-10">
+          {ROLES.map((r, i) => {
+            const TabIcon = r.icon;
+            const isActive = i === active;
+            return (
+              <button
+                key={r.key}
+                onClick={() => setActive(i)}
+                className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold transition-all border ${
+                  isActive
+                    ? `${r.tabActiveBg} text-white border-transparent shadow-lg`
+                    : 'bg-white/4 border-white/8 text-white/55 hover:text-white hover:bg-white/8'
+                }`}
+              >
+                <TabIcon size={14} />
+                {r.tab}
+              </button>
+            );
+          })}
+        </motion.div>
+
+        <motion.div
+          key={active}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+          className={`bg-white/2 border ${role.accentBorder} rounded-3xl p-8 sm:p-12`}
+        >
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <motion.div variants={fadeUp}>
-              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${iconColor} text-xs font-medium mb-5`}>
+            <div>
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${role.accentBorder} ${role.accentBg} ${role.accentText} text-xs font-medium mb-5`}>
                 <Icon size={12} />
-                {badge}
+                {role.tab}
               </div>
-              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight">{title}</h2>
-              <p className="text-[#A855F7] font-medium mb-4">{subtitle}</p>
-              <p className="text-white/55 leading-relaxed mb-8">{desc}</p>
-              <Link href={ctaHref}>
-                <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
-                  {cta} <ArrowRight size={16} />
+              <h3 className="text-3xl font-bold text-white mb-3 leading-tight">{role.title}</h3>
+              <p className={`${role.accentText} font-medium mb-4 text-sm`}>{role.subtitle}</p>
+              <p className="text-white/55 leading-relaxed mb-8">{role.desc}</p>
+              <Link href={role.ctaHref}>
+                <button className={`px-6 py-3 font-semibold rounded-xl transition-all flex items-center gap-2 ${role.ctaStyle}`}>
+                  {role.cta} <ArrowRight size={16} />
                 </button>
               </Link>
-            </motion.div>
+            </div>
 
-            <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {features.map(f => (
-                <div key={f} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3">
-                  <CheckCircle2 size={14} className="text-[#A855F7] flex-shrink-0" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {role.features.map(f => (
+                <div key={f} className={`flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3`}>
+                  <CheckCircle2 size={14} className={`${role.accentText} flex-shrink-0`} />
                   <span className="text-white/70 text-sm">{f}</span>
                 </div>
               ))}
-            </motion.div>
+            </div>
           </div>
-        </div>
+        </motion.div>
       </AnimatedSection>
     </section>
   );
@@ -521,59 +623,6 @@ function SettlementSection() {
                 <div>
                   <h4 className="text-white font-semibold mb-1">{title}</h4>
                   <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
-                </div>
-              </div>
-            ))}
-          </motion.div>
-        </div>
-      </AnimatedSection>
-    </section>
-  );
-}
-
-function GovernmentSection() {
-  return (
-    <section id="government" className="bg-[#0A0A0F] py-24 border-y border-white/5">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
-              <Shield size={12} />
-              Sovereign Access
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
-              Strategic Commodity Barter for Government Users
-            </h2>
-            <p className="text-white/55 leading-relaxed mb-6">
-              Finatrades supports structured government commodity barter workflows where approved sovereign
-              users can submit strategic exchange requirements — crude oil, fuel, food, wheat, gold, fertilizer,
-              minerals, and more — and monitor execution through a controlled digital process.
-            </p>
-            <p className="text-white/40 text-sm leading-relaxed mb-8">
-              This is a parallel optional branch for approved government or sovereign users only. It is separate
-              from the standard buyer-seller marketplace flow.
-            </p>
-            <Link href="/register?role=government">
-              <button className="px-6 py-3 bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/25 font-semibold rounded-xl transition-all flex items-center gap-2">
-                Request Government Access <ArrowRight size={16} />
-              </button>
-            </Link>
-          </motion.div>
-
-          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3">
-            {[
-              { title: 'Government Onboarding', desc: 'Dedicated sovereign verification and mandate review process.' },
-              { title: 'Barter Request Creation', desc: 'Define offered commodity and required commodity with detailed specifications.' },
-              { title: 'Valuation Comparison', desc: 'Compare fair market values across both sides of the barter arrangement.' },
-              { title: 'Counterparty Matching', desc: 'Platform identifies and routes requests to eligible sovereign counterparties.' },
-              { title: 'Settlement Gap Support', desc: 'Where values differ, settlement difference instruments are available.' },
-              { title: 'Execution Monitoring', desc: 'Full audit trail from barter confirmation through delivery milestones.' },
-            ].map(({ title, desc }) => (
-              <div key={title} className="bg-white/3 border border-white/8 rounded-xl px-5 py-4 flex gap-4">
-                <div className="w-2 h-2 rounded-full bg-[#D4AF37]/70 flex-shrink-0 mt-1.5" />
-                <div>
-                  <span className="text-white font-medium text-sm">{title}</span>
-                  <p className="text-white/45 text-sm mt-0.5">{desc}</p>
                 </div>
               </div>
             ))}
@@ -790,40 +839,8 @@ export default function EcosystemLanding() {
       <PositioningSection />
       <HowItWorksSection />
       <MarketplaceSection />
-      <RoleSection
-        id="for-sellers"
-        badge="Exporters & Sellers"
-        icon={Package}
-        iconColor="border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7]"
-        title="Convert Physical Commodities into Verified Digital Inventory"
-        subtitle="Submit goods on consignment. Get listed on the marketplace."
-        desc="Sellers submit commodities to approved warehouses, upload ownership and export documents, track inspection status, and list verified inventory on the marketplace. Trade finance eligibility is built into the workflow."
-        features={[
-          'Consignment Creation', 'Document Upload', 'Warehouse Selection',
-          'Inspection Workflow', 'Inventory ID Generation', 'Marketplace Listing',
-          'Finance Eligibility', 'Release Tracking',
-        ]}
-        cta="Register as Seller"
-        ctaHref="/register?role=seller"
-      />
-      <RoleSection
-        id="for-buyers"
-        badge="Importers & Buyers"
-        icon={Search}
-        iconColor="border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37]"
-        title="Source Verified Commodities and Execute Structured Orders"
-        subtitle="Browse, match, order, pay, and track — all in one flow."
-        desc="Buyers browse verified stock, send RFQs or Import Expressions of Interest, compare supplier offers, place orders, make payment through approved channels, and track deal execution until delivery milestones are confirmed."
-        features={[
-          'Marketplace Discovery', 'Verified Inventory Access', 'RFQ Submission',
-          'Supplier Matching', 'Purchase Order Creation', 'Payment Tracking',
-          'Inventory Reserve', 'Delivery Milestone Visibility',
-        ]}
-        cta="Register as Buyer"
-        ctaHref="/register?role=buyer"
-      />
+      <RolesSection />
       <SettlementSection />
-      <GovernmentSection />
       <BackendSection />
       <ComplianceSection />
       <CTASection />
