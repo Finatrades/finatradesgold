@@ -22,6 +22,7 @@ import cardWarehouse from '@/assets/card-warehouse.png';
 import cardFinance from '@/assets/card-finance.png';
 import cardLogistics from '@/assets/card-logistics.png';
 import hubsBg from '@/assets/hubs-bg.png';
+import exporterWarehouse from '@/assets/exporter-warehouse.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
@@ -1137,6 +1138,7 @@ const ROLES = [
     cta: 'Register as Exporter',
     ctaHref: '/register?role=seller',
     ctaStyle: 'bg-[#C73B22] hover:bg-[#A82D16] text-white',
+    image: exporterWarehouse,
   },
   {
     key: 'buyers',
@@ -1266,28 +1268,61 @@ function RolesSection() {
               </Link>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {role.features.map(f => (
-                <div
-                  key={f.label}
-                  className="flex items-center gap-3 rounded-2xl px-4 py-4 transition-all"
+            <div className="flex flex-col gap-4">
+              {(role as typeof role & { image?: string }).image && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.97 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
+                  className="relative rounded-2xl overflow-hidden"
                   style={{
-                    background: 'rgba(255,255,255,0.75)',
-                    backdropFilter: 'blur(14px) saturate(160%)',
-                    WebkitBackdropFilter: 'blur(14px) saturate(160%)',
-                    border: '1px solid rgba(255,255,255,0.55)',
-                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                    background: 'rgba(255,255,255,0.6)',
+                    border: `1px solid ${role.accent}22`,
+                    boxShadow: `0 4px 24px 0 ${role.accent}12`,
                   }}
                 >
+                  <img
+                    src={(role as typeof role & { image?: string }).image}
+                    alt="Exporter warehouse workflow"
+                    className="w-full h-auto object-contain"
+                    style={{ maxHeight: '280px', padding: '12px' }}
+                  />
                   <div
-                    className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                    style={{ borderColor: f.color + '70' }}
+                    className="absolute bottom-0 left-0 right-0 px-4 py-2.5 text-center"
+                    style={{
+                      background: `linear-gradient(to top, ${role.accent}18 0%, transparent 100%)`,
+                    }}
                   >
-                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />
+                    <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: role.accent }}>
+                      Warehouse-to-Marketplace Workflow
+                    </p>
                   </div>
-                  <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
-                </div>
-              ))}
+                </motion.div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {role.features.map(f => (
+                  <div
+                    key={f.label}
+                    className="flex items-center gap-3 rounded-2xl px-4 py-3.5 transition-all"
+                    style={{
+                      background: 'rgba(255,255,255,0.75)',
+                      backdropFilter: 'blur(14px) saturate(160%)',
+                      WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+                      border: '1px solid rgba(255,255,255,0.55)',
+                      boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                    }}
+                  >
+                    <div
+                      className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                      style={{ borderColor: f.color + '70' }}
+                    >
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />
+                    </div>
+                    <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </motion.div>
