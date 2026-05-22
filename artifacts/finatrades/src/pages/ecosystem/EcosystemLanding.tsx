@@ -1019,16 +1019,15 @@ function RolesSection() {
               {role.features.map(f => (
                 <div
                   key={f}
-                  className="flex items-center gap-3 bg-white rounded-xl px-4 py-3.5 transition-all hover:shadow-sm"
-                  style={{ border: `1px solid ${role.accent}33`, background: role.accent + '06' }}
+                  className="flex items-center gap-3 bg-white rounded-2xl px-4 py-4 border border-gray-200 hover:border-gray-300 transition-all"
                 >
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
-                    style={{ background: role.accent + '18' }}
+                    className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+                    style={{ borderColor: role.accent + '60' }}
                   >
-                    <CheckCircle2 size={13} style={{ color: role.accent }} />
+                    <div className="w-2 h-2 rounded-full" style={{ background: role.accent }} />
                   </div>
-                  <span className="text-[#2A2A2A] text-sm font-medium">{f}</span>
+                  <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f}</span>
                 </div>
               ))}
             </div>
