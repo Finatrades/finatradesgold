@@ -19,8 +19,9 @@ import cardLogistics from '@/assets/card-logistics.png';
 import hubsBg from '@/assets/hubs-bg.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
-import logoWinvestnet from '@/assets/logo-winvestnet.png';
+import logoWinvestnet from '@/assets/logo-winvestnet2.png';
 import logoWinlogistics from '@/assets/logo-winlogistics.png';
+import logoWincommodities from '@/assets/logo-wincommodities.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -1022,12 +1023,7 @@ function ConnectedEcosystemSection() {
                 desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
                 link: '#', highlight: false,
                 logo: (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[9px] font-black">RR</span>
-                    </div>
-                    <span className="font-black text-xs text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">COMMODITIES</span></span>
-                  </div>
+                  <img src={logoWincommodities} alt="WinCommodities" className="h-8 w-auto object-contain" />
                 ),
               },
               {
