@@ -1142,6 +1142,8 @@ const ROLES = [
     ctaStyle: 'bg-[#C73B22] hover:bg-[#A82D16] text-white',
     image: exporterWarehouse,
     imageCaption: 'Warehouse-to-Marketplace Workflow',
+    fullLayout: true,
+    hideFeatures: true,
   },
   {
     key: 'buyers',
