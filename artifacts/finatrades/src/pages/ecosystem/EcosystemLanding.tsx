@@ -941,13 +941,13 @@ function MarketplaceSection() {
                 draggable={false}
               />
 
-              {/* Hub count badge — top right of image */}
+              {/* 14 Active Hubs badge — top LEFT corner */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 12 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.8, x: -12 }}
+                whileInView={{ opacity: 1, scale: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
-                className="absolute top-4 right-0 lg:right-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+                className="absolute top-4 left-0 lg:left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
               >
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF0EC' }}>
                   <MapPin size={16} className="text-[#C73B22]" />
@@ -958,20 +958,20 @@ function MarketplaceSection() {
                 </div>
               </motion.div>
 
-              {/* Verified listings badge — bottom left */}
+              {/* 100% Verified Listings badge — top RIGHT corner */}
               <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: -12 }}
-                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                initial={{ opacity: 0, scale: 0.8, x: 12 }}
+                whileInView={{ opacity: 1, scale: 1, x: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 22 }}
-                className="absolute bottom-6 left-0 lg:-left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+                className="absolute top-4 right-0 lg:right-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
               >
                 <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#ECFDF5' }}>
                   <CheckCircle2 size={16} className="text-[#059669]" />
                 </div>
                 <div>
-                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified Listings</p>
-                  <p className="text-[11px] text-[#888880]">Warehouse-receipted only</p>
+                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified</p>
+                  <p className="text-[11px] text-[#888880]">Listings</p>
                 </div>
               </motion.div>
 
