@@ -347,60 +347,72 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
         animate={{
           rotateX: tilt.x,
           rotateY: tilt.y,
-          scale: hovered ? 1.04 : 1,
+          scale: hovered ? 1.03 : 1,
           boxShadow: hovered
-            ? '0 32px 64px -12px rgba(199,59,34,0.25), 0 0 0 1px rgba(199,59,34,0.15)'
-            : '0 4px 24px -4px rgba(0,0,0,0.10)',
+            ? `0 28px 56px -10px ${accent}30, 0 0 0 1.5px ${accent}28`
+            : `0 4px 24px -4px rgba(0,0,0,0.09)`,
         }}
         transition={{ type: 'spring', stiffness: 300, damping: 25 }}
         className="relative rounded-2xl overflow-hidden cursor-pointer"
-        style={{ transformStyle: 'preserve-3d' }}
+        style={{
+          transformStyle: 'preserve-3d',
+          border: `1.5px solid ${accent}18`,
+        }}
       >
-        <div className="relative h-52 overflow-hidden">
+        {/* Top accent bar */}
+        <div className="h-1 w-full" style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}88 60%, transparent 100%)` }} />
+
+        {/* Image area — cream bg, object-contain so full illustration shows */}
+        <div
+          className="relative overflow-hidden"
+          style={{
+            background: `linear-gradient(160deg, #FDF8F5 0%, #F8F0EC 60%, #FDF8F5 100%)`,
+            height: '220px',
+          }}
+        >
+          {/* Radial glow matching accent */}
+          <div className="absolute inset-0 pointer-events-none"
+            style={{ background: `radial-gradient(ellipse 80% 70% at 50% 60%, ${accent}0E 0%, transparent 70%)` }} />
+
           <motion.img
             src={img}
             alt={title}
-            animate={{ scale: hovered ? 1.08 : 1 }}
-            transition={{ duration: 0.5, ease: 'easeOut' }}
-            className="w-full h-full object-cover object-center"
+            animate={{ scale: hovered ? 1.05 : 1, y: hovered ? -4 : 0 }}
+            transition={{ duration: 0.45, ease: 'easeOut' }}
+            className="w-full h-full object-contain object-center relative z-10"
+            style={{ padding: '8px' }}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+          {/* Shine shimmer on hover */}
           <div
-            className="absolute inset-0 opacity-0 transition-opacity duration-300"
+            className="absolute inset-0 pointer-events-none rounded-none transition-opacity duration-300"
             style={{
-              opacity: hovered ? 0.12 : 0,
-              background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.9) 0%, transparent 65%)`,
+              opacity: hovered ? 1 : 0,
+              background: `radial-gradient(ellipse 55% 45% at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.55) 0%, transparent 68%)`,
             }}
           />
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-            <span
-              className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-2"
-              style={{ background: accent, color: '#fff', letterSpacing: '0.04em' }}
-            >
-              {title}
-            </span>
-          </div>
         </div>
 
+        {/* Text panel */}
         <div
           className="relative p-5"
           style={{
-            background: `linear-gradient(160deg, ${accent}12 0%, ${accent}05 50%, #ffffff 100%)`,
-            borderTop: `2px solid ${accent}30`,
+            background: `linear-gradient(160deg, ${accent}10 0%, #ffffff 100%)`,
+            borderTop: `1.5px solid ${accent}20`,
           }}
         >
-          <div
-            className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
-            style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: hovered ? 1 : 0 }}
-          />
-          {/* Subtle colored corner accent */}
-          <div className="absolute top-0 right-0 w-16 h-16 rounded-bl-3xl pointer-events-none"
-            style={{ background: `radial-gradient(circle at 100% 0%, ${accent}18 0%, transparent 70%)` }} />
-          <p className="text-[#444440] text-sm leading-relaxed relative z-10">{desc}</p>
+          {/* Title with accent badge dot */}
+          <div className="flex items-center gap-2 mb-2.5">
+            <span className="w-2 h-2 rounded-full shrink-0" style={{ background: accent }} />
+            <p className="text-[15px] font-bold text-[#1A1A1A] leading-tight">{title}</p>
+          </div>
+
+          <p className="text-[#555550] text-[13px] leading-relaxed">{desc}</p>
+
           <motion.div
-            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 6 }}
-            transition={{ duration: 0.25 }}
-            className="mt-4 flex items-center gap-1.5 text-xs font-semibold"
+            animate={{ opacity: hovered ? 1 : 0, x: hovered ? 0 : -6 }}
+            transition={{ duration: 0.22 }}
+            className="mt-3.5 flex items-center gap-1.5 text-xs font-semibold"
             style={{ color: accent }}
           >
             Learn more <ArrowRight size={12} />
