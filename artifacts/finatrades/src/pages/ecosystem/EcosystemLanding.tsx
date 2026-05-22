@@ -1022,7 +1022,12 @@ function ConnectedEcosystemSection() {
                 desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
                 link: '#', highlight: false,
                 logo: (
-                  <img src={logoRaminvest} alt="WinCommodities" className="h-8 w-auto object-contain bg-black rounded-lg px-2 py-1" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-[9px] font-black">RR</span>
+                    </div>
+                    <span className="font-black text-xs text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">COMMODITIES</span></span>
+                  </div>
                 ),
               },
               {
