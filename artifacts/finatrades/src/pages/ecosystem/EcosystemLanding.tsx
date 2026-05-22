@@ -895,9 +895,14 @@ const ROLES = [
     subtitle: 'Transform verified physical commodity positions into tradeable digital assets with full documentation governance.',
     desc: 'Finatrades gives exporters and producers a structured consignment pathway — from warehouse intake and AI-driven document validation through quality inspection, digital receipt issuance, and live marketplace listing. Trade finance eligibility is assessed as part of the workflow, giving sellers access to pre-shipment finance instruments against confirmed inventory without separate applications.',
     features: [
-      'Structured Consignment Creation', 'AI Document Validation', 'Approved Warehouse Selection',
-      'Quality Inspection Workflow', 'Digital Inventory ID & Receipt', 'Live Marketplace Listing',
-      'Trade Finance Eligibility Assessment', 'Settlement Milestone Tracking',
+      { label: 'Structured Consignment Creation', color: '#C73B22' },
+      { label: 'AI Document Validation',           color: '#E5602A' },
+      { label: 'Approved Warehouse Selection',     color: '#2563EB' },
+      { label: 'Quality Inspection Workflow',      color: '#0891B2' },
+      { label: 'Digital Inventory ID & Receipt',   color: '#7C3AED' },
+      { label: 'Live Marketplace Listing',         color: '#059669' },
+      { label: 'Trade Finance Eligibility',        color: '#D97706' },
+      { label: 'Settlement Milestone Tracking',    color: '#1B2E40' },
     ],
     cta: 'Register as Exporter',
     ctaHref: '/register?role=seller',
@@ -916,9 +921,14 @@ const ROLES = [
     subtitle: 'Every listing is inventory-backed, document-verified, and counterparty-screened before you engage.',
     desc: 'Importers and commodity buyers access a marketplace where every offer is anchored in confirmed warehouse inventory, authenticated trade documentation, and a KYC/KYB-verified seller. Submit RFQs or Import Expressions of Interest, evaluate and compare authenticated offers across 14 African hubs, convert to formal purchase orders with escrow-governed payment, and track all fulfilment milestones to delivery confirmation — with zero counterparty exposure.',
     features: [
-      'Verified Inventory Discovery', 'Multi-Hub Supplier Access', 'RFQ & IOI Submission',
-      'Authenticated Offer Comparison', 'Formal Purchase Order Execution', 'Escrow-Backed Payment Flow',
-      'Inventory Reservation Confirmation', 'Delivery Milestone Visibility',
+      { label: 'Verified Inventory Discovery',        color: '#2563EB' },
+      { label: 'Multi-Hub Supplier Access',           color: '#0891B2' },
+      { label: 'RFQ & IOI Submission',               color: '#7C3AED' },
+      { label: 'Authenticated Offer Comparison',      color: '#059669' },
+      { label: 'Formal Purchase Order Execution',     color: '#C73B22' },
+      { label: 'Escrow-Backed Payment Flow',          color: '#E5602A' },
+      { label: 'Inventory Reservation Confirmation',  color: '#D97706' },
+      { label: 'Delivery Milestone Visibility',       color: '#1B2E40' },
     ],
     cta: 'Register as Importer',
     ctaHref: '/register?role=buyer',
@@ -937,9 +947,14 @@ const ROLES = [
     subtitle: 'A restricted, access-controlled trade branch exclusively for verified government ministries, state-owned enterprises, and sovereign funds.',
     desc: 'Finatrades operates a dedicated sovereign access module for strategic commodity exchange — crude oil, refined petroleum products, grain, wheat, fertilizers, gold, and industrial minerals. Ministries and state trading entities submit structured barter mandates or direct procurement requirements, which are matched against vetted counterparties across the Finatrades network. Settlement gap management, independent valuation oversight, and compliance reporting are embedded throughout the execution process.',
     features: [
-      'Restricted Government Onboarding', 'Sovereign Entity Verification', 'Strategic Barter Mandate Submission',
-      'Independent Commodity Valuation', 'Vetted Counterparty Matching', 'Settlement Gap Management',
-      'Mandate Review & Authorisation', 'Execution & Compliance Monitoring',
+      { label: 'Restricted Government Onboarding',    color: '#C73B22' },
+      { label: 'Sovereign Entity Verification',        color: '#2563EB' },
+      { label: 'Strategic Barter Mandate Submission',  color: '#7C3AED' },
+      { label: 'Independent Commodity Valuation',      color: '#0891B2' },
+      { label: 'Vetted Counterparty Matching',         color: '#059669' },
+      { label: 'Settlement Gap Management',            color: '#D97706' },
+      { label: 'Mandate Review & Authorisation',       color: '#E5602A' },
+      { label: 'Execution & Compliance Monitoring',    color: '#1B2E40' },
     ],
     cta: 'Request Sovereign Access',
     ctaHref: '/register?role=government',
@@ -1018,16 +1033,16 @@ function RolesSection() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {role.features.map(f => (
                 <div
-                  key={f}
+                  key={f.label}
                   className="flex items-center gap-3 bg-white rounded-2xl px-4 py-4 border border-gray-200 hover:border-gray-300 transition-all"
                 >
                   <div
                     className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
-                    style={{ borderColor: role.accent + '60' }}
+                    style={{ borderColor: f.color + '70' }}
                   >
-                    <div className="w-2 h-2 rounded-full" style={{ background: role.accent }} />
+                    <div className="w-2.5 h-2.5 rounded-full" style={{ background: f.color }} />
                   </div>
-                  <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f}</span>
+                  <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
                 </div>
               ))}
             </div>
