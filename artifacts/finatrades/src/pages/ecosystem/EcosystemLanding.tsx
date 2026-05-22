@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import heroBg from '@/assets/hero-bg.png';
+import section2Bg from '@/assets/section2-bg.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -208,8 +209,12 @@ function HeroSection() {
 
 function PositioningSection() {
   return (
-    <section className="bg-[#FFF4F0] py-20 border-y border-gray-200">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
+    <section className="relative py-20 border-y border-gray-200 overflow-hidden">
+      <div className="absolute inset-0">
+        <img src={section2Bg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/25" />
+      </div>
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-14">
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
             One Platform. Multiple Trade Roles. Complete Transaction Visibility.
