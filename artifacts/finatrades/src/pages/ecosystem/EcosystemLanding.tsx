@@ -284,13 +284,14 @@ function HeroSection() {
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
           className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
           {[
-            { value: '14', label: 'African Trade Hubs' },
-            { value: 'Zero', label: 'Counterparty Risk' },
-            { value: '100%', label: 'Inventory-Verified Listings' },
-            { value: 'Escrow', label: 'Governed Settlement' },
+            { value: '14',     label: 'African Trade Hubs',          accent: '#C73B22', bg: 'linear-gradient(135deg,#FFF0ED 0%,#fff 100%)', border: 'rgba(199,59,34,0.22)' },
+            { value: 'Zero',   label: 'Counterparty Risk',            accent: '#059669', bg: 'linear-gradient(135deg,#ECFDF5 0%,#fff 100%)', border: 'rgba(5,150,105,0.22)' },
+            { value: '100%',   label: 'Inventory-Verified Listings',  accent: '#1B4FDB', bg: 'linear-gradient(135deg,#EEF2FF 0%,#fff 100%)', border: 'rgba(27,79,219,0.22)' },
+            { value: 'Escrow', label: 'Governed Settlement',          accent: '#7C3AED', bg: 'linear-gradient(135deg,#F5F3FF 0%,#fff 100%)', border: 'rgba(124,58,237,0.22)' },
           ].map(stat => (
-            <Card3D key={stat.label} className="rounded-xl p-4 text-center" tiltStrength={8}>
-              <div className="text-2xl font-bold text-[#C73B22] mb-1">{stat.value}</div>
+            <Card3D key={stat.label} className="rounded-xl p-4 text-center" accent={stat.accent} tiltStrength={8}
+              style={{ background: stat.bg, border: `1.5px solid ${stat.border}`, boxShadow: `0 4px 16px ${stat.accent}14` }}>
+              <div className="text-2xl font-bold mb-1" style={{ color: stat.accent }}>{stat.value}</div>
               <div className="text-xs text-[#666660]">{stat.label}</div>
             </Card3D>
           ))}
@@ -380,12 +381,21 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
           </div>
         </div>
 
-        <div className="relative p-5 bg-white">
+        <div
+          className="relative p-5"
+          style={{
+            background: `linear-gradient(160deg, ${accent}12 0%, ${accent}05 50%, #ffffff 100%)`,
+            borderTop: `2px solid ${accent}30`,
+          }}
+        >
           <div
             className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
             style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: hovered ? 1 : 0 }}
           />
-          <p className="text-[#555550] text-sm leading-relaxed">{desc}</p>
+          {/* Subtle colored corner accent */}
+          <div className="absolute top-0 right-0 w-16 h-16 rounded-bl-3xl pointer-events-none"
+            style={{ background: `radial-gradient(circle at 100% 0%, ${accent}18 0%, transparent 70%)` }} />
+          <p className="text-[#444440] text-sm leading-relaxed relative z-10">{desc}</p>
           <motion.div
             animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 6 }}
             transition={{ duration: 0.25 }}
@@ -1081,14 +1091,19 @@ function MarketplaceSection() {
             {/* Feature list */}
             <motion.div variants={stagger} className="space-y-3 mb-8">
               {[
-                { icon: Search,      text: 'Filter by commodity type, specification grade, lot quantity, incoterms, and hub location' },
-                { icon: FileText,    text: 'Submit formal RFQ or Import Expression of Interest — tracked and responded to on-platform' },
-                { icon: BarChart3,   text: 'Evaluate competing offers with verified documentation side-by-side before committing' },
-                { icon: Lock,        text: 'Convert accepted offers to purchase orders with escrow-governed payment in one click' },
-              ].map(({ icon: Icon, text }) => (
-                <motion.div key={text} variants={fadeUp} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-gray-50/80 border border-gray-100 hover:border-[#C73B22]/20 hover:bg-[#C73B22]/3 transition-colors">
-                  <div className="w-7 h-7 rounded-lg bg-white border border-[#C73B22]/15 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
-                    <Icon size={13} className="text-[#C73B22]" />
+                { icon: Search,   text: 'Filter by commodity type, specification grade, lot quantity, incoterms, and hub location', accent: '#1B4FDB', bg: 'linear-gradient(135deg,#EEF2FF 0%,#F8FAFF 100%)', border: 'rgba(27,79,219,0.18)' },
+                { icon: FileText, text: 'Submit formal RFQ or Import Expression of Interest — tracked and responded to on-platform', accent: '#059669', bg: 'linear-gradient(135deg,#ECFDF5 0%,#F6FDFB 100%)', border: 'rgba(5,150,105,0.18)' },
+                { icon: BarChart3, text: 'Evaluate competing offers with verified documentation side-by-side before committing',   accent: '#7C3AED', bg: 'linear-gradient(135deg,#F5F3FF 0%,#FAF9FF 100%)', border: 'rgba(124,58,237,0.18)' },
+                { icon: Lock,     text: 'Convert accepted offers to purchase orders with escrow-governed payment in one click',    accent: '#C73B22', bg: 'linear-gradient(135deg,#FFF0ED 0%,#FFF8F6 100%)', border: 'rgba(199,59,34,0.18)' },
+              ].map(({ icon: Icon, text, accent, bg, border }) => (
+                <motion.div key={text} variants={fadeUp}
+                  className="flex items-start gap-3 px-4 py-3.5 rounded-xl transition-all duration-200 hover:scale-[1.01] hover:shadow-md"
+                  style={{ background: bg, border: `1px solid ${border}`, boxShadow: `0 2px 8px ${accent}0A` }}
+                  whileHover={{ x: 2 }}
+                >
+                  <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 shadow-sm"
+                    style={{ background: `${accent}18`, border: `1px solid ${accent}25` }}>
+                    <Icon size={14} style={{ color: accent }} />
                   </div>
                   <span className="text-[#444440] text-sm leading-relaxed">{text}</span>
                 </motion.div>
@@ -1934,26 +1949,31 @@ function ComplianceSection() {
       icon: Shield,
       title: 'KYC / KYB Identity Verification',
       desc: 'Every participant — seller, buyer, warehouse operator, logistics provider, and finance partner — undergoes institutional-grade identity and business verification before platform access is granted. Biometric checks, document validation, and beneficial ownership screening are applied at onboarding.',
+      color: '#C73B22', cardBg: 'linear-gradient(135deg,#FFF0ED 0%,#fff 100%)', border: 'rgba(199,59,34,0.18)',
     },
     {
       icon: FileText,
       title: 'AI-Powered Document Authenticity Checks',
       desc: 'Certificates of origin, phytosanitary certificates, warehouse receipts, inspection reports, and trade contracts are subjected to AI-driven document scanning, MRZ validation, and cross-reference verification against issuing authority databases — eliminating document fraud at source.',
+      color: '#1B4FDB', cardBg: 'linear-gradient(135deg,#EEF2FF 0%,#F8FAFF 100%)', border: 'rgba(27,79,219,0.18)',
     },
     {
       icon: Globe,
       title: 'Multi-Jurisdictional Eligibility & Sanctions Screening',
       desc: 'AML/CFT screening, PEP checks, and real-time sanctions list monitoring run automatically against all registered participants and counterparties across all 14 African trade hubs. Jurisdictional eligibility is assessed continuously throughout the trading relationship, not only at onboarding.',
+      color: '#059669', cardBg: 'linear-gradient(135deg,#ECFDF5 0%,#F6FDFB 100%)', border: 'rgba(5,150,105,0.18)',
     },
     {
       icon: Lock,
       title: 'Immutable Audit Trail on Every Platform Event',
       desc: 'From initial consignment intake through final settlement closure, every user action, document state change, payment event, and status transition is logged with an immutable, cryptographically timestamped record — fully exportable for regulatory review, external audit, or dispute resolution.',
+      color: '#7C3AED', cardBg: 'linear-gradient(135deg,#F5F3FF 0%,#FAF9FF 100%)', border: 'rgba(124,58,237,0.18)',
     },
     {
       icon: Scale,
       title: 'Escrow-Governed Settlement with Zero Counterparty Exposure',
       desc: 'All trade funds are held in independently administered escrow custody and are released exclusively upon verified fulfilment milestones — delivery confirmation, quality sign-off, and document completion. No unilateral disbursement is possible, eliminating counterparty and settlement risk at the structural level.',
+      color: '#D97706', cardBg: 'linear-gradient(135deg,#FFFBEB 0%,#FEFDF7 100%)', border: 'rgba(217,119,6,0.18)',
     },
   ];
 
@@ -2083,21 +2103,19 @@ function ComplianceSection() {
                 <motion.div
                   key={f.title}
                   variants={fadeUp}
-                  className="flex items-start gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group cursor-default"
+                  className="flex items-start gap-4 px-4 py-4 rounded-2xl transition-all duration-200 group cursor-default hover:shadow-md hover:scale-[1.01]"
                   whileHover={{ x: 3 }}
                   style={{
-                    background: 'rgba(255,255,255,0.76)',
-                    backdropFilter: 'blur(16px) saturate(170%)',
-                    WebkitBackdropFilter: 'blur(16px) saturate(170%)',
-                    border: '1px solid rgba(255,255,255,0.58)',
-                    boxShadow: '0 2px 10px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.85)',
+                    background: f.cardBg,
+                    border: `1px solid ${f.border}`,
+                    boxShadow: `0 2px 10px ${f.color}0A`,
                   }}
                 >
                   <div
-                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-105"
-                    style={{ background: 'rgba(199,59,34,0.09)', border: '1px solid rgba(199,59,34,0.10)' }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-110 shadow-sm"
+                    style={{ background: `${f.color}18`, border: `1.5px solid ${f.color}28` }}
                   >
-                    <f.icon size={16} className="text-[#C73B22]" />
+                    <f.icon size={16} style={{ color: f.color }} />
                   </div>
                   <div>
                     <p className="text-[14px] font-semibold text-[#1A1A1A] mb-1">{f.title}</p>
@@ -2520,33 +2538,48 @@ function PartnershipsSection() {
               Built on Trust & Relationships
             </motion.p>
 
-            <div className="space-y-6">
-              {points.map((pt, i) => (
-                <motion.div
-                  key={pt.num}
-                  variants={fadeUp}
-                  custom={i}
-                  className="flex items-start gap-5 group"
-                >
-                  {/* Number bubble */}
-                  <div
-                    className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[11px] font-black transition-all duration-200 group-hover:scale-110"
-                    style={{
-                      background: 'linear-gradient(135deg, #FEF0EC 0%, #FFE4DC 100%)',
-                      color: '#C73B22',
-                      boxShadow: '0 2px 8px rgba(199,59,34,0.15)',
-                    }}
+            <div className="space-y-4">
+              {points.map((pt, i) => {
+                const ptStyles = [
+                  { accent: '#C73B22', bg: 'linear-gradient(135deg,#FFF0ED 0%,#FFE4DC 100%)', shadow: 'rgba(199,59,34,0.20)', border: 'rgba(199,59,34,0.22)', cardBg: 'linear-gradient(135deg,#FFF8F6 0%,#fff 100%)' },
+                  { accent: '#1B4FDB', bg: 'linear-gradient(135deg,#EEF2FF 0%,#DBEAFE 100%)', shadow: 'rgba(27,79,219,0.20)',  border: 'rgba(27,79,219,0.18)',  cardBg: 'linear-gradient(135deg,#F8FAFF 0%,#fff 100%)' },
+                  { accent: '#059669', bg: 'linear-gradient(135deg,#ECFDF5 0%,#D1FAE5 100%)', shadow: 'rgba(5,150,105,0.20)',   border: 'rgba(5,150,105,0.18)',   cardBg: 'linear-gradient(135deg,#F6FDFB 0%,#fff 100%)' },
+                  { accent: '#7C3AED', bg: 'linear-gradient(135deg,#F5F3FF 0%,#EDE9FE 100%)', shadow: 'rgba(124,58,237,0.20)', border: 'rgba(124,58,237,0.18)', cardBg: 'linear-gradient(135deg,#FAF9FF 0%,#fff 100%)' },
+                ][i] ?? { accent: '#C73B22', bg: '#FFF0ED', shadow: 'rgba(199,59,34,0.15)', border: 'rgba(199,59,34,0.18)', cardBg: '#fff' };
+                return (
+                  <motion.div
+                    key={pt.num}
+                    variants={fadeUp}
+                    custom={i}
+                    className="flex items-start gap-4 px-4 py-4 rounded-2xl group transition-all duration-200 hover:shadow-md hover:scale-[1.01]"
+                    whileHover={{ x: 3 }}
+                    style={{ background: ptStyles.cardBg, border: `1px solid ${ptStyles.border}`, boxShadow: `0 2px 8px ${ptStyles.accent}0A` }}
                   >
-                    {pt.num}
-                  </div>
-                  <div className="pt-1">
-                    <p className="text-[15px] font-bold text-[#1A1A1A] mb-1 leading-tight group-hover:text-[#C73B22] transition-colors">
-                      {pt.title}
-                    </p>
-                    <p className="text-[13px] text-[#666660] leading-relaxed">{pt.desc}</p>
-                  </div>
-                </motion.div>
-              ))}
+                    {/* Number bubble */}
+                    <div
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-[11px] font-black transition-all duration-200 group-hover:scale-110 shadow-sm"
+                      style={{
+                        background: ptStyles.bg,
+                        color: ptStyles.accent,
+                        boxShadow: `0 2px 8px ${ptStyles.shadow}`,
+                        border: `1.5px solid ${ptStyles.border}`,
+                      }}
+                    >
+                      {pt.num}
+                    </div>
+                    <div className="pt-1">
+                      <p className="text-[15px] font-bold text-[#1A1A1A] mb-1 leading-tight transition-colors"
+                        style={{ color: undefined }}
+                        onMouseEnter={(e) => (e.currentTarget.style.color = ptStyles.accent)}
+                        onMouseLeave={(e) => (e.currentTarget.style.color = '#1A1A1A')}
+                      >
+                        {pt.title}
+                      </p>
+                      <p className="text-[13px] text-[#666660] leading-relaxed">{pt.desc}</p>
+                    </div>
+                  </motion.div>
+                );
+              })}
             </div>
 
             {/* CTA */}
@@ -2579,6 +2612,9 @@ function CTASection() {
       cta: 'Register as Exporter',
       href: '/register?role=seller',
       primary: true,
+      accent: '#C73B22',
+      cardBg: 'linear-gradient(135deg,#FFF4F0 0%,#fff 100%)',
+      cardBorder: 'rgba(199,59,34,0.28)',
     },
     {
       icon: Search,
@@ -2587,6 +2623,9 @@ function CTASection() {
       cta: 'Register as Importer',
       href: '/register?role=buyer',
       primary: false,
+      accent: '#1B4FDB',
+      cardBg: 'linear-gradient(135deg,#EEF2FF 0%,#F8FAFF 100%)',
+      cardBorder: 'rgba(27,79,219,0.24)',
     },
     {
       icon: Building2,
@@ -2595,6 +2634,9 @@ function CTASection() {
       cta: 'Request Sovereign Access',
       href: '/register?role=government',
       primary: false,
+      accent: '#E5602A',
+      cardBg: 'linear-gradient(135deg,#FFF1EB 0%,#FFFAF7 100%)',
+      cardBorder: 'rgba(229,96,42,0.24)',
     },
     {
       icon: Handshake,
@@ -2603,6 +2645,9 @@ function CTASection() {
       cta: 'Apply as Partner',
       href: '/register?role=partner',
       primary: false,
+      accent: '#059669',
+      cardBg: 'linear-gradient(135deg,#ECFDF5 0%,#F6FDFB 100%)',
+      cardBorder: 'rgba(5,150,105,0.24)',
     },
   ];
 
@@ -2627,33 +2672,51 @@ function CTASection() {
         </motion.div>
 
         <motion.div variants={stagger} className="grid sm:grid-cols-2 gap-5 mb-10">
-          {paths.map(({ icon: Icon, label, desc, cta, href, primary }) => (
+          {paths.map(({ icon: Icon, label, desc, cta, href, primary, accent, cardBg, cardBorder }) => (
             <motion.div
               key={label}
               variants={fadeUp}
-              className={`rounded-2xl p-6 border transition-all duration-300 group ${
-                primary
-                  ? 'border-[#C73B22]/30 bg-gradient-to-br from-[#FFF4F0] to-white'
-                  : 'border-gray-200 bg-white hover:border-[#C73B22]/20 hover:bg-[#FFF8F6]'
-              }`}
-              style={{ boxShadow: primary ? '0 4px 20px rgba(199,59,34,0.10)' : '0 1px 6px rgba(0,0,0,0.04)' }}
+              whileHover={{ scale: 1.02, y: -3 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
+              className="rounded-2xl p-6 transition-all duration-300 group"
+              style={{
+                background: cardBg,
+                border: `1.5px solid ${cardBorder}`,
+                boxShadow: primary
+                  ? `0 8px 32px ${accent}18, 0 2px 8px ${accent}0C`
+                  : `0 4px 16px ${accent}0E, 0 1px 4px ${accent}08`,
+              }}
             >
               <div className="flex items-start gap-4 mb-4">
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${primary ? 'bg-[#C73B22]' : 'bg-[#C73B22]/10'}`}>
-                  <Icon size={18} className={primary ? 'text-white' : 'text-[#C73B22]'} />
+                <div
+                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                  style={{
+                    background: primary ? accent : `${accent}20`,
+                    boxShadow: primary ? `0 4px 12px ${accent}40` : `0 2px 6px ${accent}18`,
+                  }}
+                >
+                  <Icon size={18} style={{ color: primary ? '#fff' : accent }} />
                 </div>
                 <div>
                   <p className="font-semibold text-[#1A1A1A] text-[15px] leading-snug">{label}</p>
-                  {primary && <span className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-wider">Primary Access Path</span>}
+                  {primary && (
+                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
+                      Primary Access Path
+                    </span>
+                  )}
                 </div>
               </div>
               <p className="text-[#555550] text-sm leading-relaxed mb-5">{desc}</p>
               <Link href={href}>
-                <button className={`w-full px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
-                  primary
-                    ? 'bg-[#C73B22] hover:bg-[#A82D16] text-white hover:shadow-lg hover:shadow-[#C73B22]/25'
-                    : 'bg-gray-100 hover:bg-gray-200 text-[#333330] border border-gray-200'
-                }`}>
+                <button
+                  className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 text-white hover:shadow-lg hover:scale-[1.02]"
+                  style={{
+                    background: primary
+                      ? `linear-gradient(135deg, ${accent} 0%, #E5602A 100%)`
+                      : `linear-gradient(135deg, ${accent} 0%, ${accent}CC 100%)`,
+                    boxShadow: `0 4px 12px ${accent}35`,
+                  }}
+                >
                   {cta} <ArrowRight size={14} />
                 </button>
               </Link>
