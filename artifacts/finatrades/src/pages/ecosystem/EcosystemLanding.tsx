@@ -1236,7 +1236,7 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
               : '0 4px 18px -4px rgba(0,0,0,0.12)',
         }}
         transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className={`relative bg-white rounded-2xl p-4 text-center cursor-pointer overflow-hidden ${
+        className={`relative bg-white rounded-2xl p-5 text-center cursor-pointer overflow-hidden ${
           highlight
             ? 'ring-2 ring-[#C73B22] ring-offset-2 ring-offset-[#F5E8E4]'
             : 'border border-gray-200'
@@ -1252,10 +1252,10 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
           }}
         />
         <div className="relative z-10">
-          <div className="flex justify-center mb-2.5">{logo}</div>
-          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-          <p className="text-[9px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
-          <p className="text-[9px] text-[#666660] leading-relaxed">{desc}</p>
+          <div className="flex justify-center mb-3">{logo}</div>
+          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2.5 rounded" />}
+          <p className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
+          <p className="text-[10px] text-[#666660] leading-relaxed">{desc}</p>
         </div>
       </motion.div>
     </motion.div>
@@ -1263,10 +1263,10 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
 }
 
 function ConnectedEcosystemSection() {
-  // Fixed 580×580px orbital hub. Center=(290,290). Orbit radius=210px.
-  // Satellite positions: top=(290,80), right=(500,290), bottom=(290,500), left=(80,290)
-  const C = 290; // center px
-  const R = 210; // orbit radius px
+  // Fixed 680×680px orbital hub. Center=(340,340). Orbit radius=240px.
+  // Satellite positions: top=(340,100), right=(580,340), bottom=(340,580), left=(100,340)
+  const C = 340; // center px
+  const R = 240; // orbit radius px
 
   const orbitDots = Array.from({ length: 10 }, (_, i) => {
     const angle = (i / 10) * 2 * Math.PI;
@@ -1275,7 +1275,7 @@ function ConnectedEcosystemSection() {
 
   const nodes = [
     {
-      key: 'raminvest', px: C, py: C - R, w: 158, delay: 0.15,
+      key: 'raminvest', px: C, py: C - R, w: 182, delay: 0.15,
       label: 'RAMINVEST', role: 'Group Governance',
       desc: 'Strategic oversight and governance across all Raminvest Holding DIFC group entities.',
       highlight: false,
@@ -1286,14 +1286,14 @@ function ConnectedEcosystemSection() {
       ),
     },
     {
-      key: 'winlogistics', px: C - R, py: C, w: 148, delay: 0.25,
+      key: 'winlogistics', px: C - R, py: C, w: 172, delay: 0.25,
       label: 'WINLOGISTICS', role: 'Logistics & Transport',
       desc: 'International logistics coordination, transport structuring and routing.',
       highlight: false,
       logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-11 w-auto object-contain" />,
     },
     {
-      key: 'finatrades', px: C, py: C, w: 188, delay: 0,
+      key: 'finatrades', px: C, py: C, w: 215, delay: 0,
       label: 'FINATRADES', role: 'Trade & Settlement Hub',
       desc: 'Digital trade finance, settlement, FX coordination, and gold-backed clearing.',
       highlight: true,
@@ -1303,14 +1303,14 @@ function ConnectedEcosystemSection() {
       ),
     },
     {
-      key: 'wincommodities', px: C + R, py: C, w: 148, delay: 0.3,
+      key: 'wincommodities', px: C + R, py: C, w: 172, delay: 0.3,
       label: 'WINCOMMODITIES', role: 'Commodity Operations',
       desc: 'Commodity sourcing, execution activities and trade operations support.',
       highlight: false,
       logo: <img src={logoWincommodities} alt="WinCommodities" className="h-11 w-auto object-contain" />,
     },
     {
-      key: 'winvestnet', px: C, py: C + R, w: 158, delay: 0.4,
+      key: 'winvestnet', px: C, py: C + R, w: 182, delay: 0.4,
       label: 'WINVESTNET', role: 'Investment Network',
       desc: 'Investment connectivity, strategic capital alignment and network integration.',
       highlight: false,
@@ -1343,10 +1343,10 @@ function ConnectedEcosystemSection() {
           viewport={{ once: true }}
           transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
           className="relative mx-auto hidden md:block"
-          style={{ width: '580px', height: '580px' }}
+          style={{ width: '680px', height: '680px' }}
         >
           {/* Layer 1 – static dashed orbit ring + axis-aligned connector lines */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="580" height="580" viewBox="0 0 580 580" style={{ zIndex: 1 }}>
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="680" height="680" viewBox="0 0 680 680" style={{ zIndex: 1 }}>
             {/* Outer orbit ring */}
             <circle cx={C} cy={C} r={R} fill="none" stroke="#C73B22" strokeWidth="1.4" strokeDasharray="6 9" opacity="0.22" />
             {/* Inner pulse ring */}
@@ -1370,7 +1370,7 @@ function ConnectedEcosystemSection() {
             transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
             style={{ zIndex: 2 }}
           >
-            <svg width="580" height="580" viewBox="0 0 580 580">
+            <svg width="680" height="680" viewBox="0 0 680 680">
               {orbitDots.map((d, i) => (
                 <circle key={i} cx={d.cx} cy={d.cy} r={d.big ? 5.5 : 3.5}
                   fill="#C73B22" opacity={d.big ? 0.75 : 0.38} />
@@ -1385,7 +1385,7 @@ function ConnectedEcosystemSection() {
             transition={{ duration: 44, repeat: Infinity, ease: 'linear' }}
             style={{ zIndex: 2 }}
           >
-            <svg width="580" height="580" viewBox="0 0 580 580">
+            <svg width="680" height="680" viewBox="0 0 680 680">
               {Array.from({ length: 6 }, (_, i) => {
                 const angle = (i / 6) * 2 * Math.PI;
                 const r2 = R * 0.48;
