@@ -38,6 +38,7 @@ import bgTradeMap from '@/assets/d429511e-fb78-4d80-96dd-e6729475e390_1779488711
 import bgWarehouseLaptop from '@/assets/0941a0fc-f779-48d5-903a-7ca2575d733a_1779488718975.png';
 import bgSecurityDocs from '@/assets/dbf1b430-f76a-446e-a9ba-4b68fdbad8b8_1779488726039.png';
 import bgConnectedGlobe from '@/assets/33ff9425-68c9-499c-89ce-57cedccc8605_1779488733621.png';
+import bgFooter from '@/assets/bg-footer.png';
 import tradeIcons3d from '@/assets/trade-icons-3d.png';
 import layer5 from '@/assets/layer-5.png';
 import layer6 from '@/assets/layer-6.png';
@@ -2739,36 +2740,48 @@ function CTASection() {
 
 function Footer() {
   return (
-    <footer className="bg-[#0A0A0A] border-t border-gray-200 py-12">
-      <div className="max-w-7xl mx-auto px-6">
+    <footer className="relative overflow-hidden border-t border-[#E8E2DC] py-14">
+      {/* Background image */}
+      <img
+        src={bgFooter}
+        alt=""
+        aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none select-none"
+        style={{ opacity: 1 }}
+      />
+      {/* Warm cream overlay for text legibility */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'rgba(253,250,247,0.72)' }} />
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 sm:col-span-1">
             <img src={finatradesLogo} alt="Finatrades" className="h-9 w-auto mb-3" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
-            <p className="text-[#888880] text-sm leading-relaxed">
+            <p className="text-[#665E58] text-sm leading-relaxed">
               Institutional commodity trade platform — compliance-governed, escrow-backed, and built for verified B2B and sovereign trade execution across Africa.
             </p>
-            <p className="text-[#666660] text-xs mt-2">
+            <p className="text-[#8A827A] text-xs mt-2">
               A Raminvest Holding DIFC Group Company
             </p>
           </div>
           <div>
-            <h4 className="text-[#444440] font-semibold text-sm mb-3">Platform</h4>
+            <h4 className="text-[#2A2420] font-semibold text-sm mb-3">Platform</h4>
             <div className="space-y-2">
               {['How It Works', 'Marketplace', 'Seller Consignment', 'Buyer Flow'].map(l => (
-                <div key={l}><a href="#how-it-works" className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{l}</a></div>
+                <div key={l}><a href="#how-it-works" className="text-[#665E58] hover:text-[#C73B22] text-sm transition-colors">{l}</a></div>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-[#444440] font-semibold text-sm mb-3">Services</h4>
+            <h4 className="text-[#2A2420] font-semibold text-sm mb-3">Services</h4>
             <div className="space-y-2">
               {['Warehouse Inventory', 'Trade Finance', 'Government Barter', 'Compliance'].map(l => (
-                <div key={l}><a href="#trade-finance" className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{l}</a></div>
+                <div key={l}><a href="#trade-finance" className="text-[#665E58] hover:text-[#C73B22] text-sm transition-colors">{l}</a></div>
               ))}
             </div>
           </div>
           <div>
-            <h4 className="text-[#444440] font-semibold text-sm mb-3">Legal</h4>
+            <h4 className="text-[#2A2420] font-semibold text-sm mb-3">Legal</h4>
             <div className="space-y-2">
               {[
                 { label: 'Privacy Policy', href: '/privacy' },
@@ -2776,14 +2789,14 @@ function Footer() {
                 { label: 'Disclaimer', href: '/disclaimer' },
                 { label: 'Sign In', href: '/login' },
               ].map(({ label, href }) => (
-                <div key={label}><Link href={href} className="text-[#888880] hover:text-[#444440] text-sm transition-colors">{label}</Link></div>
+                <div key={label}><Link href={href} className="text-[#665E58] hover:text-[#C73B22] text-sm transition-colors">{label}</Link></div>
               ))}
             </div>
           </div>
         </div>
-        <div className="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
-          <p className="text-[#999990] text-xs">© {new Date().getFullYear()} Finatrades. All rights reserved.</p>
-          <p className="text-[#AAAAAA] text-xs text-center">
+        <div className="border-t border-[#D8D0C8] pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-[#8A827A] text-xs">© {new Date().getFullYear()} Finatrades. All rights reserved.</p>
+          <p className="text-[#9A928A] text-xs text-center">
             Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and settlement workflows through one secure digital trade platform.
           </p>
         </div>
