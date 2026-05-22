@@ -1515,13 +1515,13 @@ export default function EcosystemLanding() {
       <Navbar />
       <HeroSection />
       <PositioningSection />
+      <RolesSection />
       <HowItWorksSection />
       <MarketplaceSection />
       <SettlementSection />
       <BackendSection />
       <ComplianceSection />
       <ConnectedEcosystemSection />
-      <RolesSection />
       <CTASection />
       <Footer />
       <FloatingAgentChat />
