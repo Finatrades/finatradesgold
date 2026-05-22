@@ -67,6 +67,65 @@ function AnimatedSection({ children, className = '' }: { children: React.ReactNo
   );
 }
 
+function Card3D({
+  children, className = '', style = {}, accent = '#C73B22', tiltStrength = 10, glass = true,
+}: {
+  children: React.ReactNode; className?: string; style?: React.CSSProperties;
+  accent?: string; tiltStrength?: number; glass?: boolean;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
+  const onMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!ref.current) return;
+    const { left, top, width, height } = ref.current.getBoundingClientRect();
+    const x = (e.clientX - left) / width;
+    const y = (e.clientY - top) / height;
+    setTilt({ x: (y - 0.5) * -tiltStrength, y: (x - 0.5) * tiltStrength });
+    setShine({ x: x * 100, y: y * 100 });
+  };
+  const onLeave = () => { setTilt({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setHovered(false); };
+  return (
+    <div style={{ perspective: '900px' }}>
+      <motion.div
+        ref={ref}
+        onMouseMove={onMove}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={onLeave}
+        animate={{
+          rotateX: tilt.x, rotateY: tilt.y, scale: hovered ? 1.025 : 1,
+          boxShadow: hovered
+            ? `0 22px 44px -8px ${accent}30, 0 0 0 1px ${accent}22`
+            : '0 4px 20px -4px rgba(0,0,0,0.09)',
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 26 }}
+        className={`relative overflow-hidden ${className}`}
+        style={{
+          transformStyle: 'preserve-3d',
+          ...(glass ? {
+            background: 'rgba(255,255,255,0.78)',
+            backdropFilter: 'blur(18px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(18px) saturate(180%)',
+            border: '1px solid rgba(255,255,255,0.55)',
+          } : {}),
+          ...style,
+        }}
+      >
+        <div
+          className="absolute inset-0 rounded-[inherit] pointer-events-none"
+          style={{
+            opacity: hovered ? 1 : 0,
+            transition: 'opacity 0.25s',
+            background: `radial-gradient(ellipse 65% 55% at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.52) 0%, transparent 72%)`,
+          }}
+        />
+        <div className="relative z-10 h-full">{children}</div>
+      </motion.div>
+    </div>
+  );
+}
+
 const NAV_LINKS = [
   { label: 'How It Works', href: '#how-it-works' },
   { label: 'Marketplace', href: '#marketplace' },
@@ -218,10 +277,10 @@ function HeroSection() {
             { value: '100%', label: 'Inventory-Verified Listings' },
             { value: 'Escrow', label: 'Governed Settlement' },
           ].map(stat => (
-            <div key={stat.label} className="bg-white/4 border border-gray-200 rounded-xl p-4 text-center">
+            <Card3D key={stat.label} className="rounded-xl p-4 text-center" tiltStrength={8}>
               <div className="text-2xl font-bold text-[#C73B22] mb-1">{stat.value}</div>
               <div className="text-xs text-[#666660]">{stat.label}</div>
-            </div>
+            </Card3D>
           ))}
         </motion.div>
       </div>
@@ -651,8 +710,14 @@ function HowItWorksStepExplorer() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.35, ease: [0.25, 0.46, 0.45, 0.94] }}
-        className="bg-white rounded-3xl border border-gray-200 overflow-hidden"
-        style={{ boxShadow: '0 4px 40px rgba(0,0,0,0.08)' }}
+        className="rounded-3xl overflow-hidden"
+        style={{
+          background: 'rgba(255,255,255,0.82)',
+          backdropFilter: 'blur(20px) saturate(180%)',
+          WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+          border: '1px solid rgba(255,255,255,0.65)',
+          boxShadow: '0 8px 48px rgba(0,0,0,0.10), inset 0 1px 0 rgba(255,255,255,0.9)',
+        }}
       >
         {/* Panel header */}
         <div className="px-8 py-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-start gap-4"
@@ -694,7 +759,7 @@ function HowItWorksStepExplorer() {
           <div className="p-6 sm:p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {step.substeps.map((sub) => (
-                <div key={sub.n} className="flex items-start gap-3 p-4 rounded-xl border border-gray-100 hover:border-gray-200 hover:bg-gray-50/60 transition-all group">
+                <Card3D key={sub.n} className="flex items-start gap-3 p-4 rounded-xl cursor-default" accent={step.color} tiltStrength={6}>
                   <div className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5 font-bold text-xs transition-colors"
                     style={{ background: `${step.color}15`, color: step.color }}>
                     {sub.n}
@@ -703,7 +768,7 @@ function HowItWorksStepExplorer() {
                     <div className="text-[#1A1A1A] font-semibold text-sm leading-snug mb-1">{sub.label}</div>
                     <div className="text-[#888880] text-xs leading-relaxed">{sub.detail}</div>
                   </div>
-                </div>
+                </Card3D>
               ))}
             </div>
           </div>
@@ -868,7 +933,15 @@ function MarketplaceSection() {
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
             {AFRICA_HUBS.map((hub, i) => (
               <div key={hub}
-                className="bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-gray-100 hover:border-[#C73B22]/20 transition-all">
+                className="rounded-xl px-4 py-3 flex items-center gap-3 transition-all"
+                style={{
+                  background: 'rgba(255,255,255,0.72)',
+                  backdropFilter: 'blur(12px) saturate(160%)',
+                  WebkitBackdropFilter: 'blur(12px) saturate(160%)',
+                  border: '1px solid rgba(255,255,255,0.50)',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+                }}
+              >
                 <div className="w-2 h-2 rounded-full bg-[#C73B22] flex-shrink-0" />
                 <span className="text-[#333330] text-sm font-medium">{hub}</span>
                 <MapPin size={12} className="text-[#AAAAAA] ml-auto" />
@@ -1005,8 +1078,14 @@ function RolesSection() {
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3 }}
-          className="bg-white rounded-3xl p-8 sm:p-12"
-          style={{ border: `1.5px solid ${role.accent}33`, boxShadow: `0 4px 32px 0 ${role.accent}12` }}
+          className="rounded-3xl p-8 sm:p-12"
+          style={{
+            background: 'rgba(255,255,255,0.80)',
+            backdropFilter: 'blur(20px) saturate(180%)',
+            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+            border: `1.5px solid ${role.accent}30`,
+            boxShadow: `0 8px 40px 0 ${role.accent}14, inset 0 1px 0 rgba(255,255,255,0.85)`,
+          }}
         >
           <div className="grid lg:grid-cols-2 gap-12 items-start">
             <div>
@@ -1034,7 +1113,14 @@ function RolesSection() {
               {role.features.map(f => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-3 bg-white rounded-2xl px-4 py-4 border border-gray-200 hover:border-gray-300 transition-all"
+                  className="flex items-center gap-3 rounded-2xl px-4 py-4 transition-all"
+                  style={{
+                    background: 'rgba(255,255,255,0.75)',
+                    backdropFilter: 'blur(14px) saturate(160%)',
+                    WebkitBackdropFilter: 'blur(14px) saturate(160%)',
+                    border: '1px solid rgba(255,255,255,0.55)',
+                    boxShadow: '0 2px 12px rgba(0,0,0,0.06)',
+                  }}
                 >
                   <div
                     className="w-7 h-7 rounded-full border-2 flex items-center justify-center flex-shrink-0"
@@ -1084,13 +1170,13 @@ function SettlementSection() {
           <motion.div variants={fadeUp} className="space-y-3">
             <h3 className="text-[#1A1A1A] font-semibold text-lg mb-5">Non-Negotiable Settlement Conditions</h3>
             {rules.map(({ rule, consequence }) => (
-              <div key={rule} className="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-5 py-4 gap-4">
+              <Card3D key={rule} className="flex items-center justify-between rounded-xl px-5 py-4 gap-4" accent="#C73B22" tiltStrength={5}>
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="w-2 h-2 rounded-full bg-[#C73B22]/70 flex-shrink-0" />
                   <span className="text-[#444440] text-sm">{rule}</span>
                 </div>
                 <span className="text-xs font-semibold text-[#888880] bg-gray-100 px-3 py-1 rounded-lg whitespace-nowrap flex-shrink-0">→ {consequence}</span>
-              </div>
+              </Card3D>
             ))}
           </motion.div>
 
@@ -1117,7 +1203,7 @@ function SettlementSection() {
                 desc: 'Once all settlement conditions are independently verified and confirmed, escrowed funds are released to the seller\'s designated account. The transaction is simultaneously closed with an immutable, timestamped audit trail — capturing every event, counterparty action, and document state throughout the trade lifecycle.',
               },
             ].map(({ icon: Icon, title, desc }) => (
-              <div key={title} className="flex gap-4 bg-gray-50 border border-gray-200 rounded-2xl p-5">
+              <Card3D key={title} className="flex gap-4 rounded-2xl p-5" accent="#C73B22" tiltStrength={6}>
                 <div className="w-10 h-10 rounded-xl bg-[#C73B22]/10 border border-[#C73B22]/15 flex items-center justify-center flex-shrink-0">
                   <Icon size={18} className="text-[#C73B22]" />
                 </div>
@@ -1125,7 +1211,7 @@ function SettlementSection() {
                   <h4 className="text-[#1A1A1A] font-semibold mb-1.5">{title}</h4>
                   <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
                 </div>
-              </div>
+              </Card3D>
             ))}
           </motion.div>
         </div>
@@ -1492,9 +1578,15 @@ function ComplianceSection() {
                 <motion.div
                   key={f.title}
                   variants={fadeUp}
-                  className="flex items-start gap-4 px-4 py-4 rounded-2xl border border-gray-100 bg-white/60 transition-all duration-300 group cursor-default"
-                  whileHover={{ borderColor: 'rgba(199,59,34,0.20)', backgroundColor: 'rgba(255,248,245,0.9)', x: 3 }}
-                  style={{ boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}
+                  className="flex items-start gap-4 px-4 py-4 rounded-2xl transition-all duration-300 group cursor-default"
+                  whileHover={{ x: 3 }}
+                  style={{
+                    background: 'rgba(255,255,255,0.76)',
+                    backdropFilter: 'blur(16px) saturate(170%)',
+                    WebkitBackdropFilter: 'blur(16px) saturate(170%)',
+                    border: '1px solid rgba(255,255,255,0.58)',
+                    boxShadow: '0 2px 10px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,0.85)',
+                  }}
                 >
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-all duration-200 group-hover:scale-105"
