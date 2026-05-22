@@ -161,25 +161,27 @@ function HeroSection() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/10 text-[#A82D16] text-xs font-medium mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-[#A82D16] animate-pulse" />
-            Digital Commodity Trade Platform · 14 African Hubs
+            Institutional Commodity Trade Platform · Raminvest Holding DIFC · 14 African Hubs
           </div>
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1A1A1A] leading-[1.1] tracking-tight mb-6">
-          Digital Gateway for{' '}
+          The Institutional Infrastructure for{' '}
           <span className="bg-gradient-to-r from-[#C73B22] via-[#E5602A] to-[#F08050] bg-clip-text text-transparent">
-            Commodity Trade,
+            Verified Commodity Trade
           </span>
-          <br />Inventory & Settlement
+          <br />Across Africa
         </motion.h1>
 
         <motion.p
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
           className="text-lg text-[#555550] max-w-3xl mx-auto mb-10 leading-relaxed">
-          Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and
-          settlement workflows through one secure digital trade platform — from seller consignment to final payout.
+          Finatrades eliminates the structural risks of African commodity trade — counterparty default, 
+          document fraud, unverified inventory, and unsettled payments — by connecting sellers, buyers, 
+          government entities, warehouses, logistics providers, and finance partners into one 
+          compliance-governed, escrow-backed digital trade execution platform.
         </motion.p>
 
         <motion.div
@@ -187,22 +189,22 @@ function HeroSection() {
           className="flex flex-wrap gap-3 justify-center mb-16">
           <Link href="/register?role=seller">
             <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#C73B22]/30 flex items-center gap-2">
-              Register as Seller <ArrowRight size={16} />
+              Register as Exporter <ArrowRight size={16} />
             </button>
           </Link>
           <Link href="/register?role=buyer">
-            <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
-              Register as Buyer <ArrowRight size={16} />
+            <button className="px-6 py-3 bg-[#1B2E40] hover:bg-[#152436] text-white font-semibold rounded-xl border border-transparent transition-colors flex items-center gap-2">
+              Register as Importer <ArrowRight size={16} />
             </button>
           </Link>
           <Link href="/register?role=government">
-            <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
-              Government Access <ArrowRight size={16} />
+            <button className="px-6 py-3 bg-white hover:bg-gray-50 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
+              Government & Sovereign Access <ArrowRight size={16} />
             </button>
           </Link>
           <a href="#how-it-works">
             <button className="px-6 py-3 text-[#555550] hover:text-[#1A1A1A] font-medium rounded-xl transition-colors flex items-center gap-2">
-              Explore Platform <ChevronDown size={16} />
+              See Full Platform <ChevronDown size={16} />
             </button>
           </a>
         </motion.div>
@@ -212,12 +214,12 @@ function HeroSection() {
           className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
           {[
             { value: '14', label: 'African Trade Hubs' },
-            { value: 'KYC/KYB', label: 'Verified Onboarding' },
-            { value: '9-Step', label: 'Trade Workflow' },
-            { value: 'Escrow', label: 'Settlement Control' },
+            { value: 'Zero', label: 'Counterparty Risk' },
+            { value: '100%', label: 'Inventory-Verified Listings' },
+            { value: 'Escrow', label: 'Governed Settlement' },
           ].map(stat => (
             <div key={stat.label} className="bg-white/4 border border-gray-200 rounded-xl p-4 text-center">
-              <div className="text-2xl font-bold text-[#1A1A1A] mb-1">{stat.value}</div>
+              <div className="text-2xl font-bold text-[#C73B22] mb-1">{stat.value}</div>
               <div className="text-xs text-[#666660]">{stat.label}</div>
             </div>
           ))}
@@ -328,12 +330,12 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
 }
 
 const ROLE_CARDS = [
-  { title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.', img: cardSellers, accent: '#C73B22' },
-  { title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.', img: cardBuyers, accent: '#1B2E40' },
-  { title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.', img: cardGovernment, accent: '#E5602A' },
-  { title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.', img: cardWarehouse, accent: '#C73B22' },
-  { title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.', img: cardFinance, accent: '#1B2E40' },
-  { title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.', img: cardLogistics, accent: '#E5602A' },
+  { title: 'Exporters & Sellers', desc: 'List compliant, warehouse-receipted inventory on a verified B2B marketplace. Submit commodities on structured consignment, upload origin and ownership documentation, pass AI-powered inspection workflows, and access trade finance eligibility from day one.', img: cardSellers, accent: '#C73B22' },
+  { title: 'Importers & Buyers', desc: 'Source verified commodity positions with full documentation transparency — no blind purchasing. Submit RFQs or Import Expressions of Interest, compare authenticated supplier offers, execute structured purchase orders, and track every fulfilment milestone through to delivery confirmation.', img: cardBuyers, accent: '#1B2E40' },
+  { title: 'Government & Sovereign Entities', desc: 'A dedicated, access-controlled branch for ministries, state trading enterprises, and sovereign funds. Conduct strategic commodity procurement and government-to-government barter arrangements — crude oil, grain, fertilizers, minerals, gold — with full compliance oversight and settlement governance.', img: cardGovernment, accent: '#E5602A' },
+  { title: 'Warehouse Operators', desc: 'Become an accredited Finatrades Warehouse Partner. Receive pre-arrival consignment documentation, coordinate quality inspection at intake, issue tamper-evident digital warehouse receipts, and execute release instructions exclusively against verified settlement conditions.', img: cardWarehouse, accent: '#C73B22' },
+  { title: 'Trade Finance Partners', desc: 'Deploy capital against verified, warehouse-backed inventory. Review structured finance requests tied to confirmed purchase orders, approve instruments including pre-shipment finance and invoice discounting, monitor escrow-governed disbursement, and access immutable settlement ledgers for risk management.', img: cardFinance, accent: '#1B2E40' },
+  { title: 'Logistics & Freight Partners', desc: 'Integrate directly into the Finatrades settlement workflow as a verified logistics provider. Track shipment milestones, coordinate customs documentation and clearance readiness, update delivery confirmation events, and trigger final fulfilment sign-off — all within the governed trade execution chain.', img: cardLogistics, accent: '#E5602A' },
 ];
 
 function PositioningSection() {
@@ -349,12 +351,12 @@ function PositioningSection() {
           variants={stagger}
           className="text-center mb-16"
         >
-          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">Trade Ecosystem</motion.p>
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Finatrades Ecosystem</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            One Platform. Multiple Trade Roles.
+            Built for Every Participant in the Commodity Trade Chain
           </motion.h2>
           <motion.p variants={fadeUp} className="text-[#555550] max-w-2xl mx-auto text-lg">
-            Every participant in the commodity trade lifecycle has a dedicated workflow, verified onboarding, and real-time visibility from consignment to settlement.
+            From exporters submitting goods on consignment to sovereign entities conducting strategic barter — every participant operates within a dedicated, compliance-gated workflow with full transaction visibility from intake to settlement.
           </motion.p>
         </motion.div>
 
@@ -553,13 +555,13 @@ function HowItWorksSection() {
         >
           <motion.div variants={fadeUp}
             className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            9-Step Trade Workflow
+            End-to-End Trade Execution · 9-Stage Protocol
           </motion.div>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            How Finatrades Works
+            A Fully Governed Trade Execution Protocol
           </motion.h2>
           <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto">
-            From the moment a seller submits a consignment to when a buyer receives their goods and a seller receives their payout — every stage is digitally connected.
+            Unlike peer-to-peer commodity brokers or fragmented export channels, Finatrades enforces a mandatory, sequenced 9-stage protocol — every transaction must pass through compliance onboarding, warehouse verification, document authentication, escrow payment control, and audited settlement before completion.
           </motion.p>
         </motion.div>
 
@@ -602,21 +604,23 @@ function MarketplaceSection() {
           <motion.div variants={fadeUp}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
               <Globe size={12} />
-              14 Strategic Hubs
+              14 Verified African Trade Hubs
             </div>
             <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
-              Verified Commodity Discovery Across 14 African Trade Hubs
+              Africa's First Institutional-Grade B2B Commodity Marketplace
             </h2>
             <p className="text-[#555550] text-base leading-relaxed mb-8">
-              Finatrades enables buyers to discover verified commodity opportunities, compare supplier offers,
-              submit RFQs, and move from inquiry to structured trade execution through a transparent digital workflow.
+              Every listing on the Finatrades marketplace is anchored to a confirmed warehouse inventory position, 
+              authenticated trade documentation, and a compliance-cleared counterparty. 
+              Buyers don't browse unverified offers — they access audited, actionable commodity positions 
+              ready for structured execution across 14 African trade hubs.
             </p>
             <div className="space-y-3 mb-8">
               {[
-                'Filter by commodity, grade, quantity, pricing, and delivery terms',
-                'Submit RFQ or Import Expression of Interest directly to sellers',
-                'Buyer-seller matching, offer comparison, and formal order conversion',
-                'Warehouse-backed inventory — every listing is verified',
+                'Filter by commodity type, specification grade, lot quantity, incoterms, and hub location',
+                'Submit formal RFQ or Import Expression of Interest — tracked and responded to on-platform',
+                'Evaluate competing offers with verified documentation side-by-side before committing',
+                'Convert accepted offers to purchase orders with escrow-governed payment in one click',
               ].map(item => (
                 <div key={item} className="flex items-start gap-3">
                   <CheckCircle2 size={16} className="text-[#A82D16] flex-shrink-0 mt-0.5" />
@@ -624,11 +628,18 @@ function MarketplaceSection() {
                 </div>
               ))}
             </div>
-            <Link href="/register">
-              <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
-                Explore Marketplace <ArrowRight size={16} />
-              </button>
-            </Link>
+            <div className="flex flex-wrap gap-3">
+              <Link href="/register">
+                <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-[#C73B22]/25">
+                  Access the Marketplace <ArrowRight size={16} />
+                </button>
+              </Link>
+              <Link href="/register?role=seller">
+                <button className="px-6 py-3 bg-white hover:bg-gray-50 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-all flex items-center gap-2">
+                  List Your Inventory <ArrowRight size={16} />
+                </button>
+              </Link>
+            </div>
           </motion.div>
 
           <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
@@ -657,15 +668,15 @@ const ROLES = [
     accentBorder: 'border-[#C73B22]/25',
     accentText: 'text-[#C73B22]',
     tabActiveBg: 'bg-[#C73B22]',
-    title: 'Convert Physical Commodities into Verified Digital Inventory',
-    subtitle: 'Submit goods on consignment. Get listed on the marketplace.',
-    desc: 'Sellers submit commodities to approved warehouses, upload ownership and export documents, track inspection status, and list verified inventory on the marketplace. Trade finance eligibility is built into the workflow from day one.',
+    title: 'List Compliant, Warehouse-Receipted Inventory on an Institutional B2B Marketplace',
+    subtitle: 'Transform verified physical commodity positions into tradeable digital assets with full documentation governance.',
+    desc: 'Finatrades gives exporters and producers a structured consignment pathway — from warehouse intake and AI-driven document validation through quality inspection, digital receipt issuance, and live marketplace listing. Trade finance eligibility is assessed as part of the workflow, giving sellers access to pre-shipment finance instruments against confirmed inventory without separate applications.',
     features: [
-      'Consignment Creation', 'Document Upload', 'Warehouse Selection',
-      'Inspection Workflow', 'Inventory ID Generation', 'Marketplace Listing',
-      'Finance Eligibility', 'Release Tracking',
+      'Structured Consignment Creation', 'AI Document Validation', 'Approved Warehouse Selection',
+      'Quality Inspection Workflow', 'Digital Inventory ID & Receipt', 'Live Marketplace Listing',
+      'Trade Finance Eligibility Assessment', 'Settlement Milestone Tracking',
     ],
-    cta: 'Register as Seller',
+    cta: 'Register as Exporter',
     ctaHref: '/register?role=seller',
     ctaStyle: 'bg-[#C73B22] hover:bg-[#A82D16] text-white',
   },
@@ -678,36 +689,36 @@ const ROLES = [
     accentBorder: 'border-[#1B2E40]/20',
     accentText: 'text-[#1B2E40]',
     tabActiveBg: 'bg-[#1B2E40]',
-    title: 'Source Verified Commodities and Execute Structured Orders',
-    subtitle: 'Browse, match, order, pay, and track — all in one flow.',
-    desc: 'Buyers browse verified stock, send RFQs or Import Expressions of Interest, compare supplier offers, place orders, make payment through approved channels, and track deal execution until delivery milestones are confirmed.',
+    title: 'Source Authenticated Commodity Positions and Execute Risk-Governed Purchase Orders',
+    subtitle: 'Every listing is inventory-backed, document-verified, and counterparty-screened before you engage.',
+    desc: 'Importers and commodity buyers access a marketplace where every offer is anchored in confirmed warehouse inventory, authenticated trade documentation, and a KYC/KYB-verified seller. Submit RFQs or Import Expressions of Interest, evaluate and compare authenticated offers across 14 African hubs, convert to formal purchase orders with escrow-governed payment, and track all fulfilment milestones to delivery confirmation — with zero counterparty exposure.',
     features: [
-      'Marketplace Discovery', 'Verified Inventory Access', 'RFQ Submission',
-      'Supplier Matching', 'Purchase Order Creation', 'Payment Tracking',
-      'Inventory Reserve', 'Delivery Milestone Visibility',
+      'Verified Inventory Discovery', 'Multi-Hub Supplier Access', 'RFQ & IOI Submission',
+      'Authenticated Offer Comparison', 'Formal Purchase Order Execution', 'Escrow-Backed Payment Flow',
+      'Inventory Reservation Confirmation', 'Delivery Milestone Visibility',
     ],
-    cta: 'Register as Buyer',
+    cta: 'Register as Importer',
     ctaHref: '/register?role=buyer',
     ctaStyle: 'bg-[#1B2E40] hover:bg-[#152436] text-white',
   },
   {
     key: 'government',
-    tab: 'Sovereign Access',
+    tab: 'Government & Sovereign',
     icon: Shield,
     accent: '#E5602A',
     accentBg: 'bg-[#E5602A]/10',
     accentBorder: 'border-[#E5602A]/25',
     accentText: 'text-[#E5602A]',
     tabActiveBg: 'bg-[#E5602A]',
-    title: 'Strategic Commodity Barter for Government Users',
-    subtitle: 'A dedicated parallel branch for approved sovereign entities only.',
-    desc: 'Finatrades supports structured government commodity barter workflows — crude oil, fuel, food, wheat, gold, fertilizer, minerals, and more. Sovereign users submit strategic exchange requirements and monitor execution through a controlled digital process.',
+    title: 'Sovereign Commodity Procurement and Government-to-Government Barter Execution',
+    subtitle: 'A restricted, access-controlled trade branch exclusively for verified government ministries, state-owned enterprises, and sovereign funds.',
+    desc: 'Finatrades operates a dedicated sovereign access module for strategic commodity exchange — crude oil, refined petroleum products, grain, wheat, fertilizers, gold, and industrial minerals. Ministries and state trading entities submit structured barter mandates or direct procurement requirements, which are matched against vetted counterparties across the Finatrades network. Settlement gap management, independent valuation oversight, and compliance reporting are embedded throughout the execution process.',
     features: [
-      'Government Onboarding', 'Sovereign Verification', 'Barter Request Creation',
-      'Valuation Comparison', 'Counterparty Matching', 'Settlement Gap Support',
-      'Mandate Review', 'Execution Monitoring',
+      'Restricted Government Onboarding', 'Sovereign Entity Verification', 'Strategic Barter Mandate Submission',
+      'Independent Commodity Valuation', 'Vetted Counterparty Matching', 'Settlement Gap Management',
+      'Mandate Review & Authorisation', 'Execution & Compliance Monitoring',
     ],
-    cta: 'Request Government Access',
+    cta: 'Request Sovereign Access',
     ctaHref: '/register?role=government',
     ctaStyle: 'bg-[#E5602A] hover:bg-[#C94E1C] text-white',
   },
@@ -723,11 +734,11 @@ function RolesSection() {
       <AnimatedSection className="max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            Platform Access by Role
+            Role-Based Platform Access
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">Who Is Finatrades For?</h2>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">A Dedicated Trade Workflow for Every Counterparty</h2>
           <p className="text-[#666660] max-w-2xl mx-auto">
-            Each role has a dedicated workflow, module access, and onboarding path tailored to their position in the trade lifecycle.
+            Finatrades is not a generic marketplace. Each participant category — exporter, importer, sovereign entity, warehouse, finance, or logistics partner — is onboarded through a compliance-gated pathway and assigned a role-specific module with purpose-built workflow controls.
           </p>
         </motion.div>
 
@@ -1026,14 +1037,16 @@ function BackendSection() {
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
         <motion.div variants={fadeUp} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            System Architecture
+            Enterprise-Grade System Architecture
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            12-Layer Digital Trade Infrastructure
+            12 Integrated Layers. One Unbreakable Trade Infrastructure.
           </h2>
           <p className="text-[#666660] max-w-2xl mx-auto">
-            Every user, document, inventory record, order, payment, warehouse release, logistics update,
-            and settlement event is traceable and auditable across the full system stack.
+            Finatrades is not a lightweight SaaS tool layered on top of spreadsheets. It is a purpose-built, 
+            institutional-grade trade operating system — with dedicated, interconnected layers for identity, 
+            document governance, inventory management, order execution, trade finance, escrow settlement, 
+            and regulatory audit. Click any layer to see what it does.
           </p>
         </motion.div>
 
@@ -1047,6 +1060,28 @@ function BackendSection() {
           {layers.map((layer, i) => (
             <LayerCard3D key={layer.label} {...layer} delay={0} />
           ))}
+        </motion.div>
+
+        {/* Backend CTA */}
+        <motion.div
+          variants={fadeUp}
+          className="mt-16 text-center"
+        >
+          <p className="text-[#666660] text-sm mb-5 max-w-xl mx-auto">
+            Every layer is production-deployed, interconnected, and available to verified institutional partners, government bodies, and accredited trade participants.
+          </p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <a href="#contact">
+              <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-[#C73B22]/25">
+                Request Platform Access <ArrowRight size={16} />
+              </button>
+            </a>
+            <a href="#compliance">
+              <button className="px-6 py-3 bg-white hover:bg-gray-50 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-all flex items-center gap-2">
+                View Compliance Architecture <ArrowRight size={16} />
+              </button>
+            </a>
+          </div>
         </motion.div>
       </AnimatedSection>
     </section>
@@ -1379,12 +1414,12 @@ function ConnectedEcosystemSection() {
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger} className="text-center mb-14"
         >
-          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Ecosystem</motion.p>
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">Institutional Backing</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            A Connected Commodity Trade Ecosystem
+            Part of a Fully Integrated Institutional Trade Group
           </motion.h2>
           <motion.p variants={fadeUp} className="text-[#666660] max-w-xl mx-auto">
-            Finatrades operates as part of a broader institutional ecosystem under Raminvest Holding DIFC.
+            Finatrades is not a standalone startup. It operates as the digital trade execution hub within the Raminvest Holding DIFC group — backed by dedicated commodity, logistics, investment, and compliance entities that form a complete, vertically integrated trade infrastructure.
           </motion.p>
         </motion.div>
 
@@ -1496,44 +1531,100 @@ function ConnectedEcosystemSection() {
 }
 
 function CTASection() {
+  const paths = [
+    {
+      icon: Package,
+      label: 'Exporters & Producers',
+      desc: 'List warehouse-verified inventory on Africa\'s institutional B2B commodity marketplace.',
+      cta: 'Register as Exporter',
+      href: '/register?role=seller',
+      primary: true,
+    },
+    {
+      icon: Search,
+      label: 'Importers & Buyers',
+      desc: 'Source authenticated commodity positions with full documentation transparency and escrow-backed settlement.',
+      cta: 'Register as Importer',
+      href: '/register?role=buyer',
+      primary: false,
+    },
+    {
+      icon: Building2,
+      label: 'Government & Sovereign Entities',
+      desc: 'Access the restricted sovereign barter and strategic procurement module — for ministries, SOEs, and sovereign funds only.',
+      cta: 'Request Sovereign Access',
+      href: '/register?role=government',
+      primary: false,
+    },
+    {
+      icon: Handshake,
+      label: 'Finance, Warehouse & Logistics Partners',
+      desc: 'Join the Finatrades accredited partner network — deploy capital, offer warehousing, or provide logistics within the governed trade chain.',
+      cta: 'Apply as Partner',
+      href: '/register?role=partner',
+      primary: false,
+    },
+  ];
+
   return (
     <section id="contact" className="bg-white py-24">
-      <AnimatedSection className="max-w-4xl mx-auto px-6 text-center">
-        <motion.div variants={fadeUp}
-          className="relative bg-gradient-to-br from-[#C73B22]/15 via-[#3D0E05]/10 to-[#E5602A]/8 border border-[#C73B22]/20 rounded-3xl p-12 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#C73B22]/5 to-transparent rounded-3xl" />
-          <div className="relative z-10">
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-              Start Your Commodity Trade Journey
-            </h2>
-            <p className="text-[#555550] text-lg mb-10 max-w-2xl mx-auto">
-              Whether you are a seller submitting goods on consignment, a buyer sourcing verified inventory,
-              a government entity managing strategic barter, or a partner supporting logistics, finance,
-              or warehousing — Finatrades gives you a structured digital gateway for trusted commodity trade execution.
-            </p>
-            <div className="flex flex-wrap gap-3 justify-center">
-              <Link href="/register?role=seller">
-                <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
-                  Register as Seller <ArrowRight size={16} />
-                </button>
-              </Link>
-              <Link href="/register?role=buyer">
-                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors">
-                  Register as Buyer
-                </button>
-              </Link>
-              <Link href="/register?rfq=true">
-                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#1A1A1A] font-semibold rounded-xl border border-gray-300 transition-colors">
-                  Submit Import Expression
-                </button>
-              </Link>
-              <Link href="/register?role=government">
-                <button className="px-6 py-3 bg-gray-100 hover:bg-gray-200 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors">
-                  Request Government Access
-                </button>
-              </Link>
-            </div>
+      <AnimatedSection className="max-w-5xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-12">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
+            Institutional Onboarding — Apply for Access
           </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+            Ready to Trade on Verified,<br />
+            <span style={{ color: '#C73B22' }}>Governed Infrastructure?</span>
+          </h2>
+          <p className="text-[#555550] text-lg max-w-2xl mx-auto">
+            Finatrades onboards participants through a compliance-gated process. Select your entry path below — 
+            all registrations undergo KYC/KYB review before platform access is granted.
+          </p>
+        </motion.div>
+
+        <motion.div variants={stagger} className="grid sm:grid-cols-2 gap-5 mb-10">
+          {paths.map(({ icon: Icon, label, desc, cta, href, primary }) => (
+            <motion.div
+              key={label}
+              variants={fadeUp}
+              className={`rounded-2xl p-6 border transition-all duration-300 group ${
+                primary
+                  ? 'border-[#C73B22]/30 bg-gradient-to-br from-[#FFF4F0] to-white'
+                  : 'border-gray-200 bg-white hover:border-[#C73B22]/20 hover:bg-[#FFF8F6]'
+              }`}
+              style={{ boxShadow: primary ? '0 4px 20px rgba(199,59,34,0.10)' : '0 1px 6px rgba(0,0,0,0.04)' }}
+            >
+              <div className="flex items-start gap-4 mb-4">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${primary ? 'bg-[#C73B22]' : 'bg-[#C73B22]/10'}`}>
+                  <Icon size={18} className={primary ? 'text-white' : 'text-[#C73B22]'} />
+                </div>
+                <div>
+                  <p className="font-semibold text-[#1A1A1A] text-[15px] leading-snug">{label}</p>
+                  {primary && <span className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-wider">Primary Access Path</span>}
+                </div>
+              </div>
+              <p className="text-[#555550] text-sm leading-relaxed mb-5">{desc}</p>
+              <Link href={href}>
+                <button className={`w-full px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 ${
+                  primary
+                    ? 'bg-[#C73B22] hover:bg-[#A82D16] text-white hover:shadow-lg hover:shadow-[#C73B22]/25'
+                    : 'bg-gray-100 hover:bg-gray-200 text-[#333330] border border-gray-200'
+                }`}>
+                  {cta} <ArrowRight size={14} />
+                </button>
+              </Link>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        <motion.div variants={fadeUp} className="text-center">
+          <p className="text-[#888880] text-sm">
+            All registrations are subject to compliance review. Platform access is granted upon successful KYC/KYB verification and admin approval.
+          </p>
+          <p className="text-[#AAAAAA] text-xs mt-2">
+            Finatrades operates under Raminvest Holding DIFC · Member of the UAE & African Trade Ecosystem
+          </p>
         </motion.div>
       </AnimatedSection>
     </section>
@@ -1548,7 +1639,10 @@ function Footer() {
           <div className="col-span-2 sm:col-span-1">
             <img src={finatradesLogo} alt="Finatrades" className="h-9 w-auto mb-3" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
             <p className="text-[#888880] text-sm leading-relaxed">
-              Digital gateway for commodity trade, inventory, settlement and trade finance.
+              Institutional commodity trade platform — compliance-governed, escrow-backed, and built for verified B2B and sovereign trade execution across Africa.
+            </p>
+            <p className="text-[#666660] text-xs mt-2">
+              A Raminvest Holding DIFC Group Company
             </p>
           </div>
           <div>
