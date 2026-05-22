@@ -246,9 +246,6 @@ function PositioningSection() {
               <div className="relative h-44 overflow-hidden">
                 <img src={img} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                <div className="absolute bottom-3 left-3 w-9 h-9 rounded-xl bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm">
-                  <Icon size={16} className="text-[#C73B22]" />
-                </div>
               </div>
               <div className="p-5">
                 <h3 className="text-[#1A1A1A] font-semibold mb-2">{title}</h3>
