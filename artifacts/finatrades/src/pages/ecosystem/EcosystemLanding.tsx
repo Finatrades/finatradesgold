@@ -1193,76 +1193,140 @@ function ComplianceSection() {
   );
 }
 
+function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
+  logo: React.ReactNode; label: string; role: string; desc: string;
+  highlight: boolean; delay: number; width: number;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const { left, top, width: w, height: h } = card.getBoundingClientRect();
+    const x = (e.clientX - left) / w;
+    const y = (e.clientY - top) / h;
+    setTilt({ x: (y - 0.5) * -14, y: (x - 0.5) * 14 });
+    setShine({ x: x * 100, y: y * 100 });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.75 }}
+      whileInView={{ opacity: 1, scale: 1 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.5, type: 'spring', stiffness: 220, damping: 22 }}
+      style={{ perspective: '900px', width }}
+    >
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => { setTilt({ x: 0, y: 0 }); setShine({ x: 50, y: 50 }); setHovered(false); }}
+        animate={{
+          rotateX: tilt.x,
+          rotateY: tilt.y,
+          scale: hovered ? 1.07 : 1,
+          boxShadow: hovered
+            ? '0 24px 48px -8px rgba(199,59,34,0.28), 0 0 0 1.5px rgba(199,59,34,0.18)'
+            : highlight
+              ? '0 8px 28px -4px rgba(199,59,34,0.22)'
+              : '0 4px 18px -4px rgba(0,0,0,0.12)',
+        }}
+        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+        className={`relative bg-white rounded-2xl p-4 text-center cursor-pointer overflow-hidden ${
+          highlight
+            ? 'ring-2 ring-[#C73B22] ring-offset-2 ring-offset-[#F5E8E4]'
+            : 'border border-gray-200'
+        }`}
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        {/* Gloss shine overlay */}
+        <div
+          className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300"
+          style={{
+            opacity: hovered ? 1 : 0,
+            background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.28) 0%, transparent 65%)`,
+          }}
+        />
+        <div className="relative z-10">
+          <div className="flex justify-center mb-2.5">{logo}</div>
+          {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
+          <p className="text-[11px] font-bold text-[#1A1A1A] uppercase tracking-wider leading-tight mb-1">{label}</p>
+          <p className="text-[9px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
+          <p className="text-[9px] text-[#666660] leading-relaxed">{desc}</p>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function ConnectedEcosystemSection() {
-  // Hub positions in % of a fixed 560px-tall container (width = max-w-5xl ≈ 1024px)
-  // Lines are horizontal/vertical so preserveAspectRatio="none" works correctly
-  const partners = [
+  // Fixed 580×580px orbital hub. Center=(290,290). Orbit radius=210px.
+  // Satellite positions: top=(290,80), right=(500,290), bottom=(290,500), left=(80,290)
+  const C = 290; // center px
+  const R = 210; // orbit radius px
+
+  const orbitDots = Array.from({ length: 10 }, (_, i) => {
+    const angle = (i / 10) * 2 * Math.PI;
+    return { cx: C + R * Math.cos(angle), cy: C + R * Math.sin(angle), big: i % 2 === 0 };
+  });
+
+  const nodes = [
     {
-      key: 'raminvest', x: 50, y: 10,
-      label: 'RAMINVEST', sub: 'HOLDING DIFC',
-      role: 'Group Governance',
-      desc: 'Strategic oversight, governance, and ecosystem direction across all group entities.',
-      delay: 0.1, highlight: false, width: '20%',
+      key: 'raminvest', px: C, py: C - R, w: 158, delay: 0.15,
+      label: 'RAMINVEST', role: 'Group Governance',
+      desc: 'Strategic oversight and governance across all Raminvest Holding DIFC group entities.',
+      highlight: false,
       logo: (
-        <div className="flex justify-center items-center bg-black rounded-xl px-3 py-2">
-          <img src={logoRaminvest} alt="Raminvest" className="h-8 w-auto object-contain" />
+        <div className="inline-flex items-center bg-black rounded-lg px-2.5 py-1.5">
+          <img src={logoRaminvest} alt="Raminvest" className="h-7 w-auto object-contain" />
         </div>
       ),
     },
     {
-      key: 'winlogistics', x: 10, y: 50,
-      label: 'WINLOGISTICS', sub: '',
-      role: 'Logistics & Transport',
+      key: 'winlogistics', px: C - R, py: C, w: 148, delay: 0.25,
+      label: 'WINLOGISTICS', role: 'Logistics & Transport',
       desc: 'International logistics coordination, transport structuring and routing.',
-      delay: 0.2, highlight: false, width: '18%',
-      logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-7 w-auto object-contain" />,
+      highlight: false,
+      logo: <img src={logoWinlogistics} alt="WinLogistics" className="h-6 w-auto object-contain" />,
     },
     {
-      key: 'finatrades', x: 50, y: 50,
-      label: 'FINATRADES', sub: 'THIS PLATFORM',
-      role: 'Trade & Settlement Hub',
+      key: 'finatrades', px: C, py: C, w: 188, delay: 0,
+      label: 'FINATRADES', role: 'Trade & Settlement Hub',
       desc: 'Digital trade finance, settlement, FX coordination, and gold-backed clearing.',
-      delay: 0, highlight: true, width: '22%',
+      highlight: true,
       logo: (
-        <img src={logoFinatradesP} alt="Finatrades" className="h-11 w-auto object-contain"
+        <img src={logoFinatradesP} alt="Finatrades" className="h-10 w-auto object-contain"
           style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
       ),
     },
     {
-      key: 'wincommodities', x: 90, y: 50,
-      label: 'WINCOMMODITIES', sub: '',
-      role: 'Commodity Operations',
+      key: 'wincommodities', px: C + R, py: C, w: 148, delay: 0.3,
+      label: 'WINCOMMODITIES', role: 'Commodity Operations',
       desc: 'Commodity sourcing, execution activities and trade operations support.',
-      delay: 0.3, highlight: false, width: '18%',
-      logo: <img src={logoWincommodities} alt="WinCommodities" className="h-7 w-auto object-contain" />,
+      highlight: false,
+      logo: <img src={logoWincommodities} alt="WinCommodities" className="h-6 w-auto object-contain" />,
     },
     {
-      key: 'winvestnet', x: 50, y: 90,
-      label: 'WINVESTNET', sub: '',
-      role: 'Investment Network',
+      key: 'winvestnet', px: C, py: C + R, w: 158, delay: 0.4,
+      label: 'WINVESTNET', role: 'Investment Network',
       desc: 'Investment connectivity, strategic capital alignment and network integration.',
-      delay: 0.4, highlight: false, width: '20%',
-      logo: <img src={logoWinvestnet} alt="WinvestNet" className="h-7 w-auto object-contain" />,
+      highlight: false,
+      logo: <img src={logoWinvestnet} alt="WinvestNet" className="h-6 w-auto object-contain" />,
     },
-  ];
-
-  // Straight lines from each satellite to center (50,50) — horizontal or vertical only
-  const lines = [
-    { x1: 50, y1: 10, x2: 50, y2: 50 },   // raminvest → center (vertical)
-    { x1: 10, y1: 50, x2: 50, y2: 50 },   // winlogistics → center (horizontal)
-    { x1: 90, y1: 50, x2: 50, y2: 50 },   // wincommodities → center (horizontal)
-    { x1: 50, y1: 90, x2: 50, y2: 50 },   // winvestnet → center (vertical)
   ];
 
   return (
     <section className="py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
       <div className="max-w-5xl mx-auto px-6">
 
-        {/* Header */}
+        {/* ── Header ── */}
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
-          variants={stagger}
-          className="text-center mb-14"
+          variants={stagger} className="text-center mb-14"
         >
           <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Ecosystem</motion.p>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
@@ -1273,76 +1337,90 @@ function ConnectedEcosystemSection() {
           </motion.p>
         </motion.div>
 
-        {/* ── Desktop hub diagram ── */}
+        {/* ── Desktop orbital hub (hidden on mobile) ── */}
         <motion.div
-          initial={{ opacity: 0, scale: 0.96 }}
+          initial={{ opacity: 0, scale: 0.92 }}
           whileInView={{ opacity: 1, scale: 1 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative hidden md:block"
-          style={{ height: '560px' }}
+          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative mx-auto hidden md:block"
+          style={{ width: '580px', height: '580px' }}
         >
-          {/* SVG connector lines — lines are axis-aligned so preserveAspectRatio=none is fine */}
-          <svg
-            className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox="0 0 100 100"
-            preserveAspectRatio="none"
-            style={{ zIndex: 0 }}
-          >
-            {lines.map((l, i) => (
-              <line key={i}
-                x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2}
-                stroke="#C73B22" strokeWidth="0.35"
-                strokeDasharray="1.5 2" opacity="0.55"
-              />
+          {/* Layer 1 – static dashed orbit ring + axis-aligned connector lines */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="580" height="580" viewBox="0 0 580 580" style={{ zIndex: 1 }}>
+            {/* Outer orbit ring */}
+            <circle cx={C} cy={C} r={R} fill="none" stroke="#C73B22" strokeWidth="1.4" strokeDasharray="6 9" opacity="0.22" />
+            {/* Inner pulse ring */}
+            <circle cx={C} cy={C} r={R * 0.48} fill="none" stroke="#C73B22" strokeWidth="0.8" strokeDasharray="3 5" opacity="0.15" />
+            {/* Axis connector lines */}
+            <line x1={C} y1={C - R} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C + R} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C} y1={C + R} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            <line x1={C - R} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
+            {/* End dots on connector lines */}
+            {[[C, C - R], [C + R, C], [C, C + R], [C - R, C]].map(([x, y], i) => (
+              <circle key={i} cx={x} cy={y} r="4" fill="#C73B22" opacity="0.5" />
             ))}
-            {/* Connection dots */}
-            {partners.map((p) => (
-              <rect key={p.key}
-                x={p.x - 0.7} y={p.y - 0.7} width="1.4" height="1.4"
-                rx="0.35" fill="#C73B22" opacity="0.55"
-              />
-            ))}
+            <circle cx={C} cy={C} r="5" fill="#C73B22" opacity="0.35" />
           </svg>
 
-          {/* Partner cards */}
-          {partners.map((node) => (
+          {/* Layer 2 – rotating orbital dots */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
+            style={{ zIndex: 2 }}
+          >
+            <svg width="580" height="580" viewBox="0 0 580 580">
+              {orbitDots.map((d, i) => (
+                <circle key={i} cx={d.cx} cy={d.cy} r={d.big ? 5.5 : 3.5}
+                  fill="#C73B22" opacity={d.big ? 0.75 : 0.38} />
+              ))}
+            </svg>
+          </motion.div>
+
+          {/* Layer 3 – counter-rotating inner ring (opposite direction, slower) */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none"
+            animate={{ rotate: -360 }}
+            transition={{ duration: 44, repeat: Infinity, ease: 'linear' }}
+            style={{ zIndex: 2 }}
+          >
+            <svg width="580" height="580" viewBox="0 0 580 580">
+              {Array.from({ length: 6 }, (_, i) => {
+                const angle = (i / 6) * 2 * Math.PI;
+                const r2 = R * 0.48;
+                return (
+                  <circle key={i} cx={C + r2 * Math.cos(angle)} cy={C + r2 * Math.sin(angle)}
+                    r="3" fill="#E5602A" opacity="0.5" />
+                );
+              })}
+            </svg>
+          </motion.div>
+
+          {/* Layer 4 – 3D partner cards */}
+          {nodes.map((node) => (
             <div
               key={node.key}
               className="absolute"
-              style={{
-                left: `${node.x}%`,
-                top: `${node.y}%`,
-                transform: 'translate(-50%, -50%)',
-                width: node.width,
-                zIndex: 10,
-              }}
+              style={{ left: node.px, top: node.py, transform: 'translate(-50%, -50%)', zIndex: 10 }}
             >
-              <motion.div
-                initial={{ opacity: 0, scale: 0.75 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: node.delay, type: 'spring', stiffness: 220, damping: 22 }}
-                whileHover={{ scale: 1.04, boxShadow: '0 12px 32px -8px rgba(199,59,34,0.2)' }}
-                className={`bg-white rounded-2xl p-4 text-center cursor-default transition-shadow ${
-                  node.highlight
-                    ? 'shadow-xl ring-2 ring-[#C73B22] ring-offset-4 ring-offset-[#FDF0EB]'
-                    : 'shadow-md border border-gray-200'
-                }`}
-              >
-                <div className="flex justify-center mb-2.5">{node.logo}</div>
-                {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-                <p className="text-[11px] font-bold text-[#1A1A1A] leading-tight mb-0.5 uppercase tracking-wide">{node.label}</p>
-                <p className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{node.role}</p>
-                <p className="text-[10px] text-[#666660] leading-relaxed">{node.desc}</p>
-              </motion.div>
+              <EcoCard3D
+                logo={node.logo}
+                label={node.label}
+                role={node.role}
+                desc={node.desc}
+                highlight={node.highlight}
+                delay={node.delay}
+                width={node.w}
+              />
             </div>
           ))}
         </motion.div>
 
-        {/* ── Mobile fallback: stacked cards ── */}
+        {/* ── Mobile fallback – stacked card grid ── */}
         <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {partners.map((node, i) => (
+          {nodes.map((node, i) => (
             <motion.div
               key={node.key}
               initial={{ opacity: 0, y: 24 }}
@@ -1350,9 +1428,7 @@ function ConnectedEcosystemSection() {
               viewport={{ once: true }}
               transition={{ delay: i * 0.08, duration: 0.5 }}
               className={`bg-white rounded-2xl p-5 text-center ${
-                node.highlight
-                  ? 'shadow-xl ring-2 ring-[#C73B22]'
-                  : 'shadow-md border border-gray-200'
+                node.highlight ? 'shadow-xl ring-2 ring-[#C73B22]' : 'shadow-md border border-gray-200'
               }`}
             >
               <div className="flex justify-center mb-3">{node.logo}</div>
