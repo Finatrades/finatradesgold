@@ -960,7 +960,7 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
               alt={label}
               animate={{ scale: hovered ? 1.05 : 1 }}
               transition={{ duration: 0.5, ease: 'easeOut' }}
-              className="w-full h-48 object-cover object-center block"
+              className="w-full h-52 object-contain object-center block bg-[#fdf4f0]"
             />
             <div
               className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
