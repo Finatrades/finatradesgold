@@ -1242,23 +1242,23 @@ function EcoCard3D({ logo, label, role, desc, highlight, delay, width }: {
               : '0 4px 18px -4px rgba(0,0,0,0.12)',
         }}
         transition={{ type: 'spring', stiffness: 280, damping: 24 }}
-        className={`relative bg-white rounded-2xl p-5 text-center cursor-pointer overflow-hidden ${
+        className={`relative rounded-2xl p-5 text-center cursor-pointer overflow-hidden ${
           highlight
             ? 'ring-2 ring-[#C73B22] ring-offset-2 ring-offset-[#F5E8E4]'
-            : 'border border-gray-200'
+            : 'border border-[#F0E8E4]'
         }`}
-        style={{ transformStyle: 'preserve-3d' }}
+        style={{ transformStyle: 'preserve-3d', background: highlight ? '#FFF6F2' : '#FFFAF8' }}
       >
-        {/* Gloss shine overlay */}
+        {/* Warm radial light — always visible, brightens on hover */}
         <div
           className="absolute inset-0 rounded-2xl pointer-events-none transition-opacity duration-300"
           style={{
-            opacity: hovered ? 1 : 0,
-            background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.28) 0%, transparent 65%)`,
+            opacity: hovered ? 1 : 0.55,
+            background: `radial-gradient(ellipse 80% 70% at ${shine.x}% ${shine.y}%, rgba(255,240,230,0.72) 0%, transparent 70%)`,
           }}
         />
         <div className="relative z-10">
-          <div className="flex justify-center mb-3">{logo}</div>
+          <div className="flex justify-center mb-3" style={{ filter: 'brightness(1.08) saturate(1.05)' }}>{logo}</div>
           {highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2.5 rounded" />}
           <p className="text-[10px] font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{role}</p>
           <p className="text-[10px] text-[#666660] leading-relaxed">{desc}</p>
