@@ -1198,6 +1198,7 @@ const ROLES = [
     ctaStyle: 'bg-[#E5602A] hover:bg-[#C94E1C] text-white',
     image: governmentSovereign,
     imageCaption: 'Sovereign Procurement & G2G Barter Execution',
+    hideFeatures: true,
   },
 ];
 
@@ -1307,7 +1308,7 @@ function RolesSection() {
                 </motion.div>
               )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {!(role as typeof role & { hideFeatures?: boolean }).hideFeatures && <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {role.features.map(f => (
                   <div
                     key={f.label}
@@ -1329,7 +1330,7 @@ function RolesSection() {
                     <span className="text-[#2A2A2A] text-sm font-medium leading-snug">{f.label}</span>
                   </div>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
         </motion.div>
