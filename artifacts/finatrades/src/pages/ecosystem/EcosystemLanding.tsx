@@ -126,8 +126,8 @@ function HeroSection() {
           alt=""
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-white/60 via-white/50 to-white/80" />
-        <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-white/30" />
+        <div className="absolute inset-0 bg-gradient-to-b from-white/15 via-white/10 to-white/40" />
+        <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
