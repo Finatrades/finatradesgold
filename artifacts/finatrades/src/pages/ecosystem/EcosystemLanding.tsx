@@ -35,6 +35,7 @@ import layer10 from '@/assets/layer-10.png';
 import layer11 from '@/assets/layer-11.png';
 import layer12 from '@/assets/layer-12.png';
 import backendBg from '@/assets/backend-bg.png';
+import compliance3d from '@/assets/compliance-3d.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -853,59 +854,6 @@ function SettlementSection() {
   );
 }
 
-function ComplianceSection() {
-  return (
-    <section id="compliance" className="bg-white py-24">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
-            {[
-              'KYC / KYB Onboarding',
-              'AML Screening',
-              'Sanctions Checks',
-              'Role-Based Access',
-              'Document Verification',
-              'Audit Trail Recording',
-              'Inventory Traceability',
-              'Transaction Monitoring',
-              'Partner Reporting',
-              'Approval Workflows',
-            ].map(item => (
-              <div key={item} className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3">
-                <Shield size={13} className="text-[#A82D16] flex-shrink-0" />
-                <span className="text-[#444440] text-sm">{item}</span>
-              </div>
-            ))}
-          </motion.div>
-
-          <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-              <Shield size={12} />
-              Compliance-First Infrastructure
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
-              Built for Compliance, Traceability and Scalable Commodity Trade
-            </h2>
-            <p className="text-[#555550] leading-relaxed mb-6">
-              The Finatrades backend connects onboarding, inventory, marketplace, payments, trade finance,
-              escrow, settlement, reporting, and partner integrations into one secure digital infrastructure —
-              designed with compliance and auditability at the core.
-            </p>
-            <div className="p-5 bg-[#C73B22]/8 border border-[#C73B22]/15 rounded-2xl">
-              <p className="text-[#666660] text-sm leading-relaxed italic">
-                "Access to platform services may be subject to user eligibility, jurisdictional requirements,
-                partner approval, compliance checks, and applicable laws. Finatrades does not provide investment
-                advice, public token issuance, deposit-taking services, or regulated financial services unless
-                specifically authorized through the relevant licensed entity or approved partner arrangement."
-              </p>
-            </div>
-          </motion.div>
-        </div>
-      </AnimatedSection>
-    </section>
-  );
-}
-
 function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
   img: string | null; icon: React.ElementType; label: string; num: string; desc: string; delay: number;
 }) {
@@ -1073,6 +1021,174 @@ function BackendSection() {
           ))}
         </div>
       </AnimatedSection>
+    </section>
+  );
+}
+
+function ComplianceSection() {
+  const features = [
+    {
+      icon: Shield,
+      title: 'KYC / KYB Verification',
+      desc: 'Every seller, buyer, warehouse, and logistics partner is identity-verified before accessing the platform.',
+    },
+    {
+      icon: FileText,
+      title: 'Document Authenticity Checks',
+      desc: 'Certificates of origin, phytosanitary documents, and trade contracts are verified via AI-powered document scanning.',
+    },
+    {
+      icon: Globe,
+      title: 'Jurisdictional Eligibility Screening',
+      desc: 'AML/CFT screening and sanctions list checks run automatically on all participants across 14 African hubs.',
+    },
+    {
+      icon: Lock,
+      title: 'Audit Trail on Every Event',
+      desc: 'From consignment entry to final settlement, every action is logged, timestamped, and exportable for regulatory review.',
+    },
+    {
+      icon: Scale,
+      title: 'Escrow-Backed Settlement',
+      desc: 'Funds are held in verified escrow and only released upon confirmed fulfilment milestones — zero counterparty risk.',
+    },
+  ];
+
+  return (
+    <section className="relative py-28 overflow-hidden" style={{ background: 'linear-gradient(160deg, #fff 0%, #FFF4F0 60%, #fff 100%)' }}>
+      {/* Subtle background rings */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute -left-32 top-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-[0.06]"
+          style={{ background: 'radial-gradient(circle, #C73B22 0%, transparent 70%)' }} />
+        <div className="absolute right-0 bottom-0 w-[400px] h-[400px] rounded-full opacity-[0.04]"
+          style={{ background: 'radial-gradient(circle, #1B2E40 0%, transparent 70%)' }} />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24 items-center">
+
+          {/* ── LEFT: 3D illustration ── */}
+          <motion.div
+            initial={{ opacity: 0, x: -64 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.85, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="relative flex items-center justify-center order-2 lg:order-1"
+          >
+            {/* Glow halo behind image */}
+            <div className="absolute inset-10 rounded-full blur-3xl opacity-20 pointer-events-none"
+              style={{ background: 'radial-gradient(circle, #E5602A 0%, transparent 70%)' }} />
+
+            {/* Floating 3D image */}
+            <motion.img
+              src={compliance3d}
+              alt="Compliance Infrastructure"
+              animate={{ y: [0, -14, 0] }}
+              transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
+              className="relative w-full max-w-[520px] drop-shadow-2xl"
+              style={{ filter: 'drop-shadow(0 32px 48px rgba(199,59,34,0.15))' }}
+            />
+
+            {/* Floating badge — top right */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, y: 20 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.5, duration: 0.5, type: 'spring', stiffness: 240, damping: 20 }}
+              className="absolute top-6 right-4 lg:right-0 bg-white rounded-2xl shadow-xl px-4 py-3 border border-gray-100 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: '#FEF0EC' }}>
+                <Shield size={18} className="text-[#C73B22]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-[#1A1A1A] leading-tight">AML / CFT Cleared</p>
+                <p className="text-[10px] text-[#888880]">All participants screened</p>
+              </div>
+            </motion.div>
+
+            {/* Floating badge — bottom left */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.7, y: -20 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.7, duration: 0.5, type: 'spring', stiffness: 240, damping: 20 }}
+              className="absolute bottom-8 left-0 lg:-left-6 bg-white rounded-2xl shadow-xl px-4 py-3 border border-gray-100 flex items-center gap-3"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+                style={{ background: '#EFF6FF' }}>
+                <CheckCircle2 size={18} className="text-[#1B2E40]" />
+              </div>
+              <div>
+                <p className="text-[11px] font-bold text-[#1A1A1A] leading-tight">100% Audit Trail</p>
+                <p className="text-[10px] text-[#888880]">Every event logged</p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* ── RIGHT: Text content ── */}
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: '-80px' }}
+            variants={stagger}
+            className="order-1 lg:order-2"
+          >
+            <motion.div variants={fadeUp}
+              className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 mb-6"
+              style={{ background: 'rgba(199,59,34,0.06)', color: '#A82D16', fontSize: '11px', fontWeight: 600 }}
+            >
+              <Shield size={12} /> Compliance Layer
+            </motion.div>
+
+            <motion.h2 variants={fadeUp}
+              className="text-3xl sm:text-4xl xl:text-[2.6rem] font-bold text-[#1A1A1A] mb-5 leading-tight"
+            >
+              Compliance-First<br />
+              <span style={{ color: '#C73B22' }}>Infrastructure</span>
+            </motion.h2>
+
+            <motion.p variants={fadeUp} className="text-[#666660] text-base sm:text-lg mb-10 leading-relaxed max-w-lg">
+              Every transaction, participant, and document on Finatrades passes through multi-layer compliance checks — from identity verification to jurisdictional screening — before any trade is executed.
+            </motion.p>
+
+            <motion.div variants={stagger} className="space-y-4">
+              {features.map((f) => (
+                <motion.div
+                  key={f.title}
+                  variants={fadeUp}
+                  className="flex items-start gap-4 p-4 rounded-2xl border border-transparent transition-all duration-300 group cursor-default"
+                  whileHover={{ borderColor: 'rgba(199,59,34,0.18)', backgroundColor: 'rgba(199,59,34,0.03)', x: 4 }}
+                >
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 transition-colors duration-200 group-hover:bg-[#C73B22]"
+                    style={{ background: 'rgba(199,59,34,0.1)' }}>
+                    <f.icon size={16} className="text-[#C73B22] group-hover:text-white transition-colors duration-200" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-[#1A1A1A] mb-1">{f.title}</p>
+                    <p className="text-xs text-[#777770] leading-relaxed">{f.desc}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="mt-10 flex items-center gap-4">
+              <a href="#contact"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03]"
+                style={{ background: 'linear-gradient(135deg, #C73B22, #E5602A)' }}
+              >
+                Talk to Compliance Team <ArrowRight size={14} />
+              </a>
+              <a href="#how-it-works"
+                className="text-sm font-medium text-[#555550] hover:text-[#C73B22] transition-colors flex items-center gap-1.5"
+              >
+                View full workflow <ArrowRight size={13} />
+              </a>
+            </motion.div>
+          </motion.div>
+
+        </div>
+      </div>
     </section>
   );
 }
