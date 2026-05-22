@@ -23,6 +23,7 @@ import cardFinance from '@/assets/card-finance.png';
 import cardLogistics from '@/assets/card-logistics.png';
 import hubsBg from '@/assets/hubs-bg.png';
 import exporterWarehouse from '@/assets/exporter-warehouse.png';
+import buyerMarketplace from '@/assets/buyer-marketplace.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
@@ -1139,6 +1140,7 @@ const ROLES = [
     ctaHref: '/register?role=seller',
     ctaStyle: 'bg-[#C73B22] hover:bg-[#A82D16] text-white',
     image: exporterWarehouse,
+    imageCaption: 'Warehouse-to-Marketplace Workflow',
   },
   {
     key: 'buyers',
@@ -1165,6 +1167,8 @@ const ROLES = [
     cta: 'Register as Importer',
     ctaHref: '/register?role=buyer',
     ctaStyle: 'bg-[#1B2E40] hover:bg-[#152436] text-white',
+    image: buyerMarketplace,
+    imageCaption: 'Authenticated Marketplace Discovery',
   },
   {
     key: 'government',
@@ -1269,7 +1273,7 @@ function RolesSection() {
             </div>
 
             <div className="flex flex-col gap-4">
-              {(role as typeof role & { image?: string }).image && (
+              {(role as typeof role & { image?: string; imageCaption?: string }).image && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.97 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -1283,7 +1287,7 @@ function RolesSection() {
                 >
                   <img
                     src={(role as typeof role & { image?: string }).image}
-                    alt="Exporter warehouse workflow"
+                    alt={(role as typeof role & { imageCaption?: string }).imageCaption ?? role.title}
                     className="w-full h-auto object-contain"
                     style={{ maxHeight: '280px', padding: '12px' }}
                   />
@@ -1294,7 +1298,7 @@ function RolesSection() {
                     }}
                   >
                     <p className="text-[10px] font-semibold uppercase tracking-widest" style={{ color: role.accent }}>
-                      Warehouse-to-Marketplace Workflow
+                      {(role as typeof role & { imageCaption?: string }).imageCaption ?? ''}
                     </p>
                   </div>
                 </motion.div>
