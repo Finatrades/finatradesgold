@@ -903,6 +903,127 @@ function ComplianceSection() {
   );
 }
 
+function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
+  img: string | null; icon: React.ElementType; label: string; num: string; desc: string; delay: number;
+}) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const { left, top, width, height } = card.getBoundingClientRect();
+    const x = (e.clientX - left) / width;
+    const y = (e.clientY - top) / height;
+    setTilt({ x: (y - 0.5) * -14, y: (x - 0.5) * 14 });
+    setShine({ x: x * 100, y: y * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+    setShine({ x: 50, y: 50 });
+    setHovered(false);
+  };
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '-40px' }}
+      transition={{ delay }}
+      style={{ perspective: '900px' }}
+    >
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={handleMouseLeave}
+        animate={{
+          rotateX: tilt.x,
+          rotateY: tilt.y,
+          scale: hovered ? 1.03 : 1,
+          boxShadow: hovered
+            ? '0 28px 56px -10px rgba(199,59,34,0.22), 0 0 0 1px rgba(199,59,34,0.12)'
+            : '0 2px 16px -4px rgba(0,0,0,0.09)',
+        }}
+        transition={{ type: 'spring', stiffness: 280, damping: 24 }}
+        className="relative rounded-2xl overflow-hidden cursor-pointer border border-gray-200"
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        {img ? (
+          <div className="relative overflow-hidden">
+            <motion.img
+              src={img}
+              alt={label}
+              animate={{ scale: hovered ? 1.05 : 1 }}
+              transition={{ duration: 0.5, ease: 'easeOut' }}
+              className="w-full h-auto block"
+            />
+            <div
+              className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
+              style={{
+                opacity: hovered ? 1 : 0,
+                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.18) 0%, transparent 60%)`,
+              }}
+            />
+            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/80 bg-black/30 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+              LAYER {num}
+            </span>
+          </div>
+        ) : (
+          <div className="relative h-44 flex items-center justify-center overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
+            <div className="absolute inset-0 opacity-10"
+              style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #E5602A 0%, transparent 60%), radial-gradient(circle at 70% 60%, #C73B22 0%, transparent 50%)' }} />
+            <div
+              className="absolute inset-0 transition-opacity duration-300 pointer-events-none"
+              style={{
+                opacity: hovered ? 1 : 0,
+                background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.12) 0%, transparent 60%)`,
+              }}
+            />
+            <Icon size={44} className="text-white/25 relative z-10" />
+            <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+              LAYER {num}
+            </span>
+          </div>
+        )}
+
+        <div
+          className="relative p-5"
+          style={{ background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)' }}
+        >
+          <div
+            className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
+            style={{
+              background: 'linear-gradient(90deg, transparent, #C73B22, #E5602A, transparent)',
+              opacity: hovered ? 1 : 0,
+            }}
+          />
+          <div className="flex items-start gap-3 mb-2">
+            <div className="w-7 h-7 rounded-lg bg-[#C73B22]/10 flex items-center justify-center flex-shrink-0 mt-0.5 transition-colors duration-200"
+              style={{ backgroundColor: hovered ? 'rgba(199,59,34,0.18)' : '' }}>
+              <Icon size={13} className="text-[#C73B22]" />
+            </div>
+            <h3 className="text-[#1A1A1A] text-sm font-semibold leading-snug">{label}</h3>
+          </div>
+          <p className="text-[#777770] text-xs leading-relaxed pl-10">{desc}</p>
+          <motion.div
+            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 5 }}
+            transition={{ duration: 0.22 }}
+            className="mt-3 flex items-center gap-1 text-[11px] font-semibold text-[#C73B22] pl-10"
+          >
+            View layer <ArrowRight size={11} />
+          </motion.div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 function BackendSection() {
   const layers = [
     { img: layer1, icon: Users,       label: 'User Access Layer',               num: '01', desc: 'Role-based onboarding for sellers, buyers, warehouses, logistics & finance partners.' },
@@ -939,49 +1060,9 @@ function BackendSection() {
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {layers.map(({ img, icon: Icon, label, num, desc }, i) => (
-            <motion.div
-              key={label}
-              variants={fadeUp}
-              whileHover={{ y: -4, transition: { duration: 0.22 } }}
-              className="group relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg hover:border-[#C73B22]/30 transition-all duration-300"
-            >
-              {img ? (
-                <div className="relative overflow-hidden">
-                  <img
-                    src={img}
-                    alt={label}
-                    className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
-                  />
-                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/80 bg-black/30 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
-                    LAYER {num}
-                  </span>
-                </div>
-              ) : (
-                <div className="relative h-44 overflow-hidden flex items-center justify-center"
-                  style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #243d55 60%, #C73B22 140%)' }}>
-                  <div className="absolute inset-0 opacity-10"
-                    style={{ backgroundImage: 'radial-gradient(circle at 30% 50%, #E5602A 0%, transparent 60%), radial-gradient(circle at 70% 60%, #C73B22 0%, transparent 50%)' }} />
-                  <Icon size={40} className="text-white/30 relative z-10" />
-                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
-                    LAYER {num}
-                  </span>
-                </div>
-              )}
-
-              <div className="p-5" style={{ background: 'linear-gradient(160deg, #fff8f5 0%, #fff1eb 100%)' }}>
-                <div className="flex items-start gap-3 mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-[#C73B22]/10 flex items-center justify-center flex-shrink-0 mt-0.5 group-hover:bg-[#C73B22]/20 transition-colors">
-                    <Icon size={13} className="text-[#C73B22]" />
-                  </div>
-                  <h3 className="text-[#1A1A1A] text-sm font-semibold leading-snug">{label}</h3>
-                </div>
-                <p className="text-[#777770] text-xs leading-relaxed pl-10">{desc}</p>
-              </div>
-
-              <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#C73B22] to-[#E5602A] scale-x-0 group-hover:scale-x-100 origin-left transition-transform duration-300 rounded-b-2xl" />
-            </motion.div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {layers.map((layer, i) => (
+            <LayerCard3D key={layer.label} {...layer} delay={i * 0.06} />
           ))}
         </div>
       </AnimatedSection>
