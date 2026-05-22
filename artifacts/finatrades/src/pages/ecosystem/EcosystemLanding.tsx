@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useInView } from 'framer-motion';
+import { motion, useInView, useSpring, useMotionTemplate } from 'framer-motion';
 import { Link } from 'wouter';
 import {
   ArrowRight, Shield, Globe, Warehouse, Package, Search,
@@ -858,13 +858,36 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
   img: string | null; icon: React.ElementType; label: string; num: string; desc: string; delay: number;
 }) {
   const [flipped, setFlipped] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const rotX = useSpring(0, { stiffness: 300, damping: 22 });
+  const rotY = useSpring(0, { stiffness: 300, damping: 22 });
+  const glowX = useSpring(50, { stiffness: 200, damping: 20 });
+  const glowY = useSpring(50, { stiffness: 200, damping: 20 });
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (flipped || !cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const cx = (e.clientX - rect.left) / rect.width;
+    const cy = (e.clientY - rect.top) / rect.height;
+    rotX.set((cy - 0.5) * -16);
+    rotY.set((cx - 0.5) * 16);
+    glowX.set(cx * 100);
+    glowY.set(cy * 100);
+  };
+
+  const handleMouseLeave = () => {
+    rotX.set(0); rotY.set(0);
+    glowX.set(50); glowY.set(50);
+  };
 
   return (
     <motion.div
+      ref={cardRef}
       variants={fadeUp}
-      whileHover={{ scale: 1.03, transition: { duration: 0.2 } }}
-      style={{ perspective: '1000px', height: '260px' }}
+      style={{ perspective: '1000px', height: '260px', rotateX: flipped ? 0 : rotX, rotateY: flipped ? undefined : rotY }}
       className="cursor-pointer"
+      onMouseMove={handleMouseMove}
+      onMouseLeave={handleMouseLeave}
       onClick={() => setFlipped(f => !f)}
     >
       <motion.div
@@ -890,6 +913,14 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
           {/* Light gradient overlay — subtle shadow only at bottom for text legibility */}
           <div className="absolute inset-0"
             style={{ background: 'linear-gradient(to top, rgba(10,10,14,0.58) 0%, rgba(10,10,14,0.08) 40%, transparent 100%)' }} />
+
+          {/* Gloss shine follows mouse */}
+          <motion.div
+            className="absolute inset-0 pointer-events-none rounded-2xl"
+            style={{
+              background: useMotionTemplate`radial-gradient(ellipse 70% 60% at ${glowX}% ${glowY}%, rgba(255,255,255,0.22) 0%, transparent 70%)`,
+            }}
+          />
 
           {/* Layer badge — top left */}
           <span
