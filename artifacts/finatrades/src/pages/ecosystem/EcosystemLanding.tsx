@@ -16,6 +16,7 @@ import cardGovernment from '@/assets/card-government.png';
 import cardWarehouse from '@/assets/card-warehouse.png';
 import cardFinance from '@/assets/card-finance.png';
 import cardLogistics from '@/assets/card-logistics.png';
+import hubsBg from '@/assets/hubs-bg.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -572,8 +573,12 @@ const AFRICA_HUBS = [
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="bg-[#FFF4F0] py-24 border-y border-gray-200">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
+    <section id="marketplace" className="relative py-24 border-y border-gray-200 overflow-hidden">
+      <div className="absolute inset-0">
+        <img src={hubsBg} alt="" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-white/30" />
+      </div>
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
         <div className="grid lg:grid-cols-2 gap-16 items-center">
           <motion.div variants={fadeUp}>
             <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
