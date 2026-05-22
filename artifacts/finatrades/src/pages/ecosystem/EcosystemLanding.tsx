@@ -17,6 +17,10 @@ import cardWarehouse from '@/assets/card-warehouse.png';
 import cardFinance from '@/assets/card-finance.png';
 import cardLogistics from '@/assets/card-logistics.png';
 import hubsBg from '@/assets/hubs-bg.png';
+import logoRaminvest from '@/assets/logo-raminvest.webp';
+import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
+import logoWinvestnet from '@/assets/logo-winvestnet.png';
+import logoWinlogistics from '@/assets/logo-winlogistics.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
 
 const fadeUp = {
@@ -1000,12 +1004,8 @@ function ConnectedEcosystemSection() {
                 desc: 'Provides group-level strategic oversight, governance, and ecosystem direction across the platform.',
                 link: null, highlight: false,
                 logo: (
-                  <div className="flex flex-col items-center">
-                    <div className="w-10 h-10 rounded bg-black flex items-center justify-center mb-1">
-                      <span className="text-white text-xs font-black tracking-tight">RR</span>
-                    </div>
-                    <span className="font-black text-sm text-[#1A1A1A] tracking-tight">RAMINVEST</span>
-                    <span className="text-[10px] text-[#888] font-medium tracking-widest">HOLDING DIFC</span>
+                  <div className="flex justify-center items-center bg-black rounded-xl px-3 py-2">
+                    <img src={logoRaminvest} alt="Raminvest" className="h-10 w-auto object-contain" />
                   </div>
                 ),
               },
@@ -1014,12 +1014,7 @@ function ConnectedEcosystemSection() {
                 desc: 'Supports logistics coordination, transport structuring, and operational routing across international trade corridors.',
                 link: '#', highlight: false,
                 logo: (
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[9px] font-black">RR</span>
-                    </div>
-                    <span className="font-black text-sm text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">LOGISTICS</span></span>
-                  </div>
+                  <img src={logoWinlogistics} alt="WinLogistics" className="h-8 w-auto object-contain" />
                 ),
               },
               {
@@ -1027,13 +1022,8 @@ function ConnectedEcosystemSection() {
                 desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
                 link: null, highlight: true,
                 logo: (
-                  <div className="flex flex-col items-center">
-                    <div className="flex items-center gap-1.5 mb-1">
-                      <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
-                        <span className="text-white text-[9px] font-black">RR</span>
-                      </div>
-                      <span className="font-black text-sm text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">COMMODITIES</span></span>
-                    </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <img src={logoRaminvest} alt="WinCommodities" className="h-8 w-auto object-contain bg-black rounded-lg px-2 py-1" />
                     <span className="text-[9px] font-bold tracking-widest text-[#C73B22] uppercase">This Platform</span>
                   </div>
                 ),
@@ -1043,10 +1033,7 @@ function ConnectedEcosystemSection() {
                 desc: 'Swiss regulated Payment and Trade Finance Platform — settlement, FX coordination, and gold-backed clearing.',
                 link: '#', highlight: false,
                 logo: (
-                  <div className="flex items-center gap-1.5">
-                    <img src={finatradesLogo} alt="Finatrades" className="h-5 w-auto" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
-                    <span className="font-bold text-sm text-[#C73B22]">FINATRADES</span>
-                  </div>
+                  <img src={logoFinatradesP} alt="Finatrades" className="h-8 w-auto object-contain" />
                 ),
               },
               {
@@ -1054,15 +1041,7 @@ function ConnectedEcosystemSection() {
                 desc: 'Supports investment connectivity, strategic capital alignment, and network integration across the business ecosystem.',
                 link: '#', highlight: false,
                 logo: (
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-[9px] font-black">WIN</span>
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-[#1A1A1A]">winvestnet</div>
-                      <div className="text-[9px] text-[#888]">Moving the world forward</div>
-                    </div>
-                  </div>
+                  <img src={logoWinvestnet} alt="WinvestNet" className="h-8 w-auto object-contain" />
                 ),
               },
             ].map(node => (
