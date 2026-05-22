@@ -1200,6 +1200,7 @@ const ROLES = [
     image: governmentSovereign,
     imageCaption: 'Sovereign Procurement & G2G Barter Execution',
     hideFeatures: true,
+    fullLayout: true,
   },
 ];
 
@@ -1312,30 +1313,32 @@ function RolesSection() {
               )}
 
               {/* Feature tiles – compact horizontal chips */}
-              <div className="flex flex-wrap gap-2">
-                {role.features.map((f, idx) => (
-                  <div
-                    key={f.label}
-                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
-                    style={{
-                      background: f.color + '12',
-                      border: `1px solid ${f.color}30`,
-                      color: f.color,
-                    }}
-                  >
-                    <span
-                      className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white flex-shrink-0"
-                      style={{ background: f.color }}
+              {!(role as typeof role & { hideFeatures?: boolean }).hideFeatures && (
+                <div className="flex flex-wrap gap-2">
+                  {role.features.map((f, idx) => (
+                    <div
+                      key={f.label}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+                      style={{
+                        background: f.color + '12',
+                        border: `1px solid ${f.color}30`,
+                        color: f.color,
+                      }}
                     >
-                      {idx + 1}
-                    </span>
-                    {f.label}
-                  </div>
-                ))}
-              </div>
+                      <span
+                        className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white flex-shrink-0"
+                        style={{ background: f.color }}
+                      >
+                        {idx + 1}
+                      </span>
+                      {f.label}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
-            /* ── Standard 2-column layout (Exporters / Government tabs) ── */
+            /* ── Standard 2-column layout (Exporters only) ── */
             <div className="grid lg:grid-cols-2 gap-10 items-stretch">
               {/* Left column */}
               <div className="flex flex-col justify-between">
