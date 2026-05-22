@@ -887,9 +887,9 @@ function LayerCard3D({ img, icon: Icon, label, num, desc, delay }: {
             </div>
           )}
 
-          {/* Dark gradient overlay — fades bottom 55% to dark */}
+          {/* Light gradient overlay — subtle shadow only at bottom for text legibility */}
           <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(to top, rgba(10,10,14,0.82) 0%, rgba(10,10,14,0.28) 48%, transparent 100%)' }} />
+            style={{ background: 'linear-gradient(to top, rgba(10,10,14,0.58) 0%, rgba(10,10,14,0.08) 40%, transparent 100%)' }} />
 
           {/* Layer badge — top left */}
           <span
