@@ -996,27 +996,31 @@ function BackendSection() {
   ];
 
   return (
-    <section className="relative border-y border-gray-200 overflow-hidden" style={{ minHeight: '420px' }}>
-      {/* Full-bleed background image */}
-      <img src={backendBg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
-      <div className="absolute inset-0 bg-white/55" />
-
-      {/* Headline centred over the image */}
-      <div className="relative z-10 flex flex-col items-center justify-center py-28 px-6 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
-        >
+    <section className="relative py-24 border-y border-gray-200 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <img src={backendBg} alt="" className="w-full h-full object-cover object-center" />
+        <div className="absolute inset-0 bg-white/70" />
+      </div>
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
             System Architecture
           </div>
-          <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-[#1A1A1A] leading-tight">
-            12-Layer Digital Trade<br />Infrastructure
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+            12-Layer Digital Trade Infrastructure
           </h2>
+          <p className="text-[#666660] max-w-2xl mx-auto">
+            Every user, document, inventory record, order, payment, warehouse release, logistics update,
+            and settlement event is traceable and auditable across the full system stack.
+          </p>
         </motion.div>
-      </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {layers.map((layer, i) => (
+            <LayerCard3D key={layer.label} {...layer} delay={i * 0.06} />
+          ))}
+        </div>
+      </AnimatedSection>
     </section>
   );
 }
