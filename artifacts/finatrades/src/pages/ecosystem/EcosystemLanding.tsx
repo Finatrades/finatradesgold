@@ -1,691 +1,781 @@
-import { useState, useEffect } from 'react';
-import PageSeo from '@/components/PageSeo';
-import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ArrowRight, Shield, Globe, Building2, Gem, Ship, 
-  BarChart3, Banknote, Lock, TrendingUp, ChevronDown,
-  Menu, X, ExternalLink, Truck, Factory, Leaf,
-  Users, Award, MapPin, Mail, CheckCircle2
-} from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { motion, useInView } from 'framer-motion';
 import { Link } from 'wouter';
+import {
+  ArrowRight, Shield, Globe, Warehouse, Package, Search,
+  CreditCard, Handshake, Settings, CheckCircle2, Menu, X,
+  Building2, Users, Truck, BarChart3, Lock, FileText,
+  ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale
+} from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import FloatingAgentChat from '@/components/FloatingAgentChat';
-import finatradesLogoEcosystem from '@/assets/finatrades-logo-ecosystem.png';
-import raminvestLogo from '@/assets/raminvest-logo.webp';
-import wingoldLogo from '@/assets/wingold-logo.png';
-import wincommoditiesLogo from '@/assets/wincommodities-logo.png';
-import winlogisticsLogo from '@/assets/winlogistics-logo.png';
-import ecosystemDiagramImg from '@/assets/ecosystem-diagram-new.jpg';
 
-const fadeIn = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] } }
+const fadeUp = {
+  hidden: { opacity: 0, y: 32 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] } },
 };
-
 const stagger = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.12, delayChildren: 0.1 } }
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.1, delayChildren: 0.05 } },
 };
 
-function EcosystemNavbar() {
+function useScrolled() {
   const [scrolled, setScrolled] = useState(false);
-  const [mobileOpen, setMobileOpen] = useState(false);
-
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    const fn = () => setScrolled(window.scrollY > 24);
+    window.addEventListener('scroll', fn, { passive: true });
+    return () => window.removeEventListener('scroll', fn);
   }, []);
+  return scrolled;
+}
 
-  const navLinks = [
-    { label: 'Ecosystem', href: '#ecosystem' },
-    { label: 'Raminvest', href: '#raminvest' },
-    { label: 'Finatrades', href: '#finatrades' },
-    { label: 'WinGold', href: '#wingold' },
-    { label: 'WinCommodities', href: '#wincommodities' },
-    { label: 'Win Logistics', href: '#winlogistics' },
-    { label: 'Contact', href: '#contact' },
-  ];
+function AnimatedSection({ children, className = '' }: { children: React.ReactNode; className?: string }) {
+  const ref = useRef(null);
+  const inView = useInView(ref, { once: true, margin: '-80px' });
+  return (
+    <motion.div ref={ref} initial="hidden" animate={inView ? 'visible' : 'hidden'} variants={stagger} className={className}>
+      {children}
+    </motion.div>
+  );
+}
+
+const NAV_LINKS = [
+  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Marketplace', href: '#marketplace' },
+  { label: 'Seller', href: '#for-sellers' },
+  { label: 'Buyer', href: '#for-buyers' },
+  { label: 'Trade Finance', href: '#trade-finance' },
+  { label: 'Government', href: '#government' },
+  { label: 'Compliance', href: '#compliance' },
+  { label: 'Contact', href: '#contact' },
+];
+
+function Navbar() {
+  const scrolled = useScrolled();
+  const [open, setOpen] = useState(false);
 
   return (
     <motion.nav
-      initial={{ y: -100 }}
-      animate={{ y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut' }}
+      initial={{ y: -80, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.5 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082] shadow-lg shadow-purple-900/20' 
-          : 'bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]'
+        scrolled ? 'bg-[#07070A]/95 backdrop-blur-xl border-b border-white/5 shadow-xl shadow-black/30' : 'bg-transparent'
       }`}
-      data-testid="ecosystem-navbar"
     >
-      <div className="max-w-7xl mx-auto px-6 py-3">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <img 
-              src={finatradesLogo} 
-              alt="Finatrades Ecosystem" 
-              className="h-12 w-auto brightness-0 invert"
-              data-testid="logo-ecosystem"
-            />
-          </Link>
+      <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+        <Link href="/">
+          <img src={finatradesLogo} alt="Finatrades" className="h-8 w-auto" />
+        </Link>
 
-          <div className="hidden lg:flex items-center gap-1">
-            {navLinks.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="px-3 py-2 rounded-full text-sm font-medium text-white/80 hover:text-white hover:bg-card/10 transition-all duration-200"
-                data-testid={`nav-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                {link.label}
-              </a>
-            ))}
-          </div>
-
-          <div className="hidden lg:flex items-center gap-3">
-            <Link 
-              href="/sign-in"
-              className="text-white hover:text-white/80 px-4 py-2 text-sm font-medium transition-colors border border-white/30 rounded-full hover:bg-card/10"
-              data-testid="btn-sign-in"
-            >
-              Sign In
-            </Link>
-            <Link 
-              href="/finatrades"
-              className="group flex items-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-5 py-2 rounded-full text-sm font-semibold hover:from-purple-600 hover:to-pink-600 transition-all"
-              data-testid="btn-enter-platform"
-            >
-              Enter Platform
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </div>
-
-          <button
-            onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden text-white p-3 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-lg active:bg-card/10 transition-colors"
-            data-testid="mobile-menu-toggle"
-            aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          >
-            {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+        <div className="hidden lg:flex items-center gap-1">
+          {NAV_LINKS.map(l => (
+            <a key={l.label} href={l.href}
+              className="px-3 py-1.5 text-sm text-white/70 hover:text-white rounded-md hover:bg-white/5 transition-colors">
+              {l.label}
+            </a>
+          ))}
         </div>
 
-        <AnimatePresence>
-          {mobileOpen && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="lg:hidden mt-4 pb-6 border-t border-white/20 pt-4"
-            >
-              <div className="flex flex-col gap-1">
-                {navLinks.map((link) => (
-                  <a
-                    key={link.href}
-                    href={link.href}
-                    className="px-4 py-3 min-h-[48px] rounded-lg text-base font-medium text-white/80 hover:text-white active:bg-card/10 transition-all flex items-center"
-                    onClick={() => setMobileOpen(false)}
-                    data-testid={`mobile-nav-${link.label.toLowerCase().replace(/\s+/g, '-')}`}
-                  >
-                    {link.label}
-                  </a>
-                ))}
-                <Link 
-                  href="/sign-in"
-                  className="block border border-white/30 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold w-full mt-3 text-center active:bg-card/10 transition-all flex items-center justify-center"
-                >
-                  Sign In
-                </Link>
-                <Link 
-                  href="/finatrades"
-                  className="mt-2 flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-4 min-h-[52px] rounded-full text-base font-semibold"
-                  data-testid="mobile-btn-enter-platform"
-                >
-                  Enter Platform
-                  <ArrowRight className="w-4 h-4" />
-                </Link>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        <div className="hidden lg:flex items-center gap-3">
+          <Link href="/login">
+            <button className="px-4 py-2 text-sm text-white/80 hover:text-white transition-colors">Sign In</button>
+          </Link>
+          <Link href="/register">
+            <button className="px-4 py-2 text-sm font-semibold bg-[#8A2BE2] hover:bg-[#7B24CC] text-white rounded-lg transition-colors">
+              Get Started
+            </button>
+          </Link>
+        </div>
+
+        <button className="lg:hidden text-white/70 hover:text-white" onClick={() => setOpen(!open)}>
+          {open ? <X size={22} /> : <Menu size={22} />}
+        </button>
       </div>
+
+      {open && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="lg:hidden bg-[#07070A]/98 backdrop-blur-xl border-t border-white/5 px-6 py-4 space-y-1">
+          {NAV_LINKS.map(l => (
+            <a key={l.label} href={l.href} onClick={() => setOpen(false)}
+              className="block px-3 py-2.5 text-sm text-white/70 hover:text-white rounded-md hover:bg-white/5 transition-colors">
+              {l.label}
+            </a>
+          ))}
+          <div className="pt-3 border-t border-white/10 flex gap-3">
+            <Link href="/login" className="flex-1">
+              <button className="w-full px-4 py-2 text-sm text-white/80 border border-white/10 rounded-lg hover:bg-white/5 transition-colors">Sign In</button>
+            </Link>
+            <Link href="/register" className="flex-1">
+              <button className="w-full px-4 py-2 text-sm font-semibold bg-[#8A2BE2] text-white rounded-lg hover:bg-[#7B24CC] transition-colors">Get Started</button>
+            </Link>
+          </div>
+        </motion.div>
+      )}
     </motion.nav>
   );
 }
 
 function HeroSection() {
   return (
-    <section className="relative min-h-[auto] lg:min-h-screen pt-20 lg:pt-28 pb-12 lg:pb-20 overflow-x-hidden" data-testid="ecosystem-hero">
-      <div className="absolute inset-0 bg-gradient-to-b from-[#FAFBFF] via-[#F4F6FC] to-[#EDE9FE] pointer-events-none" />
-      <div className="absolute inset-0 opacity-30 pointer-events-none">
-        <div className="absolute inset-0" style={{
-          backgroundImage: `radial-gradient(circle at 1px 1px, rgba(138, 43, 226, 0.1) 1px, transparent 0)`,
-          backgroundSize: '40px 40px'
-        }} />
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-[#07070A]">
+      <div className="absolute inset-0">
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] bg-[#8A2BE2]/12 rounded-full blur-[120px]" />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-[#D4AF37]/8 rounded-full blur-[100px]" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#4B0082]/8 rounded-full blur-[140px]" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: `linear-gradient(rgba(255,255,255,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.4) 1px, transparent 1px)`,
+            backgroundSize: '60px 60px',
+          }}
+        />
       </div>
-      <div className="absolute top-1/3 left-1/4 w-[500px] h-[500px] bg-[#8A2BE2]/5 rounded-full blur-[150px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/4 w-[400px] h-[400px] bg-[#FF2FBF]/5 rounded-full blur-[120px] pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-6">
+      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/10 text-[#A855F7] text-xs font-medium mb-8">
+            <span className="w-1.5 h-1.5 rounded-full bg-[#A855F7] animate-pulse" />
+            Digital Commodity Trade Platform · 14 African Hubs
+          </div>
+        </motion.div>
+
+        <motion.h1
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
+          className="text-4xl sm:text-5xl md:text-6xl font-bold text-white leading-[1.1] tracking-tight mb-6">
+          Digital Gateway for{' '}
+          <span className="bg-gradient-to-r from-[#8A2BE2] via-[#A855F7] to-[#D4AF37] bg-clip-text text-transparent">
+            Commodity Trade,
+          </span>
+          <br />Inventory & Settlement
+        </motion.h1>
+
+        <motion.p
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
+          className="text-lg text-white/60 max-w-3xl mx-auto mb-10 leading-relaxed">
+          Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and
+          settlement workflows through one secure digital trade platform — from seller consignment to final payout.
+        </motion.p>
+
         <motion.div
-          variants={stagger}
-          initial="hidden"
-          animate="visible"
-          className="text-center max-w-5xl mx-auto lg:min-h-[calc(100vh-200px)] flex flex-col justify-center"
-        >
-          <motion.div variants={fadeIn} className="mb-6 mt-6 sm:mt-0">
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700">
-              <span className="text-white text-sm font-bold">+</span>
-              <span className="text-white text-sm font-medium">Integrated Trade & Finance Ecosystem</span>
-              <span className="text-white/70 text-xs">○</span>
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
+          className="flex flex-wrap gap-3 justify-center mb-16">
+          <Link href="/register?role=seller">
+            <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#8A2BE2]/25 flex items-center gap-2">
+              Register as Seller <ArrowRight size={16} />
+            </button>
+          </Link>
+          <Link href="/register?role=buyer">
+            <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors flex items-center gap-2">
+              Register as Buyer <ArrowRight size={16} />
+            </button>
+          </Link>
+          <Link href="/register?role=government">
+            <button className="px-6 py-3 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/15 text-[#D4AF37] font-semibold rounded-xl border border-[#D4AF37]/20 transition-colors flex items-center gap-2">
+              Government Access <ArrowRight size={16} />
+            </button>
+          </Link>
+          <a href="#how-it-works">
+            <button className="px-6 py-3 text-white/60 hover:text-white font-medium rounded-xl transition-colors flex items-center gap-2">
+              Explore Platform <ChevronDown size={16} />
+            </button>
+          </a>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
+          className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-3xl mx-auto">
+          {[
+            { value: '14', label: 'African Trade Hubs' },
+            { value: 'KYC/KYB', label: 'Verified Onboarding' },
+            { value: '9-Step', label: 'Trade Workflow' },
+            { value: 'Escrow', label: 'Settlement Control' },
+          ].map(stat => (
+            <div key={stat.label} className="bg-white/4 border border-white/8 rounded-xl p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">{stat.value}</div>
+              <div className="text-xs text-white/50">{stat.label}</div>
             </div>
-          </motion.div>
+          ))}
+        </motion.div>
+      </div>
 
-          <motion.div variants={fadeIn}>
-            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold leading-[1.05] mb-4">
-              <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">FINATRADES</span>
-              <br />
-              <span className="text-[#0D0D0D]">ECOSYSTEM</span>
-            </h1>
-          </motion.div>
-
-          <motion.h2 variants={fadeIn} className="text-lg sm:text-2xl md:text-3xl text-[#0D0D0D] font-semibold leading-tight mb-6">
-            Securing International Commodities Transactions
-          </motion.h2>
-
-          <motion.p variants={fadeIn} className="text-[#4A4A4A] text-sm sm:text-base leading-relaxed max-w-3xl mx-auto mb-8">
-            International commodity trade — particularly along the Global South — faces persistent structural challenges: counterparty risk, limited trade finance access, unstable exchange rates and logistical complexity. Finatrades addresses these through a dedicated Ecosystem.
-          </motion.p>
-
-          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mb-12">
-            <a 
-              href="#raminvest"
-              className="group flex items-center justify-center gap-2 border border-border text-[#0D0D0D] bg-card px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:bg-muted/40 hover:border-gray-400 active:scale-[0.98] transition-all w-full sm:w-auto"
-              data-testid="btn-discover"
-            >
-              Discover Our Ecosystem
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </a>
-            <Link 
-              href="/finatrades"
-              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-8 py-4 min-h-[52px] rounded-full text-base font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25 w-full sm:w-auto"
-              data-testid="btn-platform-hero"
-            >
-              Access Finatrades Platform
-              <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
-
-          <motion.div variants={fadeIn} className="max-w-4xl mx-auto">
-            <img 
-              src={ecosystemDiagramImg} 
-              alt="Finatrades Ecosystem - Raminvest Holding, Finatrades, WinGold & Metals, WinCommodities, WinLogistics" 
-              className="w-full h-auto rounded-2xl shadow-2xl"
-              data-testid="hero-ecosystem-diagram"
-            />
-          </motion.div>
+      <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
+        <motion.div animate={{ y: [0, 8, 0] }} transition={{ repeat: Infinity, duration: 2 }}>
+          <ChevronDown size={20} className="text-white/30" />
         </motion.div>
       </div>
     </section>
   );
 }
 
-
-function RaminvestSection() {
+function PositioningSection() {
   return (
-    <section id="raminvest" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="raminvest-section">
-      <div className="absolute inset-0">
-        <div className="absolute top-1/3 left-0 w-[500px] h-[500px] bg-purple-100 dark:bg-purple-900/30/30 blur-[150px] rounded-full" />
-        <div className="absolute bottom-1/3 right-0 w-[400px] h-[400px] bg-pink-100 dark:bg-pink-900/30/20 blur-[120px] rounded-full" />
-      </div>
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-        >
-          <motion.div variants={fadeIn} className="text-center mb-16">
-            <div className="inline-flex items-center justify-center mb-6">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-[#1A002F] to-[#2A0055] shadow-lg">
-                <img src={raminvestLogo} alt="Raminvest Holding" className="h-16 md:h-20 w-auto" data-testid="logo-raminvest" loading="lazy" />
+    <section className="bg-[#0A0A0F] py-20 border-y border-white/5">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-14">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            One Platform. Multiple Trade Roles. Complete Transaction Visibility.
+          </h2>
+          <p className="text-white/55 max-w-3xl mx-auto text-lg">
+            Finatrades acts as the central digital gateway where users register, complete KYC/KYB, access verified
+            inventory, submit RFQs, place orders, track warehouse consignments, manage settlement flows, and monitor
+            trade execution from beginning to end.
+          </p>
+        </motion.div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[
+            { icon: Users, title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.' },
+            { icon: Building2, title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.' },
+            { icon: Shield, title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.' },
+            { icon: Warehouse, title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.' },
+            { icon: TrendingUp, title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.' },
+            { icon: Truck, title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.' },
+          ].map(({ icon: Icon, title, desc }) => (
+            <motion.div key={title} variants={fadeUp}
+              className="bg-white/3 border border-white/8 rounded-2xl p-6 hover:bg-white/5 hover:border-white/12 transition-all group">
+              <div className="w-10 h-10 rounded-xl bg-[#8A2BE2]/15 flex items-center justify-center mb-4 group-hover:bg-[#8A2BE2]/25 transition-colors">
+                <Icon size={18} className="text-[#A855F7]" />
               </div>
-            </div>
-            <p className="text-muted-foreground/70 text-sm font-medium tracking-wider">SHAPING FUTURES. BUILDING LEGACIES.</p>
-            <div className="w-16 h-1 bg-gradient-to-r from-purple-600 to-pink-500 mx-auto rounded-full mt-6" />
-          </motion.div>
+              <h3 className="text-white font-semibold mb-2">{title}</h3>
+              <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </AnimatedSection>
+    </section>
+  );
+}
 
-          <motion.div variants={fadeIn} className="max-w-3xl mx-auto mb-16">
-            <div className="bg-card rounded-2xl p-8 shadow-sm border border-purple-100/50">
-              <p className="text-muted-foreground text-base leading-relaxed mb-4">
-                Headquartered in the prestigious <span className="text-[#0D0D0D] font-semibold">Dubai International Financial Centre (DIFC)</span>, with a legacy rooted in 
-                delivering sophisticated financial instruments and smart trade facilitation. Raminvest Holding has built a resilient network of specialized subsidiaries, 
-                each focused on solving real-world trade and financial challenges.
-              </p>
-            </div>
-          </motion.div>
+const STEPS = [
+  {
+    num: '01',
+    title: 'User Registration, KYC / KYB & Compliance Onboarding',
+    desc: 'Every user completes secure onboarding with account creation, role selection, email verification, document upload, KYC/KYB review, AML screening, and admin approval before accessing role-specific modules.',
+    icon: FileText,
+    tags: ['Account Creation', 'Document Upload', 'AML Screening', 'Admin Approval'],
+  },
+  {
+    num: '02',
+    title: 'Seller Consignment Creation & Warehouse Submission',
+    desc: 'Sellers submit commodity details, quantity, origin, ownership documents, commercial invoices, certificates, and transport info. The system validates documents, checks warehouse capacity, and prepares inventory for marketplace listing.',
+    icon: Package,
+    tags: ['Commodity Details', 'Document Validation', 'Warehouse Selection', 'Finance Eligibility'],
+  },
+  {
+    num: '03',
+    title: 'Pre-Arrival Logistics, Warehouse Reception & Inventory Hub',
+    desc: 'Shipment tracking, ETA alerts, warehouse booking, customs readiness, and inspection preparation before goods arrive — ensuring nothing lands blindly at the destination warehouse.',
+    icon: Truck,
+    tags: ['Shipment Tracking', 'Warehouse Booking', 'Customs Readiness', 'Inspection Prep'],
+  },
+  {
+    num: '04',
+    title: 'Warehouse Consignment Inventory Module',
+    desc: 'After arrival, inventory is recorded with owner, warehouse location, commodity type, grade, inspection status, and quantity tracking (available, reserved, pledged, released, sold). A digital warehouse receipt is generated.',
+    icon: Warehouse,
+    tags: ['Inventory ID', 'Quality Inspection', 'Digital Receipt', 'Ownership Confirmation'],
+  },
+  {
+    num: '05',
+    title: '14-Hub Marketplace Discovery, RFQ & Matching',
+    desc: 'Buyers browse verified commodity listings across the 14-hub African network, filter by commodity, grade, quantity, and pricing, submit RFQs or Import Expressions of Interest, and convert inquiries into formal orders.',
+    icon: Search,
+    tags: ['14 African Hubs', 'RFQ Submission', 'Buyer-Seller Matching', 'Offer Comparison'],
+  },
+  {
+    num: '06',
+    title: 'Buyer Flow, Order Placement & Payment to WINVESTNET',
+    desc: 'Buyers register, complete compliance, browse inventory, negotiate terms, and place purchase orders. After order confirmation, payment is made to the WINVESTNET B2B Wallet, triggering escrow and inventory reservation.',
+    icon: CreditCard,
+    tags: ['Purchase Order', 'Payment to WINVESTNET', 'Escrow Ready', 'Inventory Reserve'],
+  },
+  {
+    num: '07',
+    title: 'Government Commodities Barter Workflow',
+    desc: 'A dedicated optional branch for sovereign entities to exchange strategic commodities (oil, food, minerals, gold). Includes government onboarding, barter request creation, valuation comparison, counterparty matching, and settlement.',
+    icon: Scale,
+    tags: ['Sovereign Verification', 'Barter Valuation', 'Counterparty Matching', 'Settlement Gap Support'],
+  },
+  {
+    num: '08',
+    title: 'Trade Finance, Escrow, Settlement & Deal Completion',
+    desc: 'Buyer payment, inventory lock, warehouse release instruction, shipment milestone tracking, and seller payout are all connected. No goods are released until conditions are met. Every step is auditable.',
+    icon: Lock,
+    tags: ['Escrow Lock', 'Warehouse Release', 'Delivery Milestones', 'Seller Payout'],
+  },
+  {
+    num: '09',
+    title: 'Complete Backend Flow & System Architecture',
+    desc: 'Identity, compliance, document service, inventory engine, marketplace connector, buyer order engine, WINVESTNET wallet connector, trade finance, escrow, settlement, and audit layers — all connected into one secure infrastructure.',
+    icon: Settings,
+    tags: ['Audit Trail', 'Compliance Layer', 'Partner APIs', 'Full Traceability'],
+  },
+];
 
-          <motion.div variants={fadeIn} className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {[
-              {
-                icon: Users,
-                title: 'Diversified Ecosystem',
-                desc: 'Seamlessly connects finance, trade, and commodities through a strategic portfolio of specialized companies.',
-              },
-              {
-                icon: Globe,
-                title: 'Trusted Global Presence',
-                desc: 'Operating from Dubai and Geneva with deep ties across African markets and emerging economies.',
-              },
-              {
-                icon: TrendingUp,
-                title: 'Innovative Financial Solutions',
-                desc: 'Pioneers of digital platforms and alternative trade and finance mechanisms tailored for emerging economies.',
-              },
-            ].map((item) => (
-              <div
-                key={item.title}
-                className="bg-card rounded-2xl p-6 shadow-sm hover:shadow-xl transition-all duration-300 border border-purple-100/50 hover:border-purple-200 dark:border-purple-800/40 group"
-                data-testid={`strength-${item.title.toLowerCase().replace(/\s+/g, '-')}`}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-                  <item.icon className="w-6 h-6 text-purple-600 dark:text-purple-400" strokeWidth={1.5} />
+function HowItWorksSection() {
+  return (
+    <section id="how-it-works" className="bg-[#07070A] py-24">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+            9-Step Trade Workflow
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">How Finatrades Works</h2>
+          <p className="text-white/50 max-w-2xl mx-auto">
+            From the moment a seller submits a consignment to when a buyer receives their goods and a seller
+            receives their payout — every stage is digitally connected.
+          </p>
+        </motion.div>
+
+        <div className="space-y-5">
+          {STEPS.map((step, i) => {
+            const Icon = step.icon;
+            return (
+              <motion.div key={step.num} variants={fadeUp}
+                className="group relative bg-white/3 border border-white/8 rounded-2xl p-6 sm:p-8 hover:bg-white/5 hover:border-[#8A2BE2]/20 transition-all overflow-hidden">
+                <div className="absolute right-6 top-1/2 -translate-y-1/2 text-8xl font-black text-white/[0.025] select-none pointer-events-none">
+                  {step.num}
                 </div>
-                <h3 className="text-[#0D0D0D] font-bold text-lg mb-2">{item.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">{item.desc}</p>
+                <div className="relative flex flex-col sm:flex-row sm:items-start gap-5">
+                  <div className="flex-shrink-0 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#8A2BE2]/20 to-[#4B0082]/20 border border-[#8A2BE2]/20 flex items-center justify-center">
+                      <Icon size={20} className="text-[#A855F7]" />
+                    </div>
+                    <span className="text-xs font-bold text-[#8A2BE2]/60 sm:hidden">Step {step.num}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-start justify-between gap-4 mb-2">
+                      <h3 className="text-white font-semibold text-lg leading-snug">{step.title}</h3>
+                      <span className="hidden sm:block flex-shrink-0 text-xs font-bold text-[#8A2BE2]/50 mt-1">Step {step.num}</span>
+                    </div>
+                    <p className="text-white/50 text-sm leading-relaxed mb-4">{step.desc}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {step.tags.map(tag => (
+                        <span key={tag} className="px-2.5 py-1 text-xs bg-white/5 border border-white/8 text-white/60 rounded-lg">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </AnimatedSection>
+    </section>
+  );
+}
+
+const AFRICA_HUBS = [
+  'Senegal', 'Togo', 'Ghana', 'Nigeria', 'Cameroon', 'Congo', 'Angola',
+  'South Africa', 'Kenya', 'Tanzania', 'Djibouti', 'Ivory Coast', 'Morocco', 'Egypt',
+];
+
+function MarketplaceSection() {
+  return (
+    <section id="marketplace" className="bg-[#0A0A0F] py-24 border-y border-white/5">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div variants={fadeUp}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
+              <Globe size={12} />
+              14 Strategic Hubs
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5 leading-tight">
+              Verified Commodity Discovery Across 14 African Trade Hubs
+            </h2>
+            <p className="text-white/55 text-base leading-relaxed mb-8">
+              Finatrades enables buyers to discover verified commodity opportunities, compare supplier offers,
+              submit RFQs, and move from inquiry to structured trade execution through a transparent digital workflow.
+            </p>
+            <div className="space-y-3 mb-8">
+              {[
+                'Filter by commodity, grade, quantity, pricing, and delivery terms',
+                'Submit RFQ or Import Expression of Interest directly to sellers',
+                'Buyer-seller matching, offer comparison, and formal order conversion',
+                'Warehouse-backed inventory — every listing is verified',
+              ].map(item => (
+                <div key={item} className="flex items-start gap-3">
+                  <CheckCircle2 size={16} className="text-[#A855F7] flex-shrink-0 mt-0.5" />
+                  <span className="text-white/65 text-sm">{item}</span>
+                </div>
+              ))}
+            </div>
+            <Link href="/register">
+              <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                Explore Marketplace <ArrowRight size={16} />
+              </button>
+            </Link>
+          </motion.div>
+
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
+            {AFRICA_HUBS.map((hub, i) => (
+              <div key={hub}
+                className="bg-white/3 border border-white/8 rounded-xl px-4 py-3 flex items-center gap-3 hover:bg-white/6 hover:border-[#8A2BE2]/20 transition-all">
+                <div className="w-2 h-2 rounded-full bg-[#8A2BE2] flex-shrink-0" />
+                <span className="text-white/75 text-sm font-medium">{hub}</span>
+                <MapPin size={12} className="text-white/25 ml-auto" />
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </AnimatedSection>
+    </section>
+  );
+}
+
+function RoleSection({
+  id, badge, icon: Icon, iconColor, title, subtitle, desc, features, cta, ctaHref,
+}: {
+  id: string; badge: string; icon: any; iconColor: string; title: string; subtitle: string;
+  desc: string; features: string[]; cta: string; ctaHref: string;
+}) {
+  return (
+    <section id={id} className="py-20">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <div className="bg-white/2 border border-white/7 rounded-3xl p-8 sm:p-12">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div variants={fadeUp}>
+              <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${iconColor} text-xs font-medium mb-5`}>
+                <Icon size={12} />
+                {badge}
+              </div>
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mb-3 leading-tight">{title}</h2>
+              <p className="text-[#A855F7] font-medium mb-4">{subtitle}</p>
+              <p className="text-white/55 leading-relaxed mb-8">{desc}</p>
+              <Link href={ctaHref}>
+                <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                  {cta} <ArrowRight size={16} />
+                </button>
+              </Link>
+            </motion.div>
+
+            <motion.div variants={fadeUp} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {features.map(f => (
+                <div key={f} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3">
+                  <CheckCircle2 size={14} className="text-[#A855F7] flex-shrink-0" />
+                  <span className="text-white/70 text-sm">{f}</span>
+                </div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </AnimatedSection>
+    </section>
+  );
+}
+
+function SettlementSection() {
+  const rules = [
+    { rule: 'No verified inventory', consequence: 'No sale' },
+    { rule: 'No funded buyer', consequence: 'No lock' },
+    { rule: 'No escrow confirmation', consequence: 'No release' },
+    { rule: 'No delivery milestone', consequence: 'No final payout' },
+    { rule: 'No documents', consequence: 'No audit trail' },
+  ];
+
+  return (
+    <section id="trade-finance" className="bg-[#07070A] py-24">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
+            <Lock size={12} />
+            Trade Finance & Escrow
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Controlled Settlement from Inventory Lock to Seller Payout
+          </h2>
+          <p className="text-white/50 max-w-2xl mx-auto">
+            Finatrades connects buyer payment, escrow-style controls, warehouse release, logistics confirmation,
+            and seller payout into one structured transaction flow with full audit visibility.
+          </p>
+        </motion.div>
+
+        <div className="grid lg:grid-cols-2 gap-12 items-start">
+          <motion.div variants={fadeUp} className="space-y-3">
+            <h3 className="text-white font-semibold text-lg mb-5">Core Settlement Rules</h3>
+            {rules.map(({ rule, consequence }) => (
+              <div key={rule} className="flex items-center justify-between bg-white/3 border border-white/8 rounded-xl px-5 py-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-red-500/70" />
+                  <span className="text-white/65 text-sm">{rule}</span>
+                </div>
+                <span className="text-xs font-semibold text-white/40 bg-white/5 px-3 py-1 rounded-lg">→ {consequence}</span>
               </div>
             ))}
           </motion.div>
 
-        </motion.div>
-      </div>
+          <motion.div variants={fadeUp} className="space-y-5">
+            {[
+              { icon: CreditCard, title: 'Payment Confirmation', desc: 'Buyer funds are verified and confirmed before any inventory is locked or reserved in the system.' },
+              { icon: Lock, title: 'Escrow-Style Control', desc: 'Inventory is reserved and locked against the order. Neither party can unilaterally release without conditions being met.' },
+              { icon: Warehouse, title: 'Warehouse Release Instruction', desc: 'Release is only triggered after verified delivery milestones and document completion are confirmed.' },
+              { icon: Handshake, title: 'Seller Payout & Audit', desc: 'Once conditions are fully satisfied, the seller receives payment and a complete audit trail is sealed.' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="flex gap-4 bg-white/3 border border-white/8 rounded-2xl p-5">
+                <div className="w-10 h-10 rounded-xl bg-[#D4AF37]/10 border border-[#D4AF37]/15 flex items-center justify-center flex-shrink-0">
+                  <Icon size={18} className="text-[#D4AF37]" />
+                </div>
+                <div>
+                  <h4 className="text-white font-semibold mb-1">{title}</h4>
+                  <p className="text-white/50 text-sm leading-relaxed">{desc}</p>
+                </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </AnimatedSection>
     </section>
   );
 }
 
-function FinatradesSection() {
+function GovernmentSection() {
   return (
-    <section id="finatrades" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="finatrades-section">
-      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#8A2BE2] uppercase">Finatrades Platform</h2>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="mb-6">
-                <img src={finatradesLogoEcosystem} alt="Finatrades" className="h-14 md:h-16 w-auto" data-testid="logo-finatrades-section" loading="lazy" />
-              </div>
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-600 border border-red-700 mb-6">
-                <span className="text-white text-sm font-bold">+</span>
-                <span className="text-white text-sm font-medium">Swiss Regulated Platform</span>
-                <span className="text-white/70 text-xs">○</span>
-              </div>
-              <p className="text-[#0D0D0D] font-semibold text-xl mb-6">Swiss Regulated Trade & Finance Platform Backed by Gold</p>
-              <p className="text-muted-foreground text-base leading-relaxed mb-4">
-                A next-generation digital platform designed to streamline international trade, payments, and financial operations 
-                with unmatched efficiency. Operating as a Swiss-licensed financial institution, Finatrades delivers advanced financial services.
-              </p>
-              <div className="mb-8" />
-              <Link 
-                href="/finatrades"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-8 py-4 rounded-full text-base font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
-                data-testid="btn-access-finatrades"
-              >
-                Access Finatrades Platform
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </Link>
-            </motion.div>
+    <section id="government" className="bg-[#0A0A0F] py-24 border-y border-white/5">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div variants={fadeUp}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37] text-xs font-medium mb-5">
+              <Shield size={12} />
+              Sovereign Access
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
+              Strategic Commodity Barter for Government Users
+            </h2>
+            <p className="text-white/55 leading-relaxed mb-6">
+              Finatrades supports structured government commodity barter workflows where approved sovereign
+              users can submit strategic exchange requirements — crude oil, fuel, food, wheat, gold, fertilizer,
+              minerals, and more — and monitor execution through a controlled digital process.
+            </p>
+            <p className="text-white/40 text-sm leading-relaxed mb-8">
+              This is a parallel optional branch for approved government or sovereign users only. It is separate
+              from the standard buyer-seller marketplace flow.
+            </p>
+            <Link href="/register?role=government">
+              <button className="px-6 py-3 bg-[#D4AF37]/15 hover:bg-[#D4AF37]/25 text-[#D4AF37] border border-[#D4AF37]/25 font-semibold rounded-xl transition-all flex items-center gap-2">
+                Request Government Access <ArrowRight size={16} />
+              </button>
+            </Link>
+          </motion.div>
 
-            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: Shield, label: 'Trade Finance', desc: 'Structured trade solutions for international commerce' },
-                { icon: Globe, label: 'Global Payments', desc: 'Multi-currency accounts and settlement' },
-                { icon: Lock, label: 'SO-FIT - FINMA Regulated', desc: 'Swiss regulatory compliance & SO-FIT membership' },
-              ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-purple-200 dark:border-purple-800/40 transition-all duration-300 group" data-testid={`feature-finatrades-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-100 to-pink-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
+          <motion.div variants={fadeUp} className="grid grid-cols-1 gap-3">
+            {[
+              { title: 'Government Onboarding', desc: 'Dedicated sovereign verification and mandate review process.' },
+              { title: 'Barter Request Creation', desc: 'Define offered commodity and required commodity with detailed specifications.' },
+              { title: 'Valuation Comparison', desc: 'Compare fair market values across both sides of the barter arrangement.' },
+              { title: 'Counterparty Matching', desc: 'Platform identifies and routes requests to eligible sovereign counterparties.' },
+              { title: 'Settlement Gap Support', desc: 'Where values differ, settlement difference instruments are available.' },
+              { title: 'Execution Monitoring', desc: 'Full audit trail from barter confirmation through delivery milestones.' },
+            ].map(({ title, desc }) => (
+              <div key={title} className="bg-white/3 border border-white/8 rounded-xl px-5 py-4 flex gap-4">
+                <div className="w-2 h-2 rounded-full bg-[#D4AF37]/70 flex-shrink-0 mt-1.5" />
+                <div>
+                  <span className="text-white font-medium text-sm">{title}</span>
+                  <p className="text-white/45 text-sm mt-0.5">{desc}</p>
                 </div>
-              ))}
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </AnimatedSection>
     </section>
   );
 }
 
-function WingoldSection() {
+function ComplianceSection() {
   return (
-    <section id="wingold" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="wingold-section">
-      <div className="absolute inset-0">
-        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-amber-100 dark:bg-amber-900/30/20 blur-[150px] rounded-full" />
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/20 blur-[120px] rounded-full" />
-      </div>
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#D4AF37] uppercase">WinGold & Metals</h2>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: Lock, label: 'Collateral Solutions', desc: 'Metal-backed financial instruments' },
-                { icon: Shield, label: 'Secure Trading', desc: 'Certified storage and transparent management' },
-                { icon: Award, label: 'Institutional Grade', desc: 'Solutions for governments and institutions' },
-              ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-amber-200 dark:border-amber-800/40 transition-all duration-300 group" data-testid={`feature-wingold-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-100 to-yellow-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="mb-5 inline-flex items-center justify-center lg:justify-start">
-                <div className="p-3 rounded-xl bg-gradient-to-br from-[#1A1A2E] to-[#16213E] shadow-lg">
-                  <img src={wingoldLogo} alt="WinGold & Metals" className="h-10 md:h-12 w-auto" data-testid="logo-wingold" loading="lazy" />
-                </div>
+    <section id="compliance" className="bg-[#07070A] py-24">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
+            {[
+              'KYC / KYB Onboarding',
+              'AML Screening',
+              'Sanctions Checks',
+              'Role-Based Access',
+              'Document Verification',
+              'Audit Trail Recording',
+              'Inventory Traceability',
+              'Transaction Monitoring',
+              'Partner Reporting',
+              'Approval Workflows',
+            ].map(item => (
+              <div key={item} className="flex items-center gap-3 bg-white/3 border border-white/8 rounded-xl px-4 py-3">
+                <Shield size={13} className="text-[#A855F7] flex-shrink-0" />
+                <span className="text-white/70 text-sm">{item}</span>
               </div>
-              <p className="text-amber-600 dark:text-amber-400 font-semibold text-lg mb-6">Empowering Wealth. Securing Futures.</p>
-              <p className="text-muted-foreground text-base leading-relaxed mb-4">
-                Wingold & Metals specializes in the trading and management of precious metals, providing strategic financial solutions 
-                for governments, institutions, and corporate clients. Through proprietary financial instruments and innovative structured solutions, 
-                we unlock liquidity and optimize asset value.
+            ))}
+          </motion.div>
+
+          <motion.div variants={fadeUp}>
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+              <Shield size={12} />
+              Compliance-First Infrastructure
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-5 leading-tight">
+              Built for Compliance, Traceability and Scalable Commodity Trade
+            </h2>
+            <p className="text-white/55 leading-relaxed mb-6">
+              The Finatrades backend connects onboarding, inventory, marketplace, payments, trade finance,
+              escrow, settlement, reporting, and partner integrations into one secure digital infrastructure —
+              designed with compliance and auditability at the core.
+            </p>
+            <div className="p-5 bg-[#8A2BE2]/8 border border-[#8A2BE2]/15 rounded-2xl">
+              <p className="text-white/50 text-sm leading-relaxed italic">
+                "Access to platform services may be subject to user eligibility, jurisdictional requirements,
+                partner approval, compliance checks, and applicable laws. Finatrades does not provide investment
+                advice, public token issuance, deposit-taking services, or regulated financial services unless
+                specifically authorized through the relevant licensed entity or approved partner arrangement."
               </p>
-              <div className="mb-6" />
-              <a 
-                href="https://wingoldandmetals.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
-                data-testid="btn-visit-wingold"
-              >
-                Visit Website
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
-            </motion.div>
-          </div>
-        </motion.div>
-      </div>
+            </div>
+          </motion.div>
+        </div>
+      </AnimatedSection>
     </section>
   );
 }
 
-function WinCommoditiesSection() {
+function BackendSection() {
+  const layers = [
+    { icon: Users, label: 'User Access Layer' },
+    { icon: Shield, label: 'Identity & Compliance Layer' },
+    { icon: FileText, label: 'Document Service' },
+    { icon: Warehouse, label: 'Inventory & Consignment Engine' },
+    { icon: Search, label: 'Marketplace Connector' },
+    { icon: Package, label: 'Buyer Order Engine' },
+    { icon: CreditCard, label: 'WINVESTNET Wallet Connector' },
+    { icon: TrendingUp, label: 'Trade Finance Engine' },
+    { icon: Lock, label: 'Escrow & Settlement Engine' },
+    { icon: BarChart3, label: 'Audit & Reporting Layer' },
+    { icon: Zap, label: 'Notifications & API Orchestration' },
+    { icon: Layers, label: 'Infrastructure & Data Layer' },
+  ];
+
   return (
-    <section id="wincommodities" className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#F4F6FC]" data-testid="wincommodities-section">
-      <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-gradient-to-l from-[#8A2BE2]/5 to-transparent" />
-      <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] bg-green-100 dark:bg-green-900/30/20 rounded-full blur-[120px]" />
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#DC2626] uppercase">WinCommodities</h2>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="mb-5">
-                <img src={wincommoditiesLogo} alt="WinCommodities" className="h-10 md:h-12 w-auto" data-testid="logo-wincommodities" loading="lazy" />
-              </div>
-              <p className="text-[#DC2626] font-semibold text-lg mb-6">Breaking Barriers. Building Trade.</p>
-              <p className="text-muted-foreground text-base leading-relaxed mb-6">
-                As the largest physical commodities platform, WinCommodities is dedicated to providing substantial advantages through 
-                economies of scale on the sourcing, logistics and financial optimization. We focus on global transactions related to:
-              </p>
-              <div className="grid grid-cols-2 gap-3 mb-6 w-full">
-                {['Oil & Fuels', 'Metals', 'Green Energy', 'Soft Commodities'].map((item) => (
-                  <div key={item} className="px-4 py-3 rounded-xl bg-card border border-red-100 text-foreground/85 text-sm font-medium text-center shadow-sm" data-testid={`commodity-${item.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {item}
-                  </div>
-                ))}
-              </div>
-              <div className="mb-6" />
-              <a 
-                href="https://wincommodities.finatrades.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
-                data-testid="btn-visit-wincommodities"
-              >
-                Access Here
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
-            </motion.div>
-
-            <motion.div variants={fadeIn} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: Banknote, label: 'Barter Solutions', desc: 'Innovative commodity exchange mechanisms' },
-                { icon: Lock, label: 'Trade Security', desc: 'Fully compliant and transparent transactions' },
-                { icon: Award, label: 'Expert Team', desc: 'Industry-specific expertise across geographies' },
-              ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 dark:border-red-800/40 transition-all duration-300 group" data-testid={`feature-wincommodities-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-[#DC2626]" />
-                  </div>
-                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </motion.div>
+    <section className="bg-[#0A0A0F] py-24 border-y border-white/5">
+      <AnimatedSection className="max-w-7xl mx-auto px-6">
+        <motion.div variants={fadeUp} className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7] text-xs font-medium mb-5">
+            System Architecture
           </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            12-Layer Digital Trade Infrastructure
+          </h2>
+          <p className="text-white/50 max-w-2xl mx-auto">
+            Every user, document, inventory record, order, payment, warehouse release, logistics update,
+            and settlement event is traceable and auditable across the full system stack.
+          </p>
         </motion.div>
-      </div>
-    </section>
-  );
-}
 
-function WinLogisticsSection() {
-  return (
-    <section id="winlogistics" className="relative py-12 lg:py-24 bg-gradient-to-br from-[#FAFBFF] via-purple-50/20 to-pink-50/10 overflow-hidden" data-testid="winlogistics-section">
-      <div className="absolute inset-0">
-        <div className="absolute bottom-1/3 left-0 w-[500px] h-[500px] bg-blue-100 dark:bg-blue-900/30/20 blur-[150px] rounded-full" />
-        <div className="absolute top-1/3 right-0 w-[400px] h-[400px] bg-purple-100 dark:bg-purple-900/30/20 blur-[120px] rounded-full" />
-      </div>
-      <div className="max-w-7xl mx-auto px-6 relative z-10">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={fadeIn} className="text-center mb-12">
-          <h2 className="text-sm font-semibold tracking-[0.2em] text-[#DC2626] uppercase">Win Logistics</h2>
-        </motion.div>
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={stagger}
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-            <motion.div variants={fadeIn} className="order-2 lg:order-1 grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {[
-                { icon: Ship, label: 'Smart Freight', desc: 'Optimized air, sea, and road logistics' },
-                { icon: Building2, label: 'Warehousing', desc: 'Strategic warehouse partnerships in key trade zones' },
-                { icon: Globe, label: 'Trade Infrastructure', desc: 'Structured documentation and process handling' },
-              ].map((item) => (
-                <div key={item.label} className="bg-card rounded-2xl p-4 shadow-sm border border-purple-100/50 hover:shadow-lg hover:border-red-200 dark:border-red-800/40 transition-all duration-300 group" data-testid={`feature-winlogistics-${item.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                  <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-red-100 to-red-50 flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300">
-                    <item.icon className="w-4 h-4 text-[#DC2626]" />
-                  </div>
-                  <h4 className="text-[#0D0D0D] font-semibold text-sm mb-1">{item.label}</h4>
-                  <p className="text-muted-foreground/70 text-xs leading-relaxed">{item.desc}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.div variants={fadeIn} className="order-1 lg:order-2 text-center lg:text-left flex flex-col items-center lg:items-start">
-              <div className="mb-5">
-                <img src={winlogisticsLogo} alt="Win Logistics" className="h-10 md:h-12 w-auto" style={{ filter: 'hue-rotate(190deg) saturate(1.2) brightness(1.3)' }} data-testid="logo-winlogistics" loading="lazy" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {layers.map(({ icon: Icon, label }, i) => (
+            <motion.div key={label} variants={fadeUp}
+              className="bg-white/3 border border-white/8 rounded-xl p-4 flex flex-col items-center gap-3 text-center hover:bg-white/5 hover:border-[#8A2BE2]/20 transition-all">
+              <div className="w-9 h-9 rounded-lg bg-[#8A2BE2]/12 flex items-center justify-center">
+                <Icon size={16} className="text-[#A855F7]" />
               </div>
-              <p className="text-[#DC2626] font-semibold text-lg mb-2">Comprehensive Logistics Solutions Built for Global Trade</p>
-              <p className="text-muted-foreground/70 text-xs italic mb-6">WIN LOGISTICS is the trade name used by, and under which, WINLOGIS SERVICES FZCO operates.</p>
-              <p className="text-muted-foreground text-base leading-relaxed mb-4">
-                Win Logistics acts as a strategic coordination and facilitation layer, seamlessly connecting shippers, warehouses, 
-                and service providers to optimize global trade. Our core mission is to enable fluid trade flows through highly structured 
-                processes and expert professional handling at every stage of the supply chain.
-              </p>
-              <div className="mb-6" />
-              <a 
-                href="https://winlogistics.finatrades.com" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="group inline-flex items-center gap-2 bg-gradient-to-r from-[#FF2FBF] to-[#8A2BE2] text-white px-6 py-3 rounded-full text-sm font-semibold hover:from-[#E91E9D] hover:to-[#7B27CC] active:scale-[0.98] transition-all shadow-md shadow-[#FF2FBF]/20"
-                data-testid="btn-visit-winlogistics"
-              >
-                Access Here
-                <ExternalLink className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </a>
+              <span className="text-white/65 text-xs font-medium leading-snug">{label}</span>
             </motion.div>
-          </div>
-        </motion.div>
-      </div>
+          ))}
+        </div>
+      </AnimatedSection>
     </section>
   );
 }
 
 function CTASection() {
   return (
-    <section className="relative py-12 lg:py-24 bg-gradient-to-b from-[#F8F4FF] to-[#EDE9FE] overflow-hidden" data-testid="ecosystem-cta">
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#8A2BE2]/5 rounded-full blur-[250px]" />
-      <div className="relative max-w-4xl mx-auto px-6 text-center">
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={stagger}
-        >
-          <motion.h2 variants={fadeIn} className="text-3xl md:text-4xl lg:text-5xl font-bold text-[#0D0D0D] mb-6">
-            Powering Efficient Trade,{' '}
-            <span className="bg-gradient-to-r from-[#8A2BE2] via-[#FF2FBF] to-[#FF2FBF] bg-clip-text text-transparent">One Transaction at a Time</span>
-          </motion.h2>
-          <motion.p variants={fadeIn} className="text-muted-foreground text-lg max-w-2xl mx-auto mb-10 leading-relaxed">
-            Whether supporting large-scale international trade operations or ongoing financial activities, 
-            Finatrades empowers its partners to operate confidently in global markets.
-          </motion.p>
-          <motion.div variants={fadeIn} className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              href="/finagold"
-              className="group flex items-center justify-center gap-2 bg-gradient-to-r from-[#F97316] to-[#EA580C] text-white px-10 py-4 min-h-[52px] rounded-full text-lg font-semibold hover:from-[#EA580C] hover:to-[#DC2626] active:scale-[0.98] transition-all shadow-lg shadow-[#F97316]/25"
-              data-testid="btn-cta-platform"
-            >
-              Enter Finatrades Platform
-              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            </Link>
-          </motion.div>
+    <section id="contact" className="bg-[#07070A] py-24">
+      <AnimatedSection className="max-w-4xl mx-auto px-6 text-center">
+        <motion.div variants={fadeUp}
+          className="relative bg-gradient-to-br from-[#8A2BE2]/15 via-[#4B0082]/10 to-[#D4AF37]/8 border border-[#8A2BE2]/20 rounded-3xl p-12 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-[#8A2BE2]/5 to-transparent rounded-3xl" />
+          <div className="relative z-10">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Start Your Commodity Trade Journey
+            </h2>
+            <p className="text-white/55 text-lg mb-10 max-w-2xl mx-auto">
+              Whether you are a seller submitting goods on consignment, a buyer sourcing verified inventory,
+              a government entity managing strategic barter, or a partner supporting logistics, finance,
+              or warehousing — Finatrades gives you a structured digital gateway for trusted commodity trade execution.
+            </p>
+            <div className="flex flex-wrap gap-3 justify-center">
+              <Link href="/register?role=seller">
+                <button className="px-6 py-3 bg-[#8A2BE2] hover:bg-[#7B24CC] text-white font-semibold rounded-xl transition-all flex items-center gap-2">
+                  Register as Seller <ArrowRight size={16} />
+                </button>
+              </Link>
+              <Link href="/register?role=buyer">
+                <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors">
+                  Register as Buyer
+                </button>
+              </Link>
+              <Link href="/register?rfq=true">
+                <button className="px-6 py-3 bg-white/10 hover:bg-white/15 text-white font-semibold rounded-xl border border-white/10 transition-colors">
+                  Submit Import Expression
+                </button>
+              </Link>
+              <Link href="/register?role=government">
+                <button className="px-6 py-3 bg-[#D4AF37]/10 hover:bg-[#D4AF37]/15 text-[#D4AF37] font-semibold rounded-xl border border-[#D4AF37]/20 transition-colors">
+                  Request Government Access
+                </button>
+              </Link>
+            </div>
+          </div>
         </motion.div>
-      </div>
+      </AnimatedSection>
     </section>
   );
 }
 
-function EcosystemFooter() {
+function Footer() {
   return (
-    <footer id="contact" className="relative py-16 pb-[calc(4rem+env(safe-area-inset-bottom))] bg-gradient-to-r from-[#0D001E] via-[#2A0055] to-[#4B0082]" data-testid="ecosystem-footer">
+    <footer className="bg-[#040406] border-t border-white/5 py-12">
       <div className="max-w-7xl mx-auto px-6">
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
-          <div className="md:col-span-2">
-            <div className="mb-6">
-              <img 
-                src={finatradesLogo} 
-                alt="Finatrades Ecosystem" 
-                className="h-14 w-auto mb-2 brightness-0 invert"
-                loading="lazy"
-              />
-              <p className="text-white/60 text-sm">Integrated Trade & Finance Ecosystem</p>
-            </div>
-            <div className="space-y-2 text-white/70 text-xs mb-6">
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 text-purple-400/60 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-white/80">Dubai</p>
-                  <p>Burj Daman Office 802 Waldorf Astoria, DIFC, UAE</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-2">
-                <MapPin className="w-4 h-4 mt-0.5 text-purple-400/60 flex-shrink-0" />
-                <div>
-                  <p className="font-medium text-white/80">Geneva</p>
-                  <p>Rue Robert-CÉARD, 1204 Genève</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 mt-3">
-                <Mail className="w-4 h-4 text-purple-400/60 flex-shrink-0" />
-                <a href="mailto:admin@raminvestholding.com" className="text-white/60 hover:text-white transition-colors" data-testid="footer-link-email">
-                  admin@raminvestholding.com
-                </a>
-              </div>
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
+          <div className="col-span-2 sm:col-span-1">
+            <img src={finatradesLogo} alt="Finatrades" className="h-7 w-auto mb-3" />
+            <p className="text-white/40 text-sm leading-relaxed">
+              Digital gateway for commodity trade, inventory, settlement and trade finance.
+            </p>
+          </div>
+          <div>
+            <h4 className="text-white/70 font-semibold text-sm mb-3">Platform</h4>
+            <div className="space-y-2">
+              {['How It Works', 'Marketplace', 'Seller Consignment', 'Buyer Flow'].map(l => (
+                <div key={l}><a href="#how-it-works" className="text-white/40 hover:text-white/70 text-sm transition-colors">{l}</a></div>
+              ))}
             </div>
           </div>
-
           <div>
-            <h4 className="text-white font-semibold mb-4 text-sm">Ecosystem</h4>
-            <ul className="space-y-3">
-              {[
-                { label: 'Raminvest Holding', href: '#raminvest' },
-                { label: 'Finatrades Platform', href: '#finatrades' },
-                { label: 'WinGold & Metals', href: '#wingold' },
-                { label: 'WinCommodities', href: '#wincommodities' },
-                { label: 'Win Logistics', href: '#winlogistics' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <a href={link.href} className="text-white/60 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {link.label}
-                  </a>
-                </li>
+            <h4 className="text-white/70 font-semibold text-sm mb-3">Services</h4>
+            <div className="space-y-2">
+              {['Warehouse Inventory', 'Trade Finance', 'Government Barter', 'Compliance'].map(l => (
+                <div key={l}><a href="#trade-finance" className="text-white/40 hover:text-white/70 text-sm transition-colors">{l}</a></div>
               ))}
-            </ul>
+            </div>
           </div>
-
           <div>
-            <h4 className="text-white font-semibold mb-4 text-sm">Platform</h4>
-            <ul className="space-y-3">
+            <h4 className="text-white/70 font-semibold text-sm mb-3">Legal</h4>
+            <div className="space-y-2">
               {[
-                { label: 'FinaPay Wallet', href: '/finagold/finapay' },
-                { label: 'FinaVault', href: '/finagold/finavault' },
-                { label: 'BNSL', href: '/finagold/bnsl' },
-                { label: 'FinaBridge', href: '/finagold/finabridge' },
-                { label: 'Sign In', href: '/sign-in' },
-              ].map((link) => (
-                <li key={link.label}>
-                  <Link href={link.href} className="text-white/60 text-sm hover:text-white transition-colors" data-testid={`footer-link-${link.label.toLowerCase().replace(/\s+/g, '-')}`}>
-                    {link.label}
-                  </Link>
-                </li>
+                { label: 'Privacy Policy', href: '/privacy' },
+                { label: 'Terms & Conditions', href: '/terms' },
+                { label: 'Disclaimer', href: '/disclaimer' },
+                { label: 'Sign In', href: '/login' },
+              ].map(({ label, href }) => (
+                <div key={label}><Link href={href} className="text-white/40 hover:text-white/70 text-sm transition-colors">{label}</Link></div>
               ))}
-            </ul>
+            </div>
           </div>
         </div>
-
-        <div className="pt-8 border-t border-white/20">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-white/60 text-sm">
-              &copy; {new Date().getFullYear()} Raminvest Holding. All rights reserved.
-            </p>
-            <div className="flex gap-6">
-              <Link href="/terms" className="text-white/40 text-xs hover:text-white/60 transition-colors" data-testid="footer-link-terms-of-service">Terms of Service</Link>
-              <Link href="/privacy" className="text-white/40 text-xs hover:text-white/60 transition-colors" data-testid="footer-link-privacy-policy">Privacy Policy</Link>
-              <Link href="/disclaimer" className="text-white/40 text-xs hover:text-white/60 transition-colors" data-testid="footer-link-disclaimer">Disclaimer</Link>
-            </div>
-          </div>
+        <div className="border-t border-white/5 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-white/30 text-xs">© {new Date().getFullYear()} Finatrades. All rights reserved.</p>
+          <p className="text-white/25 text-xs text-center">
+            Finatrades connects verified commodities, warehouse inventory, buyer payments, trade finance, and settlement workflows through one secure digital trade platform.
+          </p>
         </div>
       </div>
     </footer>
@@ -693,77 +783,52 @@ function EcosystemFooter() {
 }
 
 export default function EcosystemLanding() {
-  useEffect(() => {
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion) {
-      document.documentElement.style.setProperty('--motion-duration', '0.01ms');
-    }
-  }, []);
-
   return (
-    <>
-    <PageSeo
-      title="Finatrades Ecosystem — Gold Trade Finance Network"
-      description="Explore the Finatrades ecosystem: FinaGold savings, FinaBridge trade finance, Wingold physical gold, WinCommodities sourcing, and WinLogistics for global commodity trade."
-      canonical="/ecosystem"
-    />
-    <div className="finagold-landing min-h-screen bg-[#FAFBFF] text-[#0D0D0D] antialiased selection:bg-[#8A2BE2] selection:text-white overflow-x-hidden">
-      <style>{`
-        .finagold-landing {
-          --gold: #D4AF37;
-          --gold-bright: #FFD500;
-          --gold-light: #F7D878;
-          --gold-dark: #B8860B;
-          --purple-deep: #8A2BE2;
-          --purple-magenta: #FF2FBF;
-          --purple-light: #A342FF;
-          --purple-pink: #FF4CD6;
-          --purple-violet: #4B0082;
-          --bg-darkest: #0D001E;
-          --bg-dark: #1A002F;
-          --bg-medium: #2A0055;
-          --bg-indigo: #4B0082;
-          font-family: 'Inter', system-ui, -apple-system, sans-serif;
-          --primary: #8A2BE2;
-          --primary-foreground: #ffffff;
-          --ring: #8A2BE2;
-          --accent: #D4AF37;
-          --accent-foreground: #000000;
-        }
-        .finagold-landing {
-          scrollbar-width: none;
-          -ms-overflow-style: none;
-        }
-        .finagold-landing::-webkit-scrollbar {
-          display: none;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .finagold-landing *,
-          .finagold-landing *::before,
-          .finagold-landing *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-        html {
-          scroll-behavior: smooth;
-        }
-      `}</style>
-
-      <EcosystemNavbar />
-      <main>
-        <HeroSection />
-        <RaminvestSection />
-        <FinatradesSection />
-        <WingoldSection />
-        <WinCommoditiesSection />
-        <WinLogisticsSection />
-        <CTASection />
-      </main>
-      <EcosystemFooter />
+    <div className="min-h-screen bg-[#07070A] text-white antialiased overflow-x-hidden">
+      <Navbar />
+      <HeroSection />
+      <PositioningSection />
+      <HowItWorksSection />
+      <MarketplaceSection />
+      <RoleSection
+        id="for-sellers"
+        badge="Exporters & Sellers"
+        icon={Package}
+        iconColor="border-[#8A2BE2]/30 bg-[#8A2BE2]/8 text-[#A855F7]"
+        title="Convert Physical Commodities into Verified Digital Inventory"
+        subtitle="Submit goods on consignment. Get listed on the marketplace."
+        desc="Sellers submit commodities to approved warehouses, upload ownership and export documents, track inspection status, and list verified inventory on the marketplace. Trade finance eligibility is built into the workflow."
+        features={[
+          'Consignment Creation', 'Document Upload', 'Warehouse Selection',
+          'Inspection Workflow', 'Inventory ID Generation', 'Marketplace Listing',
+          'Finance Eligibility', 'Release Tracking',
+        ]}
+        cta="Register as Seller"
+        ctaHref="/register?role=seller"
+      />
+      <RoleSection
+        id="for-buyers"
+        badge="Importers & Buyers"
+        icon={Search}
+        iconColor="border-[#D4AF37]/25 bg-[#D4AF37]/8 text-[#D4AF37]"
+        title="Source Verified Commodities and Execute Structured Orders"
+        subtitle="Browse, match, order, pay, and track — all in one flow."
+        desc="Buyers browse verified stock, send RFQs or Import Expressions of Interest, compare supplier offers, place orders, make payment through approved channels, and track deal execution until delivery milestones are confirmed."
+        features={[
+          'Marketplace Discovery', 'Verified Inventory Access', 'RFQ Submission',
+          'Supplier Matching', 'Purchase Order Creation', 'Payment Tracking',
+          'Inventory Reserve', 'Delivery Milestone Visibility',
+        ]}
+        cta="Register as Buyer"
+        ctaHref="/register?role=buyer"
+      />
+      <SettlementSection />
+      <GovernmentSection />
+      <BackendSection />
+      <ComplianceSection />
+      <CTASection />
+      <Footer />
+      <FloatingAgentChat />
     </div>
-    <FloatingAgentChat />
-  </>
   );
 }
