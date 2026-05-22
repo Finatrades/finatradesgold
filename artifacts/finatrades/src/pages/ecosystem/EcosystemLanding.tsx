@@ -948,14 +948,13 @@ function BackendSection() {
               className="group relative rounded-2xl overflow-hidden border border-gray-200 bg-white shadow-sm hover:shadow-lg hover:border-[#C73B22]/30 transition-all duration-300"
             >
               {img ? (
-                <div className="relative h-44 overflow-hidden">
+                <div className="relative overflow-hidden">
                   <img
                     src={img}
                     alt={label}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-auto block transition-transform duration-500 group-hover:scale-[1.02]"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1B2E40]/80 via-[#1B2E40]/20 to-transparent" />
-                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/60 bg-white/10 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
+                  <span className="absolute top-3 left-3 text-[10px] font-bold tracking-widest text-white/80 bg-black/30 backdrop-blur-sm border border-white/20 px-2 py-0.5 rounded-full">
                     LAYER {num}
                   </span>
                 </div>
