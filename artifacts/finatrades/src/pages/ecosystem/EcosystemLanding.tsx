@@ -918,59 +918,80 @@ function MarketplaceSection() {
           {/* LEFT — Africa map with hub overlays */}
           <motion.div
             variants={fadeUp}
-            className="relative flex items-center justify-center order-2 lg:order-1"
-            style={{ minHeight: '700px' }}
+            className="flex flex-col items-center order-2 lg:order-1 gap-5"
           >
-            {/* Glow halo behind map */}
-            <div className="absolute inset-8 rounded-full pointer-events-none"
-              style={{ background: 'radial-gradient(circle, rgba(199,59,34,0.09) 0%, transparent 68%)', filter: 'blur(40px)' }} />
+            {/* Map wrapper — relative for badge overlays */}
+            <div className="relative w-full flex items-center justify-center" style={{ minHeight: '700px' }}>
+              {/* Glow halo behind map */}
+              <div className="absolute inset-8 rounded-full pointer-events-none"
+                style={{ background: 'radial-gradient(circle, rgba(199,59,34,0.09) 0%, transparent 68%)', filter: 'blur(40px)' }} />
 
-            {/* Map image */}
-            <motion.img
-              src={africaTradeMap}
-              alt="Finatrades African Trade Hub Network"
-              animate={{ y: [0, -10, 0] }}
-              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
-              className="relative w-full select-none"
-              style={{
-                height: '700px',
-                objectFit: 'contain',
-                filter: 'drop-shadow(0 32px 64px rgba(199,59,34,0.14)) drop-shadow(0 4px 16px rgba(0,0,0,0.07))',
-              }}
-              draggable={false}
-            />
+              {/* Map image */}
+              <motion.img
+                src={africaTradeMap}
+                alt="Finatrades African Trade Hub Network"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+                className="relative w-full select-none"
+                style={{
+                  height: '700px',
+                  objectFit: 'contain',
+                  filter: 'drop-shadow(0 32px 64px rgba(199,59,34,0.14)) drop-shadow(0 4px 16px rgba(0,0,0,0.07))',
+                }}
+                draggable={false}
+              />
 
-            {/* Hub count badge — top right of image */}
+              {/* Hub count badge — top right of image */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 12 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
+                className="absolute top-4 right-0 lg:right-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF0EC' }}>
+                  <MapPin size={16} className="text-[#C73B22]" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">14 Active Hubs</p>
+                  <p className="text-[11px] text-[#888880]">Across Africa</p>
+                </div>
+              </motion.div>
+
+              {/* Verified listings badge — bottom left */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: -12 }}
+                whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 22 }}
+                className="absolute bottom-6 left-0 lg:-left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+              >
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#ECFDF5' }}>
+                  <CheckCircle2 size={16} className="text-[#059669]" />
+                </div>
+                <div>
+                  <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified Listings</p>
+                  <p className="text-[11px] text-[#888880]">Warehouse-receipted only</p>
+                </div>
+              </motion.div>
+            </div>
+
+            {/* Map legend */}
             <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 12 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              initial={{ opacity: 0, y: 8 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
-              className="absolute top-4 right-0 lg:right-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+              transition={{ delay: 0.7, duration: 0.4 }}
+              className="flex items-center justify-center gap-6 px-5 py-3 rounded-2xl border border-gray-100 bg-white/80 backdrop-blur-sm shadow-sm w-fit mx-auto"
             >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF0EC' }}>
-                <MapPin size={16} className="text-[#C73B22]" />
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#C73B22', boxShadow: '0 0 0 3px rgba(199,59,34,0.18)' }} />
+                <span className="text-[12px] text-[#555550] font-medium">Entry points</span>
               </div>
-              <div>
-                <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">14 Active Hubs</p>
-                <p className="text-[11px] text-[#888880]">Across Africa</p>
-              </div>
-            </motion.div>
-
-            {/* Verified listings badge — bottom left */}
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: -12 }}
-              whileInView={{ opacity: 1, scale: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 22 }}
-              className="absolute bottom-6 left-0 lg:-left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
-            >
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#ECFDF5' }}>
-                <CheckCircle2 size={16} className="text-[#059669]" />
-              </div>
-              <div>
-                <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified Listings</p>
-                <p className="text-[11px] text-[#888880]">Warehouse-receipted only</p>
+              <div className="w-px h-4 bg-gray-200" />
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full shrink-0" style={{ background: '#1D4ED8', boxShadow: '0 0 0 3px rgba(29,78,216,0.18)' }} />
+                <span className="text-[12px] text-[#555550] font-medium">Trade &amp; logistics nodes</span>
               </div>
             </motion.div>
           </motion.div>
