@@ -9,6 +9,7 @@ import {
   AlertTriangle, ShieldCheck
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
+import africaTradeMap from '@/assets/africa-trade-map.png';
 import heroBg from '@/assets/hero-bg.png';
 import section2Bg from '@/assets/section2-bg.png';
 import cardSellers from '@/assets/card-sellers.png';
@@ -875,48 +876,161 @@ function HowItWorksSection() {
   );
 }
 
-const AFRICA_HUBS = [
-  'Senegal', 'Togo', 'Ghana', 'Nigeria', 'Cameroon', 'Congo', 'Angola',
-  'South Africa', 'Kenya', 'Tanzania', 'Djibouti', 'Ivory Coast', 'Morocco', 'Egypt',
+const COMMODITIES = [
+  { label: 'Gold', color: '#D97706' },
+  { label: 'Crude Oil', color: '#1B2E40' },
+  { label: 'Cocoa', color: '#7B3F00' },
+  { label: 'Wheat & Grain', color: '#92400E' },
+  { label: 'Cotton', color: '#2D6A4F' },
+  { label: 'Iron Ore', color: '#374151' },
+  { label: 'Fertilizers', color: '#065F46' },
+  { label: 'LNG', color: '#1D4ED8' },
 ];
+
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="relative py-24 border-y border-gray-200 overflow-hidden">
-      <div className="absolute inset-0">
-        <img src={hubsBg} alt="" className="w-full h-full object-cover object-center" />
-        <div className="absolute inset-0 bg-white/30" />
-      </div>
+    <section id="marketplace" className="relative py-24 overflow-hidden bg-white">
+      {/* Subtle warm background gradient */}
+      <div className="absolute inset-0 pointer-events-none"
+        style={{ background: 'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(199,59,34,0.04) 0%, transparent 70%)' }} />
+
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <motion.div variants={fadeUp}>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-gray-100 text-[#555550] text-xs font-medium mb-5">
-              <Globe size={12} />
-              14 Verified African Trade Hubs
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
-              Africa's First Institutional-Grade B2B Commodity Marketplace
-            </h2>
-            <p className="text-[#555550] text-base leading-relaxed mb-8">
-              Every listing on the Finatrades marketplace is anchored to a confirmed warehouse inventory position, 
-              authenticated trade documentation, and a compliance-cleared counterparty. 
-              Buyers don't browse unverified offers — they access audited, actionable commodity positions 
-              ready for structured execution across 14 African trade hubs.
-            </p>
-            <div className="space-y-3 mb-8">
+
+        {/* Section header — centred */}
+        <motion.div variants={fadeUp} className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-[#C73B22]/5 text-[#A82D16] text-xs font-medium mb-5">
+            <Globe size={12} />
+            14 Verified African Trade Hubs · Institutional Access Only
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4 leading-tight">
+            Africa's First Institutional-Grade<br className="hidden sm:block" /> B2B Commodity Marketplace
+          </h2>
+          <p className="text-[#555550] max-w-2xl mx-auto text-base leading-relaxed">
+            Every listing is anchored to a confirmed warehouse inventory position, authenticated trade documentation,
+            and a compliance-cleared counterparty. Buyers access audited, actionable commodity positions — not unverified offers.
+          </p>
+        </motion.div>
+
+        {/* Two-column: map left, content right */}
+        <div className="grid lg:grid-cols-[1.1fr_1fr] gap-12 xl:gap-20 items-center">
+
+          {/* LEFT — Africa map with hub overlays */}
+          <motion.div
+            variants={fadeUp}
+            className="relative flex items-center justify-center order-2 lg:order-1"
+            style={{ minHeight: '700px' }}
+          >
+            {/* Glow halo behind map */}
+            <div className="absolute inset-8 rounded-full pointer-events-none"
+              style={{ background: 'radial-gradient(circle, rgba(199,59,34,0.09) 0%, transparent 68%)', filter: 'blur(40px)' }} />
+
+            {/* Map image */}
+            <motion.img
+              src={africaTradeMap}
+              alt="Finatrades African Trade Hub Network"
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+              className="relative w-full select-none"
+              style={{
+                height: '700px',
+                objectFit: 'contain',
+                filter: 'drop-shadow(0 32px 64px rgba(199,59,34,0.14)) drop-shadow(0 4px 16px rgba(0,0,0,0.07))',
+              }}
+              draggable={false}
+            />
+
+            {/* Hub count badge — top right of image */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 12 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.4, type: 'spring', stiffness: 260, damping: 22 }}
+              className="absolute top-4 right-0 lg:right-4 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#FEF0EC' }}>
+                <MapPin size={16} className="text-[#C73B22]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">14 Active Hubs</p>
+                <p className="text-[11px] text-[#888880]">Across Africa</p>
+              </div>
+            </motion.div>
+
+            {/* Verified listings badge — bottom left */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: -12 }}
+              whileInView={{ opacity: 1, scale: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.6, type: 'spring', stiffness: 260, damping: 22 }}
+              className="absolute bottom-6 left-0 lg:-left-2 bg-white rounded-2xl border border-gray-100 px-4 py-3 flex items-center gap-3 shadow-xl"
+            >
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0" style={{ background: '#ECFDF5' }}>
+                <CheckCircle2 size={16} className="text-[#059669]" />
+              </div>
+              <div>
+                <p className="text-[13px] font-bold text-[#1A1A1A] leading-tight">100% Verified Listings</p>
+                <p className="text-[11px] text-[#888880]">Warehouse-receipted only</p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          {/* RIGHT — content */}
+          <motion.div
+            initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }}
+            variants={stagger}
+            className="order-1 lg:order-2"
+          >
+            {/* Feature list */}
+            <motion.div variants={stagger} className="space-y-3 mb-8">
               {[
-                'Filter by commodity type, specification grade, lot quantity, incoterms, and hub location',
-                'Submit formal RFQ or Import Expression of Interest — tracked and responded to on-platform',
-                'Evaluate competing offers with verified documentation side-by-side before committing',
-                'Convert accepted offers to purchase orders with escrow-governed payment in one click',
-              ].map(item => (
-                <div key={item} className="flex items-start gap-3">
-                  <CheckCircle2 size={16} className="text-[#A82D16] flex-shrink-0 mt-0.5" />
-                  <span className="text-[#444440] text-sm">{item}</span>
+                { icon: Search,      text: 'Filter by commodity type, specification grade, lot quantity, incoterms, and hub location' },
+                { icon: FileText,    text: 'Submit formal RFQ or Import Expression of Interest — tracked and responded to on-platform' },
+                { icon: BarChart3,   text: 'Evaluate competing offers with verified documentation side-by-side before committing' },
+                { icon: Lock,        text: 'Convert accepted offers to purchase orders with escrow-governed payment in one click' },
+              ].map(({ icon: Icon, text }) => (
+                <motion.div key={text} variants={fadeUp} className="flex items-start gap-3 px-4 py-3.5 rounded-xl bg-gray-50/80 border border-gray-100 hover:border-[#C73B22]/20 hover:bg-[#C73B22]/3 transition-colors">
+                  <div className="w-7 h-7 rounded-lg bg-white border border-[#C73B22]/15 flex items-center justify-center shrink-0 mt-0.5 shadow-sm">
+                    <Icon size={13} className="text-[#C73B22]" />
+                  </div>
+                  <span className="text-[#444440] text-sm leading-relaxed">{text}</span>
+                </motion.div>
+              ))}
+            </motion.div>
+
+            {/* Commodity chips */}
+            <motion.div variants={fadeUp} className="mb-8">
+              <p className="text-[11px] font-bold text-gray-400 uppercase tracking-widest mb-3">Traded Commodities</p>
+              <div className="flex flex-wrap gap-2">
+                {COMMODITIES.map(({ label, color }) => (
+                  <span
+                    key={label}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border"
+                    style={{ color, borderColor: color + '40', background: color + '0D' }}
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+                    {label}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Stats row */}
+            <motion.div variants={fadeUp} className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-100">
+              {[
+                { value: '14', label: 'African Hubs' },
+                { value: '100%', label: 'Inventory-Verified' },
+                { value: 'Zero', label: 'Blind Purchasing' },
+              ].map(({ value, label }) => (
+                <div key={label} className="text-center">
+                  <p className="text-xl font-bold text-[#C73B22]">{value}</p>
+                  <p className="text-[11px] text-[#888880] font-medium mt-0.5">{label}</p>
                 </div>
               ))}
-            </div>
-            <div className="flex flex-wrap gap-3">
+            </motion.div>
+
+            {/* CTAs */}
+            <motion.div variants={fadeUp} className="flex flex-wrap gap-3">
               <Link href="/register">
                 <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all flex items-center gap-2 hover:shadow-lg hover:shadow-[#C73B22]/25">
                   Access the Marketplace <ArrowRight size={16} />
@@ -927,27 +1041,9 @@ function MarketplaceSection() {
                   List Your Inventory <ArrowRight size={16} />
                 </button>
               </Link>
-            </div>
+            </motion.div>
           </motion.div>
 
-          <motion.div variants={fadeUp} className="grid grid-cols-2 gap-3">
-            {AFRICA_HUBS.map((hub, i) => (
-              <div key={hub}
-                className="rounded-xl px-4 py-3 flex items-center gap-3 transition-all"
-                style={{
-                  background: 'rgba(255,255,255,0.72)',
-                  backdropFilter: 'blur(12px) saturate(160%)',
-                  WebkitBackdropFilter: 'blur(12px) saturate(160%)',
-                  border: '1px solid rgba(255,255,255,0.50)',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
-                }}
-              >
-                <div className="w-2 h-2 rounded-full bg-[#C73B22] flex-shrink-0" />
-                <span className="text-[#333330] text-sm font-medium">{hub}</span>
-                <MapPin size={12} className="text-[#AAAAAA] ml-auto" />
-              </div>
-            ))}
-          </motion.div>
         </div>
       </AnimatedSection>
     </section>
