@@ -936,6 +936,172 @@ function BackendSection() {
   );
 }
 
+function ConnectedEcosystemSection() {
+  const nodes = {
+    raminvest: { x: 50, y: 12 },
+    winlogistics: { x: 14, y: 50 },
+    wincommodities: { x: 50, y: 50 },
+    finatrades: { x: 86, y: 50 },
+    winvestnet: { x: 50, y: 88 },
+  };
+
+  const lines = [
+    [nodes.raminvest, nodes.wincommodities],
+    [nodes.winlogistics, nodes.wincommodities],
+    [nodes.finatrades, nodes.wincommodities],
+    [nodes.winvestnet, nodes.wincommodities],
+    [nodes.raminvest, nodes.winlogistics],
+    [nodes.raminvest, nodes.finatrades],
+  ];
+
+  return (
+    <section className="py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
+      <div className="max-w-5xl mx-auto px-6">
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true }}
+          variants={stagger}
+          className="text-center mb-16"
+        >
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Ecosystem</motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+            A Connected Commodity Trade Ecosystem
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-[#666660] max-w-xl mx-auto">
+            Finatrades operates as part of a broader institutional ecosystem under Raminvest Holding DIFC.
+          </motion.p>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.7, ease: [0.25, 0.46, 0.45, 0.94] }}
+          className="relative"
+        >
+          <div className="relative w-full" style={{ paddingBottom: '90%' }}>
+            <svg className="absolute inset-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ zIndex: 0 }}>
+              <circle cx="50" cy="50" r="34" fill="none" stroke="#C73B22" strokeWidth="0.3" strokeDasharray="1.2 1.8" opacity="0.35" />
+              <circle cx="50" cy="50" r="44" fill="none" stroke="#C73B22" strokeWidth="0.2" strokeDasharray="0.8 2" opacity="0.2" />
+              {lines.map(([a, b], i) => (
+                <line key={i}
+                  x1={a.x} y1={a.y} x2={b.x} y2={b.y}
+                  stroke="#C73B22" strokeWidth="0.25"
+                  strokeDasharray="1 1.5" opacity="0.4"
+                />
+              ))}
+              {Object.values(nodes).map((n, i) => (
+                <circle key={i} cx={n.x} cy={n.y} r="0.8" fill="#C73B22" opacity="0.5" />
+              ))}
+            </svg>
+
+            {[
+              {
+                key: 'raminvest', x: 50, y: 12, label: 'RAMINVEST', sub: 'HOLDING DIFC',
+                desc: 'Provides group-level strategic oversight, governance, and ecosystem direction across the platform.',
+                link: null, highlight: false,
+                logo: (
+                  <div className="flex flex-col items-center">
+                    <div className="w-10 h-10 rounded bg-black flex items-center justify-center mb-1">
+                      <span className="text-white text-xs font-black tracking-tight">RR</span>
+                    </div>
+                    <span className="font-black text-sm text-[#1A1A1A] tracking-tight">RAMINVEST</span>
+                    <span className="text-[10px] text-[#888] font-medium tracking-widest">HOLDING DIFC</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'winlogistics', x: 14, y: 50, label: 'WINLOGISTICS', sub: '',
+                desc: 'Supports logistics coordination, transport structuring, and operational routing across international trade corridors.',
+                link: '#', highlight: false,
+                logo: (
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-[9px] font-black">RR</span>
+                    </div>
+                    <span className="font-black text-sm text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">LOGISTICS</span></span>
+                  </div>
+                ),
+              },
+              {
+                key: 'wincommodities', x: 50, y: 50, label: 'WINCOMMODITIES', sub: 'THIS PLATFORM',
+                desc: 'Supports commodity execution activities, including sourcing coordination and trade operations.',
+                link: null, highlight: true,
+                logo: (
+                  <div className="flex flex-col items-center">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <div className="w-7 h-7 rounded bg-[#C73B22] flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-[9px] font-black">RR</span>
+                      </div>
+                      <span className="font-black text-sm text-[#1A1A1A] tracking-tight">WIN<span className="text-[#C73B22]">COMMODITIES</span></span>
+                    </div>
+                    <span className="text-[9px] font-bold tracking-widest text-[#C73B22] uppercase">This Platform</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'finatrades', x: 86, y: 50, label: 'FINATRADES', sub: '',
+                desc: 'Swiss regulated Payment and Trade Finance Platform — settlement, FX coordination, and gold-backed clearing.',
+                link: '#', highlight: false,
+                logo: (
+                  <div className="flex items-center gap-1.5">
+                    <img src={finatradesLogo} alt="Finatrades" className="h-5 w-auto" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
+                    <span className="font-bold text-sm text-[#C73B22]">FINATRADES</span>
+                  </div>
+                ),
+              },
+              {
+                key: 'winvestnet', x: 50, y: 88, label: 'winvestnet', sub: 'Moving the world forward',
+                desc: 'Supports investment connectivity, strategic capital alignment, and network integration across the business ecosystem.',
+                link: '#', highlight: false,
+                logo: (
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center flex-shrink-0">
+                      <span className="text-white text-[9px] font-black">WIN</span>
+                    </div>
+                    <div>
+                      <div className="font-bold text-xs text-[#1A1A1A]">winvestnet</div>
+                      <div className="text-[9px] text-[#888]">Moving the world forward</div>
+                    </div>
+                  </div>
+                ),
+              },
+            ].map(node => (
+              <div
+                key={node.key}
+                className="absolute"
+                style={{
+                  left: `${node.x}%`,
+                  top: `${node.y}%`,
+                  transform: 'translate(-50%, -50%)',
+                  width: node.key === 'wincommodities' ? '22%' : '19%',
+                  zIndex: 10,
+                }}
+              >
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  whileInView={{ opacity: 1, scale: 1 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: 0.15, type: 'spring', stiffness: 200, damping: 20 }}
+                  className={`bg-white rounded-2xl p-3 text-center shadow-md ${node.highlight ? 'ring-2 ring-[#C73B22]' : 'border border-gray-200'}`}
+                >
+                  <div className="flex justify-center mb-2">{node.logo}</div>
+                  {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
+                  <p className="text-[10px] text-[#666] leading-snug mb-2">{node.desc}</p>
+                  {node.link && (
+                    <a href={node.link} className="text-[10px] font-semibold text-[#C73B22] hover:underline flex items-center justify-center gap-0.5">
+                      Visit site <ArrowRight size={9} />
+                    </a>
+                  )}
+                </motion.div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
 function CTASection() {
   return (
     <section id="contact" className="bg-white py-24">
@@ -1045,6 +1211,7 @@ export default function EcosystemLanding() {
       <SettlementSection />
       <BackendSection />
       <ComplianceSection />
+      <ConnectedEcosystemSection />
       <CTASection />
       <Footer />
       <FloatingAgentChat />
