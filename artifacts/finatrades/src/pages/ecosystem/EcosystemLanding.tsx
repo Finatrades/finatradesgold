@@ -213,48 +213,137 @@ function HeroSection() {
   );
 }
 
+function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: string; img: string; accent: string; delay: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [tilt, setTilt] = useState({ x: 0, y: 0 });
+  const [shine, setShine] = useState({ x: 50, y: 50 });
+  const [hovered, setHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const card = cardRef.current;
+    if (!card) return;
+    const { left, top, width, height } = card.getBoundingClientRect();
+    const x = (e.clientX - left) / width;
+    const y = (e.clientY - top) / height;
+    setTilt({ x: (y - 0.5) * -18, y: (x - 0.5) * 18 });
+    setShine({ x: x * 100, y: y * 100 });
+  };
+
+  const handleMouseLeave = () => {
+    setTilt({ x: 0, y: 0 });
+    setShine({ x: 50, y: 50 });
+    setHovered(false);
+  };
+
+  return (
+    <motion.div
+      variants={fadeUp}
+      initial="hidden"
+      whileInView="visible"
+      viewport={{ once: true, margin: '-60px' }}
+      transition={{ delay }}
+      style={{ perspective: '1000px' }}
+    >
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={handleMouseLeave}
+        animate={{
+          rotateX: tilt.x,
+          rotateY: tilt.y,
+          scale: hovered ? 1.04 : 1,
+          boxShadow: hovered
+            ? '0 32px 64px -12px rgba(199,59,34,0.25), 0 0 0 1px rgba(199,59,34,0.15)'
+            : '0 4px 24px -4px rgba(0,0,0,0.10)',
+        }}
+        transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+        className="relative rounded-2xl overflow-hidden cursor-pointer"
+        style={{ transformStyle: 'preserve-3d' }}
+      >
+        <div className="relative h-52 overflow-hidden">
+          <motion.img
+            src={img}
+            alt={title}
+            animate={{ scale: hovered ? 1.08 : 1 }}
+            transition={{ duration: 0.5, ease: 'easeOut' }}
+            className="w-full h-full object-cover object-center"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+          <div
+            className="absolute inset-0 opacity-0 transition-opacity duration-300"
+            style={{
+              opacity: hovered ? 0.12 : 0,
+              background: `radial-gradient(circle at ${shine.x}% ${shine.y}%, rgba(255,255,255,0.9) 0%, transparent 65%)`,
+            }}
+          />
+          <div className="absolute bottom-0 left-0 right-0 p-4">
+            <span
+              className="inline-block text-xs font-semibold px-3 py-1 rounded-full mb-2"
+              style={{ background: accent, color: '#fff', letterSpacing: '0.04em' }}
+            >
+              {title}
+            </span>
+          </div>
+        </div>
+
+        <div className="relative p-5 bg-white">
+          <div
+            className="absolute top-0 left-0 right-0 h-[2px] transition-opacity duration-300"
+            style={{ background: `linear-gradient(90deg, transparent, ${accent}, transparent)`, opacity: hovered ? 1 : 0 }}
+          />
+          <p className="text-[#555550] text-sm leading-relaxed">{desc}</p>
+          <motion.div
+            animate={{ opacity: hovered ? 1 : 0, y: hovered ? 0 : 6 }}
+            transition={{ duration: 0.25 }}
+            className="mt-4 flex items-center gap-1.5 text-xs font-semibold"
+            style={{ color: accent }}
+          >
+            Learn more <ArrowRight size={12} />
+          </motion.div>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+const ROLE_CARDS = [
+  { title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.', img: cardSellers, accent: '#C73B22' },
+  { title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.', img: cardBuyers, accent: '#1B2E40' },
+  { title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.', img: cardGovernment, accent: '#E5602A' },
+  { title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.', img: cardWarehouse, accent: '#C73B22' },
+  { title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.', img: cardFinance, accent: '#1B2E40' },
+  { title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.', img: cardLogistics, accent: '#E5602A' },
+];
+
 function PositioningSection() {
   return (
-    <section className="relative py-20 border-y border-gray-200 overflow-hidden">
+    <section className="relative py-24 border-y border-gray-200 overflow-hidden">
       <div className="absolute inset-0">
         <img src={section2Bg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/25" />
       </div>
-      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
-        <motion.div variants={fadeUp} className="text-center mb-14">
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            One Platform. Multiple Trade Roles. Complete Transaction Visibility.
-          </h2>
-          <p className="text-[#555550] max-w-3xl mx-auto text-lg">
-            Finatrades acts as the central digital gateway where users register, complete KYC/KYB, access verified
-            inventory, submit RFQs, place orders, track warehouse consignments, manage settlement flows, and monitor
-            trade execution from beginning to end.
-          </p>
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
+        <motion.div
+          initial="hidden" whileInView="visible" viewport={{ once: true }}
+          variants={stagger}
+          className="text-center mb-16"
+        >
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">Trade Ecosystem</motion.p>
+          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+            One Platform. Multiple Trade Roles.
+          </motion.h2>
+          <motion.p variants={fadeUp} className="text-[#555550] max-w-2xl mx-auto text-lg">
+            Every participant in the commodity trade lifecycle has a dedicated workflow, verified onboarding, and real-time visibility from consignment to settlement.
+          </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {[
-            { icon: Users, title: 'Exporters & Sellers', desc: 'Submit commodities on consignment, upload documents, track inspection, and list verified inventory on the marketplace.', img: cardSellers },
-            { icon: Building2, title: 'Importers & Buyers', desc: 'Browse verified stock, submit RFQs, compare offers, place orders, and track deal execution until delivery.', img: cardBuyers },
-            { icon: Shield, title: 'Government Entities', desc: 'Strategic commodity sourcing, sovereign barter workflows, counterparty matching, and settlement support.', img: cardGovernment },
-            { icon: Warehouse, title: 'Warehouse Partners', desc: 'Receive pre-arrival documents, confirm shipments, manage inspection, issue digital receipts, and confirm releases.', img: cardWarehouse },
-            { icon: TrendingUp, title: 'Finance Partners', desc: 'Review inventory-backed requests, approve trade finance, monitor escrow-style settlement, and release seller payouts.', img: cardFinance },
-            { icon: Truck, title: 'Logistics Partners', desc: 'Track shipments, manage customs readiness, update delivery milestones, and confirm final delivery conditions.', img: cardLogistics },
-          ].map(({ icon: Icon, title, desc, img }) => (
-            <motion.div key={title} variants={fadeUp}
-              className="bg-white border border-gray-200 rounded-2xl overflow-hidden hover:shadow-lg hover:border-[#C73B22]/30 transition-all group">
-              <div className="relative h-44 overflow-hidden">
-                <img src={img} alt={title} className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-              </div>
-              <div className="p-5">
-                <h3 className="text-[#1A1A1A] font-semibold mb-2">{title}</h3>
-                <p className="text-[#666660] text-sm leading-relaxed">{desc}</p>
-              </div>
-            </motion.div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+          {ROLE_CARDS.map((card, i) => (
+            <RoleCard3D key={card.title} {...card} delay={i * 0.07} />
           ))}
         </div>
-      </AnimatedSection>
+      </div>
     </section>
   );
 }
