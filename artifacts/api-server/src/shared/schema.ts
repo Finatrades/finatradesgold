@@ -6758,3 +6758,281 @@ export const orgPositions = pgTable("org_positions", {
 export const insertOrgPositionSchema = createInsertSchema(orgPositions).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertOrgPosition = z.infer<typeof insertOrgPositionSchema>;
 export type OrgPosition = typeof orgPositions.$inferSelect;
+
+// ============================================
+// COMMODITY TRADE PLATFORM — NEW TABLES
+// Steps 2-8 of the 9-step workflow
+// ============================================
+
+// --- Enums ---
+export const consignmentStatusEnum = pgEnum('consignment_status', [
+  'Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'In Transit', 'At Warehouse', 'Verified'
+]);
+
+export const qualityGradeEnum = pgEnum('quality_grade', ['A+', 'A', 'B+', 'B', 'C', 'D']);
+
+export const rfqStatusEnum = pgEnum('rfq_status', [
+  'Open', 'Offers Received', 'Negotiating', 'Accepted', 'Expired', 'Cancelled'
+]);
+
+export const escrowStatusEnum = pgEnum('escrow_status', [
+  'Pending Funding', 'Funded', 'Active', 'Conditions Met', 'Released', 'Disputed', 'Refunded'
+]);
+
+export const commodityCategoryEnum = pgEnum('commodity_category', [
+  'Agricultural', 'Energy', 'Metals', 'Soft Commodities', 'Industrial'
+]);
+
+// --- Commodities (admin-managed, HS codes) ---
+export const commodities = pgTable("commodities", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  hsCode: varchar("hs_code", { length: 20 }).notNull(),
+  category: commodityCategoryEnum("category").notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  description: text("description"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertCommoditySchema = createInsertSchema(commodities).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertCommodity = z.infer<typeof insertCommoditySchema>;
+export type Commodity = typeof commodities.$inferSelect;
+
+// --- Warehouse Hubs (admin-managed, 14 African hubs) ---
+export const warehouseHubs = pgTable("warehouse_hubs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 10 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  city: varchar("city", { length: 100 }).notNull(),
+  country: varchar("country", { length: 100 }).notNull(),
+  address: text("address"),
+  capacityMT: integer("capacity_mt"),
+  operatorName: varchar("operator_name", { length: 255 }),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertWarehouseHubSchema = createInsertSchema(warehouseHubs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertWarehouseHub = z.infer<typeof insertWarehouseHubSchema>;
+export type WarehouseHub = typeof warehouseHubs.$inferSelect;
+
+// --- Consignments (Step 2) ---
+export const consignments = pgTable("consignments", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNo: varchar("reference_no", { length: 50 }).unique(),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  commodityId: varchar("commodity_id", { length: 255 }).references(() => commodities.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  hsCode: varchar("hs_code", { length: 20 }),
+  quantity: decimal("quantity", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  qualityGrade: qualityGradeEnum("quality_grade"),
+  originCountry: varchar("origin_country", { length: 100 }).notNull(),
+  packingType: varchar("packing_type", { length: 100 }),
+  targetHubId: varchar("target_hub_id", { length: 255 }).references(() => warehouseHubs.id),
+  targetHubCode: varchar("target_hub_code", { length: 10 }),
+  incoterms: varchar("incoterms", { length: 20 }),
+  estimatedValue: decimal("estimated_value", { precision: 20, scale: 2 }),
+  valueCurrency: varchar("value_currency", { length: 10 }).default('USD'),
+  status: consignmentStatusEnum("status").notNull().default('Draft'),
+  notes: text("notes"),
+  adminNotes: text("admin_notes"),
+  submittedAt: timestamp("submitted_at"),
+  approvedAt: timestamp("approved_at"),
+  approvedBy: varchar("approved_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertConsignmentSchema = createInsertSchema(consignments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConsignment = z.infer<typeof insertConsignmentSchema>;
+export type Consignment = typeof consignments.$inferSelect;
+
+// --- Inventory Items (Steps 3 & 4 — warehouse stock) ---
+export const inventoryItems = pgTable("inventory_items", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  warehouseReceiptNo: varchar("warehouse_receipt_no", { length: 100 }).unique(),
+  consignmentId: varchar("consignment_id", { length: 255 }).references(() => consignments.id),
+  hubId: varchar("hub_id", { length: 255 }).notNull().references(() => warehouseHubs.id),
+  commodityId: varchar("commodity_id", { length: 255 }).references(() => commodities.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  ownerId: varchar("owner_id", { length: 255 }).notNull().references(() => users.id),
+  quantityReceived: decimal("quantity_received", { precision: 15, scale: 3 }).notNull(),
+  quantityAvailable: decimal("quantity_available", { precision: 15, scale: 3 }).notNull(),
+  quantityReserved: decimal("quantity_reserved", { precision: 15, scale: 3 }).default('0'),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  qualityGrade: qualityGradeEnum("quality_grade"),
+  valuationPerUnit: decimal("valuation_per_unit", { precision: 15, scale: 2 }),
+  valuationCurrency: varchar("valuation_currency", { length: 10 }).default('USD'),
+  isListed: boolean("is_listed").notNull().default(false),
+  receivedAt: timestamp("received_at").notNull().defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertInventoryItemSchema = createInsertSchema(inventoryItems).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertInventoryItem = z.infer<typeof insertInventoryItemSchema>;
+export type InventoryItem = typeof inventoryItems.$inferSelect;
+
+// --- Marketplace Listings (Step 5) ---
+export const marketplaceListings = pgTable("marketplace_listings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  inventoryItemId: varchar("inventory_item_id", { length: 255 }).notNull().references(() => inventoryItems.id),
+  sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
+  hubId: varchar("hub_id", { length: 255 }).notNull().references(() => warehouseHubs.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  hsCode: varchar("hs_code", { length: 20 }),
+  quantityAvailable: decimal("quantity_available", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  askPricePerUnit: decimal("ask_price_per_unit", { precision: 15, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  qualityGrade: qualityGradeEnum("quality_grade"),
+  incoterms: varchar("incoterms", { length: 20 }),
+  minOrderQty: decimal("min_order_qty", { precision: 15, scale: 3 }),
+  isActive: boolean("is_active").notNull().default(true),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertMarketplaceListingSchema = createInsertSchema(marketplaceListings).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertMarketplaceListing = z.infer<typeof insertMarketplaceListingSchema>;
+export type MarketplaceListing = typeof marketplaceListings.$inferSelect;
+
+// --- RFQs (Step 5/6 — Request for Quotation) ---
+export const rfqs = pgTable("rfqs", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNo: varchar("reference_no", { length: 50 }).unique(),
+  buyerId: varchar("buyer_id", { length: 255 }).notNull().references(() => users.id),
+  listingId: varchar("listing_id", { length: 255 }).references(() => marketplaceListings.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  hubId: varchar("hub_id", { length: 255 }).references(() => warehouseHubs.id),
+  requestedQuantity: decimal("requested_quantity", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  targetPricePerUnit: decimal("target_price_per_unit", { precision: 15, scale: 2 }),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  qualityRequired: qualityGradeEnum("quality_required"),
+  incoterms: varchar("incoterms", { length: 20 }),
+  deliveryDeadline: date("delivery_deadline"),
+  notes: text("notes"),
+  status: rfqStatusEnum("status").notNull().default('Open'),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRfqSchema = createInsertSchema(rfqs).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertRfq = z.infer<typeof insertRfqSchema>;
+export type Rfq = typeof rfqs.$inferSelect;
+
+// --- RFQ Offers (seller responses) ---
+export const rfqOffers = pgTable("rfq_offers", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  rfqId: varchar("rfq_id", { length: 255 }).notNull().references(() => rfqs.id),
+  sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
+  offeredQuantity: decimal("offered_quantity", { precision: 15, scale: 3 }).notNull(),
+  pricePerUnit: decimal("price_per_unit", { precision: 15, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  validUntil: timestamp("valid_until"),
+  notes: text("notes"),
+  status: text("status").notNull().default('Pending'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertRfqOfferSchema = createInsertSchema(rfqOffers).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertRfqOffer = z.infer<typeof insertRfqOfferSchema>;
+export type RfqOffer = typeof rfqOffers.$inferSelect;
+
+// --- Trade Orders (Step 6) ---
+export const tradeOrders = pgTable("trade_orders", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  orderNo: varchar("order_no", { length: 50 }).unique(),
+  rfqId: varchar("rfq_id", { length: 255 }).references(() => rfqs.id),
+  buyerId: varchar("buyer_id", { length: 255 }).notNull().references(() => users.id),
+  sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
+  hubId: varchar("hub_id", { length: 255 }).references(() => warehouseHubs.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  quantity: decimal("quantity", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  pricePerUnit: decimal("price_per_unit", { precision: 15, scale: 2 }).notNull(),
+  totalAmount: decimal("total_amount", { precision: 20, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default('USD'),
+  status: text("status").notNull().default('Pending Payment'),
+  paymentMethod: varchar("payment_method", { length: 50 }),
+  paidAt: timestamp("paid_at"),
+  deliveredAt: timestamp("delivered_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertTradeOrderSchema = createInsertSchema(tradeOrders).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertTradeOrder = z.infer<typeof insertTradeOrderSchema>;
+export type TradeOrder = typeof tradeOrders.$inferSelect;
+
+// --- Escrow Holds (Step 8 — FUSD-backed) ---
+export const escrowHolds = pgTable("escrow_holds", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  escrowRef: varchar("escrow_ref", { length: 50 }).unique(),
+  tradeOrderId: varchar("trade_order_id", { length: 255 }).notNull().references(() => tradeOrders.id),
+  buyerId: varchar("buyer_id", { length: 255 }).notNull().references(() => users.id),
+  sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
+  amount: decimal("amount", { precision: 20, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 10 }).default('FUSD'),
+  status: escrowStatusEnum("status").notNull().default('Pending Funding'),
+  fundedAt: timestamp("funded_at"),
+  releasedAt: timestamp("released_at"),
+  releaseConditions: jsonb("release_conditions"),
+  disputeRaisedAt: timestamp("dispute_raised_at"),
+  disputeNotes: text("dispute_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertEscrowHoldSchema = createInsertSchema(escrowHolds).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertEscrowHold = z.infer<typeof insertEscrowHoldSchema>;
+export type EscrowHold = typeof escrowHolds.$inferSelect;
+
+// --- Government Barter Requests (Step 7) ---
+export const barterRequests = pgTable("barter_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  referenceNo: varchar("reference_no", { length: 50 }).unique(),
+  initiatorId: varchar("initiator_id", { length: 255 }).notNull().references(() => users.id),
+  offeringCommodity: varchar("offering_commodity", { length: 255 }).notNull(),
+  offeringQuantity: decimal("offering_quantity", { precision: 15, scale: 3 }).notNull(),
+  offeringUnit: varchar("offering_unit", { length: 20 }).notNull().default('MT'),
+  requestedCommodity: varchar("requested_commodity", { length: 255 }).notNull(),
+  requestedQuantity: decimal("requested_quantity", { precision: 15, scale: 3 }).notNull(),
+  requestedUnit: varchar("requested_unit", { length: 20 }).notNull().default('MT'),
+  status: text("status").notNull().default('Draft'),
+  governmentApprovalRef: varchar("government_approval_ref", { length: 100 }),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertBarterRequestSchema = createInsertSchema(barterRequests).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertBarterRequest = z.infer<typeof insertBarterRequestSchema>;
+export type BarterRequest = typeof barterRequests.$inferSelect;
+
+// --- Delivery Milestones (logistics tracking) ---
+export const deliveryMilestones = pgTable("delivery_milestones", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id),
+  tradeOrderId: varchar("trade_order_id", { length: 255 }).references(() => tradeOrders.id),
+  milestone: varchar("milestone", { length: 255 }).notNull(),
+  status: text("status").notNull().default('Pending'),
+  location: varchar("location", { length: 255 }),
+  notes: text("notes"),
+  achievedAt: timestamp("achieved_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertDeliveryMilestoneSchema = createInsertSchema(deliveryMilestones).omit({ id: true, createdAt: true });
+export type InsertDeliveryMilestone = z.infer<typeof insertDeliveryMilestoneSchema>;
+export type DeliveryMilestone = typeof deliveryMilestones.$inferSelect;
