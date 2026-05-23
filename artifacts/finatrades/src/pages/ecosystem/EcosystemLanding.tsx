@@ -2654,7 +2654,7 @@ function ConnectedEcosystemSection() {
   const bottom = nodes.filter(n => !['raminvest', 'finatrades'].includes(n.key));
 
   return (
-    <section className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: '#FDF6EF' }}>
+    <section className="relative flex flex-col justify-center py-10 sm:py-14 overflow-hidden" style={{ background: '#FDF6EF' }}>
       <img src={bgPartnerships} alt="" aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,251,247,0.18)' }} />
@@ -2677,11 +2677,11 @@ function ConnectedEcosystemSection() {
         </AnimatedSection>
 
         {/* ── Mobile: diagram image ── */}
-        <div className="block sm:hidden w-full">
+        <div className="block sm:hidden" style={{ margin: '0 -10vw' }}>
           <img
             src={ecosystemGroupDiagram}
             alt="Raminvest Group Ecosystem Diagram"
-            className="w-full h-auto rounded-2xl"
+            className="w-full h-auto"
           />
         </div>
 
