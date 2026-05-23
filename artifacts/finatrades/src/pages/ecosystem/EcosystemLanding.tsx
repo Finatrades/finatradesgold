@@ -1374,7 +1374,7 @@ function RoleWorkflowCard({
                 src={(role as typeof role & { image?: string }).image}
                 alt={role.tab}
                 className="w-full h-full object-contain object-center relative z-10"
-                style={{ padding: '16px 16px 64px 16px' }}
+                style={{ padding: '12px' }}
               />
               {/* Mouse shine */}
               <div className="absolute inset-0 pointer-events-none z-20"
