@@ -229,7 +229,7 @@ function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
       </div>
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 text-center pt-24 pb-16">
 
         {/* ── Trust Badge Strip ── */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
@@ -2398,7 +2398,7 @@ function ConnectedEcosystemSection() {
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,251,247,0.18)' }} />
 
-      <div className="relative z-10 max-w-5xl mx-auto px-6">
+      <div className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* ── Header ── */}
         <AnimatedSection className="text-center mb-8">
@@ -2750,7 +2750,7 @@ function CTASection() {
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.55 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.55)' }} />
 
-      <AnimatedSection className="relative z-10 max-w-5xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* Header */}
         <motion.div variants={fadeUp} className="text-center mb-6">
