@@ -5,6 +5,11 @@ import { Toaster } from "@/components/ui/toaster";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
+import { FinaPayProvider } from "@/context/FinaPayContext";
+import { BnslProvider } from "@/context/BnslContext";
+import { FeeProvider } from "@/context/FeeContext";
+import { NotificationProvider } from "@/context/NotificationContext";
+import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
 import EcosystemLanding from "@/pages/ecosystem/EcosystemLanding";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -144,8 +149,10 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AccountTypeProvider>
-            <AppRoutes />
-            <Toaster />
+            <FinaPayProvider>
+              <AppRoutes />
+              <Toaster />
+            </FinaPayProvider>
           </AccountTypeProvider>
         </AuthProvider>
       </QueryClientProvider>
