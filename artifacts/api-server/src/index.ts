@@ -84,6 +84,8 @@ app.set('trust proxy', 1);
 // Fast healthcheck endpoints registered FIRST, before any middleware,
 // so platform health probes always get an immediate response even during
 // heavy boot (job queues, redis, schedulers, route registration, etc).
+// NOTE: paths are NOT rewritten by the proxy — server receives the full path.
+// artifact.toml health probe hits /api/healthz, so we must register that path.
 app.get('/health', (_req, res) => res.status(200).send('ok'));
 app.get('/healthz', (_req, res) => res.status(200).send('ok'));
 app.get('/api/health', (_req, res) => res.status(200).json({
@@ -92,6 +94,7 @@ app.get('/api/health', (_req, res) => res.status(200).json({
   environment: process.env.NODE_ENV || 'development',
   version: '1.0.0',
 }));
+app.get('/api/healthz', (_req, res) => res.status(200).send('ok'));
 
 // HTTPS enforcement in production - redirect HTTP to HTTPS
 if (process.env.NODE_ENV === 'production') {
