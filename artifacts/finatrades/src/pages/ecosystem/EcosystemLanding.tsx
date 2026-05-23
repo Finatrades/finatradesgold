@@ -1899,16 +1899,15 @@ function DealRoomSection() {
               {/* ── FRONT FACE: Preview image ── */}
               <div
                 className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group flex flex-col"
-                style={{ backfaceVisibility: 'hidden', background: '#F5F0EB' }}
+                style={{ backfaceVisibility: 'hidden', background: '#F2E8DC' }}
                 onClick={() => setFlipped(true)}
               >
-                {/* Image — full width, contained vertically */}
-                <div className="flex-1 flex items-center justify-center pt-4 pb-1 transition-transform duration-500 group-hover:scale-[1.02]">
+                {/* Image — zero padding, full width stretch, bg matches image exactly */}
+                <div className="flex-1 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
                   <img
                     src={dealRoomPreview}
                     alt="Finatrades Deal Room"
-                    className="w-full object-contain"
-                    style={{ maxHeight: '430px' }}
+                    className="w-full h-full object-contain"
                   />
                 </div>
                 {/* CTA bar at bottom */}
