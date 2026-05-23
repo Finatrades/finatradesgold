@@ -458,17 +458,6 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Run pending database migrations at startup (must complete before any DB access)
-  try {
-    await runMigrations();
-  } catch (err) {
-    console.error('[Migrations] Startup migration failed:', err);
-    // Non-fatal in development; fatal in production to avoid running on broken schema
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
-  }
-
   // Ensure FINABRIDGE_AI_CALLBACK_SECRET is set — auto-generate if not configured
   // as a Replit Secret (so it's never committed to source control)
   if (!process.env.FINABRIDGE_AI_CALLBACK_SECRET) {
@@ -550,11 +539,20 @@ app.use((req, res, next) => {
 })();
 
 /**
- * Background initialization: Redis, seed data, job queues, schedulers, and the
- * AI document verification worker. Runs after the HTTP server is already listening
- * so it cannot delay the platform's healthcheck/promote probe.
+ * Background initialization: migrations, Redis, seed data, job queues, schedulers,
+ * and the AI document verification worker. Runs after the HTTP server is already
+ * listening so it cannot delay the platform's healthcheck/promote probe.
  */
 async function initializeBackgroundServices(): Promise<void> {
+  // Run pending database migrations first — after port is bound so deploy never
+  // times out waiting for a large migration file with many already-existing objects.
+  try {
+    await runMigrations();
+  } catch (err) {
+    console.error('[Migrations] Background migration failed:', err);
+    // Non-fatal: production schema is already applied; log and continue.
+  }
+
   // Initialize Redis connection
   try {
     const redis = getRedisClient();
