@@ -143,14 +143,11 @@ function Card3D({
 }
 
 const NAV_LINKS = [
-  { label: 'How It Works', href: '#how-it-works' },
+  { label: 'Home', href: '#hero' },
+  { label: 'Platform', href: '#how-it-works' },
+  { label: 'Ecosystem', href: '#ecosystem' },
   { label: 'Marketplace', href: '#marketplace' },
-  { label: 'Seller', href: '#for-sellers' },
-  { label: 'Buyer', href: '#for-buyers' },
-  { label: 'Trade Finance', href: '#trade-finance' },
-  { label: 'Government', href: '#government' },
-  { label: 'Compliance', href: '#compliance' },
-  { label: 'Contact', href: '#contact' },
+  { label: 'Contact Us', href: '#contact' },
 ];
 
 function Navbar() {
