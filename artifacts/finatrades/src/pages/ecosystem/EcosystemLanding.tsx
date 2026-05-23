@@ -1169,20 +1169,17 @@ function MarketplaceSection() {
             className="relative flex items-center justify-center order-2 lg:order-1"
           >
             {/* Map wrapper — relative for badge overlays */}
-            <div className="relative w-full flex items-center justify-center" style={{ minHeight: '700px' }}>
+            <div className="relative w-full flex items-center justify-center" style={{ minHeight: 'clamp(320px, 50vw, 700px)' }}>
               {/* Glow halo behind map */}
               <div className="absolute inset-8 rounded-full pointer-events-none"
                 style={{ background: 'radial-gradient(circle, rgba(199,59,34,0.09) 0%, transparent 68%)', filter: 'blur(40px)' }} />
 
-              {/* Map image — 3D perspective tilt */}
+              {/* Map image — 3D perspective tilt (desktop only) */}
               <motion.div
                 animate={{ y: [0, -10, 0] }}
                 transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
                 className="relative w-full"
-                style={{
-                  perspective: '1200px',
-                  height: '700px',
-                }}
+                style={{ height: 'clamp(320px, 50vw, 700px)' }}
               >
                 <img
                   src={africaTradeMap}
