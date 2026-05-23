@@ -312,27 +312,47 @@ function HeroSection() {
 
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
-          className="flex flex-wrap gap-3 justify-center mb-16">
-          <Link href="/register?role=seller">
-            <button className="px-6 py-3 bg-[#C73B22] hover:bg-[#A82D16] text-white font-semibold rounded-xl transition-all hover:shadow-lg hover:shadow-[#C73B22]/30 flex items-center gap-2">
-              Register as Exporter <ArrowRight size={16} />
-            </button>
-          </Link>
-          <Link href="/register?role=buyer">
-            <button className="px-6 py-3 bg-[#1B2E40] hover:bg-[#152436] text-white font-semibold rounded-xl border border-transparent transition-colors flex items-center gap-2">
-              Register as Importer <ArrowRight size={16} />
-            </button>
-          </Link>
-          <Link href="/register?role=government">
-            <button className="px-6 py-3 bg-white hover:bg-gray-50 text-[#444440] font-semibold rounded-xl border border-gray-300 transition-colors flex items-center gap-2">
-              Government & Sovereign Access <ArrowRight size={16} />
-            </button>
-          </Link>
-          <a href="#how-it-works">
-            <button className="px-6 py-3 text-[#555550] hover:text-[#1A1A1A] font-medium rounded-xl transition-colors flex items-center gap-2">
-              See Full Platform <ChevronDown size={16} />
-            </button>
-          </a>
+          className="flex flex-col items-center gap-4 mb-16">
+
+          {/* Primary CTAs */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link href="/register?role=seller">
+              <button className="group px-7 py-3.5 font-semibold rounded-xl transition-all flex items-center gap-2.5 text-white hover:shadow-xl hover:shadow-[#C73B22]/25 hover:-translate-y-0.5"
+                style={{ background: 'linear-gradient(135deg, #C73B22 0%, #A82D16 100%)', boxShadow: '0 4px 20px rgba(199,59,34,0.3)' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
+                Apply for Export Access
+                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </Link>
+            <Link href="/register?role=buyer">
+              <button className="group px-7 py-3.5 font-semibold rounded-xl transition-all flex items-center gap-2.5 text-white hover:shadow-xl hover:shadow-[#1B2E40]/25 hover:-translate-y-0.5"
+                style={{ background: 'linear-gradient(135deg, #1B2E40 0%, #0F1E2C 100%)', boxShadow: '0 4px 20px rgba(27,46,64,0.3)' }}>
+                <span className="w-1.5 h-1.5 rounded-full bg-white/60 animate-pulse" />
+                Access Verified Supply
+                <ArrowRight size={15} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </Link>
+          </div>
+
+          {/* Secondary CTAs */}
+          <div className="flex flex-wrap gap-3 justify-center">
+            <Link href="/register?role=government">
+              <button className="group px-6 py-2.5 font-semibold rounded-xl transition-all flex items-center gap-2 text-[#E5602A] hover:-translate-y-0.5"
+                style={{ background: 'rgba(229,96,42,0.06)', border: '1.5px solid rgba(229,96,42,0.30)' }}>
+                <Shield size={13} />
+                Request Sovereign Access
+                <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
+              </button>
+            </Link>
+            <a href="#how-it-works">
+              <button className="group px-6 py-2.5 font-medium rounded-xl transition-all flex items-center gap-2 text-[#666660] hover:text-[#1A1A1A]"
+                style={{ border: '1.5px solid rgba(0,0,0,0.10)' }}>
+                Explore the Protocol
+                <ChevronDown size={13} className="group-hover:translate-y-0.5 transition-transform" />
+              </button>
+            </a>
+          </div>
+
         </motion.div>
 
         <motion.div
