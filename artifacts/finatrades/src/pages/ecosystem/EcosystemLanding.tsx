@@ -387,6 +387,13 @@ function RoleCard3D({ title, desc, img, accent, delay, features }: { title: stri
   const rotY = useSpring(0, { stiffness: 300, damping: 22 });
   const [shine, setShine] = useState({ x: 50, y: 50 });
 
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setFlipped(f => !f);
+    }, 20000);
+    return () => clearInterval(timer);
+  }, []);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (flipped || !cardRef.current) return;
     const { left, top, width, height } = cardRef.current.getBoundingClientRect();
