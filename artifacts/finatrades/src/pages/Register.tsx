@@ -63,7 +63,7 @@ export default function Register() {
         ...form,
         role: 'user',
         finabridgeRole: role === 'exporter' ? 'exporter' : role === 'importer' ? 'importer' : 'both',
-        accountType: role,
+        accountType: 'business',
         username: form.email,
         fullName: `${form.firstName} ${form.lastName}`,
       });
