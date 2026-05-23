@@ -1002,7 +1002,7 @@ function MarketplaceSection() {
             14 Verified African Trade Hubs · Institutional Access Only
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4 leading-tight">
-            Africa's First Institutional-Grade<br className="hidden sm:block" /> B2B Commodity Marketplace
+            Africa's First <span style={{ color: '#C73B22' }}>Swiss Regulated</span>-Grade<br className="hidden sm:block" /> <span style={{ color: '#C73B22' }}>(B2B Global Commodity Marketplace)</span>
           </h2>
           <p className="text-[#555550] max-w-2xl mx-auto text-base leading-relaxed">
             Every listing is anchored to a confirmed warehouse inventory position, authenticated trade documentation,
