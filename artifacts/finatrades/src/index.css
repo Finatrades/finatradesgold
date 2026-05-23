@@ -277,10 +277,8 @@ html *::before, html *::after {
   * {
     @apply border-border;
   }
-  html, body {
-    @apply overflow-x-hidden;
-  }
   body {
+    overflow-x: clip;
     @apply bg-background text-foreground;
     font-family: var(--brand-font-family);
     /* Inter optical-size axis for crisp rendering at all sizes */
