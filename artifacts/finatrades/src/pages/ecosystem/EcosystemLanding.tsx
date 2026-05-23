@@ -345,22 +345,6 @@ function HeroSection() {
 
         </motion.div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.4 }}
-          className="grid grid-cols-2 sm:grid-cols-4 gap-4 max-w-5xl mx-auto">
-          {[
-            { value: '14',     label: 'African Trade Hubs',          accent: '#C73B22', bg: 'linear-gradient(135deg,#FFF0ED 0%,#fff 100%)', border: 'rgba(199,59,34,0.22)' },
-            { value: 'Zero',   label: 'Counterparty Risk',            accent: '#059669', bg: 'linear-gradient(135deg,#ECFDF5 0%,#fff 100%)', border: 'rgba(5,150,105,0.22)' },
-            { value: '100%',   label: 'Inventory-Verified Listings',  accent: '#1B4FDB', bg: 'linear-gradient(135deg,#EEF2FF 0%,#fff 100%)', border: 'rgba(27,79,219,0.22)' },
-            { value: 'Escrow', label: 'Governed Settlement',          accent: '#7C3AED', bg: 'linear-gradient(135deg,#F5F3FF 0%,#fff 100%)', border: 'rgba(124,58,237,0.22)' },
-          ].map(stat => (
-            <Card3D key={stat.label} className="rounded-xl p-4 text-center" accent={stat.accent} tiltStrength={8}
-              style={{ background: stat.bg, border: `1.5px solid ${stat.border}`, boxShadow: `0 4px 16px ${stat.accent}14` }}>
-              <div className="text-2xl font-bold mb-1" style={{ color: stat.accent }}>{stat.value}</div>
-              <div className="text-xs text-[#666660]">{stat.label}</div>
-            </Card3D>
-          ))}
-        </motion.div>
       </div>
 
       <div className="absolute bottom-8 left-1/2 -translate-x-1/2">
