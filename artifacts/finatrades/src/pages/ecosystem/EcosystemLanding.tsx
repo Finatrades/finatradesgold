@@ -1785,24 +1785,23 @@ function DealRoomSection() {
   const deal = deals[selected];
 
   return (
-    <section id="trade-finance" className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: '#0D1421' }}>
+    <section id="trade-finance" className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden bg-[#FAFAFA]">
       <img src={bgWarehouseLaptop} alt="" aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.08 }} />
-      <div className="absolute inset-0 pointer-events-none"
-        style={{ background: 'linear-gradient(135deg, #0D1421 0%, #1B2340 50%, #0D1421 100%)' }} />
+        className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
+      <div className="absolute inset-0 bg-[#FAFAFA]/40 pointer-events-none" />
 
       <AnimatedSection className="relative z-10 w-full px-[10%]">
 
         {/* Header */}
         <motion.div variants={fadeUp} className="text-center mb-8">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/40 bg-[#C73B22]/10 text-[#FF6B4A] text-xs font-semibold mb-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-white text-[#555550] text-xs font-medium mb-3 shadow-sm">
             <span className="w-1.5 h-1.5 rounded-full bg-[#C73B22] animate-pulse" />
             Live Deal Execution Environment
           </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             The Finatrades <span style={{ color: '#C73B22' }}>Deal Room</span>
           </h2>
-          <p className="text-[#8899AA] max-w-4xl mx-auto text-sm">
+          <p className="text-[#666660] max-w-4xl mx-auto text-sm">
             Every trade on Finatrades executes inside a governed deal room — escrow-locked, document-verified, and condition-gated from mandate to payout.
           </p>
         </motion.div>
@@ -1815,11 +1814,11 @@ function DealRoomSection() {
             { icon: FileText, label: '9-Stage', sub: 'Compliance Protocol' },
             { icon: Zap, label: '<48h', sub: 'Avg Settlement Time' },
           ].map(({ icon: Icon, label, sub }) => (
-            <div key={sub} className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm">
+            <div key={sub} className="flex items-center gap-3 px-4 py-2.5 rounded-xl border border-gray-200 bg-white shadow-sm">
               <Icon size={14} className="text-[#C73B22]" />
               <div>
-                <div className="text-white font-bold text-sm leading-none">{label}</div>
-                <div className="text-[#8899AA] text-[10px] font-medium mt-0.5">{sub}</div>
+                <div className="text-[#1A1A1A] font-bold text-sm leading-none">{label}</div>
+                <div className="text-[#888880] text-[10px] font-medium mt-0.5">{sub}</div>
               </div>
             </div>
           ))}
@@ -1830,53 +1829,52 @@ function DealRoomSection() {
 
           {/* ── LEFT: Deal List ── */}
           <div className="flex flex-col gap-2">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-[#8899AA] mb-1 px-1">Active Deals</div>
+            <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-1 px-1">Active Deals</div>
             {deals.map((d, i) => (
               <button
                 key={d.id}
                 onClick={() => setSelected(i)}
-                className="w-full text-left rounded-xl border transition-all duration-300 px-4 py-3"
+                className="w-full text-left rounded-xl border transition-all duration-300 px-4 py-3 bg-white shadow-sm"
                 style={{
-                  background: selected === i ? 'rgba(199,59,34,0.12)' : 'rgba(255,255,255,0.04)',
-                  borderColor: selected === i ? '#C73B22' : 'rgba(255,255,255,0.08)',
+                  borderColor: selected === i ? '#C73B22' : '#E5E7EB',
+                  boxShadow: selected === i ? '0 0 0 2px rgba(199,59,34,0.08)' : undefined,
                 }}
               >
                 <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-[10px] font-mono text-[#8899AA]">{d.id}</span>
+                  <span className="text-[10px] font-mono text-[#888880]">{d.id}</span>
                   <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-                    style={{ background: d.statusColor + '22', color: d.statusColor }}>
+                    style={{ background: d.statusColor + '18', color: d.statusColor }}>
                     {d.statusLabel}
                   </span>
                 </div>
-                <div className="text-white font-bold text-sm leading-tight mb-1">{d.commodity}</div>
+                <div className="text-[#1A1A1A] font-bold text-sm leading-tight mb-1">{d.commodity}</div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[#8899AA] text-[11px]">{d.quantity} · {d.origin.split(',')[1]?.trim() ?? d.origin} → {d.dest.split(',')[0]}</span>
+                  <span className="text-[#888880] text-[11px]">{d.quantity} · {d.origin.split(',')[1]?.trim() ?? d.origin} → {d.dest.split(',')[0]}</span>
                   <span className="text-[#C73B22] font-bold text-sm">{d.value}</span>
                 </div>
                 {/* Mini progress */}
                 <div className="flex gap-1 mt-2">
                   {stages.map((_, si) => (
                     <div key={si} className="h-1 flex-1 rounded-full transition-all duration-500"
-                      style={{ background: si < d.progress ? d.statusColor : 'rgba(255,255,255,0.1)' }} />
+                      style={{ background: si < d.progress ? d.statusColor : '#E5E7EB' }} />
                   ))}
                 </div>
               </button>
             ))}
           </div>
 
-          {/* ── RIGHT: Deal Detail Terminal ── */}
-          <div className="rounded-2xl border border-white/10 overflow-hidden" style={{ background: 'rgba(255,255,255,0.04)' }}>
+          {/* ── RIGHT: Deal Detail Panel ── */}
+          <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xl">
 
-            {/* Terminal header bar */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-white/10"
-              style={{ background: 'rgba(255,255,255,0.03)' }}>
+            {/* Panel header bar */}
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
                   <div className="w-3 h-3 rounded-full bg-[#FEBC2E]" />
                   <div className="w-3 h-3 rounded-full bg-[#28C840]" />
                 </div>
-                <span className="text-[#8899AA] text-xs font-mono">deal-room / {deal.id}</span>
+                <span className="text-[#888880] text-xs font-mono">deal-room / {deal.id}</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#28C840] animate-pulse" />
@@ -1891,10 +1889,10 @@ function DealRoomSection() {
                 <div>
                   <div className="flex items-center gap-2 mb-1">
                     <Package size={14} className="text-[#C73B22]" />
-                    <span className="text-white font-bold text-lg leading-none">{deal.commodity}</span>
+                    <span className="text-[#1A1A1A] font-bold text-lg leading-none">{deal.commodity}</span>
                   </div>
-                  <div className="text-[#8899AA] text-xs">{deal.grade} · {deal.quantity}</div>
-                  <div className="flex items-center gap-2 mt-2 text-[11px] text-[#8899AA]">
+                  <div className="text-[#888880] text-xs">{deal.grade} · {deal.quantity}</div>
+                  <div className="flex items-center gap-2 mt-2 text-[11px] text-[#888880]">
                     <MapPin size={10} className="text-[#C73B22] shrink-0" /> {deal.origin}
                     <ArrowRight size={10} />
                     <Globe size={10} className="text-[#C73B22] shrink-0" /> {deal.dest}
@@ -1903,33 +1901,33 @@ function DealRoomSection() {
                 <div className="text-right shrink-0">
                   <div className="text-[#C73B22] font-black text-2xl leading-none">{deal.value}</div>
                   <div className="text-[10px] font-bold uppercase tracking-wider mt-1 px-2 py-0.5 rounded-full"
-                    style={{ background: deal.statusColor + '22', color: deal.statusColor }}>
+                    style={{ background: deal.statusColor + '18', color: deal.statusColor }}>
                     {deal.statusLabel}
                   </div>
                 </div>
               </div>
 
-              <div className="h-px bg-white/8" />
+              <div className="h-px bg-gray-100" />
 
               {/* Counterparties + Party status — 2 col */}
               <div className="grid grid-cols-2 gap-4">
 
                 {/* Counterparties */}
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#8899AA] mb-2">Counterparties</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Counterparties</div>
                   <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/8">
-                      <Users size={11} className="text-[#4A90D9] shrink-0" />
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
+                      <Users size={11} className="text-[#1B4FDB] shrink-0" />
                       <div>
-                        <div className="text-[9px] text-[#8899AA] uppercase font-semibold">Buyer</div>
-                        <div className="text-white text-[11px] font-semibold leading-tight">{deal.buyer}</div>
+                        <div className="text-[9px] text-[#888880] uppercase font-semibold">Buyer</div>
+                        <div className="text-[#1A1A1A] text-[11px] font-semibold leading-tight">{deal.buyer}</div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/5 border border-white/8">
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                       <Building2 size={11} className="text-[#C73B22] shrink-0" />
                       <div>
-                        <div className="text-[9px] text-[#8899AA] uppercase font-semibold">Seller</div>
-                        <div className="text-white text-[11px] font-semibold leading-tight">{deal.seller}</div>
+                        <div className="text-[9px] text-[#888880] uppercase font-semibold">Seller</div>
+                        <div className="text-[#1A1A1A] text-[11px] font-semibold leading-tight">{deal.seller}</div>
                       </div>
                     </div>
                   </div>
@@ -1937,67 +1935,70 @@ function DealRoomSection() {
 
                 {/* Party authorisation status */}
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#8899AA] mb-2">Party Status</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Party Status</div>
                   <div className="grid grid-cols-2 gap-1.5">
                     {deal.parties.map(({ label, icon: Icon, done }) => (
                       <div key={label} className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border"
-                        style={{ background: done ? 'rgba(5,150,105,0.08)' : 'rgba(255,255,255,0.04)', borderColor: done ? 'rgba(5,150,105,0.3)' : 'rgba(255,255,255,0.08)' }}>
-                        <Icon size={10} style={{ color: done ? '#34D399' : '#8899AA' }} />
-                        <span className="text-[10px] font-semibold" style={{ color: done ? '#34D399' : '#8899AA' }}>{label}</span>
-                        <span className="ml-auto text-[10px]">{done ? '✓' : '⟳'}</span>
+                        style={{
+                          background: done ? 'rgba(5,150,105,0.06)' : '#F9FAFB',
+                          borderColor: done ? 'rgba(5,150,105,0.25)' : '#E5E7EB',
+                        }}>
+                        <Icon size={10} style={{ color: done ? '#059669' : '#9CA3AF' }} />
+                        <span className="text-[10px] font-semibold" style={{ color: done ? '#059669' : '#6B7280' }}>{label}</span>
+                        <span className="ml-auto text-[10px]" style={{ color: done ? '#059669' : '#9CA3AF' }}>{done ? '✓' : '⟳'}</span>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              <div className="h-px bg-white/8" />
+              <div className="h-px bg-gray-100" />
 
               {/* Documents + Escrow — 2 col */}
               <div className="grid grid-cols-2 gap-4">
 
                 {/* Document checklist */}
                 <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#8899AA] mb-2">Trade Documents</div>
+                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Trade Documents</div>
                   <div className="flex flex-col gap-1.5">
                     {deal.docs.map(({ name, done }) => (
                       <div key={name} className="flex items-center gap-2">
-                        <span className="shrink-0" style={{ color: done ? '#34D399' : '#8899AA' }}>
-                          {done ? <CheckCircle2 size={11} /> : <div className="w-[11px] h-[11px] rounded-full border border-[#8899AA] opacity-50" />}
+                        <span className="shrink-0" style={{ color: done ? '#059669' : '#D1D5DB' }}>
+                          {done ? <CheckCircle2 size={11} /> : <div className="w-[11px] h-[11px] rounded-full border-2 border-gray-300" />}
                         </span>
-                        <span className="text-[11px] font-medium" style={{ color: done ? '#E0E8F0' : '#8899AA' }}>{name}</span>
+                        <span className="text-[11px] font-medium" style={{ color: done ? '#1A1A1A' : '#9CA3AF' }}>{name}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
                 {/* Escrow panel */}
-                <div className="rounded-xl border border-[#C73B22]/30 p-3" style={{ background: 'rgba(199,59,34,0.08)' }}>
+                <div className="rounded-xl border border-[#C73B22]/20 p-3 bg-[#FFF4F0]">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Lock size={10} className="text-[#C73B22]" />
                     <span className="text-[10px] font-bold uppercase tracking-widest text-[#C73B22]">Escrow</span>
                   </div>
-                  <div className="text-white font-black text-xl leading-none mb-1">{deal.escrowAmt}</div>
-                  <div className="text-[10px] text-[#8899AA] leading-relaxed">{deal.escrowStatus}</div>
+                  <div className="text-[#1A1A1A] font-black text-xl leading-none mb-1">{deal.escrowAmt}</div>
+                  <div className="text-[10px] text-[#666660] leading-relaxed">{deal.escrowStatus}</div>
                   <div className="mt-2 flex items-center gap-1.5">
-                    <ShieldCheck size={10} className="text-[#34D399]" />
-                    <span className="text-[10px] text-[#34D399] font-semibold">Swiss Regulated · DIFC</span>
+                    <ShieldCheck size={10} className="text-[#059669]" />
+                    <span className="text-[10px] text-[#059669] font-semibold">Swiss Regulated · DIFC</span>
                   </div>
                 </div>
               </div>
 
-              <div className="h-px bg-white/8" />
+              <div className="h-px bg-gray-100" />
 
               {/* Settlement progress */}
               <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-[#8899AA] mb-2">Settlement Progress</div>
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Settlement Progress</div>
                 <div className="grid grid-cols-5 gap-1.5">
                   {stages.map((stage, si) => (
                     <div key={stage} className="flex flex-col items-center gap-1">
                       <div className="w-full h-2 rounded-full transition-all duration-700"
-                        style={{ background: si < deal.progress ? deal.statusColor : 'rgba(255,255,255,0.1)' }} />
+                        style={{ background: si < deal.progress ? deal.statusColor : '#E5E7EB' }} />
                       <span className="text-[9px] text-center font-semibold leading-tight"
-                        style={{ color: si < deal.progress ? deal.statusColor : '#8899AA' }}>
+                        style={{ color: si < deal.progress ? deal.statusColor : '#9CA3AF' }}>
                         {stage}
                       </span>
                     </div>
