@@ -1412,67 +1412,69 @@ function RoleWorkflowCard({
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
-              background: `linear-gradient(150deg, ${role.accent}15 0%, ${role.accent}06 45%, #ffffff 100%)`,
-              border: `1.5px solid ${role.accent}30`,
+              background: '#FAFAFA',
+              border: `1.5px solid ${role.accent}28`,
             }}
           >
-            {/* Top accent bar */}
-            <div className="h-1 w-full shrink-0"
-              style={{ background: `linear-gradient(90deg, ${role.accent} 0%, ${role.accent}88 60%, transparent 100%)` }} />
-
-            <div className="flex flex-col flex-1 p-5 gap-3 overflow-hidden">
-
-              {/* Role badge + title */}
-              <div>
-                <div
-                  className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold mb-2.5"
-                  style={{ background: role.accent + '14', border: `1px solid ${role.accent}35`, color: role.accent }}
-                >
-                  <Icon size={11} />
-                  {role.tab}
+            {/* Header band */}
+            <div className="shrink-0 px-5 pt-4 pb-3.5"
+              style={{ background: `linear-gradient(135deg, ${role.accent} 0%, ${role.accent}CC 100%)` }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center shrink-0">
+                  <Icon size={15} className="text-white" />
                 </div>
-                <p className="text-[13.5px] font-bold text-[#1A1A1A] leading-snug line-clamp-2">{role.subtitle}</p>
+                <div>
+                  <p className="text-white font-bold text-[13px] leading-tight">{role.tab}</p>
+                  <p className="text-white/70 text-[10px] font-medium mt-0.5">Compliance-Gated Workflow</p>
+                </div>
               </div>
+            </div>
 
-              {/* Divider */}
-              <div className="h-px shrink-0" style={{ background: `${role.accent}18` }} />
+            {/* Subtitle */}
+            <div className="px-5 py-3 shrink-0 border-b" style={{ borderColor: `${role.accent}12` }}>
+              <p className="text-[11.5px] font-semibold text-[#333] leading-snug line-clamp-2">{role.subtitle}</p>
+            </div>
 
-              {/* Feature chips — numbered */}
-              <div className="flex flex-wrap gap-1.5 flex-1 content-start overflow-hidden">
-                {role.features.slice(0, 8).map((f, idx) => (
-                  <div
-                    key={f.label}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold"
-                    style={{
-                      background: f.color + '10',
-                      border: `1px solid ${f.color}28`,
-                      color: f.color,
-                    }}
+            {/* Steps — strict 2-col grid, every row aligned */}
+            <div className="flex-1 px-4 py-3 grid grid-cols-2 gap-x-2 gap-y-1.5 content-start overflow-hidden">
+              {role.features.slice(0, 8).map((f, idx) => (
+                <div
+                  key={f.label}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
+                  style={{ background: f.color + '0C', border: `1px solid ${f.color}20` }}
+                >
+                  <span
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white shrink-0"
+                    style={{ background: f.color }}
                   >
-                    <span
-                      className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full text-[8px] font-bold text-white shrink-0"
-                      style={{ background: f.color }}
-                    >
-                      {idx + 1}
-                    </span>
+                    {idx + 1}
+                  </span>
+                  <span className="text-[10.5px] font-semibold leading-tight truncate" style={{ color: f.color }}>
                     {f.label}
-                  </div>
-                ))}
-              </div>
+                  </span>
+                </div>
+              ))}
+            </div>
 
-              {/* CTA row */}
-              <div className="flex items-center justify-between pt-2 border-t shrink-0" style={{ borderColor: `${role.accent}15` }}>
-                <span className="text-[10.5px] text-[#888] font-medium">Tap to flip back</span>
-                <Link href={role.ctaHref} onClick={e => e.stopPropagation()}>
-                  <button
-                    className="flex items-center gap-2 px-4 py-2 rounded-xl text-white text-[12px] font-semibold hover:opacity-90 transition-all"
-                    style={{ background: role.accent }}
-                  >
-                    {role.cta} <ArrowRight size={11} />
-                  </button>
-                </Link>
-              </div>
-
+            {/* CTA footer */}
+            <div
+              className="shrink-0 px-5 py-3 flex items-center justify-between border-t"
+              style={{ borderColor: `${role.accent}15`, background: 'white' }}
+            >
+              <button
+                onClick={e => { e.stopPropagation(); setFlipped(false); }}
+                className="flex items-center gap-1.5 text-[10.5px] font-medium text-[#999] hover:text-[#666] transition-colors"
+              >
+                ← Flip back
+              </button>
+              <Link href={role.ctaHref} onClick={e => e.stopPropagation()}>
+                <button
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-white text-[11.5px] font-semibold hover:opacity-90 transition-all shadow-sm"
+                  style={{ background: role.accent }}
+                >
+                  {role.cta} <ArrowRight size={11} />
+                </button>
+              </Link>
             </div>
           </div>
 
