@@ -34,6 +34,7 @@ import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
 import logoWinlogistics from '@/assets/logo-winlogistics.png';
 import logoWincommodities from '@/assets/logo-wincommodities.png';
+import ecosystemGroupDiagram from '@/assets/ecosystem-group-diagram.png';
 import layer1 from '@/assets/layer-1.png';
 import layer2 from '@/assets/layer-2.png';
 import layer3 from '@/assets/layer-3.png';
@@ -2678,8 +2679,17 @@ function ConnectedEcosystemSection() {
           </motion.p>
         </AnimatedSection>
 
-        {/* ── Org Chart Layout ── */}
-        <div className="flex flex-col items-center gap-0">
+        {/* ── Mobile: diagram image ── */}
+        <div className="block sm:hidden w-full">
+          <img
+            src={ecosystemGroupDiagram}
+            alt="Raminvest Group Ecosystem Diagram"
+            className="w-full h-auto rounded-2xl"
+          />
+        </div>
+
+        {/* ── Desktop: Org Chart Layout ── */}
+        <div className="hidden sm:flex flex-col items-center gap-0">
 
           {/* RAMINVEST — top governance */}
           <motion.div
