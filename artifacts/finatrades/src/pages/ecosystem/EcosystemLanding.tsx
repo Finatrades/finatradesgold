@@ -1406,7 +1406,7 @@ function RoleWorkflowCard({
       whileInView="visible"
       viewport={{ once: true, margin: '-60px' }}
       transition={{ delay }}
-      style={{ perspective: '1100px', height: '460px' }}
+      style={{ perspective: '1100px', height: '540px' }}
     >
       <motion.div
         ref={cardRef}
@@ -1507,12 +1507,12 @@ function RoleWorkflowCard({
               <p className="text-[11.5px] font-semibold text-[#333] leading-snug line-clamp-2">{role.subtitle}</p>
             </div>
 
-            {/* Steps — single column tick list, full text */}
-            <div className="flex-1 px-4 py-2.5 flex flex-col gap-1 overflow-y-auto">
+            {/* Steps — 2-column grid tick list */}
+            <div className="flex-1 px-4 py-3 grid grid-cols-2 gap-2 content-start overflow-y-auto">
               {role.features.slice(0, 8).map((f) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
                   style={{ background: f.color + '0C', border: `1px solid ${f.color}1A` }}
                 >
                   <span
@@ -1523,7 +1523,7 @@ function RoleWorkflowCard({
                       <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </span>
-                  <span className="text-[11px] font-semibold leading-snug" style={{ color: f.color }}>
+                  <span className="text-[10.5px] font-semibold leading-snug" style={{ color: f.color }}>
                     {f.label}
                   </span>
                 </div>
@@ -1580,7 +1580,7 @@ function RolesSection() {
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-6">
           {ROLES.map((role, i) => (
             <RoleWorkflowCard key={role.key} role={role} delay={i * 0.1} />
           ))}
