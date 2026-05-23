@@ -2391,127 +2391,139 @@ function ConnectedEcosystemSection() {
     },
   ];
 
+  const raminvest = nodes.find(n => n.key === 'raminvest')!;
+  const finatrades = nodes.find(n => n.key === 'finatrades')!;
+  const bottom = nodes.filter(n => !['raminvest', 'finatrades'].includes(n.key));
+
   return (
     <section className="relative py-24 overflow-hidden" style={{ background: '#FDF6EF' }}>
-      {/* Background image */}
-      <img src={bgPartnerships} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.15)' }} />
+      <img src={bgPartnerships} alt="" aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,251,247,0.18)' }} />
+
       <div className="relative z-10 max-w-5xl mx-auto px-6">
 
         {/* ── Header ── */}
-        <motion.div
-          initial="hidden" whileInView="visible" viewport={{ once: true }}
-          variants={stagger} className="text-center mb-14"
-        >
-          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">Institutional Backing</motion.p>
+        <AnimatedSection className="text-center mb-16">
+          <motion.div variants={fadeUp}
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
+            style={{ background: 'rgba(199,59,34,0.08)', border: '1px solid rgba(199,59,34,0.22)', color: '#C73B22' }}>
+            <Building2 size={11} /> Institutional Backing · Raminvest Holding DIFC
+          </motion.div>
           <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            Part of a Fully Integrated Institutional Trade Group
+            Part of a Fully Integrated<br className="hidden sm:block" /> Institutional Trade Group
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-[#666660] max-w-xl mx-auto">
-            Finatrades is not a standalone startup. It operates as the digital trade execution hub within the Raminvest Holding DIFC group — backed by dedicated commodity, logistics, investment, and compliance entities that form a complete, vertically integrated trade infrastructure.
+          <motion.p variants={fadeUp} className="text-[#555550] max-w-xl mx-auto leading-relaxed">
+            Finatrades operates as the digital trade execution hub within the Raminvest Holding DIFC group — a vertically integrated trade infrastructure spanning governance, commodities, logistics, and investment.
           </motion.p>
-        </motion.div>
+        </AnimatedSection>
 
-        {/* ── Desktop orbital hub (hidden on mobile) ── */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.92 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
-          className="relative mx-auto hidden md:block"
-          style={{ width: '800px', height: '800px' }}
-        >
-          {/* Layer 1 – static dashed orbit ring + axis-aligned connector lines */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none" width="800" height="800" viewBox="0 0 800 800" style={{ zIndex: 1 }}>
-            {/* Outer orbit ring */}
-            <circle cx={C} cy={C} r={R} fill="none" stroke="#C73B22" strokeWidth="1.4" strokeDasharray="6 9" opacity="0.22" />
-            {/* Inner pulse ring */}
-            <circle cx={C} cy={C} r={R * 0.48} fill="none" stroke="#C73B22" strokeWidth="0.8" strokeDasharray="3 5" opacity="0.15" />
-            {/* Axis connector lines */}
-            <line x1={C} y1={C - R + 20} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C + R - 10} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C} y1={C + R - 20} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            <line x1={C - R + 10} y1={C} x2={C} y2={C} stroke="#C73B22" strokeWidth="1" strokeDasharray="4 6" opacity="0.4" />
-            {/* End dots on connector lines */}
-            {[[C, C - R + 20], [C + R - 10, C], [C, C + R - 20], [C - R + 10, C]].map(([x, y], i) => (
-              <circle key={i} cx={x} cy={y} r="4" fill="#C73B22" opacity="0.5" />
-            ))}
-            <circle cx={C} cy={C} r="5" fill="#C73B22" opacity="0.35" />
-          </svg>
+        {/* ── Org Chart Layout ── */}
+        <div className="flex flex-col items-center gap-0">
 
-          {/* Layer 2 – rotating orbital dots */}
+          {/* RAMINVEST — top governance */}
           <motion.div
-            className="absolute inset-0 pointer-events-none"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 28, repeat: Infinity, ease: 'linear' }}
-            style={{ zIndex: 2 }}
+            initial={{ opacity: 0, y: -20 }} whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }} transition={{ duration: 0.5 }}
+            className="w-full max-w-sm"
           >
-            <svg width="800" height="800" viewBox="0 0 800 800">
-              {orbitDots.map((d, i) => (
-                <circle key={i} cx={d.cx} cy={d.cy} r={d.big ? 5.5 : 3.5}
-                  fill="#C73B22" opacity={d.big ? 0.75 : 0.38} />
-              ))}
-            </svg>
+            <div className="rounded-2xl px-6 py-4 flex items-center gap-4"
+              style={{
+                background: 'rgba(255,255,255,0.88)',
+                backdropFilter: 'blur(20px)',
+                border: '1.5px solid rgba(199,59,34,0.20)',
+                boxShadow: '0 4px 24px rgba(199,59,34,0.10)',
+                borderTop: '3px solid #C73B22',
+              }}>
+              <div className="shrink-0">{raminvest.logo}</div>
+              <div>
+                <div className="flex items-center gap-2 mb-0.5">
+                  <span className="text-[10px] font-bold tracking-widest uppercase text-[#C73B22]">{raminvest.role}</span>
+                </div>
+                <p className="text-[11px] text-[#666660] leading-snug">{raminvest.desc}</p>
+              </div>
+            </div>
           </motion.div>
 
-          {/* Layer 3 – counter-rotating inner ring (opposite direction, slower) */}
+          {/* Connector: Raminvest → Finatrades */}
+          <div className="flex flex-col items-center" style={{ height: '40px' }}>
+            <div className="w-px flex-1 border-l-2 border-dashed border-[#C73B22]/30" />
+            <div className="w-2 h-2 rounded-full bg-[#C73B22]/50" />
+          </div>
+
+          {/* FINATRADES — central hub */}
           <motion.div
-            className="absolute inset-0 pointer-events-none"
-            animate={{ rotate: -360 }}
-            transition={{ duration: 44, repeat: Infinity, ease: 'linear' }}
-            style={{ zIndex: 2 }}
+            initial={{ opacity: 0, scale: 0.94 }} whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }} transition={{ duration: 0.55, delay: 0.1 }}
+            className="w-full max-w-xl"
           >
-            <svg width="800" height="800" viewBox="0 0 800 800">
-              {Array.from({ length: 6 }, (_, i) => {
-                const angle = (i / 6) * 2 * Math.PI;
-                const r2 = R * 0.48;
+            <div className="rounded-2xl px-8 py-6"
+              style={{
+                background: 'rgba(255,255,255,0.95)',
+                backdropFilter: 'blur(24px)',
+                border: '2px solid rgba(199,59,34,0.35)',
+                boxShadow: '0 8px 40px rgba(199,59,34,0.16), 0 2px 8px rgba(199,59,34,0.08)',
+                borderTop: '4px solid #C73B22',
+              }}>
+              <div className="flex flex-col sm:flex-row items-center gap-5">
+                <div className="shrink-0 p-3 rounded-2xl" style={{ background: 'rgba(199,59,34,0.06)', border: '1px solid rgba(199,59,34,0.15)' }}>
+                  {finatrades.logo}
+                </div>
+                <div className="text-center sm:text-left flex-1">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase mb-2"
+                    style={{ background: 'rgba(199,59,34,0.08)', color: '#C73B22', border: '1px solid rgba(199,59,34,0.20)' }}>
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#C73B22] animate-pulse" />
+                    {finatrades.role}
+                  </div>
+                  <p className="text-[#444440] text-[12.5px] leading-relaxed">{finatrades.desc}</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Connector: Finatrades → bottom entities */}
+          <div className="relative w-full max-w-2xl flex flex-col items-center" style={{ height: '44px' }}>
+            <div className="w-px flex-1 border-l-2 border-dashed border-[#C73B22]/30" />
+            {/* Horizontal bar */}
+            <div className="relative w-full flex items-center justify-center">
+              <div className="absolute left-[16.5%] right-[16.5%] h-px border-t-2 border-dashed border-[#C73B22]/25" />
+              {bottom.map((_, i) => {
+                const positions = ['16.5%', '50%', '83.5%'];
                 return (
-                  <circle key={i} cx={C + r2 * Math.cos(angle)} cy={C + r2 * Math.sin(angle)}
-                    r="3" fill="#E5602A" opacity="0.5" />
+                  <div key={i} className="absolute flex flex-col items-center" style={{ left: positions[i], transform: 'translateX(-50%)' }}>
+                    <div className="w-2 h-2 rounded-full bg-[#C73B22]/40" />
+                  </div>
                 );
               })}
-            </svg>
-          </motion.div>
-
-          {/* Layer 4 – 3D partner cards */}
-          {nodes.map((node) => (
-            <div
-              key={node.key}
-              className="absolute"
-              style={{ left: node.px, top: node.py, transform: 'translate(-50%, -50%)', zIndex: 10 }}
-            >
-              <EcoCard3D
-                logo={node.logo}
-                label={node.label}
-                role={node.role}
-                desc={node.desc}
-                highlight={node.highlight}
-                delay={node.delay}
-                width={node.w}
-              />
             </div>
-          ))}
-        </motion.div>
+          </div>
 
-        {/* ── Mobile fallback – stacked card grid ── */}
-        <div className="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-          {nodes.map((node, i) => (
-            <motion.div
-              key={node.key}
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ delay: i * 0.08, duration: 0.5 }}
-              className={`bg-white rounded-2xl p-5 text-center ${
-                node.highlight ? 'shadow-xl ring-2 ring-[#C73B22]' : 'shadow-md border border-gray-200'
-              }`}
-            >
-              <div className="flex justify-center mb-3">{node.logo}</div>
-              {node.highlight && <div className="w-8 h-0.5 bg-[#C73B22] mx-auto mb-2 rounded" />}
-              <p className="text-xs font-semibold text-[#C73B22] uppercase tracking-widest mb-2">{node.role}</p>
-              <p className="text-xs text-[#666660] leading-relaxed">{node.desc}</p>
-            </motion.div>
-          ))}
+          {/* Bottom 3 entities */}
+          <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-3 gap-3">
+            {bottom.map((node, i) => (
+              <motion.div
+                key={node.key}
+                initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }} transition={{ delay: 0.15 + i * 0.1, duration: 0.45 }}
+              >
+                <div className="rounded-2xl p-4 flex flex-col items-center text-center gap-3 h-full"
+                  style={{
+                    background: 'rgba(255,255,255,0.84)',
+                    backdropFilter: 'blur(16px)',
+                    border: '1.5px solid rgba(199,59,34,0.14)',
+                    boxShadow: '0 2px 16px rgba(199,59,34,0.07)',
+                    borderTop: '2.5px solid rgba(199,59,34,0.40)',
+                  }}>
+                  <div className="shrink-0">{node.logo}</div>
+                  <div>
+                    <p className="text-[10px] font-bold tracking-widest uppercase text-[#C73B22] mb-1">{node.role}</p>
+                    <p className="text-[11px] text-[#666660] leading-snug">{node.desc}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
         </div>
 
       </div>
