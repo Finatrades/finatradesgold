@@ -540,7 +540,7 @@ const ROLE_CARDS = [
 
 function PositioningSection() {
   return (
-    <section id="ecosystem" className="relative py-24 border-y border-gray-200 overflow-hidden">
+    <section id="ecosystem" className="relative min-h-screen flex flex-col justify-center py-14 border-y border-gray-200 overflow-hidden">
       <div className="absolute inset-0">
         <img src={section2Bg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/25" />
@@ -984,7 +984,7 @@ function HowItWorksStepExplorer() {
 
 function HowItWorksSection() {
   return (
-    <section id="how-it-works" className="py-24 overflow-hidden" style={{ background: 'linear-gradient(160deg, #FFF4F0 0%, #FFFFFF 40%, #F0F4FF 70%, #FFF8F0 100%)' }}>
+    <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: 'linear-gradient(160deg, #FFF4F0 0%, #FFFFFF 40%, #F0F4FF 70%, #FFF8F0 100%)' }}>
       <div className="max-w-7xl mx-auto px-6">
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
@@ -1055,7 +1055,7 @@ const COMMODITIES = [
 
 function MarketplaceSection() {
   return (
-    <section id="marketplace" className="relative py-24 overflow-hidden bg-white">
+    <section id="marketplace" className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden bg-white">
       {/* Background image */}
       <img src={bgTradeMap} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
@@ -1560,7 +1560,7 @@ function RoleWorkflowCard({
 
 function RolesSection() {
   return (
-    <section id="platform" className="relative py-24 overflow-hidden" style={{ background: '#FDF8F3' }}>
+    <section id="platform" className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: '#FDF8F3' }}>
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <img src={bgRolesSection} alt="" className="w-full h-full object-cover object-center" style={{ opacity: 0.9 }} />
@@ -1661,7 +1661,7 @@ function SettlementSection() {
   ];
 
   return (
-    <section id="trade-finance" className="relative bg-[#FAFAFA] py-24 overflow-hidden">
+    <section id="trade-finance" className="relative bg-[#FAFAFA] min-h-screen flex flex-col justify-center py-14 overflow-hidden">
       {/* Background image */}
       <img src={bgWarehouseLaptop} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-[#FAFAFA]/35 pointer-events-none" />
@@ -1994,7 +1994,7 @@ function BackendSection() {
   ];
 
   return (
-    <section className="relative py-24 border-y border-gray-200 overflow-hidden">
+    <section className="relative min-h-screen flex flex-col justify-center py-14 border-y border-gray-200 overflow-hidden">
       <div className="absolute inset-0 z-0">
         <img src={backendBg} alt="" className="w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-white/70" />
@@ -2094,7 +2094,7 @@ function ComplianceSection() {
   ];
 
   return (
-    <section className="relative py-28 overflow-hidden" style={{ background: 'linear-gradient(160deg, #fff 0%, #FFF4F0 55%, #fff 100%)' }}>
+    <section className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: 'linear-gradient(160deg, #fff 0%, #FFF4F0 55%, #fff 100%)' }}>
       {/* Background image */}
       <img src={bgSecurityDocs} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
@@ -2393,7 +2393,7 @@ function ConnectedEcosystemSection() {
   const bottom = nodes.filter(n => !['raminvest', 'finatrades'].includes(n.key));
 
   return (
-    <section className="relative py-24 overflow-hidden" style={{ background: '#FDF6EF' }}>
+    <section className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: '#FDF6EF' }}>
       <img src={bgPartnerships} alt="" aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,251,247,0.18)' }} />
@@ -2553,7 +2553,7 @@ function PartnershipsSection() {
   ];
 
   return (
-    <section className="relative py-24 bg-white overflow-hidden">
+    <section className="relative min-h-screen flex flex-col justify-center py-14 bg-white overflow-hidden">
       {/* Background image */}
       <img src={bgTradeMap} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
@@ -2745,7 +2745,7 @@ function CTASection() {
   };
 
   return (
-    <section id="contact" className="relative py-24 overflow-hidden" style={{ background: '#FDF6EF' }}>
+    <section id="contact" className="relative min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: '#FDF6EF' }}>
       <img src={bgPartnerships} alt="" aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.55 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.55)' }} />
