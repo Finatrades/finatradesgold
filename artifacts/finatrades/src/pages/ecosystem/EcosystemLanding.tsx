@@ -342,24 +342,6 @@ function HeroSection() {
             </Link>
           </div>
 
-          {/* Secondary CTAs */}
-          <div className="flex flex-wrap gap-3 justify-center">
-            <Link href="/register?role=government">
-              <button className="group px-6 py-2.5 font-semibold rounded-xl transition-all flex items-center gap-2 text-[#E5602A] hover:-translate-y-0.5"
-                style={{ background: 'rgba(229,96,42,0.06)', border: '1.5px solid rgba(229,96,42,0.30)' }}>
-                <Shield size={13} />
-                Request Sovereign Access
-                <ArrowRight size={13} className="group-hover:translate-x-0.5 transition-transform" />
-              </button>
-            </Link>
-            <a href="#how-it-works">
-              <button className="group px-6 py-2.5 font-medium rounded-xl transition-all flex items-center gap-2 text-[#666660] hover:text-[#1A1A1A]"
-                style={{ border: '1.5px solid rgba(0,0,0,0.10)' }}>
-                Explore the Protocol
-                <ChevronDown size={13} className="group-hover:translate-y-0.5 transition-transform" />
-              </button>
-            </a>
-          </div>
 
         </motion.div>
 
