@@ -1896,25 +1896,27 @@ function DealRoomSection() {
               }}
             >
 
-              {/* ── FRONT FACE: Full-bleed image + glass overlay ── */}
+              {/* ── FRONT FACE: Full image, no crop, seamless bg ── */}
               <div
                 className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group"
-                style={{ backfaceVisibility: 'hidden' }}
+                style={{ backfaceVisibility: 'hidden', background: '#F0E5D8' }}
                 onClick={() => setFlipped(true)}
               >
-                {/* Image fills entire face — object-cover, no gaps */}
+                {/* Image — scaled up to fill width, object-contain so nothing is cut */}
                 <img
                   src={dealRoomPreview}
                   alt="Finatrades Deal Room"
-                  className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
+                  className="absolute inset-0 w-full h-full transition-transform duration-700 group-hover:scale-[1.04]"
+                  style={{ objectFit: 'contain', objectPosition: 'center', transform: 'scaleX(1.12)' }}
                 />
-                {/* Subtle vignette so overlay reads cleanly */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
-                {/* Centered glass pill — always visible */}
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <div className="flex items-center gap-2.5 px-6 py-3 rounded-full border border-white/40 bg-white/20 backdrop-blur-md text-white font-semibold text-sm tracking-wide shadow-xl group-hover:bg-white/30 group-hover:border-white/60 transition-all duration-300">
+                {/* Subtle bottom vignette for pill readability */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" />
+                {/* Centered glass pill */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="flex items-center gap-2.5 px-6 py-3 rounded-full border border-white/50 bg-white/25 backdrop-blur-md font-semibold text-sm tracking-wide shadow-xl transition-all duration-300"
+                    style={{ color: '#3B1A0A' }}>
                     <span>Deal Room</span>
-                    <ArrowRight size={14} className="opacity-80 group-hover:translate-x-1 transition-transform duration-300" />
+                    <ArrowRight size={14} className="opacity-70" />
                   </div>
                 </div>
               </div>
