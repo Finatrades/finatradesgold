@@ -3235,8 +3235,8 @@ export default function EcosystemLanding() {
     <div className="min-h-screen bg-white text-[#1A1A1A] antialiased overflow-x-hidden">
       <Navbar />
       <HeroSection />
-      <PositioningSection />
       <RolesSection />
+      <PositioningSection />
       <MarketplaceSection />
       <DealRoomSection />
       <ConnectedEcosystemSection />
