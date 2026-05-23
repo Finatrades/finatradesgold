@@ -380,7 +380,7 @@ function HeroSection() {
   );
 }
 
-function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: string; img: string; accent: string; delay: number }) {
+function RoleCard3D({ title, desc, img, accent, delay, features }: { title: string; desc: string; img: string; accent: string; delay: number; features: { label: string; color: string }[] }) {
   const cardRef = useRef<HTMLDivElement>(null);
   const [flipped, setFlipped] = useState(false);
   const rotX = useSpring(0, { stiffness: 300, damping: 22 });
@@ -478,47 +478,65 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
             </div>
           </div>
 
-          {/* ── BACK: description content ── */}
+          {/* ── BACK: topic-wise chips ── */}
           <div
             className="absolute inset-0 rounded-2xl overflow-hidden flex flex-col"
             style={{
               backfaceVisibility: 'hidden',
               transform: 'rotateY(180deg)',
-              background: `linear-gradient(145deg, ${accent}18 0%, ${accent}08 50%, #ffffff 100%)`,
-              border: `1.5px solid ${accent}30`,
+              background: '#FAFAFA',
+              border: `1.5px solid ${accent}28`,
             }}
           >
-            {/* Top accent bar */}
-            <div className="h-1 w-full shrink-0"
-              style={{ background: `linear-gradient(90deg, ${accent} 0%, ${accent}88 60%, transparent 100%)` }} />
-
-            <div className="flex flex-col flex-1 p-5 overflow-hidden">
-              {/* Title */}
-              <div className="flex items-center gap-2.5 mb-3">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-                  style={{ background: accent }}>
-                  <ArrowRight size={14} className="text-white" />
+            {/* Header band */}
+            <div className="shrink-0 px-4 pt-3.5 pb-3"
+              style={{ background: `linear-gradient(135deg, ${accent} 0%, ${accent}CC 100%)` }}>
+              <div className="flex items-center gap-2.5">
+                <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+                  <ArrowRight size={13} className="text-white" />
                 </div>
-                <p className="text-[15px] font-bold text-[#1A1A1A] leading-tight">{title}</p>
+                <div>
+                  <p className="text-white font-bold text-[13px] leading-tight">{title}</p>
+                  <p className="text-white/70 text-[10px] font-medium mt-0.5">Platform Capabilities</p>
+                </div>
               </div>
+            </div>
 
-              {/* Divider */}
-              <div className="h-px mb-3" style={{ background: `${accent}20` }} />
+            {/* Subtitle */}
+            <div className="px-4 py-2.5 shrink-0 border-b" style={{ borderColor: `${accent}12` }}>
+              <p className="text-[11px] font-semibold text-[#444] leading-snug line-clamp-2">{desc.slice(0, 90)}…</p>
+            </div>
 
-              {/* Description */}
-              <p className="text-[#444440] text-[12.5px] leading-relaxed flex-1 overflow-hidden"
-                style={{ display: '-webkit-box', WebkitLineClamp: 7, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                {desc}
-              </p>
-
-              {/* Bottom CTA */}
-              <div className="mt-auto pt-3 flex items-center justify-between">
-                <span className="text-[11px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
-                  Tap to flip back
-                </span>
-                <div className="flex items-center gap-1 text-xs font-semibold" style={{ color: accent }}>
-                  Get Started <ArrowRight size={11} />
+            {/* Topic chips — 2-column grid */}
+            <div className="flex-1 px-3 py-2.5 grid grid-cols-2 gap-1.5 content-start overflow-y-auto">
+              {features.map((f) => (
+                <div
+                  key={f.label}
+                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
+                  style={{ background: f.color + '0C', border: `1px solid ${f.color}1A` }}
+                >
+                  <span className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
+                    style={{ background: f.color }}>
+                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </span>
+                  <span className="text-[10px] font-semibold leading-snug" style={{ color: f.color }}>
+                    {f.label}
+                  </span>
                 </div>
+              ))}
+            </div>
+
+            {/* Footer */}
+            <div className="shrink-0 px-4 py-2.5 flex items-center justify-between border-t"
+              style={{ borderColor: `${accent}15`, background: 'white' }}>
+              <button onClick={() => setFlipped(false)}
+                className="text-[10px] font-medium text-[#999] hover:text-[#666] transition-colors">
+                ← Flip back
+              </button>
+              <div className="flex items-center gap-1 text-[10.5px] font-semibold" style={{ color: accent }}>
+                Get Started <ArrowRight size={10} />
               </div>
             </div>
           </div>
@@ -530,12 +548,90 @@ function RoleCard3D({ title, desc, img, accent, delay }: { title: string; desc: 
 }
 
 const ROLE_CARDS = [
-  { title: 'Exporters & Sellers', desc: 'List compliant, warehouse-receipted inventory on a verified B2B marketplace. Submit commodities on structured consignment, upload origin and ownership documentation, pass AI-powered inspection workflows, and access trade finance eligibility from day one.', img: cardSellers, accent: '#C73B22' },
-  { title: 'Importers & Buyers', desc: 'Source verified commodity positions with full documentation transparency — no blind purchasing. Submit RFQs or Import Expressions of Interest, compare authenticated supplier offers, execute structured purchase orders, and track every fulfilment milestone through to delivery confirmation.', img: cardBuyers, accent: '#1B2E40' },
-  { title: 'Government & Sovereign Entities', desc: 'A dedicated, access-controlled branch for ministries, state trading enterprises, and sovereign funds. Conduct strategic commodity procurement and government-to-government barter arrangements — crude oil, grain, fertilizers, minerals, gold — with full compliance oversight and settlement governance.', img: cardGovernment, accent: '#E5602A' },
-  { title: 'Warehouse Operators', desc: 'Become an accredited Finatrades Warehouse Partner. Receive pre-arrival consignment documentation, coordinate quality inspection at intake, issue tamper-evident digital warehouse receipts, and execute release instructions exclusively against verified settlement conditions.', img: cardWarehouse, accent: '#C73B22' },
-  { title: 'Trade Finance Partners', desc: 'Deploy capital against verified, warehouse-backed inventory. Review structured finance requests tied to confirmed purchase orders, approve instruments including pre-shipment finance and invoice discounting, monitor escrow-governed disbursement, and access immutable settlement ledgers for risk management.', img: cardFinance, accent: '#1B2E40' },
-  { title: 'Logistics & Freight Partners', desc: 'Integrate directly into the Finatrades settlement workflow as a verified logistics provider. Track shipment milestones, coordinate customs documentation and clearance readiness, update delivery confirmation events, and trigger final fulfilment sign-off — all within the governed trade execution chain.', img: cardLogistics, accent: '#E5602A' },
+  {
+    title: 'Exporters & Sellers', img: cardSellers, accent: '#C73B22',
+    desc: 'List compliant, warehouse-receipted inventory on a verified B2B marketplace. Submit commodities on structured consignment, upload origin and ownership documentation, pass AI-powered inspection workflows, and access trade finance eligibility from day one.',
+    features: [
+      { label: 'Structured Consignment',    color: '#C73B22' },
+      { label: 'AI Document Validation',    color: '#E5602A' },
+      { label: 'Warehouse Selection',       color: '#2563EB' },
+      { label: 'Quality Inspection',        color: '#0891B2' },
+      { label: 'Digital Receipt Issuance',  color: '#7C3AED' },
+      { label: 'Live Marketplace Listing',  color: '#059669' },
+      { label: 'Trade Finance Access',      color: '#D97706' },
+      { label: 'Settlement Tracking',       color: '#1B2E40' },
+    ],
+  },
+  {
+    title: 'Importers & Buyers', img: cardBuyers, accent: '#1B2E40',
+    desc: 'Source verified commodity positions with full documentation transparency — no blind purchasing. Submit RFQs or Import Expressions of Interest, compare authenticated supplier offers, execute structured purchase orders, and track every fulfilment milestone through to delivery confirmation.',
+    features: [
+      { label: 'Verified Inventory Access',    color: '#2563EB' },
+      { label: 'RFQ & IOI Submission',         color: '#0891B2' },
+      { label: 'Authenticated Offers',         color: '#7C3AED' },
+      { label: 'Multi-Hub Supplier Access',    color: '#059669' },
+      { label: 'Purchase Order Execution',     color: '#C73B22' },
+      { label: 'Escrow-Backed Payment',        color: '#E5602A' },
+      { label: 'Counterparty Screening',       color: '#D97706' },
+      { label: 'Delivery Milestone Tracking',  color: '#1B2E40' },
+    ],
+  },
+  {
+    title: 'Government & Sovereign Entities', img: cardGovernment, accent: '#E5602A',
+    desc: 'A dedicated, access-controlled branch for ministries, state trading enterprises, and sovereign funds. Conduct strategic commodity procurement and government-to-government barter arrangements — crude oil, grain, fertilizers, minerals, gold — with full compliance oversight and settlement governance.',
+    features: [
+      { label: 'Restricted Onboarding',      color: '#C73B22' },
+      { label: 'Sovereign Verification',     color: '#2563EB' },
+      { label: 'Barter Mandate Submission',  color: '#7C3AED' },
+      { label: 'G2G Procurement',            color: '#0891B2' },
+      { label: 'Independent Valuation',      color: '#059669' },
+      { label: 'Counterparty Matching',      color: '#E5602A' },
+      { label: 'Settlement Gap Management',  color: '#D97706' },
+      { label: 'Compliance Monitoring',      color: '#1B2E40' },
+    ],
+  },
+  {
+    title: 'Warehouse Operators', img: cardWarehouse, accent: '#C73B22',
+    desc: 'Become an accredited Finatrades Warehouse Partner. Receive pre-arrival consignment documentation, coordinate quality inspection at intake, issue tamper-evident digital warehouse receipts, and execute release instructions exclusively against verified settlement conditions.',
+    features: [
+      { label: 'Accreditation Process',      color: '#C73B22' },
+      { label: 'Consignment Documentation',  color: '#E5602A' },
+      { label: 'Intake Quality Inspection',  color: '#2563EB' },
+      { label: 'Digital Receipt Issuance',   color: '#0891B2' },
+      { label: 'Inventory Management',       color: '#7C3AED' },
+      { label: 'Tamper-Evident Records',     color: '#059669' },
+      { label: 'Release Authorization',      color: '#D97706' },
+      { label: 'Settlement Coordination',    color: '#1B2E40' },
+    ],
+  },
+  {
+    title: 'Trade Finance Partners', img: cardFinance, accent: '#1B2E40',
+    desc: 'Deploy capital against verified, warehouse-backed inventory. Review structured finance requests tied to confirmed purchase orders, approve instruments including pre-shipment finance and invoice discounting, monitor escrow-governed disbursement, and access immutable settlement ledgers for risk management.',
+    features: [
+      { label: 'Capital Deployment',          color: '#2563EB' },
+      { label: 'Inventory-Backed Finance',    color: '#0891B2' },
+      { label: 'Pre-Shipment Finance',        color: '#7C3AED' },
+      { label: 'Invoice Discounting',         color: '#059669' },
+      { label: 'Finance Request Review',      color: '#C73B22' },
+      { label: 'Escrow Disbursement',         color: '#E5602A' },
+      { label: 'Settlement Ledger Access',    color: '#D97706' },
+      { label: 'Risk Management Tools',       color: '#1B2E40' },
+    ],
+  },
+  {
+    title: 'Logistics & Freight Partners', img: cardLogistics, accent: '#E5602A',
+    desc: 'Integrate directly into the Finatrades settlement workflow as a verified logistics provider. Track shipment milestones, coordinate customs documentation and clearance readiness, update delivery confirmation events, and trigger final fulfilment sign-off — all within the governed trade execution chain.',
+    features: [
+      { label: 'Verified Provider Status',   color: '#E5602A' },
+      { label: 'Shipment Milestone Tracking', color: '#2563EB' },
+      { label: 'Customs Documentation',      color: '#0891B2' },
+      { label: 'Clearance Readiness',        color: '#7C3AED' },
+      { label: 'Delivery Confirmation',      color: '#059669' },
+      { label: 'Fulfilment Sign-off',        color: '#C73B22' },
+      { label: 'Settlement Trigger',         color: '#D97706' },
+      { label: 'Logistics Integration',      color: '#1B2E40' },
+    ],
+  },
 ];
 
 function PositioningSection() {
