@@ -163,7 +163,7 @@ function Navbar() {
         scrolled ? 'bg-white/95 backdrop-blur-xl border-b border-gray-200 shadow-xl shadow-gray-300/60' : 'bg-transparent'
       }`}
     >
-      <div className="max-w-screen-2xl mx-auto px-6 h-16 flex items-center justify-between">
+      <div className="w-full px-[10%] h-16 flex items-center justify-between">
         <Link href="/">
           <img src={finatradesLogo} alt="Finatrades" className="h-11 w-auto" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
         </Link>
@@ -229,7 +229,7 @@ function HeroSection() {
         <div className="absolute inset-0 bg-gradient-to-r from-white/10 via-transparent to-white/10" />
       </div>
 
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6 text-center pt-24 pb-16">
+      <div className="relative z-10 w-full px-[10%] text-center pt-24 pb-16">
 
         {/* ── Trust Badge Strip ── */}
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
@@ -545,7 +545,7 @@ function PositioningSection() {
         <img src={section2Bg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/25" />
       </div>
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <div className="relative z-10 w-full px-[10%]">
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
@@ -985,7 +985,7 @@ function HowItWorksStepExplorer() {
 function HowItWorksSection() {
   return (
     <section id="how-it-works" className="min-h-screen flex flex-col justify-center py-14 overflow-hidden" style={{ background: 'linear-gradient(160deg, #FFF4F0 0%, #FFFFFF 40%, #F0F4FF 70%, #FFF8F0 100%)' }}>
-      <div className="max-w-screen-2xl mx-auto px-6">
+      <div className="w-full px-[10%]">
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
@@ -1063,7 +1063,7 @@ function MarketplaceSection() {
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'radial-gradient(ellipse 80% 60% at 70% 50%, rgba(199,59,34,0.04) 0%, transparent 70%)' }} />
 
-      <AnimatedSection className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 w-full px-[10%]">
 
         {/* Section header — centred */}
         <motion.div variants={fadeUp} className="text-center mb-7">
@@ -1566,7 +1566,7 @@ function RolesSection() {
         <img src={bgRolesSection} alt="" className="w-full h-full object-cover object-center" style={{ opacity: 0.9 }} />
       </div>
 
-      <AnimatedSection className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 w-full px-[10%]">
 
         <motion.div variants={fadeUp} className="text-center mb-7">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-3">
@@ -1665,7 +1665,7 @@ function SettlementSection() {
       {/* Background image */}
       <img src={bgWarehouseLaptop} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-right pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-[#FAFAFA]/35 pointer-events-none" />
-      <AnimatedSection className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 w-full px-[10%]">
 
         {/* Section header */}
         <motion.div variants={fadeUp} className="text-center mb-6">
@@ -1999,7 +1999,7 @@ function BackendSection() {
         <img src={backendBg} alt="" className="w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-white/70" />
       </div>
-      <AnimatedSection className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 w-full px-[10%]">
         <motion.div variants={fadeUp} className="text-center mb-6">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-3">
             Enterprise-Grade System Architecture
@@ -2106,7 +2106,7 @@ function ComplianceSection() {
           style={{ background: 'radial-gradient(circle, #1B2E40 0%, transparent 70%)' }} />
       </div>
 
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <div className="relative z-10 w-full px-[10%]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 xl:gap-24 items-center">
 
           {/* ── LEFT: 3D illustration + floating badges ── */}
@@ -2398,7 +2398,7 @@ function ConnectedEcosystemSection() {
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(255,251,247,0.18)' }} />
 
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <div className="relative z-10 w-full px-[10%]">
 
         {/* ── Header ── */}
         <AnimatedSection className="text-center mb-8">
@@ -2557,7 +2557,7 @@ function PartnershipsSection() {
       {/* Background image */}
       <img src={bgTradeMap} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
       <div className="absolute inset-0 bg-white/30 pointer-events-none" />
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <div className="relative z-10 w-full px-[10%]">
 
         {/* Header */}
         <motion.div
@@ -2750,7 +2750,7 @@ function CTASection() {
         className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.55 }} />
       <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.55)' }} />
 
-      <AnimatedSection className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <AnimatedSection className="relative z-10 w-full px-[10%]">
 
         {/* Header */}
         <motion.div variants={fadeUp} className="text-center mb-6">
@@ -2915,7 +2915,7 @@ function Footer() {
       <div className="absolute inset-0 pointer-events-none"
         style={{ background: 'rgba(253,250,247,0.72)' }} />
 
-      <div className="relative z-10 max-w-screen-2xl mx-auto px-6">
+      <div className="relative z-10 w-full px-[10%]">
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-8 mb-10">
           <div className="col-span-2 sm:col-span-1">
             <img src={finatradesLogo} alt="Finatrades" className="h-9 w-auto mb-3" style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }} />
