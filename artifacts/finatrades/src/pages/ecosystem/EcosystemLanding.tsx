@@ -1607,16 +1607,21 @@ function RoleWorkflowCard({
             </div>
 
             {/* Subtitle */}
-            <div className="px-5 py-3 shrink-0 border-b" style={{ borderColor: `${role.accent}12` }}>
-              <p className="text-[11.5px] font-semibold text-[#333] leading-snug line-clamp-2">{role.subtitle}</p>
+            <div className="px-5 py-2.5 shrink-0 border-b" style={{ borderColor: `${role.accent}12` }}>
+              <p className="text-[11px] font-semibold text-[#333] leading-snug">{role.subtitle}</p>
+            </div>
+
+            {/* Description paragraph */}
+            <div className="px-5 py-2.5 shrink-0 border-b" style={{ borderColor: `${role.accent}08` }}>
+              <p className="text-[10.5px] text-[#555] leading-relaxed line-clamp-3">{role.desc}</p>
             </div>
 
             {/* Steps — 2-column grid tick list */}
-            <div className="flex-1 px-4 py-3 grid grid-cols-2 gap-2 content-start overflow-y-auto">
+            <div className="flex-1 px-4 py-2.5 grid grid-cols-2 gap-1.5 content-start overflow-y-auto">
               {role.features.slice(0, 8).map((f) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
+                  className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg"
                   style={{ background: f.color + '0C', border: `1px solid ${f.color}1A` }}
                 >
                   <span
@@ -1627,11 +1632,33 @@ function RoleWorkflowCard({
                       <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   </span>
-                  <span className="text-[10.5px] font-semibold leading-snug" style={{ color: f.color }}>
+                  <span className="text-[10px] font-semibold leading-snug" style={{ color: f.color }}>
                     {f.label}
                   </span>
                 </div>
               ))}
+            </div>
+
+            {/* Trust strip */}
+            <div className="shrink-0 px-5 py-2 border-t flex items-center gap-4" style={{ borderColor: `${role.accent}12`, background: `${role.accent}05` }}>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0" style={{ background: role.accent }}>
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="text-[9.5px] font-semibold text-[#555] uppercase tracking-wide">KYC / KYB Gated</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0" style={{ background: '#059669' }}>
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="text-[9.5px] font-semibold text-[#555] uppercase tracking-wide">Escrow Governed</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0" style={{ background: '#1B4FDB' }}>
+                  <svg width="8" height="6" viewBox="0 0 8 6" fill="none"><path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="text-[9.5px] font-semibold text-[#555] uppercase tracking-wide">Audit Trail</span>
+              </div>
             </div>
 
             {/* CTA footer */}
