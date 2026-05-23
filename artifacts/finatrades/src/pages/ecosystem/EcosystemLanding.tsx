@@ -232,17 +232,33 @@ function HeroSection() {
       </div>
 
       <div className="relative z-10 max-w-5xl mx-auto px-6 text-center pt-24 pb-16">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/10 text-[#A82D16] text-xs font-medium mb-8">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#A82D16] animate-pulse" />
-            Institutional Commodity Trade Platform · Raminvest Holding DIFC · 14 African Hubs
-          </div>
+
+        {/* ── Trust Badge Strip ── */}
+        <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
+          className="flex flex-wrap items-center justify-center gap-2 mb-8">
+          {[
+            { icon: '🇨🇭', label: 'Swiss Regulated', color: '#C73B22', bg: 'rgba(199,59,34,0.07)', border: 'rgba(199,59,34,0.25)' },
+            { icon: '🏛', label: 'DIFC Registered', color: '#1B2E40', bg: 'rgba(27,46,64,0.07)', border: 'rgba(27,46,64,0.22)' },
+            { icon: '🔬', label: 'SGS Verified Inventory', color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.22)' },
+            { icon: '🔒', label: 'Escrow Governed Settlement', color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', border: 'rgba(124,58,237,0.22)' },
+          ].map((badge, i) => (
+            <motion.div
+              key={badge.label}
+              initial={{ opacity: 0, scale: 0.88 }} animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.4, delay: 0.08 * i }}
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold"
+              style={{ background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color }}
+            >
+              <span className="text-sm leading-none">{badge.icon}</span>
+              {badge.label}
+            </motion.div>
+          ))}
         </motion.div>
 
         <motion.h1
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.1 }}
           className="text-4xl sm:text-5xl md:text-6xl font-bold text-[#1A1A1A] leading-[1.1] tracking-tight mb-6">
-          The Institutional Infrastructure for{' '}
+          The Swiss-Regulated Institutional<br className="hidden sm:block" /> Infrastructure for{' '}
           <span className="bg-gradient-to-r from-[#C73B22] via-[#E5602A] to-[#F08050] bg-clip-text text-transparent">
             Verified Commodity Trade
           </span>
@@ -251,12 +267,48 @@ function HeroSection() {
 
         <motion.p
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.2 }}
-          className="text-lg text-[#555550] max-w-3xl mx-auto mb-10 leading-relaxed">
+          className="text-lg text-[#555550] max-w-3xl mx-auto mb-8 leading-relaxed">
           Finatrades eliminates the structural risks of African commodity trade — counterparty default, 
           document fraud, unverified inventory, and unsettled payments — by connecting sellers, buyers, 
           government entities, warehouses, logistics providers, and finance partners into one 
           compliance-governed, escrow-backed digital trade execution platform.
         </motion.p>
+
+        {/* ── Commodities Ticker ── */}
+        <motion.div
+          initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.25 }}
+          className="relative mb-10 overflow-hidden"
+          style={{ maskImage: 'linear-gradient(90deg, transparent 0%, black 8%, black 92%, transparent 100%)' }}
+        >
+          <div className="flex gap-0" style={{ animation: 'ticker 28s linear infinite' }}>
+            {[...Array(2)].map((_, pass) => (
+              <div key={pass} className="flex items-center gap-0 shrink-0">
+                {[
+                  { label: 'Crude Oil', icon: '🛢️' },
+                  { label: 'Gold', icon: '🥇' },
+                  { label: 'Cocoa', icon: '🍫' },
+                  { label: 'Grain', icon: '🌾' },
+                  { label: 'Fertilizers', icon: '🧪' },
+                  { label: 'Minerals', icon: '💎' },
+                  { label: 'Wheat', icon: '🌾' },
+                  { label: 'Coffee', icon: '☕' },
+                  { label: 'Petroleum', icon: '⚗️' },
+                  { label: 'Copper', icon: '🔶' },
+                  { label: 'Cashew', icon: '🥜' },
+                  { label: 'Cotton', icon: '🌿' },
+                ].map((c) => (
+                  <div key={c.label + pass} className="flex items-center">
+                    <div className="flex items-center gap-2 px-4 py-1.5 whitespace-nowrap">
+                      <span className="text-base leading-none">{c.icon}</span>
+                      <span className="text-xs font-semibold text-[#555550]">{c.label}</span>
+                    </div>
+                    <span className="text-[#D0C8C0] text-xs select-none">·</span>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </motion.div>
 
         <motion.div
           initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6, delay: 0.3 }}
