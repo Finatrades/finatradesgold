@@ -1898,24 +1898,26 @@ function DealRoomSection() {
 
               {/* ── FRONT FACE: Preview image ── */}
               <div
-                className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group"
-                style={{ backfaceVisibility: 'hidden' }}
+                className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group flex flex-col"
+                style={{ backfaceVisibility: 'hidden', background: '#F5F0EB' }}
                 onClick={() => setFlipped(true)}
               >
-                <img
-                  src={dealRoomPreview}
-                  alt="Finatrades Deal Room"
-                  className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
-                />
-                {/* Overlay gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
-                {/* CTA at bottom */}
-                <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-3 pb-8">
-                  <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm group-hover:bg-[#C73B22]/80 group-hover:border-[#C73B22] transition-all duration-300">
+                {/* Image — contained with padding so full illustration is visible */}
+                <div className="flex-1 flex items-center justify-center px-6 pt-6 pb-2 transition-transform duration-500 group-hover:scale-[1.03]">
+                  <img
+                    src={dealRoomPreview}
+                    alt="Finatrades Deal Room"
+                    className="w-full h-full object-contain"
+                    style={{ maxHeight: '420px' }}
+                  />
+                </div>
+                {/* CTA bar at bottom */}
+                <div className="shrink-0 flex flex-col items-center gap-2 pb-7 pt-3">
+                  <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#C73B22] text-white font-semibold text-sm shadow-lg group-hover:bg-[#A32F1A] transition-all duration-300">
                     <span>Click to view Deal Room</span>
                     <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-300" />
                   </div>
-                  <p className="text-white/60 text-[11px] tracking-wide">Live trade · Escrow governed · Encrypted</p>
+                  <p className="text-[#888880] text-[11px] tracking-wide">Live trade · Escrow governed · Encrypted</p>
                 </div>
               </div>
 
