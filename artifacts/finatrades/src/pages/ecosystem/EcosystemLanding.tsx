@@ -236,10 +236,19 @@ function HeroSection() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
           className="flex flex-wrap items-center justify-center gap-2 mb-8">
           {[
-            { icon: '🇨🇭', label: 'Swiss Regulated', color: '#C73B22', bg: 'rgba(199,59,34,0.07)', border: 'rgba(199,59,34,0.25)' },
-            { icon: '🏛', label: 'DIFC Registered', color: '#1B2E40', bg: 'rgba(27,46,64,0.07)', border: 'rgba(27,46,64,0.22)' },
-            { icon: '🔬', label: 'SGS Verified Inventory', color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.22)' },
-            { icon: '🔒', label: 'Escrow Governed Settlement', color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', border: 'rgba(124,58,237,0.22)' },
+            {
+              icon: (
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect width="16" height="16" rx="8" fill="#D52B1E"/>
+                  <rect x="7" y="3" width="2" height="10" fill="white"/>
+                  <rect x="3" y="7" width="10" height="2" fill="white"/>
+                </svg>
+              ),
+              label: 'Swiss Regulated', color: '#C73B22', bg: 'rgba(199,59,34,0.07)', border: 'rgba(199,59,34,0.25)',
+            },
+            { icon: <span className="text-sm leading-none">🏛</span>, label: 'DIFC Registered', color: '#1B2E40', bg: 'rgba(27,46,64,0.07)', border: 'rgba(27,46,64,0.22)' },
+            { icon: <span className="text-sm leading-none">🔬</span>, label: 'SGS Verified Inventory', color: '#059669', bg: 'rgba(5,150,105,0.07)', border: 'rgba(5,150,105,0.22)' },
+            { icon: <span className="text-sm leading-none">🔒</span>, label: 'Escrow Governed Settlement', color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', border: 'rgba(124,58,237,0.22)' },
           ].map((badge, i) => (
             <motion.div
               key={badge.label}
@@ -248,7 +257,7 @@ function HeroSection() {
               className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold"
               style={{ background: badge.bg, border: `1px solid ${badge.border}`, color: badge.color }}
             >
-              <span className="text-sm leading-none">{badge.icon}</span>
+              {badge.icon}
               {badge.label}
             </motion.div>
           ))}
