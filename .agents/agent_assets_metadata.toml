@@ -1,8 +1,13 @@
 uploads = []
-outputs = []
 
 [[generated]]
 id = "hCWy_pf5yKDaQJitnq41S"
 uri = "file://artifacts/finatrades-mobile/assets/images/icon.png"
 type = "image"
 title = "finatrades app icon"
+
+[[outputs]]
+id = "49WsTRhhyMcZ3Be--QGgS"
+uri = "file://DPR_Finatrades_Enterprise_Platform.md"
+type = "text"
+title = "Finatrades Enterprise DPR v2.0"
