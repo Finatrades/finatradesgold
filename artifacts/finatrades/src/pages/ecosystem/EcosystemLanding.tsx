@@ -9,6 +9,7 @@ import {
   AlertTriangle, ShieldCheck, Mail, Send
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
+import dealRoomPreview from '@/assets/deal-room-preview.png';
 import africaTradeMap from '@/assets/africa-trade-map.png';
 import partnerSigning from '@/assets/partner-signing.png';
 import partnerEvent from '@/assets/partner-event.png';
@@ -1778,6 +1779,7 @@ function DealRoomSection() {
   const [selected, setSelected] = useState(0);
   const [shownCount, setShownCount] = useState(0);
   const [typing, setTyping] = useState(false);
+  const [flipped, setFlipped] = useState(false);
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -1852,7 +1854,7 @@ function DealRoomSection() {
             {deals.map((d, i) => (
               <button
                 key={d.id}
-                onClick={() => setSelected(i)}
+                onClick={() => { setSelected(i); setFlipped(false); }}
                 className="w-full text-left rounded-xl border transition-all duration-300 px-4 py-3 bg-white shadow-sm"
                 style={{
                   borderColor: selected === i ? '#C73B22' : '#E5E7EB',
@@ -1882,8 +1884,46 @@ function DealRoomSection() {
             ))}
           </div>
 
-          {/* ── RIGHT: Deal Detail + Conversation ── */}
-          <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xl flex flex-col">
+          {/* ── RIGHT: Flip Card (Front = Preview Image, Back = Deal Room) ── */}
+          <div className="relative min-h-[520px]" style={{ perspective: '1200px' }}>
+            <div
+              className="relative w-full h-full"
+              style={{
+                transformStyle: 'preserve-3d',
+                transform: flipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+                transition: 'transform 0.75s cubic-bezier(0.4, 0.2, 0.2, 1)',
+                minHeight: '520px',
+              }}
+            >
+
+              {/* ── FRONT FACE: Preview image ── */}
+              <div
+                className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group"
+                style={{ backfaceVisibility: 'hidden' }}
+                onClick={() => setFlipped(true)}
+              >
+                <img
+                  src={dealRoomPreview}
+                  alt="Finatrades Deal Room"
+                  className="w-full h-full object-cover object-center transition-transform duration-500 group-hover:scale-[1.02]"
+                />
+                {/* Overlay gradient */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+                {/* CTA at bottom */}
+                <div className="absolute bottom-0 left-0 right-0 flex flex-col items-center gap-3 pb-8">
+                  <div className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/15 backdrop-blur-sm border border-white/30 text-white font-semibold text-sm group-hover:bg-[#C73B22]/80 group-hover:border-[#C73B22] transition-all duration-300">
+                    <span>Click to view Deal Room</span>
+                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-300" />
+                  </div>
+                  <p className="text-white/60 text-[11px] tracking-wide">Live trade · Escrow governed · Encrypted</p>
+                </div>
+              </div>
+
+              {/* ── BACK FACE: Deal Room Panel ── */}
+              <div
+                className="absolute inset-0 rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xl flex flex-col"
+                style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
+              >
 
             {/* Panel header bar */}
             <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
@@ -2055,6 +2095,8 @@ function DealRoomSection() {
                 <ShieldCheck size={10} className="text-[#059669]" />
                 <span className="text-[10px] text-[#059669] font-semibold">Finatrades Governed</span>
               </div>
+            </div>
+          </div>
             </div>
           </div>
         </motion.div>
