@@ -1707,13 +1707,13 @@ function DealRoomSection() {
         { label: 'Warehouse', icon: Warehouse, done: true },
         { label: 'Seller', icon: Building2, done: false },
       ],
-      docs: [
-        { name: 'Certificate of Origin', done: true },
-        { name: 'SGS Inspection Report', done: true },
-        { name: 'Warehouse Receipt', done: true },
-        { name: 'Bill of Lading', done: false },
+      messages: [
+        { role: 'buyer',    time: '09:12', text: 'Initiating purchase order — 5,000 MT Grade A Cocoa Beans at $2.84M. KYC documents are attached for your review.' },
+        { role: 'seller',   time: '09:18', text: 'Order acknowledged. Inventory is confirmed and segregated at Apapa Port Warehouse, Lagos. Warehouse receipt has been uploaded.' },
+        { role: 'finrated', time: '09:21', text: 'Document review initiated. Please submit your SGS Inspection Report and Certificate of Origin to proceed with escrow activation.' },
+        { role: 'buyer',    time: '09:34', text: 'SGS Inspection Report and Certificate of Origin uploaded. We are ready — please activate the escrow lock.' },
+        { role: 'finrated', time: '09:41', text: 'Escrow lock confirmed — $2.84M secured in custody. Awaiting seller\'s signature on the allocation agreement to release.' },
       ],
-      escrowAmt: '$2.84M', escrowStatus: 'Funds Locked · Release Pending',
     },
     {
       id: 'FT-2025-3892', commodity: 'Crude Oil', grade: 'Bonny Light · API 35.4°',
@@ -1726,13 +1726,13 @@ function DealRoomSection() {
         { label: 'Warehouse', icon: Warehouse, done: false },
         { label: 'Seller', icon: Building2, done: true },
       ],
-      docs: [
-        { name: 'Certificate of Origin', done: true },
-        { name: 'Quality Analysis Report', done: true },
-        { name: 'Warehouse Release Auth', done: false },
-        { name: 'Shipping Bill of Lading', done: false },
+      messages: [
+        { role: 'buyer',    time: '11:05', text: 'Purchase confirmed — 120,000 BBL Bonny Light Crude at $8.21M. Escrow funds have been fully transferred.' },
+        { role: 'finrated', time: '11:09', text: 'Buyer funds verified and locked in escrow. Requesting warehouse release authorisation. Seller, please confirm cargo readiness.' },
+        { role: 'seller',   time: '11:22', text: 'Cargo is ready at Bonny Terminal. Warehouse release is pending Port Authority clearance — documents are being finalised today.' },
+        { role: 'finrated', time: '11:47', text: 'Port clearance documentation received and verified. Warehouse release order is being processed. ETA: 4 hours.' },
+        { role: 'buyer',    time: '12:03', text: 'Noted. Our vessel is standing by at Rotterdam. Please expedite — we need to make the tide window.' },
       ],
-      escrowAmt: '$8.21M', escrowStatus: 'Bilateral Lock Active · Awaiting Release',
     },
     {
       id: 'FT-2025-3701', commodity: 'Gold Bars', grade: '999.9 Fine · LBMA Certified',
@@ -1745,13 +1745,13 @@ function DealRoomSection() {
         { label: 'Warehouse', icon: Warehouse, done: true },
         { label: 'Seller', icon: Building2, done: true },
       ],
-      docs: [
-        { name: 'LBMA Assay Certificate', done: true },
-        { name: 'Warehouse Release Order', done: true },
-        { name: 'Customs Clearance Docs', done: true },
-        { name: 'Verified Payout Receipt', done: true },
+      messages: [
+        { role: 'buyer',    time: '08:30', text: 'LBMA gold purchase confirmed — 800 KG of 999.9 fine gold at $47.2M. Wire transfer has been executed from our correspondent bank.' },
+        { role: 'seller',   time: '08:44', text: 'Payment verified. LBMA Assay Certificate and Warehouse Release Order have been uploaded. Armoured logistics is on standby.' },
+        { role: 'finrated', time: '08:51', text: 'All documents verified — LBMA cert, assay report, and customs clearance confirmed. Settlement is being finalised now.' },
+        { role: 'buyer',    time: '10:17', text: 'Bullion received and inspected at our Zurich vault. Delivery confirmed and signed off by our custodian team.' },
+        { role: 'finrated', time: '10:22', text: 'Verified payout of $47.2M released to seller. Trade FT-2025-3701 closed successfully. ✓ Both parties may now download the settlement record.' },
       ],
-      escrowAmt: '$47.2M', escrowStatus: 'Payout Executed · Settled',
     },
     {
       id: 'FT-2025-3654', commodity: 'Fertilizers', grade: 'NPK 20-20-20 · Bulk',
@@ -1764,23 +1764,42 @@ function DealRoomSection() {
         { label: 'Warehouse', icon: Warehouse, done: false },
         { label: 'Seller', icon: Building2, done: true },
       ],
-      docs: [
-        { name: 'Manufacturer Certificate', done: true },
-        { name: 'SGS Pre-Shipment Inspection', done: false },
-        { name: 'Phytosanitary Certificate', done: false },
-        { name: 'Warehouse Receipt', done: false },
+      messages: [
+        { role: 'buyer',    time: '14:00', text: 'Order placed — 12,500 MT NPK 20-20-20 Fertilizers at $4.1M. We have a tight import window in Singapore. Awaiting doc clearance.' },
+        { role: 'finrated', time: '14:04', text: 'Order received. Please submit your SGS Pre-Shipment Inspection Report and Phytosanitary Certificate to proceed with escrow activation.' },
+        { role: 'seller',   time: '14:31', text: 'SGS inspection is scheduled for Thursday. Phytosanitary certificate has been applied for — expected within 3 working days.' },
+        { role: 'finrated', time: '14:35', text: 'Reminder: Warehouse Receipt is also required before escrow can be activated. Please upload all pending documents at the earliest.' },
+        { role: 'buyer',    time: '15:10', text: 'Seller, please urgently expedite the inspection — we need to meet the Singapore port import window closing on Friday.' },
       ],
-      escrowAmt: '$4.1M', escrowStatus: 'Escrow Pending · Docs Incomplete',
     },
   ];
 
-  const stages = ['KYC & Compliance', 'Doc Verification', 'Escrow Lock', 'Release Auth', 'Payout'];
+  const stages = ['KYC', 'Doc Verify', 'Escrow Lock', 'Release', 'Payout'];
   const [selected, setSelected] = useState(0);
+  const [shownCount, setShownCount] = useState(0);
+  const [typing, setTyping] = useState(false);
+  const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t = setInterval(() => setSelected(s => (s + 1) % deals.length), 6000);
+    const t = setInterval(() => setSelected(s => (s + 1) % deals.length), 9000);
     return () => clearInterval(t);
   }, []);
+
+  useEffect(() => {
+    setShownCount(0);
+    setTyping(false);
+    const msgs = deals[selected].messages;
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    msgs.forEach((_, i) => {
+      timers.push(setTimeout(() => setTyping(true),  i * 1800 + 300));
+      timers.push(setTimeout(() => { setTyping(false); setShownCount(i + 1); }, i * 1800 + 1100));
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [selected]);
+
+  useEffect(() => {
+    if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+  }, [shownCount, typing]);
 
   const deal = deals[selected];
 
@@ -1863,11 +1882,11 @@ function DealRoomSection() {
             ))}
           </div>
 
-          {/* ── RIGHT: Deal Detail Panel ── */}
-          <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xl">
+          {/* ── RIGHT: Deal Detail + Conversation ── */}
+          <div className="rounded-2xl border border-gray-200 overflow-hidden bg-white shadow-xl flex flex-col">
 
             {/* Panel header bar */}
-            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50">
+            <div className="flex items-center justify-between px-5 py-3 border-b border-gray-100 bg-gray-50 shrink-0">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
                   <div className="w-3 h-3 rounded-full bg-[#FF5F57]" />
@@ -1882,130 +1901,160 @@ function DealRoomSection() {
               </div>
             </div>
 
-            <div className="p-5 flex flex-col gap-4">
-
-              {/* Deal identity row */}
-              <div className="flex items-start justify-between gap-4">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <Package size={14} className="text-[#C73B22]" />
-                    <span className="text-[#1A1A1A] font-bold text-lg leading-none">{deal.commodity}</span>
-                  </div>
-                  <div className="text-[#888880] text-xs">{deal.grade} · {deal.quantity}</div>
-                  <div className="flex items-center gap-2 mt-2 text-[11px] text-[#888880]">
-                    <MapPin size={10} className="text-[#C73B22] shrink-0" /> {deal.origin}
-                    <ArrowRight size={10} />
-                    <Globe size={10} className="text-[#C73B22] shrink-0" /> {deal.dest}
+            {/* ── Compact deal info ── */}
+            <div className="px-5 py-3 border-b border-gray-100 shrink-0">
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <Package size={16} className="text-[#C73B22] shrink-0" />
+                  <div className="min-w-0">
+                    <div className="text-[#1A1A1A] font-bold text-base leading-tight truncate">{deal.commodity}</div>
+                    <div className="text-[#888880] text-[10px] mt-0.5 truncate">{deal.grade} · {deal.quantity}</div>
                   </div>
                 </div>
-                <div className="text-right shrink-0">
-                  <div className="text-[#C73B22] font-black text-2xl leading-none">{deal.value}</div>
-                  <div className="text-[10px] font-bold uppercase tracking-wider mt-1 px-2 py-0.5 rounded-full"
-                    style={{ background: deal.statusColor + '18', color: deal.statusColor }}>
-                    {deal.statusLabel}
-                  </div>
-                </div>
-              </div>
-
-              <div className="h-px bg-gray-100" />
-
-              {/* Counterparties + Party status — 2 col */}
-              <div className="grid grid-cols-2 gap-4">
-
-                {/* Counterparties */}
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Counterparties</div>
-                  <div className="flex flex-col gap-1.5">
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
-                      <Users size={11} className="text-[#1B4FDB] shrink-0" />
-                      <div>
-                        <div className="text-[9px] text-[#888880] uppercase font-semibold">Buyer</div>
-                        <div className="text-[#1A1A1A] text-[11px] font-semibold leading-tight">{deal.buyer}</div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
-                      <Building2 size={11} className="text-[#C73B22] shrink-0" />
-                      <div>
-                        <div className="text-[9px] text-[#888880] uppercase font-semibold">Seller</div>
-                        <div className="text-[#1A1A1A] text-[11px] font-semibold leading-tight">{deal.seller}</div>
-                      </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right">
+                    <div className="text-[#C73B22] font-black text-xl leading-none">{deal.value}</div>
+                    <div className="text-[9px] font-bold uppercase tracking-wider mt-0.5 px-2 py-0.5 rounded-full inline-block"
+                      style={{ background: deal.statusColor + '18', color: deal.statusColor }}>
+                      {deal.statusLabel}
                     </div>
                   </div>
                 </div>
+              </div>
+              {/* Route */}
+              <div className="flex items-center gap-1.5 mt-2 text-[10px] text-[#888880]">
+                <MapPin size={9} className="text-[#C73B22] shrink-0" />
+                <span>{deal.origin}</span>
+                <ArrowRight size={9} className="text-gray-400" />
+                <Globe size={9} className="text-[#C73B22] shrink-0" />
+                <span>{deal.dest}</span>
+                <span className="ml-auto text-[10px] font-semibold text-[#888880]">{deal.buyer} ↔ {deal.seller}</span>
+              </div>
+            </div>
 
-                {/* Party authorisation status */}
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Party Status</div>
-                  <div className="grid grid-cols-2 gap-1.5">
-                    {deal.parties.map(({ label, icon: Icon, done }) => (
-                      <div key={label} className="flex items-center gap-1.5 px-2.5 py-2 rounded-lg border"
-                        style={{
-                          background: done ? 'rgba(5,150,105,0.06)' : '#F9FAFB',
-                          borderColor: done ? 'rgba(5,150,105,0.25)' : '#E5E7EB',
-                        }}>
-                        <Icon size={10} style={{ color: done ? '#059669' : '#9CA3AF' }} />
-                        <span className="text-[10px] font-semibold" style={{ color: done ? '#059669' : '#6B7280' }}>{label}</span>
-                        <span className="ml-auto text-[10px]" style={{ color: done ? '#059669' : '#9CA3AF' }}>{done ? '✓' : '⟳'}</span>
-                      </div>
-                    ))}
+            {/* ── Party status + Progress — compact row ── */}
+            <div className="px-5 py-2.5 border-b border-gray-100 shrink-0 flex items-center gap-4">
+              {/* 4 party pills */}
+              <div className="flex gap-1.5 flex-1">
+                {deal.parties.map(({ label, icon: Icon, done }) => (
+                  <div key={label} className="flex items-center gap-1 px-2 py-1 rounded-full border text-[9px] font-bold"
+                    style={{
+                      background: done ? 'rgba(5,150,105,0.06)' : '#F9FAFB',
+                      borderColor: done ? 'rgba(5,150,105,0.3)' : '#E5E7EB',
+                      color: done ? '#059669' : '#9CA3AF',
+                    }}>
+                    <Icon size={9} />
+                    {label}
+                    <span>{done ? ' ✓' : ' ⟳'}</span>
                   </div>
-                </div>
+                ))}
+              </div>
+              {/* Progress mini bar */}
+              <div className="flex gap-1 shrink-0">
+                {stages.map((s, si) => (
+                  <div key={s} title={s} className="h-1.5 w-8 rounded-full transition-all duration-700"
+                    style={{ background: si < deal.progress ? deal.statusColor : '#E5E7EB' }} />
+                ))}
+              </div>
+            </div>
+
+            {/* ── Conversation area ── */}
+            <div className="flex flex-col flex-1 min-h-0">
+              {/* Chat label */}
+              <div className="px-5 pt-3 pb-1 shrink-0 flex items-center gap-2">
+                <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880]">Deal Conversation</div>
+                <div className="flex-1 h-px bg-gray-100" />
+                <div className="text-[9px] text-[#888880] font-mono">Encrypted · FinRated Governed</div>
               </div>
 
-              <div className="h-px bg-gray-100" />
-
-              {/* Documents + Escrow — 2 col */}
-              <div className="grid grid-cols-2 gap-4">
-
-                {/* Document checklist */}
-                <div>
-                  <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Trade Documents</div>
-                  <div className="flex flex-col gap-1.5">
-                    {deal.docs.map(({ name, done }) => (
-                      <div key={name} className="flex items-center gap-2">
-                        <span className="shrink-0" style={{ color: done ? '#059669' : '#D1D5DB' }}>
-                          {done ? <CheckCircle2 size={11} /> : <div className="w-[11px] h-[11px] rounded-full border-2 border-gray-300" />}
-                        </span>
-                        <span className="text-[11px] font-medium" style={{ color: done ? '#1A1A1A' : '#9CA3AF' }}>{name}</span>
+              {/* Messages */}
+              <div ref={chatRef} className="flex-1 overflow-y-auto px-5 pb-3 flex flex-col gap-3" style={{ minHeight: '240px', maxHeight: '300px' }}>
+                {deal.messages.slice(0, shownCount).map((msg, idx) => {
+                  const isBuyer    = msg.role === 'buyer';
+                  const isSeller   = msg.role === 'seller';
+                  const isFinrated = msg.role === 'finrated';
+                  return (
+                    <motion.div
+                      key={`${selected}-${idx}`}
+                      initial={{ opacity: 0, y: 10, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+                      className={`flex flex-col gap-0.5 ${isBuyer ? 'items-end' : isSeller ? 'items-start' : 'items-center'}`}
+                    >
+                      {/* Sender label */}
+                      <div className={`flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isBuyer ? 'flex-row-reverse' : ''}`}>
+                        {isFinrated ? (
+                          <span className="text-[#C73B22]">FinRated Platform</span>
+                        ) : isBuyer ? (
+                          <>
+                            <span className="text-[#1B4FDB]">{deal.buyer}</span>
+                            <div className="w-4 h-4 rounded-full bg-[#1B4FDB] flex items-center justify-center">
+                              <Users size={8} className="text-white" />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="w-4 h-4 rounded-full bg-[#C73B22]/80 flex items-center justify-center">
+                              <Building2 size={8} className="text-white" />
+                            </div>
+                            <span className="text-[#C73B22]">{deal.seller}</span>
+                          </>
+                        )}
+                        <span className="text-gray-300 font-normal">{msg.time}</span>
                       </div>
-                    ))}
-                  </div>
-                </div>
 
-                {/* Escrow panel */}
-                <div className="rounded-xl border border-[#C73B22]/20 p-3 bg-[#FFF4F0]">
-                  <div className="flex items-center gap-1.5 mb-2">
-                    <Lock size={10} className="text-[#C73B22]" />
-                    <span className="text-[10px] font-bold uppercase tracking-widest text-[#C73B22]">Escrow</span>
-                  </div>
-                  <div className="text-[#1A1A1A] font-black text-xl leading-none mb-1">{deal.escrowAmt}</div>
-                  <div className="text-[10px] text-[#666660] leading-relaxed">{deal.escrowStatus}</div>
-                  <div className="mt-2 flex items-center gap-1.5">
-                    <ShieldCheck size={10} className="text-[#059669]" />
-                    <span className="text-[10px] text-[#059669] font-semibold">Swiss Regulated · DIFC</span>
-                  </div>
-                </div>
-              </div>
+                      {/* Bubble */}
+                      {isFinrated ? (
+                        <div className="flex items-start gap-2 max-w-[85%]">
+                          <div className="w-5 h-5 rounded-full bg-[#C73B22] flex items-center justify-center shrink-0 mt-0.5">
+                            <ShieldCheck size={10} className="text-white" />
+                          </div>
+                          <div className="px-3 py-2 rounded-2xl rounded-tl-sm text-[11px] leading-relaxed font-medium border border-[#C73B22]/20 bg-[#FFF4F0] text-[#7A1F0E]">
+                            {msg.text}
+                          </div>
+                        </div>
+                      ) : isBuyer ? (
+                        <div className="px-3 py-2 rounded-2xl rounded-tr-sm text-[11px] leading-relaxed max-w-[80%] bg-[#1B4FDB] text-white">
+                          {msg.text}
+                        </div>
+                      ) : (
+                        <div className="px-3 py-2 rounded-2xl rounded-tl-sm text-[11px] leading-relaxed max-w-[80%] bg-gray-100 text-[#1A1A1A] border border-gray-200">
+                          {msg.text}
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
 
-              <div className="h-px bg-gray-100" />
-
-              {/* Settlement progress */}
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880] mb-2">Settlement Progress</div>
-                <div className="grid grid-cols-5 gap-1.5">
-                  {stages.map((stage, si) => (
-                    <div key={stage} className="flex flex-col items-center gap-1">
-                      <div className="w-full h-2 rounded-full transition-all duration-700"
-                        style={{ background: si < deal.progress ? deal.statusColor : '#E5E7EB' }} />
-                      <span className="text-[9px] text-center font-semibold leading-tight"
-                        style={{ color: si < deal.progress ? deal.statusColor : '#9CA3AF' }}>
-                        {stage}
-                      </span>
+                {/* Typing indicator */}
+                {typing && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex items-center gap-2"
+                  >
+                    <div className="px-3 py-2 rounded-2xl bg-gray-100 border border-gray-200 flex items-center gap-1">
+                      {[0, 1, 2].map(i => (
+                        <motion.div
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-gray-400"
+                          animate={{ y: [0, -4, 0] }}
+                          transition={{ duration: 0.6, repeat: Infinity, delay: i * 0.15, ease: 'easeInOut' }}
+                        />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                    <span className="text-[9px] text-gray-400 font-medium">typing…</span>
+                  </motion.div>
+                )}
               </div>
 
+              {/* Secured channel footer */}
+              <div className="px-5 py-2.5 border-t border-gray-100 shrink-0 flex items-center gap-2 bg-gray-50">
+                <Lock size={10} className="text-gray-400" />
+                <span className="text-[10px] text-gray-400 flex-1">Secured · End-to-end encrypted deal channel</span>
+                <ShieldCheck size={10} className="text-[#059669]" />
+                <span className="text-[10px] text-[#059669] font-semibold">FinRated Governed</span>
+              </div>
             </div>
           </div>
         </motion.div>
