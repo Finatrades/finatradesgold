@@ -1781,7 +1781,7 @@ function DealRoomSection() {
   const chatRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const t = setInterval(() => setSelected(s => (s + 1) % deals.length), 9000);
+    const t = setInterval(() => setSelected(s => (s + 1) % deals.length), 24000);
     return () => clearInterval(t);
   }, []);
 
@@ -1791,8 +1791,8 @@ function DealRoomSection() {
     const msgs = deals[selected].messages;
     const timers: ReturnType<typeof setTimeout>[] = [];
     msgs.forEach((_, i) => {
-      timers.push(setTimeout(() => setTyping(true),  i * 1800 + 300));
-      timers.push(setTimeout(() => { setTyping(false); setShownCount(i + 1); }, i * 1800 + 1100));
+      timers.push(setTimeout(() => setTyping(true),  i * 4000 + 400));
+      timers.push(setTimeout(() => { setTyping(false); setShownCount(i + 1); }, i * 4000 + 1800));
     });
     return () => timers.forEach(clearTimeout);
   }, [selected]);
@@ -1964,7 +1964,7 @@ function DealRoomSection() {
               <div className="px-5 pt-3 pb-1 shrink-0 flex items-center gap-2">
                 <div className="text-[10px] font-bold uppercase tracking-widest text-[#888880]">Deal Conversation</div>
                 <div className="flex-1 h-px bg-gray-100" />
-                <div className="text-[9px] text-[#888880] font-mono">Encrypted · FinRated Governed</div>
+                <div className="text-[9px] text-[#888880] font-mono">Encrypted · Finatrades Governed</div>
               </div>
 
               {/* Messages */}
@@ -1984,7 +1984,7 @@ function DealRoomSection() {
                       {/* Sender label */}
                       <div className={`flex items-center gap-1.5 text-[9px] font-bold uppercase tracking-wider ${isBuyer ? 'flex-row-reverse' : ''}`}>
                         {isFinrated ? (
-                          <span className="text-[#C73B22]">FinRated Platform</span>
+                          <span className="text-[#C73B22]">Finatrades Platform</span>
                         ) : isBuyer ? (
                           <>
                             <span className="text-[#1B4FDB]">{deal.buyer}</span>
@@ -2053,7 +2053,7 @@ function DealRoomSection() {
                 <Lock size={10} className="text-gray-400" />
                 <span className="text-[10px] text-gray-400 flex-1">Secured · End-to-end encrypted deal channel</span>
                 <ShieldCheck size={10} className="text-[#059669]" />
-                <span className="text-[10px] text-[#059669] font-semibold">FinRated Governed</span>
+                <span className="text-[10px] text-[#059669] font-semibold">Finatrades Governed</span>
               </div>
             </div>
           </div>
