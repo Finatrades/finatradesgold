@@ -26,6 +26,7 @@ import exporterWarehouse from '@/assets/exporter-warehouse.png';
 import buyerMarketplace from '@/assets/buyer-marketplace.png';
 import governmentSovereign from '@/assets/government-sovereign.png';
 import governmentWorkflow from '@/assets/government-workflow.png';
+import bgRolesSection from '@/assets/bg-roles-section.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
@@ -1489,8 +1490,13 @@ function RoleWorkflowCard({
 
 function RolesSection() {
   return (
-    <section id="for-sellers" className="bg-white py-24">
-      <AnimatedSection className="max-w-7xl mx-auto px-6">
+    <section id="for-sellers" className="relative py-24 overflow-hidden" style={{ background: '#FDF8F3' }}>
+      {/* Background image */}
+      <div className="absolute inset-0 z-0">
+        <img src={bgRolesSection} alt="" className="w-full h-full object-cover object-center" style={{ opacity: 0.9 }} />
+      </div>
+
+      <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
         <motion.div variants={fadeUp} className="text-center mb-14">
           <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
