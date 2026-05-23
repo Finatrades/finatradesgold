@@ -1896,27 +1896,26 @@ function DealRoomSection() {
               }}
             >
 
-              {/* ── FRONT FACE: Preview image ── */}
+              {/* ── FRONT FACE: Full-bleed image + glass overlay ── */}
               <div
-                className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group flex flex-col"
-                style={{ backfaceVisibility: 'hidden', background: '#F2E8DC' }}
+                className="absolute inset-0 rounded-2xl overflow-hidden shadow-xl cursor-pointer group"
+                style={{ backfaceVisibility: 'hidden' }}
                 onClick={() => setFlipped(true)}
               >
-                {/* Image — zero padding, full width stretch, bg matches image exactly */}
-                <div className="flex-1 overflow-hidden transition-transform duration-500 group-hover:scale-[1.02]">
-                  <img
-                    src={dealRoomPreview}
-                    alt="Finatrades Deal Room"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-                {/* CTA bar at bottom */}
-                <div className="shrink-0 flex flex-col items-center gap-2 pb-7 pt-3">
-                  <div className="flex items-center gap-2 px-6 py-3 rounded-full bg-[#C73B22] text-white font-semibold text-sm shadow-lg group-hover:bg-[#A32F1A] transition-all duration-300">
-                    <span>Click to view Deal Room</span>
-                    <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform duration-300" />
+                {/* Image fills entire face — object-cover, no gaps */}
+                <img
+                  src={dealRoomPreview}
+                  alt="Finatrades Deal Room"
+                  className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-[1.04]"
+                />
+                {/* Subtle vignette so overlay reads cleanly */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
+                {/* Centered glass pill — always visible */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="flex items-center gap-2.5 px-6 py-3 rounded-full border border-white/40 bg-white/20 backdrop-blur-md text-white font-semibold text-sm tracking-wide shadow-xl group-hover:bg-white/30 group-hover:border-white/60 transition-all duration-300">
+                    <span>Deal Room</span>
+                    <ArrowRight size={14} className="opacity-80 group-hover:translate-x-1 transition-transform duration-300" />
                   </div>
-                  <p className="text-[#888880] text-[11px] tracking-wide">Live trade · Escrow governed · Encrypted</p>
                 </div>
               </div>
 
