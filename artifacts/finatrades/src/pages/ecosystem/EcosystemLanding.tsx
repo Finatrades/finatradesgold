@@ -27,6 +27,7 @@ import buyerMarketplace from '@/assets/buyer-marketplace.png';
 import governmentSovereign from '@/assets/government-sovereign.png';
 import governmentWorkflow from '@/assets/government-workflow.png';
 import bgRolesSection from '@/assets/bg-roles-section.png';
+import bgPartnerships from '@/assets/bg-partnerships.png';
 import logoRaminvest from '@/assets/logo-raminvest.webp';
 import logoFinatradesP from '@/assets/logo-finatrades-purple.png';
 import logoWinvestnet from '@/assets/logo-winvestnet2.png';
@@ -2391,10 +2392,10 @@ function ConnectedEcosystemSection() {
   ];
 
   return (
-    <section className="relative py-24 overflow-hidden" style={{ background: '#FDF0EB' }}>
+    <section className="relative py-24 overflow-hidden" style={{ background: '#FDF6EF' }}>
       {/* Background image */}
-      <img src={bgConnectedGlobe} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
-      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,240,235,0.35)' }} />
+      <img src={bgPartnerships} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 1 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.15)' }} />
       <div className="relative z-10 max-w-5xl mx-auto px-6">
 
         {/* ── Header ── */}
