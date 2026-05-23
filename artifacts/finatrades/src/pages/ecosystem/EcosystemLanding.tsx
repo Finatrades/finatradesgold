@@ -549,18 +549,18 @@ function PositioningSection() {
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
-          className="text-center mb-16"
+          className="text-center mb-7"
         >
-          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">The Finatrades Ecosystem</motion.p>
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-2">The Finatrades Ecosystem</motion.p>
+          <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             Built for Every Participant in the Commodity Trade Chain
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-[#555550] max-w-2xl mx-auto text-lg">
+          <motion.p variants={fadeUp} className="text-[#555550] max-w-2xl mx-auto text-sm">
             From exporters submitting goods on consignment to sovereign entities conducting strategic barter — every participant operates within a dedicated, compliance-gated workflow with full transaction visibility from intake to settlement.
           </motion.p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {ROLE_CARDS.map((card, i) => (
             <RoleCard3D key={card.title} {...card} delay={i * 0.07} />
           ))}
@@ -989,16 +989,16 @@ function HowItWorksSection() {
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
-          className="text-center mb-12"
+          className="text-center mb-6"
         >
           <motion.div variants={fadeUp}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-3">
             End-to-End Trade Execution · 9-Stage Protocol · Up to 11 Sub-Steps Each
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             A Fully Governed Trade Execution Protocol
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto">
+          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto text-sm">
             Unlike peer-to-peer commodity brokers or fragmented export channels, Finatrades enforces a mandatory, sequenced 9-stage protocol — every transaction must pass through compliance onboarding, warehouse verification, document authentication, escrow payment control, and audited settlement before completion.
           </motion.p>
         </motion.div>
@@ -1066,12 +1066,12 @@ function MarketplaceSection() {
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* Section header — centred */}
-        <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-[#C73B22]/5 text-[#A82D16] text-xs font-medium mb-5">
+        <motion.div variants={fadeUp} className="text-center mb-7">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-[#C73B22]/5 text-[#A82D16] text-xs font-medium mb-3">
             <Globe size={12} />
             14 Verified African Trade Hubs · Institutional Access Only
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4 leading-tight">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">
             Africa's First <span style={{ color: '#C73B22' }}>Swiss Regulated</span>-Grade<br className="hidden sm:block" /> <span style={{ color: '#C73B22' }}>(B2B Global Commodity Marketplace)</span>
           </h2>
           <p className="text-[#555550] max-w-2xl mx-auto text-base leading-relaxed">
@@ -1568,19 +1568,19 @@ function RolesSection() {
 
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
-        <motion.div variants={fadeUp} className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
+        <motion.div variants={fadeUp} className="text-center mb-7">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-3">
             Role-Based Platform Access
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             A Dedicated Trade Workflow for Every Counterparty
           </h2>
-          <p className="text-[#666660] max-w-2xl mx-auto leading-relaxed">
+          <p className="text-[#666660] max-w-2xl mx-auto leading-relaxed text-sm">
             Finatrades is not a generic marketplace. Each participant category — exporter, importer, sovereign entity, warehouse, finance, or logistics partner — is onboarded through a compliance-gated pathway and assigned a role-specific module with purpose-built workflow controls.
           </p>
         </motion.div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {ROLES.map((role, i) => (
             <RoleWorkflowCard key={role.key} role={role} delay={i * 0.1} />
           ))}
@@ -1668,15 +1668,15 @@ function SettlementSection() {
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
 
         {/* Section header */}
-        <motion.div variants={fadeUp} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-white text-[#555550] text-xs font-medium mb-5 shadow-sm">
+        <motion.div variants={fadeUp} className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/20 bg-white text-[#555550] text-xs font-medium mb-3 shadow-sm">
             <Lock size={12} />
             Structured Trade Finance & Escrow Governance
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             End-to-End Settlement — Inventory Lock to Verified Payout
           </h2>
-          <p className="text-[#666660] max-w-2xl mx-auto">
+          <p className="text-[#666660] max-w-2xl mx-auto text-sm">
             Every phase is condition-gated. Buyer, Escrow, Warehouse and Seller each play a defined role
             — no step advances until the previous one is confirmed.
           </p>
@@ -2000,14 +2000,14 @@ function BackendSection() {
         <div className="absolute inset-0 bg-white/70" />
       </div>
       <AnimatedSection className="relative z-10 max-w-7xl mx-auto px-6">
-        <motion.div variants={fadeUp} className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
+        <motion.div variants={fadeUp} className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-3">
             Enterprise-Grade System Architecture
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             12 Integrated Layers. One Unbreakable Trade Infrastructure.
           </h2>
-          <p className="text-[#666660] max-w-2xl mx-auto">
+          <p className="text-[#666660] max-w-2xl mx-auto text-sm">
             Finatrades is not a lightweight SaaS tool layered on top of spreadsheets. It is a purpose-built, 
             institutional-grade trade operating system — with dedicated, interconnected layers for identity, 
             document governance, inventory management, order execution, trade finance, escrow settlement, 
@@ -2401,16 +2401,16 @@ function ConnectedEcosystemSection() {
       <div className="relative z-10 max-w-5xl mx-auto px-6">
 
         {/* ── Header ── */}
-        <AnimatedSection className="text-center mb-16">
+        <AnimatedSection className="text-center mb-8">
           <motion.div variants={fadeUp}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-5"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold mb-3"
             style={{ background: 'rgba(199,59,34,0.08)', border: '1px solid rgba(199,59,34,0.22)', color: '#C73B22' }}>
             <Building2 size={11} /> Institutional Backing · Raminvest Holding DIFC
           </motion.div>
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             Part of a Fully Integrated<br className="hidden sm:block" /> Institutional Trade Group
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-[#555550] max-w-xl mx-auto leading-relaxed">
+          <motion.p variants={fadeUp} className="text-[#555550] max-w-xl mx-auto leading-relaxed text-sm">
             Finatrades operates as the digital trade execution hub within the Raminvest Holding DIFC group — a vertically integrated trade infrastructure spanning governance, commodities, logistics, and investment.
           </motion.p>
         </AnimatedSection>
@@ -2563,15 +2563,15 @@ function PartnershipsSection() {
         <motion.div
           initial="hidden" whileInView="visible" viewport={{ once: true }}
           variants={stagger}
-          className="text-center mb-16"
+          className="text-center mb-6"
         >
-          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-3">
+          <motion.p variants={fadeUp} className="text-xs font-semibold tracking-widest uppercase text-[#C73B22] mb-2">
             Institutional Relationships
           </motion.p>
-          <motion.h2 variants={fadeUp} className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-5 leading-tight">
+          <motion.h2 variants={fadeUp} className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3 leading-tight">
             Institutional Partnerships Powering<br className="hidden sm:block" /> Global Commodity Trade
           </motion.h2>
-          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto text-base leading-relaxed">
+          <motion.p variants={fadeUp} className="text-[#666660] max-w-2xl mx-auto text-sm leading-relaxed">
             Every transaction on our platform is backed by institutional-grade relationships —
             exporters, buyers, bonded hub operators, financiers, and regulators — coordinated with
             transparency, governance, and long-term accountability.
@@ -2753,16 +2753,16 @@ function CTASection() {
       <AnimatedSection className="relative z-10 max-w-5xl mx-auto px-6">
 
         {/* Header */}
-        <motion.div variants={fadeUp} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 text-[#A82D16] text-xs font-semibold mb-5"
+        <motion.div variants={fadeUp} className="text-center mb-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 text-[#A82D16] text-xs font-semibold mb-3"
             style={{ background: 'rgba(199,59,34,0.07)' }}>
             <Mail size={11} /> Contact Us
           </div>
-          <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-[#1A1A1A] mb-3">
             Get in Touch with<br />
             <span style={{ color: '#C73B22' }}>Our Trade Team</span>
           </h2>
-          <p className="text-[#555550] max-w-xl mx-auto leading-relaxed">
+          <p className="text-[#555550] max-w-xl mx-auto leading-relaxed text-sm">
             Whether you are an exporter, importer, government entity, or finance partner — submit your enquiry and our institutional team will respond within 48 hours.
           </p>
         </motion.div>
