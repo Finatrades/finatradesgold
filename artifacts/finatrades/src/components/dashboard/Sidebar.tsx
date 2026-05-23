@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
-  LayoutDashboard, Package, Warehouse, TrendingUp, ArrowLeftRight,
+  LayoutDashboard, Package, Warehouse,
   Store, FileText, Handshake, Scale, Shield, User, Settings,
   LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, HelpCircle,
   ShieldCheck, Building2, Bell, History,
@@ -47,24 +47,14 @@ const SECTIONS: MenuSection[] = [
     key: 'finance',
     label: 'Finance & Settlement',
     items: [
-      { icon: <ArrowLeftRight size={16} />, label: 'FinaPay Wallet', href: '/finapay' },
-      { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
       { icon: <Shield size={16} />, label: 'Escrow & Settlement', href: '/escrow' },
-      { icon: <TrendingUp size={16} />, label: 'BNSL Plans', href: '/bnsl' },
-    ],
-  },
-  {
-    key: 'vault',
-    label: 'Vault & Certificates',
-    items: [
-      { icon: <Warehouse size={16} />, label: 'Gold Vault', href: '/finavault' },
-      { icon: <FileText size={16} />, label: 'Certificates', href: '/certificates' },
+      { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
+      { icon: <FileText size={16} />, label: 'Warehouse Receipts', href: '/certificates' },
     ],
   },
   {
     key: 'government',
     label: 'Government',
-    roles: ['government'],
     items: [
       { icon: <Scale size={16} />, label: 'Barter Workflow', href: '/barter' },
       { icon: <Building2 size={16} />, label: 'Sovereign Programs', href: '/sovereign' },
@@ -93,7 +83,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
   const [location] = useLocation();
   const { logout, user } = useAuth();
   const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    main: true, trade: true, finance: true, vault: false, government: false, account: false,
+    main: true, trade: true, finance: true, government: false, account: false,
   });
 
   const userRole = (user as any)?.role || 'importer';

@@ -5,11 +5,6 @@ import { Toaster } from "@/components/ui/toaster";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
-import { FinaPayProvider } from "@/context/FinaPayContext";
-import { BnslProvider } from "@/context/BnslContext";
-import { FeeProvider } from "@/context/FeeContext";
-import { NotificationProvider } from "@/context/NotificationContext";
-import { TradeFinanceProvider } from "@/context/TradeFinanceContext";
 import EcosystemLanding from "@/pages/ecosystem/EcosystemLanding";
 import Login from "@/pages/Login";
 import Register from "@/pages/Register";
@@ -23,11 +18,7 @@ import Escrow from "@/pages/dashboard/Escrow";
 import Transactions from "@/pages/dashboard/Transactions";
 import KycPage from "@/pages/dashboard/KycPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
-import { lazy, Suspense, useEffect } from "react";
-
-const MobileFinaPay = lazy(() => import("@/components/mobile/MobileFinaPay"));
-const MobileFinaBridge = lazy(() => import("@/components/mobile/MobileFinaBridge"));
-const MobileBNSL = lazy(() => import("@/components/mobile/MobileBNSL"));
+import { Suspense, useEffect } from "react";
 
 function PageLoader() {
   return (
@@ -105,25 +96,14 @@ function AppRoutes() {
       </Route>
 
       {/* Finance & Settlement */}
-      <Route path="/finapay">
-        <ProtectedRoute component={MobileFinaPay as any} />
-      </Route>
-      <Route path="/finabridge">
-        <ProtectedRoute component={MobileFinaBridge as any} />
-      </Route>
-      <Route path="/bnsl">
-        <ProtectedRoute component={MobileBNSL as any} />
-      </Route>
       <Route path="/escrow">
         <ProtectedRoute component={Escrow} />
       </Route>
-
-      {/* Vault & Certificates */}
-      <Route path="/finavault">
-        <ProtectedRoute component={() => <ComingSoon title="Gold Vault" desc="Physically backed gold storage and certificates" />} />
+      <Route path="/finabridge">
+        <ProtectedRoute component={() => <ComingSoon title="Trade Finance" desc="Letters of credit, invoice financing & working capital for institutional trade." />} />
       </Route>
       <Route path="/certificates">
-        <ProtectedRoute component={() => <ComingSoon title="Certificates" desc="Digital warehouse receipts and ownership documents" />} />
+        <ProtectedRoute component={() => <ComingSoon title="Warehouse Receipts" desc="Digital warehouse receipts and ownership documents for verified inventory." />} />
       </Route>
 
       {/* Government */}
@@ -166,10 +146,8 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <AccountTypeProvider>
-            <FinaPayProvider>
-              <AppRoutes />
-              <Toaster />
-            </FinaPayProvider>
+            <AppRoutes />
+            <Toaster />
           </AccountTypeProvider>
         </AuthProvider>
       </QueryClientProvider>
