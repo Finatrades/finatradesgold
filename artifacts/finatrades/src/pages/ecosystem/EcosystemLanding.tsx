@@ -1435,21 +1435,23 @@ function RoleWorkflowCard({
               <p className="text-[11.5px] font-semibold text-[#333] leading-snug line-clamp-2">{role.subtitle}</p>
             </div>
 
-            {/* Steps — strict 2-col grid, every row aligned */}
-            <div className="flex-1 px-4 py-3 grid grid-cols-2 gap-x-2 gap-y-1.5 content-start overflow-hidden">
-              {role.features.slice(0, 8).map((f, idx) => (
+            {/* Steps — single column tick list, full text */}
+            <div className="flex-1 px-4 py-2.5 flex flex-col gap-1 overflow-y-auto">
+              {role.features.slice(0, 8).map((f) => (
                 <div
                   key={f.label}
-                  className="flex items-center gap-2 px-2.5 py-2 rounded-lg"
-                  style={{ background: f.color + '0C', border: `1px solid ${f.color}20` }}
+                  className="flex items-center gap-2.5 px-3 py-2 rounded-lg"
+                  style={{ background: f.color + '0C', border: `1px solid ${f.color}1A` }}
                 >
                   <span
-                    className="inline-flex items-center justify-center w-4 h-4 rounded-full text-[9px] font-bold text-white shrink-0"
+                    className="inline-flex items-center justify-center w-4 h-4 rounded-full shrink-0"
                     style={{ background: f.color }}
                   >
-                    {idx + 1}
+                    <svg width="8" height="6" viewBox="0 0 8 6" fill="none">
+                      <path d="M1 3L3 5L7 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   </span>
-                  <span className="text-[10.5px] font-semibold leading-tight truncate" style={{ color: f.color }}>
+                  <span className="text-[11px] font-semibold leading-snug" style={{ color: f.color }}>
                     {f.label}
                   </span>
                 </div>
