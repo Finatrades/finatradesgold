@@ -1368,7 +1368,7 @@ function RoleWorkflowCard({
               style={{ background: `linear-gradient(90deg, ${role.accent} 0%, ${role.accent}88 60%, transparent 100%)` }} />
 
             {/* Platform screenshot image */}
-            <div className="absolute inset-0" style={{ background: role.key === 'government' ? '#FDF5EF' : `linear-gradient(160deg, ${role.accent}12 0%, ${role.accent}06 60%, ${role.accent}10 100%)` }}>
+            <div className="absolute inset-0" style={{ background: role.key === 'government' ? '#FDF5EF' : '#FAF3EC' }}>
               <div className="absolute inset-0 pointer-events-none z-0"
                 style={{ background: `radial-gradient(ellipse 70% 60% at 50% 50%, ${role.accent}0A 0%, transparent 70%)` }} />
               <img
