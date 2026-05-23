@@ -2630,7 +2630,7 @@ function ConnectedEcosystemSection() {
       highlight: true,
       logo: (
         <img src={logoFinatradesP} alt="Finatrades" className="h-[72px] w-auto object-contain"
-          style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(700%) hue-rotate(340deg) brightness(85%) contrast(110%)' }} />
+          style={{ filter: 'brightness(0) saturate(100%) invert(20%) sepia(95%) saturate(1400%) hue-rotate(348deg) brightness(105%) contrast(105%)' }} />
       ),
     },
     {
