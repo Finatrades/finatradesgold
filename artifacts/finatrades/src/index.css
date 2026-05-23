@@ -1,6 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* Hide scrollbar globally — scroll still works */
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+*::-webkit-scrollbar {
+  display: none;
+}
+
 /* Enable class-based dark mode for Tailwind v4 (next-themes uses .dark on html) */
 @custom-variant dark (&:where(.dark, .dark *));
 
