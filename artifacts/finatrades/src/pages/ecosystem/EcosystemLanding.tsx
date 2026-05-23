@@ -1580,7 +1580,7 @@ function RolesSection() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {ROLES.map((role, i) => (
             <RoleWorkflowCard key={role.key} role={role} delay={i * 0.1} />
           ))}
