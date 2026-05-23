@@ -3,10 +3,10 @@ import { motion, useInView, useSpring, useMotionTemplate } from 'framer-motion';
 import { Link } from 'wouter';
 import {
   ArrowRight, Shield, Globe, Warehouse, Package, Search,
-  CreditCard, Handshake, Settings, CheckCircle2, Menu, X,
+  CreditCard, Handshake, Settings, CheckCircle2, CheckCircle, Menu, X,
   Building2, Users, Truck, BarChart3, Lock, FileText,
   ChevronDown, MapPin, Layers, Zap, TrendingUp, Scale,
-  AlertTriangle, ShieldCheck
+  AlertTriangle, ShieldCheck, Mail, Send
 } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-ecosystem.png';
 import africaTradeMap from '@/assets/africa-trade-map.png';
@@ -144,7 +144,7 @@ function Card3D({
 
 const NAV_LINKS = [
   { label: 'Home', href: '#hero' },
-  { label: 'Platform', href: '#how-it-works' },
+  { label: 'Platform', href: '#platform' },
   { label: 'Ecosystem', href: '#ecosystem' },
   { label: 'Marketplace', href: '#marketplace' },
   { label: 'Contact Us', href: '#contact' },
@@ -540,7 +540,7 @@ const ROLE_CARDS = [
 
 function PositioningSection() {
   return (
-    <section className="relative py-24 border-y border-gray-200 overflow-hidden">
+    <section id="ecosystem" className="relative py-24 border-y border-gray-200 overflow-hidden">
       <div className="absolute inset-0">
         <img src={section2Bg} alt="" className="absolute inset-0 w-full h-full object-cover object-center" />
         <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-white/10 to-white/25" />
@@ -1560,7 +1560,7 @@ function RoleWorkflowCard({
 
 function RolesSection() {
   return (
-    <section id="for-sellers" className="relative py-24 overflow-hidden" style={{ background: '#FDF8F3' }}>
+    <section id="platform" className="relative py-24 overflow-hidden" style={{ background: '#FDF8F3' }}>
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <img src={bgRolesSection} alt="" className="w-full h-full object-cover object-center" style={{ opacity: 0.9 }} />
@@ -2726,134 +2726,175 @@ function PartnershipsSection() {
 }
 
 function CTASection() {
-  const paths = [
-    {
-      icon: Package,
-      label: 'Exporters & Producers',
-      desc: 'List warehouse-verified inventory on Africa\'s institutional B2B commodity marketplace.',
-      cta: 'Register as Exporter',
-      href: '/register?role=seller',
-      primary: true,
-      accent: '#C73B22',
-      cardBg: 'linear-gradient(135deg,#FFF4F0 0%,#fff 100%)',
-      cardBorder: 'rgba(199,59,34,0.28)',
-    },
-    {
-      icon: Search,
-      label: 'Importers & Buyers',
-      desc: 'Source authenticated commodity positions with full documentation transparency and escrow-backed settlement.',
-      cta: 'Register as Importer',
-      href: '/register?role=buyer',
-      primary: false,
-      accent: '#1B4FDB',
-      cardBg: 'linear-gradient(135deg,#EEF2FF 0%,#F8FAFF 100%)',
-      cardBorder: 'rgba(27,79,219,0.24)',
-    },
-    {
-      icon: Building2,
-      label: 'Government & Sovereign Entities',
-      desc: 'Access the restricted sovereign barter and strategic procurement module — for ministries, SOEs, and sovereign funds only.',
-      cta: 'Request Sovereign Access',
-      href: '/register?role=government',
-      primary: false,
-      accent: '#E5602A',
-      cardBg: 'linear-gradient(135deg,#FFF1EB 0%,#FFFAF7 100%)',
-      cardBorder: 'rgba(229,96,42,0.24)',
-    },
-    {
-      icon: Handshake,
-      label: 'Finance, Warehouse & Logistics Partners',
-      desc: 'Join the Finatrades accredited partner network — deploy capital, offer warehousing, or provide logistics within the governed trade chain.',
-      cta: 'Apply as Partner',
-      href: '/register?role=partner',
-      primary: false,
-      accent: '#059669',
-      cardBg: 'linear-gradient(135deg,#ECFDF5 0%,#F6FDFB 100%)',
-      cardBorder: 'rgba(5,150,105,0.24)',
-    },
+  const [form, setForm] = useState({ name: '', email: '', company: '', role: '', message: '', submitted: false, loading: false });
+
+  const roles = [
+    { value: 'exporter', label: 'Exporter / Seller' },
+    { value: 'importer', label: 'Importer / Buyer' },
+    { value: 'government', label: 'Government / Sovereign Entity' },
+    { value: 'finance', label: 'Trade Finance Partner' },
+    { value: 'logistics', label: 'Logistics / Warehouse Partner' },
+    { value: 'investor', label: 'Investor / Institutional' },
+    { value: 'other', label: 'Other Enquiry' },
   ];
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setForm(f => ({ ...f, loading: true }));
+    setTimeout(() => setForm(f => ({ ...f, loading: false, submitted: true })), 1200);
+  };
+
   return (
-    <section id="contact" className="relative bg-white py-24 overflow-hidden">
-      {/* Background image */}
-      <img src={bgConnectedGlobe} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.8 }} />
-      <div className="absolute inset-0 bg-white/30 pointer-events-none" />
+    <section id="contact" className="relative py-24 overflow-hidden" style={{ background: '#FDF6EF' }}>
+      <img src={bgPartnerships} alt="" aria-hidden="true"
+        className="absolute inset-0 w-full h-full object-cover object-center pointer-events-none" style={{ opacity: 0.55 }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: 'rgba(253,246,239,0.55)' }} />
+
       <AnimatedSection className="relative z-10 max-w-5xl mx-auto px-6">
+
+        {/* Header */}
         <motion.div variants={fadeUp} className="text-center mb-12">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 bg-[#C73B22]/8 text-[#A82D16] text-xs font-medium mb-5">
-            Institutional Onboarding — Apply for Access
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-[#C73B22]/30 text-[#A82D16] text-xs font-semibold mb-5"
+            style={{ background: 'rgba(199,59,34,0.07)' }}>
+            <Mail size={11} /> Contact Us
           </div>
           <h2 className="text-3xl sm:text-4xl font-bold text-[#1A1A1A] mb-4">
-            Ready to Trade on Verified,<br />
-            <span style={{ color: '#C73B22' }}>Governed Infrastructure?</span>
+            Get in Touch with<br />
+            <span style={{ color: '#C73B22' }}>Our Trade Team</span>
           </h2>
-          <p className="text-[#555550] text-lg max-w-2xl mx-auto">
-            Finatrades onboards participants through a compliance-gated process. Select your entry path below — 
-            all registrations undergo KYC/KYB review before platform access is granted.
+          <p className="text-[#555550] max-w-xl mx-auto leading-relaxed">
+            Whether you are an exporter, importer, government entity, or finance partner — submit your enquiry and our institutional team will respond within 48 hours.
           </p>
         </motion.div>
 
-        <motion.div variants={stagger} className="grid sm:grid-cols-2 gap-5 mb-10">
-          {paths.map(({ icon: Icon, label, desc, cta, href, primary, accent, cardBg, cardBorder }) => (
-            <motion.div
-              key={label}
-              variants={fadeUp}
-              whileHover={{ scale: 1.02, y: -3 }}
-              transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-              className="rounded-2xl p-6 transition-all duration-300 group"
-              style={{
-                background: cardBg,
-                border: `1.5px solid ${cardBorder}`,
-                boxShadow: primary
-                  ? `0 8px 32px ${accent}18, 0 2px 8px ${accent}0C`
-                  : `0 4px 16px ${accent}0E, 0 1px 4px ${accent}08`,
-              }}
-            >
-              <div className="flex items-start gap-4 mb-4">
-                <div
-                  className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
-                  style={{
-                    background: primary ? accent : `${accent}20`,
-                    boxShadow: primary ? `0 4px 12px ${accent}40` : `0 2px 6px ${accent}18`,
-                  }}
-                >
-                  <Icon size={18} style={{ color: primary ? '#fff' : accent }} />
+        <motion.div variants={fadeUp} className="grid lg:grid-cols-5 gap-8 items-start">
+
+          {/* Left — info panel */}
+          <div className="lg:col-span-2 flex flex-col gap-5">
+            {[
+              { icon: MapPin, label: 'Headquarters', value: 'Raminvest Holding DIFC\nDubai International Financial Centre, UAE' },
+              { icon: Globe, label: 'Regulatory Framework', value: 'Swiss Regulated · DIFC Registered\nSGS Verified · Escrow Governed' },
+              { icon: Mail, label: 'General Enquiries', value: 'contact@finatrades.com' },
+            ].map(({ icon: Icon, label, value }) => (
+              <div key={label} className="flex gap-4 items-start p-4 rounded-2xl"
+                style={{ background: 'rgba(255,255,255,0.82)', backdropFilter: 'blur(16px)', border: '1px solid rgba(199,59,34,0.14)', boxShadow: '0 2px 12px rgba(199,59,34,0.07)' }}>
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                  style={{ background: 'rgba(199,59,34,0.09)', border: '1px solid rgba(199,59,34,0.18)' }}>
+                  <Icon size={15} style={{ color: '#C73B22' }} />
                 </div>
                 <div>
-                  <p className="font-semibold text-[#1A1A1A] text-[15px] leading-snug">{label}</p>
-                  {primary && (
-                    <span className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: accent }}>
-                      Primary Access Path
-                    </span>
-                  )}
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[#C73B22] mb-0.5">{label}</p>
+                  <p className="text-[12.5px] text-[#444440] leading-relaxed whitespace-pre-line">{value}</p>
                 </div>
               </div>
-              <p className="text-[#555550] text-sm leading-relaxed mb-5">{desc}</p>
-              <Link href={href}>
-                <button
-                  className="w-full px-5 py-2.5 rounded-xl text-sm font-semibold transition-all flex items-center justify-center gap-2 text-white hover:shadow-lg hover:scale-[1.02]"
-                  style={{
-                    background: primary
-                      ? `linear-gradient(135deg, ${accent} 0%, #E5602A 100%)`
-                      : `linear-gradient(135deg, ${accent} 0%, ${accent}CC 100%)`,
-                    boxShadow: `0 4px 12px ${accent}35`,
-                  }}
-                >
-                  {cta} <ArrowRight size={14} />
-                </button>
-              </Link>
-            </motion.div>
-          ))}
+            ))}
+
+            {/* Trust badges */}
+            <div className="p-4 rounded-2xl"
+              style={{ background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(12px)', border: '1px solid rgba(199,59,34,0.12)' }}>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[#C73B22] mb-3">Response Commitment</p>
+              <div className="space-y-2">
+                {['General enquiries: 48 hours', 'Institutional onboarding: 72 hours', 'Sovereign access: Dedicated desk'].map(t => (
+                  <div key={t} className="flex items-center gap-2">
+                    <CheckCircle size={12} style={{ color: '#C73B22' }} />
+                    <span className="text-[11.5px] text-[#555550]">{t}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Right — universal form */}
+          <div className="lg:col-span-3">
+            <div className="rounded-2xl p-8"
+              style={{ background: 'rgba(255,255,255,0.93)', backdropFilter: 'blur(24px)', border: '1.5px solid rgba(199,59,34,0.18)', boxShadow: '0 8px 40px rgba(199,59,34,0.10)', borderTop: '3px solid #C73B22' }}>
+
+              {form.submitted ? (
+                <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center gap-4">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mb-2" style={{ background: 'rgba(199,59,34,0.10)' }}>
+                    <CheckCircle size={36} style={{ color: '#C73B22' }} />
+                  </div>
+                  <h3 className="text-xl font-bold text-[#1A1A1A]">Enquiry Received</h3>
+                  <p className="text-[#666660] text-sm max-w-xs leading-relaxed">Thank you. Our institutional trade team will review your submission and respond within 48 hours.</p>
+                  <button onClick={() => setForm(f => ({ ...f, submitted: false, name: '', email: '', company: '', role: '', message: '' }))}
+                    className="mt-2 text-xs text-[#C73B22] underline underline-offset-2 hover:text-[#A82D16] transition-colors">
+                    Submit another enquiry
+                  </button>
+                </motion.div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#C73B22] mb-1.5">Full Name *</label>
+                      <input required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Your full name"
+                        className="w-full px-3.5 py-2.5 rounded-xl text-sm text-[#1A1A1A] outline-none transition-all"
+                        style={{ background: '#FAFAFA', border: '1.5px solid rgba(199,59,34,0.18)' }}
+                        onFocus={e => e.target.style.borderColor = '#C73B22'}
+                        onBlur={e => e.target.style.borderColor = 'rgba(199,59,34,0.18)'} />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#C73B22] mb-1.5">Email Address *</label>
+                      <input required type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
+                        placeholder="name@company.com"
+                        className="w-full px-3.5 py-2.5 rounded-xl text-sm text-[#1A1A1A] outline-none transition-all"
+                        style={{ background: '#FAFAFA', border: '1.5px solid rgba(199,59,34,0.18)' }}
+                        onFocus={e => e.target.style.borderColor = '#C73B22'}
+                        onBlur={e => e.target.style.borderColor = 'rgba(199,59,34,0.18)'} />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#C73B22] mb-1.5">Company / Organisation</label>
+                    <input value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))}
+                      placeholder="Your company or organisation name"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-[#1A1A1A] outline-none transition-all"
+                      style={{ background: '#FAFAFA', border: '1.5px solid rgba(199,59,34,0.18)' }}
+                      onFocus={e => e.target.style.borderColor = '#C73B22'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(199,59,34,0.18)'} />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#C73B22] mb-1.5">I am a… *</label>
+                    <select required value={form.role} onChange={e => setForm(f => ({ ...f, role: e.target.value }))}
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-[#1A1A1A] outline-none transition-all appearance-none cursor-pointer"
+                      style={{ background: '#FAFAFA', border: '1.5px solid rgba(199,59,34,0.18)' }}
+                      onFocus={e => e.target.style.borderColor = '#C73B22'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(199,59,34,0.18)'}>
+                      <option value="">Select your role</option>
+                      {roles.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-widest text-[#C73B22] mb-1.5">Message *</label>
+                    <textarea required rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))}
+                      placeholder="Describe your enquiry, commodity of interest, volumes, or access requirement…"
+                      className="w-full px-3.5 py-2.5 rounded-xl text-sm text-[#1A1A1A] outline-none transition-all resize-none"
+                      style={{ background: '#FAFAFA', border: '1.5px solid rgba(199,59,34,0.18)' }}
+                      onFocus={e => e.target.style.borderColor = '#C73B22'}
+                      onBlur={e => e.target.style.borderColor = 'rgba(199,59,34,0.18)'} />
+                  </div>
+
+                  <button type="submit" disabled={form.loading}
+                    className="w-full py-3 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:shadow-lg hover:scale-[1.01] disabled:opacity-70"
+                    style={{ background: 'linear-gradient(135deg, #C73B22 0%, #E5602A 100%)', boxShadow: '0 4px 16px rgba(199,59,34,0.32)' }}>
+                    {form.loading ? (
+                      <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" /> Sending…</>
+                    ) : (
+                      <><Send size={14} /> Send Enquiry</>
+                    )}
+                  </button>
+
+                  <p className="text-center text-[10.5px] text-[#999990]">
+                    All enquiries are treated confidentially. Platform access is subject to KYC/KYB review.
+                  </p>
+                </form>
+              )}
+            </div>
+          </div>
         </motion.div>
 
-        <motion.div variants={fadeUp} className="text-center">
-          <p className="text-[#888880] text-sm">
-            All registrations are subject to compliance review. Platform access is granted upon successful KYC/KYB verification and admin approval.
-          </p>
-          <p className="text-[#AAAAAA] text-xs mt-2">
-            Finatrades operates under Raminvest Holding DIFC · Member of the UAE & African Trade Ecosystem
-          </p>
-        </motion.div>
       </AnimatedSection>
     </section>
   );
