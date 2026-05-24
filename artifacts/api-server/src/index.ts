@@ -610,4 +610,13 @@ async function initializeBackgroundServices(): Promise<void> {
   } catch (error) {
     console.warn('[Enterprise] AI document verification worker skipped:', error);
   }
+
+  // Initialize Warehouse Receipt PDF generation worker
+  try {
+    const { initializeIssueWrWorker } = await import('./jobs/issue-wr.job');
+    initializeIssueWrWorker();
+    console.log('[Enterprise] Warehouse Receipt PDF worker enabled');
+  } catch (error) {
+    console.warn('[Enterprise] Warehouse Receipt PDF worker skipped:', error);
+  }
 }

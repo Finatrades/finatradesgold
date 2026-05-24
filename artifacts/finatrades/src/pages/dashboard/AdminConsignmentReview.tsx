@@ -11,6 +11,7 @@ import {
 import {
   ArrowLeft, FileText, CheckCircle2, XCircle, AlertTriangle,
   Download, Clock, User, Package, History, MessageSquare,
+  ClipboardCheck, Camera, Scale, ShieldCheck, Loader2, ExternalLink,
 } from 'lucide-react';
 
 interface DocRow {
@@ -274,6 +275,15 @@ export default function AdminConsignmentReview() {
             </div>
           </div>
 
+          <TallyPanel
+            consignmentId={data.id}
+            consignmentStatus={data.status}
+            declaredQuantity={data.quantity}
+            unit={data.unit}
+            qualityGrade={data.qualityGrade}
+            onTallyComplete={invalidateDetail}
+          />
+
           <div style={{ background: '#FFF', border: '1px solid #E5E5E0', borderRadius: 10, padding: 16 }}>
             <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A', marginTop: 0, marginBottom: 10, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
               <History size={13} /> Audit Trail
@@ -380,6 +390,307 @@ function DocReviewer({ doc, onAct, pending }: {
         </button>
       </div>
     </div>
+  );
+}
+
+function TallyPanel({
+  consignmentId, consignmentStatus, declaredQuantity, unit, qualityGrade, onTallyComplete,
+}: {
+  consignmentId: string;
+  consignmentStatus: string;
+  declaredQuantity: number;
+  unit: string;
+  qualityGrade: string | null;
+  onTallyComplete: () => void;
+}) {
+  const [inspectorName, setInspectorName] = useState('');
+  const [actualQuantity, setActualQuantity] = useState<string>(String(declaredQuantity));
+  const [actualGrade, setActualGrade] = useState<string>(qualityGrade || '');
+  const [moisturePct, setMoisturePct] = useState<string>('');
+  const [notes, setNotes] = useState('');
+  const [photoFiles, setPhotoFiles] = useState<File[]>([]);
+  const [weighbridge, setWeighbridge] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [result, setResult] = useState<null | { wrNumber: string; pdfStatus: string; verificationUrl: string }>(null);
+  const [downloading, setDownloading] = useState(false);
+  const [pdfReady, setPdfReady] = useState(false);
+
+  const tallyEligible =
+    consignmentStatus === 'Approved' ||
+    consignmentStatus === 'At Warehouse' ||
+    consignmentStatus === 'In Transit';
+
+  const alreadyDone = consignmentStatus === 'Physically Verified' || consignmentStatus === 'Listed';
+
+  const variance = (() => {
+    const q = Number(actualQuantity);
+    if (!q || !declaredQuantity) return null;
+    return Math.round(((q - declaredQuantity) / declaredQuantity) * 100 * 100) / 100;
+  })();
+
+  // Poll for PDF readiness after issue
+  React.useEffect(() => {
+    if (!result || pdfReady) return;
+    let cancelled = false;
+    const tick = async () => {
+      try {
+        const res = await fetch(`/api/admin/consignments/${consignmentId}/warehouse-receipt/url`, {
+          credentials: 'include',
+        });
+        if (res.ok && !cancelled) { setPdfReady(true); return; }
+      } catch {}
+      if (!cancelled) setTimeout(tick, 3000);
+    };
+    const t = setTimeout(tick, 2000);
+    return () => { cancelled = true; clearTimeout(t); };
+  }, [result, pdfReady, consignmentId]);
+
+  const downloadWr = async () => {
+    setDownloading(true);
+    try {
+      const r = await fetch(`/api/admin/consignments/${consignmentId}/warehouse-receipt/url`, {
+        credentials: 'include',
+      });
+      const body = await r.json();
+      if (!r.ok) throw new Error(body.message || `HTTP ${r.status}`);
+      window.open(body.signedUrl, '_blank', 'noopener');
+    } catch (e: any) {
+      alert(`Failed: ${e?.message || 'unknown'}`);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inspectorName.trim()) { setErr('Inspector name is required.'); return; }
+    if (!actualQuantity || Number(actualQuantity) <= 0) { setErr('Actual quantity must be positive.'); return; }
+    if (photoFiles.length === 0) { setErr('At least one tally photo is required.'); return; }
+
+    setSubmitting(true);
+    setErr(null);
+    try {
+      const fd = new FormData();
+      fd.append('inspectorName', inspectorName);
+      fd.append('actualQuantity', actualQuantity);
+      if (actualGrade) fd.append('actualGrade', actualGrade);
+      if (moisturePct) fd.append('moisturePct', moisturePct);
+      if (notes) fd.append('notes', notes);
+      if (weighbridge) fd.append('weighbridge_slip', weighbridge);
+      photoFiles.forEach((f, i) => fd.append(`photo_${i}`, f));
+
+      const res = await fetch(`/api/admin/consignments/${consignmentId}/tally`, {
+        method: 'POST',
+        credentials: 'include',
+        body: fd,
+      });
+      const body = await res.json();
+      if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+      setResult({
+        wrNumber: body.warehouseReceipt.wrNumber,
+        pdfStatus: body.warehouseReceipt.pdfStatus,
+        verificationUrl: body.warehouseReceipt.verificationUrl,
+      });
+      onTallyComplete();
+    } catch (e: any) {
+      setErr(e?.message || 'Failed to submit tally');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  if (alreadyDone && !result) {
+    return (
+      <div style={{ background: '#FFF', border: '1px solid #E5E5E0', borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A', marginTop: 0, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ShieldCheck size={13} /> Warehouse Receipt
+        </h3>
+        <div style={{ fontSize: 12, color: '#888', marginBottom: 10 }}>
+          A physical tally has been recorded and a Warehouse Receipt has been issued.
+        </div>
+        <button
+          onClick={downloadWr}
+          disabled={downloading}
+          data-testid="btn-download-wr-admin"
+          style={{ ...btnBase, background: '#1A1A1A', color: '#FFF' }}
+        >
+          {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+          Download Warehouse Receipt PDF
+        </button>
+      </div>
+    );
+  }
+
+  if (!tallyEligible) {
+    return (
+      <div style={{ background: '#FFF', border: '1px dashed #E5E5E0', borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#888', marginTop: 0, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <ClipboardCheck size={13} /> Physical Tally
+        </h3>
+        <div style={{ fontSize: 12, color: '#888' }}>
+          Tally form unlocks once consignment documents are approved. Current status: <strong>{consignmentStatus}</strong>
+        </div>
+      </div>
+    );
+  }
+
+  if (result) {
+    return (
+      <div style={{ background: 'rgba(5,150,105,0.04)', border: '1px solid #10B981', borderRadius: 10, padding: 16 }}>
+        <h3 style={{ fontSize: 13, fontWeight: 700, color: '#047857', marginTop: 0, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <CheckCircle2 size={13} /> Warehouse Receipt Issued
+        </h3>
+        <div style={{ fontSize: 13, color: '#1A1A1A', fontWeight: 700, fontFamily: 'monospace', marginBottom: 4 }}>
+          {result.wrNumber}
+        </div>
+        <div style={{ fontSize: 12, color: '#666', marginBottom: 10 }}>
+          PDF generation: <strong>{pdfReady ? 'ready' : 'in progress…'}</strong>. Exporter has been notified by email.
+        </div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <button
+            onClick={downloadWr}
+            disabled={!pdfReady || downloading}
+            data-testid="btn-download-wr-fresh"
+            style={{ ...btnBase, background: '#1A1A1A', color: '#FFF', opacity: (!pdfReady || downloading) ? 0.5 : 1 }}
+          >
+            {downloading ? <Loader2 size={13} className="animate-spin" /> : <Download size={13} />}
+            {pdfReady ? 'Download Warehouse Receipt PDF' : 'PDF generating…'}
+          </button>
+          <a
+            href={result.verificationUrl}
+            target="_blank"
+            rel="noreferrer"
+            data-testid="link-verify-fresh"
+            style={{ ...btnBase, background: '#FAFAF8', color: '#1A1A1A', border: '1px solid #DDD', textDecoration: 'none' }}
+          >
+            <ExternalLink size={13} /> Public verification URL
+          </a>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} style={{ background: '#FFF', border: '1px solid #E5E5E0', borderRadius: 10, padding: 16 }} data-testid="tally-form">
+      <h3 style={{ fontSize: 13, fontWeight: 700, color: '#1A1A1A', marginTop: 0, marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5, display: 'flex', alignItems: 'center', gap: 6 }}>
+        <ClipboardCheck size={13} /> Record Physical Tally
+      </h3>
+      <div style={{ fontSize: 11, color: '#888', marginBottom: 12 }}>
+        Submitting issues an Electronic Warehouse Receipt and transitions status to <strong>Listed</strong>.
+      </div>
+
+      <Field label="Inspector name *">
+        <input
+          required
+          value={inspectorName}
+          onChange={(e) => setInspectorName(e.target.value)}
+          data-testid="input-inspector"
+          style={inputStyle}
+        />
+      </Field>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <Field label={`Actual quantity (${unit}) *`}>
+          <input
+            required
+            type="number"
+            step="0.001"
+            min="0"
+            value={actualQuantity}
+            onChange={(e) => setActualQuantity(e.target.value)}
+            data-testid="input-actual-qty"
+            style={inputStyle}
+          />
+        </Field>
+        <Field label={`Declared (${unit})`}>
+          <input value={String(declaredQuantity)} readOnly style={{ ...inputStyle, background: '#FAFAF8', color: '#888' }} />
+        </Field>
+      </div>
+
+      {variance != null && (
+        <div style={{
+          fontSize: 11, marginBottom: 10, padding: 6, borderRadius: 4,
+          background: Math.abs(variance) > 5 ? 'rgba(217,119,6,0.1)' : 'rgba(5,150,105,0.08)',
+          color: Math.abs(variance) > 5 ? '#B45309' : '#047857',
+        }}>
+          Variance: <strong>{variance > 0 ? '+' : ''}{variance}%</strong>
+          {Math.abs(variance) > 5 ? ' — exceeds 5% tolerance, please confirm before submit.' : ''}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+        <Field label="Actual grade">
+          <input value={actualGrade} onChange={(e) => setActualGrade(e.target.value)} placeholder="e.g. A, B+" style={inputStyle} data-testid="input-grade" />
+        </Field>
+        <Field label="Moisture %">
+          <input type="number" step="0.01" min="0" max="100" value={moisturePct} onChange={(e) => setMoisturePct(e.target.value)} style={inputStyle} data-testid="input-moisture" />
+        </Field>
+      </div>
+
+      <Field label={<><Camera size={11} style={{ display: 'inline', marginRight: 4 }} />Tally photos * (multiple allowed)</>}>
+        <input
+          type="file"
+          accept="image/*"
+          multiple
+          required
+          onChange={(e) => setPhotoFiles(Array.from(e.target.files || []))}
+          data-testid="input-photos"
+          style={{ ...inputStyle, padding: 6 }}
+        />
+        {photoFiles.length > 0 && (
+          <div style={{ fontSize: 11, color: '#666', marginTop: 4 }}>{photoFiles.length} file(s) selected</div>
+        )}
+      </Field>
+
+      <Field label={<><Scale size={11} style={{ display: 'inline', marginRight: 4 }} />Weighbridge slip (optional)</>}>
+        <input
+          type="file"
+          accept="image/*,application/pdf"
+          onChange={(e) => setWeighbridge(e.target.files?.[0] || null)}
+          data-testid="input-weighbridge"
+          style={{ ...inputStyle, padding: 6 }}
+        />
+      </Field>
+
+      <Field label="Inspector notes">
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          rows={3}
+          data-testid="input-notes"
+          style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }}
+        />
+      </Field>
+
+      {err && (
+        <div style={{ fontSize: 12, color: '#B91C1C', marginBottom: 10, padding: 8, background: 'rgba(220,38,38,0.06)', borderRadius: 4 }}>
+          {err}
+        </div>
+      )}
+
+      <button type="submit" disabled={submitting} data-testid="btn-submit-tally"
+              style={{ ...btnBase, background: '#C73B22', color: '#FFF', opacity: submitting ? 0.5 : 1 }}>
+        {submitting ? <Loader2 size={13} className="animate-spin" /> : <ShieldCheck size={13} />}
+        Submit tally & issue Warehouse Receipt
+      </button>
+    </form>
+  );
+}
+
+const inputStyle: React.CSSProperties = {
+  width: '100%', padding: 8, fontSize: 13, border: '1px solid #DDD',
+  borderRadius: 6, marginBottom: 10, outline: 'none', fontFamily: 'inherit',
+};
+
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <label style={{ display: 'block', marginBottom: 4 }}>
+      <div style={{ fontSize: 11, fontWeight: 600, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>
+        {label}
+      </div>
+      {children}
+    </label>
   );
 }
 

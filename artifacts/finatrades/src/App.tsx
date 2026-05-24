@@ -24,6 +24,7 @@ import Wallet from "@/pages/dashboard/Wallet";
 import AdminWallets from "@/pages/dashboard/AdminWallets";
 import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
+import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
 import { Suspense, useEffect } from "react";
 import { canAccess } from "@/lib/roleMenus";
 
@@ -129,6 +130,7 @@ function AppRoutes() {
       <Route path="/ecosystem" component={EcosystemLanding} />
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
+      <Route path="/wr/verify/:wrNumber" component={VerifyWarehouseReceipt} />
 
       {/* Dashboard */}
       <Route path="/dashboard">

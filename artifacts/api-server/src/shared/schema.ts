@@ -6774,8 +6774,11 @@ export type OrgPosition = typeof orgPositions.$inferSelect;
 
 // --- Enums ---
 export const consignmentStatusEnum = pgEnum('consignment_status', [
-  'Draft', 'Submitted', 'Pending Review', 'Under Review', 'Approved', 'Rejected', 'Needs More Info', 'In Transit', 'At Warehouse', 'Verified'
+  'Draft', 'Submitted', 'Pending Review', 'Under Review', 'Approved', 'Rejected', 'Needs More Info', 'In Transit', 'At Warehouse', 'Verified', 'Physically Verified', 'Listed'
 ]);
+
+export const warehouseReceiptStatusEnum = pgEnum('warehouse_receipt_status', ['active', 'consumed', 'cancelled']);
+export const warehouseReceiptPdfStatusEnum = pgEnum('warehouse_receipt_pdf_status', ['pending', 'generating', 'ready', 'failed']);
 
 export const consignmentDocTypeEnum = pgEnum('consignment_doc_type', [
   'commercial_invoice',
@@ -6882,6 +6885,8 @@ export const consignments = pgTable("consignments", {
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
   approvedBy: varchar("approved_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  marketplacePublished: boolean("marketplace_published").notNull().default(false),
+  marketplacePublishedAt: timestamp("marketplace_published_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -6995,6 +7000,49 @@ export const consignmentTally = pgTable("consignment_tally", {
 export const insertConsignmentTallySchema = createInsertSchema(consignmentTally).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertConsignmentTally = z.infer<typeof insertConsignmentTallySchema>;
 export type ConsignmentTally = typeof consignmentTally.$inferSelect;
+
+// --- Consignment Physical Tally (warehouse inspector reading — Task #73) ---
+export const consignmentTallies = pgTable("consignment_tallies", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id, { onDelete: 'cascade' }),
+  inspectorId: varchar("inspector_id", { length: 255 }).references((): AnyPgColumn => users.id),
+  inspectorName: varchar("inspector_name", { length: 255 }).notNull(),
+  inspectedAt: timestamp("inspected_at").notNull().defaultNow(),
+  declaredQuantity: decimal("declared_quantity", { precision: 15, scale: 3 }).notNull(),
+  actualQuantity: decimal("actual_quantity", { precision: 15, scale: 3 }).notNull(),
+  variancePct: decimal("variance_pct", { precision: 8, scale: 3 }),
+  actualGrade: varchar("actual_grade", { length: 20 }),
+  moisturePct: decimal("moisture_pct", { precision: 8, scale: 3 }),
+  qualityReadings: jsonb("quality_readings"),
+  weighbridgeSlipKey: text("weighbridge_slip_key"),
+  photoKeys: jsonb("photo_keys").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type ConsignmentTally = typeof consignmentTallies.$inferSelect;
+
+// --- Electronic Warehouse Receipts (eWR) ---
+export const warehouseReceipts = pgTable("warehouse_receipts", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  wrNumber: varchar("wr_number", { length: 64 }).notNull().unique(),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id, { onDelete: 'cascade' }),
+  tallyId: varchar("tally_id", { length: 255 }).references((): AnyPgColumn => consignmentTallies.id),
+  hubCode: varchar("hub_code", { length: 20 }).notNull(),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  quantity: decimal("quantity", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull(),
+  grade: varchar("grade", { length: 20 }),
+  issuedAt: timestamp("issued_at").notNull().defaultNow(),
+  issuedBy: varchar("issued_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  pdfObjectKey: text("pdf_object_key"),
+  pdfStatus: warehouseReceiptPdfStatusEnum("pdf_status").notNull().default('pending'),
+  pdfError: text("pdf_error"),
+  qrPayload: text("qr_payload").notNull(),
+  status: warehouseReceiptStatusEnum("status").notNull().default('active'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type WarehouseReceipt = typeof warehouseReceipts.$inferSelect;
 
 // --- Inventory Items (Steps 3 & 4 — warehouse stock) ---
 export const inventoryItems = pgTable("inventory_items", {

@@ -9,6 +9,8 @@ import {
   consignmentDocuments,
   consignmentStatusHistory,
   consignmentTally,
+  consignmentTallies,
+  warehouseReceipts,
   kycSubmissions,
   consignmentListings,
   users,
@@ -872,5 +874,179 @@ async function serializeDocWithSignedUrl(d: any): Promise<any> {
   }
   return base;
 }
+
+// ─── GET /api/b2b/consignments/_inventory/list — exporter's listed stock + WR
+router.get("/_inventory/list", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await storage.getUser(req.session!.userId!);
+    if (!user) { res.status(401).json({ message: "User not found" }); return; }
+
+    // Admins see all; exporters see only their own
+    const whereClause = user.role === "admin"
+      ? eq(consignments.status, "Listed" as any)
+      : and(eq(consignments.userId, user.id), eq(consignments.status, "Listed" as any));
+
+    const rows = await db
+      .select({
+        c: consignments,
+        wr: warehouseReceipts,
+      })
+      .from(consignments)
+      .leftJoin(warehouseReceipts, and(
+        eq(warehouseReceipts.consignmentId, consignments.id),
+        eq(warehouseReceipts.status, "active" as any),
+      ))
+      .where(whereClause)
+      .orderBy(desc(consignments.updatedAt));
+
+    const items = rows.map(({ c, wr }) => ({
+      id: wr?.id || c.id,
+      consignmentId: c.id,
+      referenceNo: c.referenceNo,
+      commodityName: c.commodityName,
+      commodityCategory: c.commodityCategory,
+      qualityGrade: c.qualityGrade,
+      quantity: Number(c.quantity),
+      unit: c.unit,
+      hubCode: c.targetHubCode,
+      originCountry: c.originCountry,
+      estimatedValueCents: c.estimatedValueCents,
+      currency: c.askingCurrency,
+      marketplacePublished: c.marketplacePublished,
+      marketplacePublishedAt: c.marketplacePublishedAt,
+      warehouseReceipt: wr ? {
+        wrNumber: wr.wrNumber,
+        status: wr.status,
+        pdfStatus: wr.pdfStatus,
+        issuedAt: wr.issuedAt,
+        verificationUrl: wr.qrPayload,
+      } : null,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    }));
+
+    res.json({ items, count: items.length });
+  } catch (e: any) {
+    console.error("[consignments.inventory]", e?.message || e);
+    res.status(500).json({ message: "Failed to load inventory" });
+  }
+});
+
+// ─── POST /api/b2b/consignments/:id/publish — marketplace publish toggle ───
+const publishSchema = z.object({ published: z.boolean() });
+// NOTE: `:id/publish` does NOT shadow `:id` (different sub-path), so this stays here.
+router.post("/:id/publish", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const parsed = publishSchema.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ message: "Invalid input" }); return; }
+
+    const user = await storage.getUser(req.session!.userId!);
+    if (!user) { res.status(401).json({ message: "User not found" }); return; }
+
+    const [c] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+    if (!c) { res.status(404).json({ message: "Consignment not found" }); return; }
+
+    if (user.role !== "admin" && c.userId !== user.id) {
+      res.status(403).json({ message: "Forbidden" }); return;
+    }
+    if (c.status !== "Listed") {
+      res.status(400).json({ message: `Only 'Listed' consignments can be published. Current status: ${c.status}` });
+      return;
+    }
+
+    await db.update(consignments)
+      .set({
+        marketplacePublished: parsed.data.published,
+        marketplacePublishedAt: parsed.data.published ? new Date() : null,
+        updatedAt: new Date(),
+      })
+      .where(eq(consignments.id, c.id));
+
+    res.json({
+      id: c.id,
+      marketplacePublished: parsed.data.published,
+      marketplacePublishedAt: parsed.data.published ? new Date().toISOString() : null,
+    });
+  } catch (e: any) {
+    console.error("[consignments.publish]", e?.message || e);
+    res.status(500).json({ message: "Failed to update publish state" });
+  }
+});
+
+// ─── GET /api/b2b/consignments/:id/warehouse-receipt/url — signed PDF URL ──
+router.get("/:id/warehouse-receipt/url", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const user = await storage.getUser(req.session!.userId!);
+    if (!user) { res.status(401).json({ message: "User not found" }); return; }
+
+    const [c] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+    if (!c) { res.status(404).json({ message: "Consignment not found" }); return; }
+    if (user.role !== "admin" && c.userId !== user.id) { res.status(403).json({ message: "Forbidden" }); return; }
+
+    const [wr] = await db.select().from(warehouseReceipts)
+      .where(eq(warehouseReceipts.consignmentId, c.id))
+      .orderBy(desc(warehouseReceipts.issuedAt))
+      .limit(1);
+    if (!wr) { res.status(404).json({ message: "No warehouse receipt found" }); return; }
+    if (!wr.pdfObjectKey || wr.pdfStatus !== "ready") {
+      res.status(202).json({ message: "WR PDF is still generating", pdfStatus: wr.pdfStatus, wrNumber: wr.wrNumber });
+      return;
+    }
+    if (!isR2Configured()) { res.status(503).json({ message: "Object storage not configured" }); return; }
+    const signedUrl = await getSignedDownloadUrl(wr.pdfObjectKey, 900);
+    res.json({ wrNumber: wr.wrNumber, signedUrl, expiresIn: 900, verificationUrl: wr.qrPayload });
+  } catch (e: any) {
+    console.error("[consignments.wrUrl]", e?.message || e);
+    res.status(500).json({ message: "Failed to generate WR download URL" });
+  }
+});
+
+// ─── GET /api/b2b/public/wr/verify/:wrNumber — UNAUTHENTICATED tamper check ─
+router.get("/public/wr/verify/:wrNumber", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const wrNumber = String(req.params.wrNumber || "").trim();
+    if (!/^WR-[A-Z0-9_-]+-\d{6}-\d{4}$/i.test(wrNumber)) {
+      res.status(400).json({ valid: false, message: "Invalid receipt number format" });
+      return;
+    }
+    const [wr] = await db.select().from(warehouseReceipts).where(eq(warehouseReceipts.wrNumber, wrNumber));
+    if (!wr) { res.status(404).json({ valid: false, message: "Receipt not found" }); return; }
+
+    const [c] = await db.select({
+      commodityName: consignments.commodityName,
+      originCountry: consignments.originCountry,
+      qualityGrade: consignments.qualityGrade,
+      userId: consignments.userId,
+    }).from(consignments).where(eq(consignments.id, wr.consignmentId));
+
+    let exporterDisplay: string | null = null;
+    if (c) {
+      const [u] = await db.select({
+        firstName: users.firstName, lastName: users.lastName, companyName: users.companyName,
+      }).from(users).where(eq(users.id, c.userId));
+      exporterDisplay = u?.companyName || (u ? `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim() : null) || null;
+    }
+
+    // Public response: only non-sensitive fields
+    res.json({
+      valid: wr.status === "active",
+      wrNumber: wr.wrNumber,
+      status: wr.status,
+      issuedAt: wr.issuedAt,
+      hubCode: wr.hubCode,
+      hubName: `Finatrades Hub ${wr.hubCode}`,
+      commodityName: wr.commodityName,
+      quantity: Number(wr.quantity),
+      unit: wr.unit,
+      grade: wr.grade,
+      originCountry: c?.originCountry ?? null,
+      depositor: exporterDisplay,
+      verificationCheckedAt: new Date().toISOString(),
+    });
+  } catch (e: any) {
+    console.error("[consignments.publicVerify]", e?.message || e);
+    res.status(500).json({ valid: false, message: "Verification failed" });
+  }
+});
 
 export default router;

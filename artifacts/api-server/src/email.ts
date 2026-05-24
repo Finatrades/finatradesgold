@@ -956,6 +956,7 @@ export const EMAIL_TEMPLATES = {
   CONSIGNMENT_DOCS_APPROVED: 'consignment_docs_approved',
   CONSIGNMENT_DOCS_REJECTED: 'consignment_docs_rejected',
   CONSIGNMENT_DOCS_NEEDS_INFO: 'consignment_docs_needs_info',
+  CONSIGNMENT_WR_ISSUED: 'consignment_wr_issued',
 
   // Documents & Certificates
   CERTIFICATE_DELIVERY: 'certificate_delivery',

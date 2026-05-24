@@ -1,4 +1,5 @@
 import { Router, type Request, type Response, type NextFunction } from "express";
+import multer from "multer";
 import { z } from "zod";
 import { and, asc, desc, eq, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import { db } from "../db";
@@ -7,13 +8,16 @@ import {
   consignments,
   consignmentDocuments,
   consignmentStatusHistory,
+  consignmentTallies,
+  warehouseReceipts,
   users,
   type Consignment,
   type ConsignmentDocument,
 } from "../shared/schema";
-import { isR2Configured, getSignedDownloadUrl } from "../r2-storage";
+import { isR2Configured, getSignedDownloadUrl, uploadToR2, generateR2Key } from "../r2-storage";
 import { EMAIL_TEMPLATES, queueEmailWithTemplate } from "../email";
 import { notifyExporterOfStatusChange } from "../lib/consignment-notifications";
+import { queueIssueWr } from "../jobs/issue-wr.job";
 
 // ─── Admin guard (lightweight; full ensureAdminAsync lives in routes.ts) ───
 async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -414,6 +418,222 @@ router.patch("/:id/status", requireAdmin, async (req: Request, res: Response): P
   } catch (e: any) {
     console.error("[admin-consignments.statusUpdate]", e?.message || e);
     res.status(500).json({ message: "Failed to update status", error: e?.message });
+  }
+});
+
+// ─── POST /api/admin/consignments/:id/tally — physical inspection + auto-issue WR ─
+const tallyUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 15 * 1024 * 1024, files: 12 },
+});
+
+const tallyBodySchema = z.object({
+  inspectorName: z.string().min(1),
+  actualQuantity: z.coerce.number().positive(),
+  actualGrade: z.string().optional().nullable(),
+  moisturePct: z.coerce.number().min(0).max(100).optional().nullable(),
+  qualityReadings: z
+    .union([
+      z.string().transform((s) => { try { return JSON.parse(s); } catch { return {}; } }),
+      z.record(z.string(), z.any()),
+    ])
+    .optional(),
+  notes: z.string().optional().nullable(),
+});
+
+async function nextWrNumber(hubCode: string): Promise<string> {
+  const ym = (() => {
+    const d = new Date();
+    return `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, "0")}`;
+  })();
+  const prefix = `WR-${hubCode}-${ym}-`;
+  const { rows } = await (db as any).$client.query(
+    `SELECT count(*)::int AS c FROM warehouse_receipts WHERE wr_number LIKE $1`,
+    [`${prefix}%`],
+  );
+  const seq = ((rows?.[0]?.c ?? 0) as number) + 1;
+  return `${prefix}${String(seq).padStart(4, "0")}`;
+}
+
+router.post(
+  "/:id/tally",
+  requireAdmin,
+  tallyUpload.any(),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const admin = (req as any).adminUser as { id: string };
+      const parsed = tallyBodySchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+        return;
+      }
+      const input = parsed.data;
+
+      const [c] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+      if (!c) { res.status(404).json({ message: "Consignment not found" }); return; }
+
+      if (c.status !== "Approved" && c.status !== "At Warehouse" && c.status !== "In Transit") {
+        res.status(400).json({
+          message: `Consignment must be Approved before tally can be recorded (current status: ${c.status})`,
+        });
+        return;
+      }
+
+      // Check for existing active WR — single-WR-per-consignment for v1
+      const existingWr = await db.select().from(warehouseReceipts)
+        .where(and(eq(warehouseReceipts.consignmentId, c.id), eq(warehouseReceipts.status, "active")));
+      if (existingWr.length > 0) {
+        res.status(400).json({
+          message: "An active Warehouse Receipt has already been issued for this consignment",
+          wrNumber: existingWr[0].wrNumber,
+        });
+        return;
+      }
+
+      if (!isR2Configured()) {
+        res.status(503).json({
+          message: "R2 object storage is not configured — tally uploads require R2.",
+        });
+        return;
+      }
+
+      const files = (req.files as Express.Multer.File[]) || [];
+      let weighbridgeSlipKey: string | null = null;
+      const photoKeys: string[] = [];
+
+      for (const f of files) {
+        const key = generateR2Key(`consignment-tally/${c.id}`, `${f.fieldname}-${f.originalname}`);
+        const out = await uploadToR2(key, f.buffer, f.mimetype);
+        if (f.fieldname === "weighbridge_slip") {
+          weighbridgeSlipKey = out.key;
+        } else if (f.fieldname.startsWith("photo")) {
+          photoKeys.push(out.key);
+        } else {
+          photoKeys.push(out.key);
+        }
+      }
+
+      const declaredQty = Number(c.quantity);
+      const actualQty = input.actualQuantity;
+      const variancePct = declaredQty > 0
+        ? Math.round(((actualQty - declaredQty) / declaredQty) * 100 * 1000) / 1000
+        : 0;
+
+      const [tally] = await db.insert(consignmentTallies).values({
+        consignmentId: c.id,
+        inspectorId: admin.id,
+        inspectorName: input.inspectorName,
+        inspectedAt: new Date(),
+        declaredQuantity: String(declaredQty),
+        actualQuantity: String(actualQty),
+        variancePct: String(variancePct),
+        actualGrade: input.actualGrade ?? null,
+        moisturePct: input.moisturePct != null ? String(input.moisturePct) : null,
+        qualityReadings: input.qualityReadings ?? {},
+        weighbridgeSlipKey,
+        photoKeys,
+        notes: input.notes ?? null,
+      } as any).returning();
+
+      // Transition consignment → Physically Verified
+      const fromStatus = c.status;
+      await db.update(consignments)
+        .set({ status: "Physically Verified" as any, updatedAt: new Date() })
+        .where(eq(consignments.id, c.id));
+      await db.insert(consignmentStatusHistory).values({
+        consignmentId: c.id,
+        fromStatus: fromStatus as any,
+        toStatus: "Physically Verified" as any,
+        actorId: admin.id,
+        note: `Physical tally recorded by ${input.inspectorName}: ${actualQty} ${c.unit} (variance ${variancePct}%)`,
+      } as any);
+
+      // Issue WR
+      const hubCode = c.targetHubCode || "HUB";
+      const wrNumber = await nextWrNumber(hubCode);
+      const publicBase = process.env.PUBLIC_APP_URL || "";
+      const verificationUrl = `${publicBase}/wr/verify/${wrNumber}`;
+
+      const [wr] = await db.insert(warehouseReceipts).values({
+        wrNumber,
+        consignmentId: c.id,
+        tallyId: tally.id,
+        hubCode,
+        commodityName: c.commodityName,
+        quantity: String(actualQty),
+        unit: c.unit,
+        grade: input.actualGrade ?? c.qualityGrade ?? null,
+        issuedAt: new Date(),
+        issuedBy: admin.id,
+        pdfStatus: "pending",
+        qrPayload: verificationUrl,
+        status: "active",
+      } as any).returning();
+
+      // Transition consignment → Listed
+      await db.update(consignments)
+        .set({ status: "Listed" as any, updatedAt: new Date() })
+        .where(eq(consignments.id, c.id));
+      await db.insert(consignmentStatusHistory).values({
+        consignmentId: c.id,
+        fromStatus: "Physically Verified" as any,
+        toStatus: "Listed" as any,
+        actorId: admin.id,
+        note: `Electronic Warehouse Receipt ${wrNumber} issued`,
+      } as any);
+
+      // Enqueue PDF generation
+      queueIssueWr({ warehouseReceiptId: wr.id }).catch((e) => {
+        console.error("[admin-consignments.tally] WR PDF enqueue failed:", e?.message || e);
+      });
+
+      res.status(201).json({
+        tally: {
+          id: tally.id,
+          inspectorName: tally.inspectorName,
+          inspectedAt: tally.inspectedAt,
+          declaredQuantity: Number(tally.declaredQuantity),
+          actualQuantity: Number(tally.actualQuantity),
+          variancePct: tally.variancePct != null ? Number(tally.variancePct) : null,
+          actualGrade: tally.actualGrade,
+          moisturePct: tally.moisturePct != null ? Number(tally.moisturePct) : null,
+          notes: tally.notes,
+          photoCount: photoKeys.length,
+          hasWeighbridgeSlip: !!weighbridgeSlipKey,
+        },
+        warehouseReceipt: {
+          id: wr.id,
+          wrNumber: wr.wrNumber,
+          status: wr.status,
+          pdfStatus: wr.pdfStatus,
+          verificationUrl,
+        },
+      });
+    } catch (e: any) {
+      console.error("[admin-consignments.tally]", e?.message || e);
+      res.status(500).json({ message: "Failed to record tally", error: e?.message });
+    }
+  },
+);
+
+// ─── GET /api/admin/consignments/:id/warehouse-receipt/url — signed download URL ─
+router.get("/:id/warehouse-receipt/url", requireAdmin, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const [wr] = await db.select().from(warehouseReceipts)
+      .where(eq(warehouseReceipts.consignmentId, req.params.id))
+      .orderBy(desc(warehouseReceipts.issuedAt))
+      .limit(1);
+    if (!wr) { res.status(404).json({ message: "No warehouse receipt found" }); return; }
+    if (!wr.pdfObjectKey || wr.pdfStatus !== "ready") {
+      res.status(202).json({ message: "WR PDF is still generating", pdfStatus: wr.pdfStatus });
+      return;
+    }
+    if (!isR2Configured()) { res.status(503).json({ message: "Object storage not configured" }); return; }
+    const signedUrl = await getSignedDownloadUrl(wr.pdfObjectKey, 900);
+    res.json({ wrNumber: wr.wrNumber, signedUrl, expiresIn: 900 });
+  } catch (e: any) {
+    console.error("[admin-consignments.wrUrl]", e?.message || e);
+    res.status(500).json({ message: "Failed to generate WR download URL" });
   }
 });
 
