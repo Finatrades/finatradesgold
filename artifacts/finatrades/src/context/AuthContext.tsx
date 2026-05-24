@@ -22,6 +22,7 @@ function landingForUser(user: any): string {
   const t = user.userType || 'exporter';
   if (t === 'government') return '/sovereign';
   if (t === 'importer') return '/marketplace';
+  if (t === 'warehouse') return '/warehouse';
   return '/consignments'; // exporter
 }
 

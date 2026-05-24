@@ -178,6 +178,64 @@ export default function ConsignmentDetail() {
         </Card>
       )}
 
+      {c.tally && (
+        <Card title="Warehouse Tally" icon={<Warehouse size={16} />}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
+            <div>
+              <KV k="Hub" v={c.tally.hubCode} />
+              <KV k="Tally Status" v={
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold"
+                  style={{
+                    background: c.tally.status === 'Verified' ? 'rgba(5,150,105,0.12)'
+                              : c.tally.status === 'Rejected' ? 'rgba(239,68,68,0.1)'
+                              : c.tally.status === 'Tallied'  ? 'rgba(199,59,34,0.1)'
+                              : '#F0EBE6',
+                    color: c.tally.status === 'Verified' ? '#047857'
+                         : c.tally.status === 'Rejected' ? '#DC2626'
+                         : c.tally.status === 'Tallied'  ? '#C73B22'
+                         : '#888880',
+                  }}>{c.tally.status}</span>
+              } />
+              <KV k="Arrived" v={fmtDate(c.tally.arrivedAt)} />
+              <KV k="Declared" v={c.tally.declaredQuantity != null ? `${c.tally.declaredQuantity} ${c.tally.unit}` : '—'} />
+              <KV k="Actual (weighed)" v={c.tally.actualQuantity != null ? `${c.tally.actualQuantity} ${c.tally.unit}` : '—'} />
+              <KV k="Variance" v={
+                c.tally.actualQuantity != null && c.tally.declaredQuantity != null
+                  ? `${(((c.tally.actualQuantity - c.tally.declaredQuantity) / c.tally.declaredQuantity) * 100).toFixed(2)}%`
+                  : '—'
+              } />
+            </div>
+            <div>
+              <KV k="Packages" v={c.tally.packageCount ?? '—'} />
+              <KV k="Package Type" v={c.tally.packageType || '—'} />
+              <KV k="Grade (sampled)" v={c.tally.qualityGrade || '—'} />
+              <KV k="Moisture %" v={c.tally.moisturePct != null ? `${c.tally.moisturePct}%` : '—'} />
+              <KV k="Verified" v={fmtDate(c.tally.verifiedAt)} />
+              <KV k="Warehouse Receipt" v={c.tally.inventoryItemId ? <span className="font-mono text-xs">{c.tally.inventoryItemId}</span> : '—'} />
+            </div>
+          </div>
+          {c.tally.sampleNotes && (
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid #E8E2DC' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#888880' }}>Sample / inspection notes</p>
+              <p className="text-sm" style={{ color: '#1A1A1A' }}>{c.tally.sampleNotes}</p>
+            </div>
+          )}
+          {c.tally.damageNotes && (
+            <div className="mt-3 pt-3" style={{ borderTop: '1px solid #E8E2DC' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#888880' }}>Damage / discrepancy notes</p>
+              <p className="text-sm" style={{ color: '#1A1A1A' }}>{c.tally.damageNotes}</p>
+            </div>
+          )}
+          {c.tally.status === 'Rejected' && c.tally.rejectionReason && (
+            <div className="mt-3 p-3 rounded-lg"
+              style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)' }}>
+              <p className="text-xs font-semibold mb-1" style={{ color: '#DC2626' }}>Rejection reason</p>
+              <p className="text-sm" style={{ color: '#1A1A1A' }}>{c.tally.rejectionReason}</p>
+            </div>
+          )}
+        </Card>
+      )}
+
       <Card title={`Status History (${c.history?.length ?? 0})`} icon={<Clock size={16} />}>
         {c.history?.length ? (
           <div className="space-y-2">

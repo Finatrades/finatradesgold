@@ -14,6 +14,7 @@ import Consignments from "@/pages/dashboard/Consignments";
 import ConsignmentDetail from "@/pages/dashboard/ConsignmentDetail";
 import Marketplace from "@/pages/dashboard/Marketplace";
 import Inventory from "@/pages/dashboard/Inventory";
+import Warehouse from "@/pages/dashboard/Warehouse";
 import Orders from "@/pages/dashboard/Orders";
 import Escrow from "@/pages/dashboard/Escrow";
 import Transactions from "@/pages/dashboard/Transactions";
@@ -143,6 +144,9 @@ function AppRoutes() {
       </Route>
       <Route path="/inventory">
         <ProtectedRoute path="/inventory" component={Inventory} />
+      </Route>
+      <Route path="/warehouse">
+        <ProtectedRoute path="/warehouse" component={Warehouse} />
       </Route>
       <Route path="/marketplace">
         <ProtectedRoute path="/marketplace" component={Marketplace} />

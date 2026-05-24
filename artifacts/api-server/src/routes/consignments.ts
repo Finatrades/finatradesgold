@@ -8,10 +8,12 @@ import {
   consignments,
   consignmentDocuments,
   consignmentStatusHistory,
+  consignmentTally,
   kycSubmissions,
   consignmentListings,
   users,
 } from "../shared/schema";
+import { serializeTally } from "./warehouse";
 import { uploadToR2, isR2Configured, generateR2Key, getSignedDownloadUrl } from "../r2-storage";
 
 // ─── KYC Tier-3 eligibility ────────────────────────────────────────────────
@@ -276,10 +278,13 @@ router.get("/:id", ensureAuthenticated, async (req: Request, res: Response): Pro
     }));
 
     const serializedDocs = await Promise.all(docs.map(d => serializeDocWithSignedUrl(d)));
+    const [tally] = await db.select().from(consignmentTally)
+      .where(eq(consignmentTally.consignmentId, row.id));
     res.json({
       ...serializeConsignment(row),
       documents: serializedDocs,
       history,
+      tally: tally ? serializeTally(tally) : null,
       requirements: getRequirements(row.commodityCategory ?? undefined),
     });
   } catch (e: any) {

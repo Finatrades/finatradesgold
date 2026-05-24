@@ -178,6 +178,7 @@ import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
 import adminConsignmentsRouter from "./routes/admin-consignments";
+import warehouseRouter from "./routes/warehouse";
 import unifiedTallyRoutes from "./unified-tally-routes";
 import physicalDepositRoutes from "./physical-deposit-routes";
 import { WingoldUserSyncService } from "./wingold-user-sync-service";
@@ -1107,6 +1108,7 @@ export async function registerRoutes(
   registerWalletRoutes(app);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
+  app.use("/api/b2b/warehouse", warehouseRouter);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

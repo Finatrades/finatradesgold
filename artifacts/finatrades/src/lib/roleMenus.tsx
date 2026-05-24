@@ -5,7 +5,7 @@ import {
   Users, BarChart3, AlertTriangle, Globe, Wallet,
 } from 'lucide-react';
 
-export type UserType = 'exporter' | 'importer' | 'government';
+export type UserType = 'exporter' | 'importer' | 'government' | 'warehouse';
 
 export interface MenuItem {
   icon: React.ReactNode;
@@ -112,6 +112,19 @@ export const GOVERNMENT_MENU: MenuSection[] = [
   accountSection,
 ];
 
+export const WAREHOUSE_MENU: MenuSection[] = [
+  overviewSection(),
+  {
+    key: 'warehouse',
+    label: 'Warehouse Operations',
+    items: [
+      { icon: <Warehouse size={16} />, label: 'Inbound Tally Queue', href: '/warehouse' },
+      { icon: <Package size={16} />, label: 'Hub Inventory', href: '/inventory' },
+    ],
+  },
+  accountSection,
+];
+
 export const ADMIN_MENU: MenuSection[] = [
   overviewSection(),
   {
@@ -121,6 +134,8 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Users size={16} />, label: 'All Users', href: '/admin/users' },
       { icon: <ShieldCheck size={16} />, label: 'KYC Review', href: '/admin/kyc' },
       { icon: <Package size={16} />, label: 'Consignment Review', href: '/admin/consignments' },
+      { icon: <Package size={16} />, label: 'All Consignments', href: '/consignments' },
+      { icon: <Warehouse size={16} />, label: 'Warehouse Tally', href: '/warehouse' },
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },
@@ -137,6 +152,7 @@ export function getMenuForUser(user: any): MenuSection[] {
   const t: UserType = user.userType || 'exporter';
   if (t === 'importer') return IMPORTER_MENU;
   if (t === 'government') return GOVERNMENT_MENU;
+  if (t === 'warehouse') return WAREHOUSE_MENU;
   return EXPORTER_MENU;
 }
 
@@ -146,6 +162,7 @@ export function getRoleLabel(user: any): string {
   const t: UserType = user.userType || 'exporter';
   if (t === 'importer') return 'Importer / Buyer';
   if (t === 'government') return 'Government Entity';
+  if (t === 'warehouse') return 'Warehouse Operator';
   return 'Exporter / Seller';
 }
 
@@ -170,7 +187,7 @@ export function getRoleLabel(user: any): string {
  */
 export const ROUTE_ACCESS: Record<string, UserType[]> = {
   '/consignments':  ['exporter', 'importer'],
-  '/inventory':     ['exporter', 'government'],
+  '/inventory':     ['exporter', 'government', 'warehouse'],
   '/marketplace':   ['exporter', 'importer'],
   '/orders':        ['exporter', 'importer'],
   '/escrow':        ['exporter', 'importer', 'government'],
@@ -179,6 +196,7 @@ export const ROUTE_ACCESS: Record<string, UserType[]> = {
   '/barter':        ['government'],
   '/sovereign':     ['government'],
   '/wallet':        ['exporter', 'importer', 'government'],
+  '/warehouse':     ['warehouse'],
 };
 
 export function canAccess(path: string, user: any): boolean {

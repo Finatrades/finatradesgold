@@ -48,7 +48,7 @@ export const finabridgeRoleEnum = pgEnum('finabridge_role', ['importer', 'export
 
 // User type enum for role-based platform workflow (exporter / importer / government)
 // Separate from `role` (user/admin) — admin gating is preserved via `role`.
-export const userTypeEnum = pgEnum('user_type', ['exporter', 'importer', 'government']);
+export const userTypeEnum = pgEnum('user_type', ['exporter', 'importer', 'government', 'warehouse']);
 
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
@@ -68,6 +68,7 @@ export const users = pgTable("users", {
   accountType: accountTypeEnum("account_type").notNull().default('personal'),
   role: userRoleEnum("role").notNull().default('user'),
   userType: userTypeEnum("user_type").notNull().default('exporter'),
+  assignedHubCode: varchar("assigned_hub_code", { length: 10 }),
   kycStatus: kycStatusEnum("kyc_status").notNull().default('Not Started'),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   emailVerificationCode: varchar("email_verification_code", { length: 10 }),
@@ -107,7 +108,8 @@ export const insertUserSchema = createInsertSchema(users)
     finatradesIdOtpAttempts: z.number().optional(),
     accountType: z.enum(['personal', 'business']).optional(),
     role: z.enum(['user', 'admin']).optional(),
-    userType: z.enum(['exporter', 'importer', 'government']).optional(),
+    userType: z.enum(['exporter', 'importer', 'government', 'warehouse']).optional(),
+    assignedHubCode: z.string().nullable().optional(),
     kycStatus: z.enum(['Not Started', 'In Progress', 'Approved', 'Rejected']).optional(),
     isEmailVerified: z.boolean().optional(),
     emailVerificationCode: z.string().nullable().optional(),
@@ -6958,6 +6960,41 @@ export const consignmentListings = pgTable("consignment_listings", {
 
 export type ConsignmentListing = typeof consignmentListings.$inferSelect;
 export type InsertConsignmentListing = typeof consignmentListings.$inferInsert;
+
+// --- Consignment Tally (Step 4 — warehouse weigh/count/verify) ---
+export const consignmentTallyStatusEnum = pgEnum('consignment_tally_status', [
+  'Draft', 'Tallied', 'Verified', 'Rejected'
+]);
+
+export const consignmentTally = pgTable("consignment_tally", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().unique().references(() => consignments.id, { onDelete: 'cascade' }),
+  hubCode: varchar("hub_code", { length: 10 }).notNull(),
+  operatorId: varchar("operator_id", { length: 255 }).notNull().references(() => users.id),
+  arrivedAt: timestamp("arrived_at"),
+  declaredQuantity: decimal("declared_quantity", { precision: 15, scale: 3 }).notNull(),
+  actualQuantity: decimal("actual_quantity", { precision: 15, scale: 3 }),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  packageCount: integer("package_count"),
+  packageType: varchar("package_type", { length: 100 }),
+  qualityGrade: qualityGradeEnum("quality_grade"),
+  moisturePct: decimal("moisture_pct", { precision: 5, scale: 2 }),
+  sampleNotes: text("sample_notes"),
+  damageNotes: text("damage_notes"),
+  photos: jsonb("photos"),
+  status: consignmentTallyStatusEnum("status").notNull().default('Draft'),
+  verifiedAt: timestamp("verified_at"),
+  verifiedBy: varchar("verified_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  rejectedAt: timestamp("rejected_at"),
+  rejectionReason: text("rejection_reason"),
+  inventoryItemId: varchar("inventory_item_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertConsignmentTallySchema = createInsertSchema(consignmentTally).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConsignmentTally = z.infer<typeof insertConsignmentTallySchema>;
+export type ConsignmentTally = typeof consignmentTally.$inferSelect;
 
 // --- Inventory Items (Steps 3 & 4 — warehouse stock) ---
 export const inventoryItems = pgTable("inventory_items", {
