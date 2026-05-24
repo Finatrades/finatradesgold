@@ -34,6 +34,10 @@ import AdminLcQueue from "@/pages/admin/AdminLcQueue";
 import AdminDisputeQueue from "@/pages/admin/AdminDisputeQueue";
 import AdminKycQueue from "@/pages/admin/AdminKycQueue";
 import AdminUsers from "@/pages/admin/AdminUsers";
+import AdminBankPartners from "@/pages/admin/AdminBankPartners";
+import AdminLcTemplates from "@/pages/admin/AdminLcTemplates";
+import AdminMilestonePresets from "@/pages/admin/AdminMilestonePresets";
+import AdminEscrowConfig from "@/pages/admin/AdminEscrowConfig";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
@@ -234,6 +238,18 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/kyc">
         <AdminRoute component={AdminKycQueue} />
+      </Route>
+      <Route path="/admin/trade-finance/banks">
+        <AdminRoute component={AdminBankPartners} />
+      </Route>
+      <Route path="/admin/trade-finance/lc-templates">
+        <AdminRoute component={AdminLcTemplates} />
+      </Route>
+      <Route path="/admin/trade-finance/milestone-presets">
+        <AdminRoute component={AdminMilestonePresets} />
+      </Route>
+      <Route path="/admin/trade-finance/escrow">
+        <AdminRoute component={AdminEscrowConfig} />
       </Route>
 
       {/* Account */}

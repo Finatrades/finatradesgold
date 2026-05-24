@@ -5729,3 +5729,78 @@ export const lcPresentations = pgTable("lc_presentations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 export type LcPresentation = typeof lcPresentations.$inferSelect;
+
+// ============================================
+// TRADE FINANCE MASTER DATA (Task #172)
+// ============================================
+
+export const bankPartners = pgTable("bank_partners", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  swiftBic: varchar("swift_bic", { length: 20 }).notNull().unique(),
+  country: varchar("country", { length: 100 }).notNull(),
+  role: varchar("role", { length: 32 }).notNull().default('issuing'),
+  supportedCurrencies: text("supported_currencies").array().notNull().default(sql`ARRAY['USD']::text[]`),
+  rating: varchar("rating", { length: 16 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 64 }),
+  notes: text("notes"),
+  status: varchar("status", { length: 16 }).notNull().default('active'),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type BankPartner = typeof bankPartners.$inferSelect;
+export type InsertBankPartner = typeof bankPartners.$inferInsert;
+
+export const lcTemplates = pgTable("lc_templates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 255 }).notNull(),
+  lcType: varchar("lc_type", { length: 32 }).notNull(),
+  description: text("description"),
+  defaultIncoterms: varchar("default_incoterms", { length: 16 }),
+  defaultTenorDays: integer("default_tenor_days"),
+  defaultTolerancePct: decimal("default_tolerance_pct", { precision: 5, scale: 2 }),
+  requiredDocuments: text("required_documents").array().notNull().default(sql`ARRAY[]::text[]`),
+  defaultTerms: jsonb("default_terms").notNull().default(sql`'{}'::jsonb`),
+  status: varchar("status", { length: 16 }).notNull().default('active'),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type LcTemplate = typeof lcTemplates.$inferSelect;
+export type InsertLcTemplate = typeof lcTemplates.$inferInsert;
+
+export const milestonePresets = pgTable("milestone_presets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  commodityCategory: varchar("commodity_category", { length: 100 }),
+  schedule: jsonb("schedule").notNull(),
+  isDefault: boolean("is_default").notNull().default(false),
+  status: varchar("status", { length: 16 }).notNull().default('active'),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type MilestonePreset = typeof milestonePresets.$inferSelect;
+export type InsertMilestonePreset = typeof milestonePresets.$inferInsert;
+
+export const escrowConfigurations = pgTable("escrow_configurations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  currency: varchar("currency", { length: 8 }).notNull().unique(),
+  accountHolder: varchar("account_holder", { length: 255 }).notNull(),
+  holdingBank: varchar("holding_bank", { length: 255 }).notNull(),
+  accountNumber: varchar("account_number", { length: 64 }),
+  swiftBic: varchar("swift_bic", { length: 20 }),
+  maxHoldPerCaseCents: bigint("max_hold_per_case_cents", { mode: "number" }),
+  autoReleaseTimeoutDays: integer("auto_release_timeout_days").notNull().default(30),
+  requiresKyc: boolean("requires_kyc").notNull().default(true),
+  notes: text("notes"),
+  status: varchar("status", { length: 16 }).notNull().default('active'),
+  createdBy: varchar("created_by", { length: 255 }).references(() => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type EscrowConfiguration = typeof escrowConfigurations.$inferSelect;
+export type InsertEscrowConfiguration = typeof escrowConfigurations.$inferInsert;

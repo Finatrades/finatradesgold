@@ -397,6 +397,53 @@ export const DEFAULT_MILESTONE_SCHEDULE: MilestoneSpec[] = [
 ];
 
 /**
+ * Look up the milestone schedule preset for a commodity (Task #172).
+ * Resolution order:
+ *   1. Active preset matching the commodity name → category lookup.
+ *   2. Active preset with commodity_category = <category>.
+ *   3. The active is_default preset (commodity_category IS NULL).
+ *   4. Hardcoded `DEFAULT_MILESTONE_SCHEDULE` fallback.
+ */
+export async function getDefaultScheduleForCommodity(
+  commodity: string | null | undefined,
+): Promise<MilestoneSpec[]> {
+  try {
+    // Try to resolve the commodity name to a category via the commodities table.
+    let category: string | null = null;
+    if (commodity && commodity !== "Unspecified") {
+      const r = await db.execute(
+        sql`SELECT category FROM commodities WHERE LOWER(name) = LOWER(${commodity}) LIMIT 1`,
+      );
+      const row = r.rows[0] as any;
+      if (row?.category) category = String(row.category);
+    }
+    // Try a commodity-specific preset first (matches the raw commodity
+    // string admins enter, e.g. "Cocoa", "Crude Oil"), then fall back to
+    // the resolved category. Both are case-insensitive so free-text
+    // entries in the admin UI behave predictably.
+    const candidates = [commodity, category].filter((s): s is string => !!s);
+    for (const cand of candidates) {
+      const r = await db.execute(
+        sql`SELECT schedule FROM milestone_presets
+            WHERE status='active' AND LOWER(commodity_category) = LOWER(${cand})
+            ORDER BY is_default DESC, updated_at DESC LIMIT 1`,
+      );
+      const row = r.rows[0] as any;
+      if (row?.schedule) return row.schedule as MilestoneSpec[];
+    }
+    // Fall back to the wildcard default preset.
+    const fallback = await db.execute(
+      sql`SELECT schedule FROM milestone_presets WHERE status='active' AND commodity_category IS NULL AND is_default = true ORDER BY updated_at DESC LIMIT 1`,
+    );
+    const row = fallback.rows[0] as any;
+    if (row?.schedule) return row.schedule as MilestoneSpec[];
+  } catch {
+    /* swallow – use hardcoded fallback */
+  }
+  return DEFAULT_MILESTONE_SCHEDULE;
+}
+
+/**
  * Materialise a milestone schedule for a case. Returns the inserted rows.
  * Skips if milestones already exist for the case.
  */

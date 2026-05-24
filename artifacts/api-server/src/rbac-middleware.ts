@@ -82,6 +82,8 @@ const LEGACY_PERM_TO_COMPONENT: Record<string, { components: string[], action: '
   'manage_cms': { components: ['cms-management'], action: 'edit' },
   'view_support': { components: ['support'], action: 'view' },
   'manage_support': { components: ['support'], action: 'edit' },
+  'view_trade_finance': { components: ['trade-finance-ops'], action: 'view' },
+  'manage_trade_finance': { components: ['trade-finance-ops'], action: 'edit' },
 };
 
 // Check if a string is a legacy permission format

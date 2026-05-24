@@ -43,22 +43,37 @@ interface Props {
   counterpartyUserId?: string | null;
 }
 
-type MilestonePreset = '100' | '30-70' | '30-30-40' | 'custom';
+// Task #172: milestone presets are now master data loaded from
+// /api/milestone-presets. No hardcoded schedules in this component.
+interface MilestonePresetRecord {
+  id: string;
+  name: string;
+  commodityCategory: string | null;
+  schedule: Array<{ sequence: number; label: string; trigger: string; percent: number }>;
+  isDefault: boolean;
+}
 
-const PRESET_SCHEDULES: Record<Exclude<MilestonePreset, 'custom'>, Array<{ sequence: number; label: string; trigger: string; percent: number }>> = {
-  '100': [
-    { sequence: 1, label: 'Goods Received', trigger: 'goods_received', percent: 100 },
-  ],
-  '30-70': [
-    { sequence: 1, label: 'Shipment Documents Uploaded', trigger: 'shipment_documents_uploaded', percent: 30 },
-    { sequence: 2, label: 'Goods Received', trigger: 'goods_received', percent: 70 },
-  ],
-  '30-30-40': [
-    { sequence: 1, label: 'Shipment Documents Uploaded', trigger: 'shipment_documents_uploaded', percent: 30 },
-    { sequence: 2, label: 'Customs Cleared', trigger: 'customs_cleared', percent: 30 },
-    { sequence: 3, label: 'Goods Received', trigger: 'goods_received', percent: 40 },
-  ],
-};
+interface BankPartnerOption {
+  id: string;
+  name: string;
+  swiftBic: string;
+  supportedCurrencies: string[];
+}
+
+interface LcTemplateOption {
+  id: string;
+  code: string;
+  name: string;
+  lcType: string;
+  defaultIncoterms: string | null;
+  requiredDocuments: string[];
+}
+
+interface EscrowConfigRecord {
+  id: string;
+  currency: string;
+  maxHoldPerCaseCents: number | null;
+}
 
 function formatMoney(cents: number, currency: string): string {
   try {
@@ -78,9 +93,10 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
     queryKey: ['/api/trade/cases', caseId, 'milestones'],
     queryFn: async () => {
       const r = await apiRequest('GET', `/api/trade/cases/${caseId}/milestones`);
-      return (await r.json()) as { milestones: Milestone[]; caseId?: string };
+      return (await r.json()) as { milestones: Milestone[]; caseId?: string; commodity?: string | null };
     },
   });
+  const caseCommodity = milestonesQ.data?.commodity ?? null;
 
   const lcQ = useQuery({
     queryKey: ['/api/trade/cases', caseId, 'lc'],
@@ -99,17 +115,34 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
   });
 
   // ─────────── Milestone schedule preset selector (importer only) ───────────
-  const [preset, setPreset] = useState<MilestonePreset>('30-30-40');
+  // Task #172: presets are master data — admins manage them under
+  // /admin/trade-finance/milestone-presets and they are exposed here via
+  // /api/milestone-presets. No hardcoded schedules in this component.
+  const presetsQ = useQuery({
+    queryKey: ['/api/milestone-presets', caseCommodity],
+    enabled: milestonesQ.isSuccess,
+    queryFn: async () => {
+      const qs = caseCommodity ? `?commodity=${encodeURIComponent(caseCommodity)}` : '';
+      const r = await apiRequest('GET', `/api/milestone-presets${qs}`);
+      return (await r.json()) as { milestonePresets: MilestonePresetRecord[]; suggested: MilestonePresetRecord | null };
+    },
+  });
+  const [presetId, setPresetId] = useState<string>('');
+  const selectedPreset: MilestonePresetRecord | null = useMemo(() => {
+    const list = presetsQ.data?.milestonePresets ?? [];
+    if (presetId) return list.find((p) => p.id === presetId) || null;
+    return presetsQ.data?.suggested ?? list.find((p) => p.isDefault) ?? list[0] ?? null;
+  }, [presetsQ.data, presetId]);
   const setMilestones = useMutation({
     mutationFn: async () => {
-      if (preset === 'custom') throw new Error('Custom schedules are entered via the deal sheet.');
+      if (!selectedPreset) throw new Error('Pick a milestone preset first.');
       const r = await apiRequest('PUT', `/api/trade/cases/${caseId}/milestones`, {
-        schedule: PRESET_SCHEDULES[preset],
+        schedule: selectedPreset.schedule,
       });
       return r.json();
     },
     onSuccess: () => {
-      toast({ title: 'Milestone schedule set', description: `Applied preset ${preset}.` });
+      toast({ title: 'Milestone schedule set', description: `Applied "${selectedPreset?.name}".` });
       qc.invalidateQueries({ queryKey: ['/api/trade/cases', caseId, 'milestones'] });
     },
     onError: (e: any) => toast({ variant: 'destructive', title: 'Could not set milestones', description: e?.message }),
@@ -181,15 +214,52 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
 
   const [lcAmount, setLcAmount] = useState('');
   const [lcCurrency, setLcCurrency] = useState<'USD' | 'EUR' | 'GBP'>('USD');
-  const [lcBank, setLcBank] = useState('');
+  // Task #172: bank partner + LC template come from master data.
+  const [lcBankPartnerId, setLcBankPartnerId] = useState('');
+  const [lcTemplateId, setLcTemplateId] = useState('');
+  const banksQ = useQuery({
+    queryKey: ['/api/bank-partners', lcCurrency],
+    queryFn: async () => {
+      const r = await apiRequest('GET', `/api/bank-partners?supports=${lcCurrency}`);
+      return (await r.json()) as { bankPartners: BankPartnerOption[] };
+    },
+  });
+  const templatesQ = useQuery({
+    queryKey: ['/api/lc-templates'],
+    queryFn: async () => {
+      const r = await apiRequest('GET', '/api/lc-templates');
+      return (await r.json()) as { lcTemplates: LcTemplateOption[] };
+    },
+  });
+  const escrowConfigsQ = useQuery({
+    queryKey: ['/api/escrow-configurations'],
+    queryFn: async () => {
+      const r = await apiRequest('GET', '/api/escrow-configurations');
+      return (await r.json()) as { escrowConfigurations: EscrowConfigRecord[] };
+    },
+  });
+  const selectedTemplate = useMemo(
+    () => (templatesQ.data?.lcTemplates ?? []).find((t) => t.id === lcTemplateId) || null,
+    [templatesQ.data, lcTemplateId],
+  );
+  const lcEscrowCap = useMemo(() => {
+    const cfg = (escrowConfigsQ.data?.escrowConfigurations ?? []).find((c) => c.currency === lcCurrency);
+    return cfg?.maxHoldPerCaseCents ?? null;
+  }, [escrowConfigsQ.data, lcCurrency]);
+  const lcAmountCents = Math.round(parseFloat(lcAmount || '0') * 100);
+  const lcOverCap = lcEscrowCap !== null && lcAmountCents > lcEscrowCap;
+
   const createLc = useMutation({
     mutationFn: async () => {
       if (!counterpartyUserId) throw new Error('Counterparty not resolved on this case');
+      if (!lcBankPartnerId) throw new Error('Pick an issuing bank.');
+      if (lcOverCap) throw new Error(`Amount exceeds platform cap of ${formatMoney(lcEscrowCap!, lcCurrency)}.`);
       const r = await apiRequest('POST', `/api/trade/cases/${caseId}/lc`, {
         beneficiaryUserId: counterpartyUserId,
         currency: lcCurrency,
-        amountCents: Math.round(parseFloat(lcAmount || '0') * 100),
-        issuingBankName: lcBank || undefined,
+        amountCents: lcAmountCents,
+        bankPartnerId: lcBankPartnerId,
+        lcTemplateId: lcTemplateId || undefined,
       });
       return r.json();
     },
@@ -199,7 +269,8 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
       qc.invalidateQueries({ queryKey: ['/api/wallet/balances'] });
       qc.invalidateQueries({ queryKey: ['/api/trade/cases', caseId, 'milestones'] });
       setLcAmount('');
-      setLcBank('');
+      setLcBankPartnerId('');
+      setLcTemplateId('');
     },
     onError: (e: any) => toast({ variant: 'destructive', title: 'LC issuance failed', description: e?.message }),
   });
@@ -290,21 +361,28 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
               <>
                 <select
                   className="h-8 rounded-md border bg-background px-2 text-xs"
-                  value={preset}
-                  onChange={(e) => setPreset(e.target.value as MilestonePreset)}
+                  value={presetId || (selectedPreset?.id ?? '')}
+                  onChange={(e) => setPresetId(e.target.value)}
                   data-testid="select-milestone-preset"
                 >
-                  <option value="100">100% on Goods Received</option>
-                  <option value="30-70">30 / 70 (docs / receipt)</option>
-                  <option value="30-30-40">30 / 30 / 40 (docs / customs / receipt)</option>
-                  <option value="custom">Custom…</option>
+                  {(presetsQ.data?.milestonePresets ?? []).length === 0 && (
+                    <option value="">No presets configured</option>
+                  )}
+                  {(presetsQ.data?.milestonePresets ?? []).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {p.commodityCategory ? ` · ${p.commodityCategory}` : ''}
+                      {p === presetsQ.data?.suggested ? ' (suggested)' : ''}
+                    </option>
+                  ))}
                 </select>
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setMilestones.mutate()}
-                  disabled={setMilestones.isPending || preset === 'custom'}
+                  disabled={setMilestones.isPending || !selectedPreset}
                   data-testid="button-apply-preset"
+                  title={selectedPreset ? selectedPreset.schedule.map((s) => `${s.percent}% ${s.label}`).join(' → ') : ''}
                 >
                   Apply preset
                 </Button>
@@ -415,7 +493,7 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
         {isImporter && (
           <Card className="p-3 space-y-2">
             <div className="text-xs font-medium">Issue a new LC (holds 100% in escrow)</div>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <div>
                 <Label className="text-[11px]">Amount</Label>
                 <Input
@@ -430,7 +508,10 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
                 <select
                   className="h-9 w-full rounded-md border bg-background px-2 text-sm"
                   value={lcCurrency}
-                  onChange={(e) => setLcCurrency(e.target.value as 'USD' | 'EUR' | 'GBP')}
+                  onChange={(e) => {
+                    setLcCurrency(e.target.value as 'USD' | 'EUR' | 'GBP');
+                    setLcBankPartnerId('');
+                  }}
                   data-testid="select-lc-currency"
                 >
                   <option value="USD">USD</option>
@@ -440,13 +521,48 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
               </div>
               <div>
                 <Label className="text-[11px]">Issuing bank</Label>
-                <Input value={lcBank} onChange={(e) => setLcBank(e.target.value)} placeholder="Optional" />
+                <select
+                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  value={lcBankPartnerId}
+                  onChange={(e) => setLcBankPartnerId(e.target.value)}
+                  data-testid="select-lc-bank"
+                >
+                  <option value="">— pick a partner —</option>
+                  {(banksQ.data?.bankPartners ?? []).map((b) => (
+                    <option key={b.id} value={b.id}>{b.name} ({b.swiftBic})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-[11px]">LC product template</Label>
+                <select
+                  className="h-9 w-full rounded-md border bg-background px-2 text-sm"
+                  value={lcTemplateId}
+                  onChange={(e) => setLcTemplateId(e.target.value)}
+                  data-testid="select-lc-template"
+                >
+                  <option value="">— none —</option>
+                  {(templatesQ.data?.lcTemplates ?? []).map((t) => (
+                    <option key={t.id} value={t.id}>{t.code} · {t.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
+            {selectedTemplate && (
+              <div className="text-[11px] text-muted-foreground" data-testid="lc-template-summary">
+                Incoterms: {selectedTemplate.defaultIncoterms || '—'} · Required docs: {(selectedTemplate.requiredDocuments || []).join(', ') || '—'}
+              </div>
+            )}
+            {lcEscrowCap !== null && (
+              <div className={`text-[11px] ${lcOverCap ? 'text-destructive' : 'text-muted-foreground'}`} data-testid="lc-cap-hint">
+                Platform escrow cap for {lcCurrency}: {formatMoney(lcEscrowCap, lcCurrency)}.
+                {lcOverCap && ' Amount exceeds cap.'}
+              </div>
+            )}
             <Button
               size="sm"
               onClick={() => createLc.mutate()}
-              disabled={createLc.isPending || !lcAmount}
+              disabled={createLc.isPending || !lcAmount || !lcBankPartnerId || lcOverCap}
               data-testid="button-create-lc"
             >
               {createLc.isPending ? 'Issuing…' : 'Issue LC'}

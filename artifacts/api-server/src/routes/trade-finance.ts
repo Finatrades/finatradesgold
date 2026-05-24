@@ -43,6 +43,10 @@ import {
   dealRooms,
   dealRoomDocuments,
   tradeDisputeEvidence,
+  bankPartners,
+  lcTemplates,
+  milestonePresets,
+  escrowConfigurations,
   SUPPORTED_CURRENCIES,
 } from "@shared/schema";
 import { randomUUID } from "crypto";
@@ -65,6 +69,7 @@ import {
   mergeCaseNotes,
   SUPPORTED_TRIGGERS,
   DEFAULT_MILESTONE_SCHEDULE,
+  getDefaultScheduleForCommodity,
   generateLcRef,
   getLcOrThrow,
   logLcEvent,
@@ -72,6 +77,7 @@ import {
   type MilestoneSpec,
 } from "../trade-finance-service";
 import { storage } from "../storage";
+import { requirePermission } from "../rbac-middleware";
 import { loadCounterpartyByUserId, loadCounterpartiesByUserIds } from "../lib/counterparty";
 import { sendEmailDirect } from "../email";
 import { sendTradePushNotification } from "../push-notifications";
@@ -279,6 +285,8 @@ const escrowFundSchema = z.object({
 const lcCreateSchema = z.object({
   beneficiaryUserId: z.string().min(1),
   issuingBankName: z.string().optional(),
+  bankPartnerId: z.string().optional(),
+  lcTemplateId: z.string().optional(),
   currency: z.enum(SUPPORTED_CURRENCIES),
   amountCents: z.number().int().positive(),
   incoterms: z.string().optional(),
@@ -551,7 +559,14 @@ export function registerTradeFinanceRoutes(app: Express): void {
         decision: d.decision,
       }));
 
-      res.json({ milestones: enriched, disputes: disputesOut, caseId: parties.resolvedCaseId });
+      res.json({
+        milestones: enriched,
+        disputes: disputesOut,
+        caseId: parties.resolvedCaseId,
+        // Task #172: surface commodity so the UI can request a
+        // commodity-specific milestone preset default.
+        commodity: parties.case.commodityType ?? null,
+      });
     } catch (err: any) {
       res.status(500).json({ message: "Failed to load milestones" });
     }
@@ -601,7 +616,8 @@ export function registerTradeFinanceRoutes(app: Express): void {
       const amount = parsed.data.amountCents || parties.amountCents;
       if (amount <= 0) return void res.status(400).json({ message: "Settlement amount unknown — set milestones first" });
       if (existing.length === 0) {
-        const schedule = (parties.case.milestoneSchedule as MilestoneSpec[] | null) || DEFAULT_MILESTONE_SCHEDULE;
+        const schedule = (parties.case.milestoneSchedule as MilestoneSpec[] | null)
+          || (await getDefaultScheduleForCommodity(parties.case.commodityType));
         await materialiseMilestones({
           tradeCaseId: parties.resolvedCaseId!,
           schedule,
@@ -609,6 +625,33 @@ export function registerTradeFinanceRoutes(app: Express): void {
           currency: parties.currency,
         });
       }
+      // Task #172: enforce per-currency max-hold + KYC gate from escrow_configurations.
+      try {
+        const cfgRow = await db
+          .select()
+          .from(escrowConfigurations)
+          .where(eq(escrowConfigurations.currency, parties.currency))
+          .limit(1);
+        const cfg = cfgRow[0];
+        if (cfg?.status === "active") {
+          if (cfg.maxHoldPerCaseCents && Number(cfg.maxHoldPerCaseCents) > 0 && amount > Number(cfg.maxHoldPerCaseCents)) {
+            return void res.status(400).json({
+              message: `Escrow amount exceeds platform per-case limit for ${parties.currency}`,
+              code: "ESCROW_LIMIT_EXCEEDED",
+              maxHoldCents: Number(cfg.maxHoldPerCaseCents),
+            });
+          }
+          if (cfg.requiresKyc) {
+            const funder = await storage.getUser(req.session!.userId!);
+            if (!funder || funder.kycStatus !== "Approved") {
+              return void res.status(403).json({
+                message: `KYC approval required to fund escrow in ${parties.currency}`,
+                code: "KYC_REQUIRED",
+              });
+            }
+          }
+        }
+      } catch { /* config table missing — allow */ }
       const tx = await placeBalanceHold({
         userId: req.session!.userId!,
         currency: parties.currency,
@@ -882,6 +925,57 @@ export function registerTradeFinanceRoutes(app: Express): void {
       if (!parties.exporterUserId) {
         await mergeCaseNotes(parties.resolvedCaseId!, { exporterUserId: parsed.data.beneficiaryUserId });
       }
+      // Task #172: per-currency escrow KYC gate also guards LC issuance,
+      // which places a 100% hold on the importer's balance.
+      try {
+        const cfgRow = await db
+          .select()
+          .from(escrowConfigurations)
+          .where(eq(escrowConfigurations.currency, parsed.data.currency))
+          .limit(1);
+        const cfg = cfgRow[0];
+        if (cfg?.status === "active" && cfg.requiresKyc) {
+          const applicant = await storage.getUser(req.session!.userId!);
+          if (!applicant || applicant.kycStatus !== "Approved") {
+            return void res.status(403).json({
+              message: `KYC approval required to issue an LC in ${parsed.data.currency}`,
+              code: "KYC_REQUIRED",
+            });
+          }
+        }
+      } catch { /* config table missing — allow */ }
+      // Task #172: hydrate from master data (bank partner + LC template).
+      let resolvedIssuingBankName = parsed.data.issuingBankName ?? null;
+      let resolvedIncoterms = parsed.data.incoterms ?? null;
+      let resolvedRequiredDocs = parsed.data.requiredDocuments ?? null;
+      let resolvedTerms: Record<string, any> | null = (parsed.data.termsJson as any) ?? null;
+      if (parsed.data.bankPartnerId) {
+        const [bp] = await db.select().from(bankPartners).where(eq(bankPartners.id, parsed.data.bankPartnerId)).limit(1);
+        if (!bp) return void res.status(400).json({ message: "Unknown bank partner", code: "BANK_PARTNER_NOT_FOUND" });
+        if (bp.status !== "active") {
+          return void res.status(400).json({ message: "Bank partner is not active", code: "BANK_PARTNER_INACTIVE" });
+        }
+        if (!(bp.supportedCurrencies || []).includes(parsed.data.currency)) {
+          return void res.status(400).json({
+            message: `Bank partner ${bp.name} does not support ${parsed.data.currency}`,
+            code: "BANK_CURRENCY_UNSUPPORTED",
+          });
+        }
+        resolvedIssuingBankName = resolvedIssuingBankName || bp.name;
+      }
+      if (parsed.data.lcTemplateId) {
+        const [tpl] = await db.select().from(lcTemplates).where(eq(lcTemplates.id, parsed.data.lcTemplateId)).limit(1);
+        if (!tpl) return void res.status(400).json({ message: "Unknown LC template", code: "LC_TEMPLATE_NOT_FOUND" });
+        if (tpl.status !== "active") {
+          return void res.status(400).json({ message: "LC template is not active", code: "LC_TEMPLATE_INACTIVE" });
+        }
+        // Pre-fill from template when applicant did not override.
+        if (!resolvedIncoterms && tpl.defaultIncoterms) resolvedIncoterms = tpl.defaultIncoterms;
+        if (!resolvedRequiredDocs || resolvedRequiredDocs.length === 0) {
+          resolvedRequiredDocs = tpl.requiredDocuments || null;
+        }
+        resolvedTerms = { ...(tpl.defaultTerms as any || {}), templateCode: tpl.code, lcType: tpl.lcType, ...(resolvedTerms || {}) };
+      }
       // Spec: "Issue LC" holds 100% of the LC amount in escrow against it.
       // Place the hold FIRST so a funding failure aborts the LC issuance.
       const lcId = randomUUID();
@@ -910,17 +1004,17 @@ export function registerTradeFinanceRoutes(app: Express): void {
             lcRef: generateLcRef(),
             tradeCaseId: parties.resolvedCaseId!,
             dealRoomId: parties.dealRoomId,
-            issuingBankName: parsed.data.issuingBankName ?? null,
+            issuingBankName: resolvedIssuingBankName,
             applicantUserId: req.session!.userId!,
             beneficiaryUserId: parsed.data.beneficiaryUserId,
             currency: parsed.data.currency,
             amountCents: parsed.data.amountCents,
-            incoterms: parsed.data.incoterms ?? null,
+            incoterms: resolvedIncoterms,
             expiryDate: parsed.data.expiryDate ? new Date(parsed.data.expiryDate) : null,
             latestShipmentDate: parsed.data.latestShipmentDate ? new Date(parsed.data.latestShipmentDate) : null,
-            requiredDocuments: parsed.data.requiredDocuments ?? null,
+            requiredDocuments: resolvedRequiredDocs,
             draftUrl: parsed.data.draftUrl ?? null,
-            termsJson: (parsed.data.termsJson as any) ?? null,
+            termsJson: (resolvedTerms as any) ?? null,
             status: "Issued",
           })
           .returning();
@@ -1514,5 +1608,337 @@ export function registerTradeFinanceRoutes(app: Express): void {
     } catch (err: any) {
       res.status(500).json({ message: "Failed to load disputes" });
     }
+  });
+
+  // ──────────────────── TRADE FINANCE MASTER DATA (Task #172) ────────────────────
+  // Gated by legacy permission `manage_trade_finance` → admin_components slug
+  // `trade-finance-ops`. Full audit-logged CRUD over bank partners, LC
+  // templates, milestone presets and escrow configuration.
+
+  const MANAGE_TF = requirePermission("manage_trade_finance");
+  // All admin endpoints (read + write) require `manage_trade_finance` per
+  // task spec — there is no view-only role on these screens.
+  const VIEW_TF = MANAGE_TF;
+
+  async function logMasterAudit(req: Request, entity: string, entityId: string, action: string, details: string) {
+    try {
+      await storage.createAuditLog({
+        entityType: `trade_finance_${entity}`,
+        entityId,
+        actionType: action,
+        actor: req.session?.userId || "system",
+        actorRole: "admin",
+        details,
+      });
+    } catch { /* never block on audit failure */ }
+  }
+
+  // ── Public-read endpoints (any authenticated user) ──────────────────
+  // Used by importer LC application form and escrow funding screen to
+  // populate dropdowns / show platform limits.
+  app.get("/api/bank-partners", ensureAuth, async (req, res) => {
+    try {
+      const currency = req.query.supports as string | undefined;
+      const rows = await db
+        .select()
+        .from(bankPartners)
+        .where(eq(bankPartners.status, "active"))
+        .orderBy(bankPartners.name);
+      const filtered = currency
+        ? rows.filter((r) => (r.supportedCurrencies || []).includes(currency))
+        : rows;
+      res.json({ bankPartners: filtered });
+    } catch {
+      res.status(500).json({ message: "Failed to load bank partners" });
+    }
+  });
+
+  app.get("/api/lc-templates", ensureAuth, async (_req, res) => {
+    try {
+      const rows = await db
+        .select()
+        .from(lcTemplates)
+        .where(eq(lcTemplates.status, "active"))
+        .orderBy(lcTemplates.name);
+      res.json({ lcTemplates: rows });
+    } catch {
+      res.status(500).json({ message: "Failed to load LC templates" });
+    }
+  });
+
+  app.get("/api/milestone-presets", ensureAuth, async (req, res) => {
+    try {
+      const commodity = req.query.commodity as string | undefined;
+      const rows = await db
+        .select()
+        .from(milestonePresets)
+        .where(eq(milestonePresets.status, "active"))
+        .orderBy(desc(milestonePresets.isDefault), milestonePresets.name);
+      let suggested: typeof rows[number] | null = null;
+      if (commodity) {
+        try {
+          const schedule = await getDefaultScheduleForCommodity(commodity);
+          // Try to find a saved preset that matches the resolved schedule.
+          suggested = rows.find((r) => JSON.stringify(r.schedule) === JSON.stringify(schedule)) || null;
+        } catch { /* ignore */ }
+      }
+      res.json({ milestonePresets: rows, suggested });
+    } catch {
+      res.status(500).json({ message: "Failed to load milestone presets" });
+    }
+  });
+
+  // Non-admin endpoint: returns ONLY the fields the importer UI needs to
+  // preview limits / KYC requirement. Bank account numbers, SWIFT codes
+  // and free-text notes stay admin-only.
+  app.get("/api/escrow-configurations", ensureAuth, async (_req, res) => {
+    try {
+      const rows = await db
+        .select({
+          id: escrowConfigurations.id,
+          currency: escrowConfigurations.currency,
+          maxHoldPerCaseCents: escrowConfigurations.maxHoldPerCaseCents,
+          autoReleaseTimeoutDays: escrowConfigurations.autoReleaseTimeoutDays,
+          requiresKyc: escrowConfigurations.requiresKyc,
+        })
+        .from(escrowConfigurations)
+        .where(eq(escrowConfigurations.status, "active"))
+        .orderBy(escrowConfigurations.currency);
+      res.json({ escrowConfigurations: rows });
+    } catch {
+      res.status(500).json({ message: "Failed to load escrow configurations" });
+    }
+  });
+
+  // ── Bank Partners CRUD ─────────────────────────────────────────────
+  const bankPartnerSchema = z.object({
+    name: z.string().min(1),
+    swiftBic: z.string().min(8).max(20),
+    country: z.string().min(1),
+    role: z.enum(["issuing", "advising", "confirming", "reimbursing"]).default("issuing"),
+    supportedCurrencies: z.array(z.enum(SUPPORTED_CURRENCIES)).min(1),
+    rating: z.string().optional(),
+    contactEmail: z.string().email().optional().or(z.literal("")),
+    contactPhone: z.string().optional(),
+    notes: z.string().optional(),
+    status: z.enum(["active", "inactive"]).default("active"),
+  });
+
+  app.get("/api/admin/trade-finance/bank-partners", VIEW_TF, async (_req, res) => {
+    const rows = await db.select().from(bankPartners).orderBy(desc(bankPartners.createdAt));
+    res.json({ bankPartners: rows });
+  });
+
+  app.post("/api/admin/trade-finance/bank-partners", MANAGE_TF, async (req, res) => {
+    const parsed = bankPartnerSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    try {
+      const [row] = await db.insert(bankPartners).values({
+        ...parsed.data,
+        contactEmail: parsed.data.contactEmail || null,
+        createdBy: req.session?.userId,
+      } as any).returning();
+      await logMasterAudit(req, "bank_partner", row.id, "create", `Created bank partner ${row.name} (${row.swiftBic})`);
+      res.status(201).json({ bankPartner: row });
+    } catch (err: any) {
+      res.status(err?.code === "23505" ? 409 : 500).json({ message: err?.message || "Failed to create bank partner" });
+    }
+  });
+
+  app.put("/api/admin/trade-finance/bank-partners/:id", MANAGE_TF, async (req, res) => {
+    const parsed = bankPartnerSchema.partial().safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    const [row] = await db.update(bankPartners).set({
+      ...parsed.data,
+      contactEmail: parsed.data.contactEmail === "" ? null : parsed.data.contactEmail,
+      updatedAt: new Date(),
+    } as any).where(eq(bankPartners.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Bank partner not found" });
+    await logMasterAudit(req, "bank_partner", row.id, "update", `Updated bank partner ${row.name}`);
+    res.json({ bankPartner: row });
+  });
+
+  app.delete("/api/admin/trade-finance/bank-partners/:id", MANAGE_TF, async (req, res) => {
+    const [row] = await db.update(bankPartners).set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(bankPartners.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Bank partner not found" });
+    await logMasterAudit(req, "bank_partner", row.id, "delete", `Deactivated bank partner ${row.name}`);
+    res.json({ ok: true });
+  });
+
+  // ── LC Templates CRUD ──────────────────────────────────────────────
+  const lcTemplateSchema = z.object({
+    code: z.string().min(1).max(64),
+    name: z.string().min(1),
+    lcType: z.enum(["sight", "usance", "standby", "revolving", "transferable", "back_to_back"]),
+    description: z.string().optional(),
+    defaultIncoterms: z.string().optional(),
+    defaultTenorDays: z.number().int().min(0).optional(),
+    defaultTolerancePct: z.number().min(0).max(100).optional(),
+    requiredDocuments: z.array(z.string()).default([]),
+    defaultTerms: z.record(z.any()).default({}),
+    status: z.enum(["active", "inactive"]).default("active"),
+  });
+
+  app.get("/api/admin/trade-finance/lc-templates", VIEW_TF, async (_req, res) => {
+    const rows = await db.select().from(lcTemplates).orderBy(desc(lcTemplates.createdAt));
+    res.json({ lcTemplates: rows });
+  });
+
+  app.post("/api/admin/trade-finance/lc-templates", MANAGE_TF, async (req, res) => {
+    const parsed = lcTemplateSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    try {
+      const [row] = await db.insert(lcTemplates).values({
+        ...parsed.data,
+        defaultTolerancePct: parsed.data.defaultTolerancePct?.toFixed(2),
+        createdBy: req.session?.userId,
+      } as any).returning();
+      await logMasterAudit(req, "lc_template", row.id, "create", `Created LC template ${row.code} (${row.lcType})`);
+      res.status(201).json({ lcTemplate: row });
+    } catch (err: any) {
+      res.status(err?.code === "23505" ? 409 : 500).json({ message: err?.message || "Failed to create template" });
+    }
+  });
+
+  app.put("/api/admin/trade-finance/lc-templates/:id", MANAGE_TF, async (req, res) => {
+    const parsed = lcTemplateSchema.partial().safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    const patch: any = { ...parsed.data, updatedAt: new Date() };
+    if (parsed.data.defaultTolerancePct !== undefined) patch.defaultTolerancePct = parsed.data.defaultTolerancePct.toFixed(2);
+    const [row] = await db.update(lcTemplates).set(patch).where(eq(lcTemplates.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "LC template not found" });
+    await logMasterAudit(req, "lc_template", row.id, "update", `Updated LC template ${row.code}`);
+    res.json({ lcTemplate: row });
+  });
+
+  app.delete("/api/admin/trade-finance/lc-templates/:id", MANAGE_TF, async (req, res) => {
+    const [row] = await db.update(lcTemplates).set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(lcTemplates.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "LC template not found" });
+    await logMasterAudit(req, "lc_template", row.id, "delete", `Deactivated LC template ${row.code}`);
+    res.json({ ok: true });
+  });
+
+  // ── Milestone Presets CRUD ─────────────────────────────────────────
+  const milestoneStepSchema = z.object({
+    sequence: z.number().int().min(1),
+    label: z.string().min(1),
+    trigger: z.enum(SUPPORTED_TRIGGERS),
+    percent: z.number().min(0).max(100),
+  });
+  const milestonePresetBase = z.object({
+    name: z.string().min(1),
+    commodityCategory: z.string().nullable().optional(),
+    schedule: z.array(milestoneStepSchema).min(1),
+    isDefault: z.boolean().default(false),
+    status: z.enum(["active", "inactive"]).default("active"),
+  });
+  const milestonePresetSchema = milestonePresetBase.refine(
+    (p) => Math.abs(p.schedule.reduce((s, m) => s + m.percent, 0) - 100) < 0.01,
+    { message: "Schedule percentages must sum to 100", path: ["schedule"] },
+  );
+  const milestonePresetUpdateSchema = milestonePresetBase.partial().refine(
+    (p) => !p.schedule || Math.abs(p.schedule.reduce((s, m) => s + m.percent, 0) - 100) < 0.01,
+    { message: "Schedule percentages must sum to 100", path: ["schedule"] },
+  );
+
+  app.get("/api/admin/trade-finance/milestone-presets", VIEW_TF, async (_req, res) => {
+    const rows = await db.select().from(milestonePresets).orderBy(desc(milestonePresets.createdAt));
+    res.json({ milestonePresets: rows });
+  });
+
+  app.post("/api/admin/trade-finance/milestone-presets", MANAGE_TF, async (req, res) => {
+    const parsed = milestonePresetSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    try {
+      const [row] = await db.insert(milestonePresets).values({
+        name: parsed.data.name,
+        commodityCategory: parsed.data.commodityCategory || null,
+        schedule: parsed.data.schedule as any,
+        isDefault: parsed.data.isDefault,
+        status: parsed.data.status,
+        createdBy: req.session?.userId,
+      } as any).returning();
+      await logMasterAudit(req, "milestone_preset", row.id, "create",
+        `Created milestone preset "${row.name}" (${row.commodityCategory || "default"})`);
+      res.status(201).json({ milestonePreset: row });
+    } catch (err: any) {
+      res.status(err?.code === "23505" ? 409 : 500).json({ message: err?.message || "Failed to create preset" });
+    }
+  });
+
+  app.put("/api/admin/trade-finance/milestone-presets/:id", MANAGE_TF, async (req, res) => {
+    const parsed = milestonePresetUpdateSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    const patch: any = { ...parsed.data, updatedAt: new Date() };
+    if (parsed.data.schedule) patch.schedule = parsed.data.schedule;
+    const [row] = await db.update(milestonePresets).set(patch).where(eq(milestonePresets.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Preset not found" });
+    await logMasterAudit(req, "milestone_preset", row.id, "update", `Updated milestone preset "${row.name}"`);
+    res.json({ milestonePreset: row });
+  });
+
+  app.delete("/api/admin/trade-finance/milestone-presets/:id", MANAGE_TF, async (req, res) => {
+    const [row] = await db.update(milestonePresets).set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(milestonePresets.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Preset not found" });
+    await logMasterAudit(req, "milestone_preset", row.id, "delete", `Deactivated milestone preset "${row.name}"`);
+    res.json({ ok: true });
+  });
+
+  // ── Escrow Configuration CRUD ──────────────────────────────────────
+  const escrowConfigSchema = z.object({
+    currency: z.enum(SUPPORTED_CURRENCIES),
+    accountHolder: z.string().min(1),
+    holdingBank: z.string().min(1),
+    accountNumber: z.string().optional(),
+    swiftBic: z.string().optional(),
+    maxHoldPerCaseCents: z.number().int().min(0).nullable().optional(),
+    autoReleaseTimeoutDays: z.number().int().min(0).default(30),
+    requiresKyc: z.boolean().default(true),
+    notes: z.string().optional(),
+    status: z.enum(["active", "inactive"]).default("active"),
+  });
+
+  app.get("/api/admin/trade-finance/escrow-configurations", VIEW_TF, async (_req, res) => {
+    const rows = await db.select().from(escrowConfigurations).orderBy(escrowConfigurations.currency);
+    res.json({ escrowConfigurations: rows });
+  });
+
+  app.post("/api/admin/trade-finance/escrow-configurations", MANAGE_TF, async (req, res) => {
+    const parsed = escrowConfigSchema.safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    try {
+      const [row] = await db.insert(escrowConfigurations).values({
+        ...parsed.data,
+        createdBy: req.session?.userId,
+      } as any).returning();
+      await logMasterAudit(req, "escrow_config", row.id, "create",
+        `Created escrow config for ${row.currency} (${row.holdingBank})`);
+      res.status(201).json({ escrowConfiguration: row });
+    } catch (err: any) {
+      res.status(err?.code === "23505" ? 409 : 500).json({ message: err?.message || "Failed to create config" });
+    }
+  });
+
+  app.put("/api/admin/trade-finance/escrow-configurations/:id", MANAGE_TF, async (req, res) => {
+    const parsed = escrowConfigSchema.partial().safeParse(req.body);
+    if (!parsed.success) return void res.status(400).json({ message: "Invalid input", errors: parsed.error.errors });
+    const [row] = await db.update(escrowConfigurations).set({
+      ...parsed.data,
+      updatedAt: new Date(),
+    } as any).where(eq(escrowConfigurations.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Config not found" });
+    await logMasterAudit(req, "escrow_config", row.id, "update", `Updated escrow config for ${row.currency}`);
+    res.json({ escrowConfiguration: row });
+  });
+
+  app.delete("/api/admin/trade-finance/escrow-configurations/:id", MANAGE_TF, async (req, res) => {
+    const [row] = await db.update(escrowConfigurations).set({ status: "inactive", updatedAt: new Date() })
+      .where(eq(escrowConfigurations.id, req.params.id)).returning();
+    if (!row) return void res.status(404).json({ message: "Config not found" });
+    await logMasterAudit(req, "escrow_config", row.id, "delete", `Deactivated escrow config for ${row.currency}`);
+    res.json({ ok: true });
   });
 }

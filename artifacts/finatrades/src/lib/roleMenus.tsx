@@ -1,6 +1,6 @@
 import React from 'react';
 import {
-  LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale,
+  LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale, Landmark, Workflow, Vault,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
   Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox, Mail,
 } from 'lucide-react';
@@ -145,6 +145,16 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },
       { icon: <AlertTriangle size={16} />, label: 'Risk & AML', href: '/admin/risk' },
       { icon: <BarChart3 size={16} />, label: 'Analytics', href: '/admin/analytics' },
+    ],
+  },
+  {
+    key: 'trade-finance-ops',
+    label: 'Trade Finance Ops',
+    items: [
+      { icon: <Landmark size={16} />, label: 'Bank Partners', href: '/admin/trade-finance/banks' },
+      { icon: <FileText size={16} />, label: 'LC Templates', href: '/admin/trade-finance/lc-templates' },
+      { icon: <Workflow size={16} />, label: 'Milestone Presets', href: '/admin/trade-finance/milestone-presets' },
+      { icon: <Vault size={16} />, label: 'Escrow Config', href: '/admin/trade-finance/escrow' },
     ],
   },
   accountSection,
