@@ -14416,7 +14416,7 @@ export async function registerRoutes(
   });
   
   // Update trade case - PROTECTED
-  app.patch("/api/trade/cases/:id", ensureAuthenticated, async (req, res) => {
+  app.patch("/api/trade/cases/:id", ensureAuthenticated, requireUserType('exporter', 'importer'), async (req, res) => {
     try {
       const previousCase = await storage.getTradeCase(req.params.id);
       const tradeCase = await storage.updateTradeCase(req.params.id, req.body);
@@ -14557,7 +14557,7 @@ export async function registerRoutes(
   });
   
   // Update document status - PROTECTED
-  app.patch("/api/trade/documents/:id", ensureAuthenticated, async (req, res) => {
+  app.patch("/api/trade/documents/:id", ensureAuthenticated, requireUserType('exporter', 'importer'), async (req, res) => {
     try {
       const document = await storage.updateTradeDocument(req.params.id, req.body);
       if (!document) {

@@ -205,7 +205,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         prefetchDashboardData(data.user.id);
         preloadNGeniusSDK().catch(() => {});
-        setLocation('/dashboard');
+        setLocation(landingForUser(data.user));
       }
       
       // Clean up pending admin login flag
@@ -221,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const data = await response.json();
       setUser(data.user);
       localStorage.setItem('fina_user_id', data.user.id);
-      setLocation('/dashboard');
+      setLocation(landingForUser(data.user));
     } catch (error) {
       throw error;
     }
