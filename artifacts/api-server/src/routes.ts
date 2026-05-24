@@ -289,6 +289,7 @@ const geoRestrictionMiddleware = (opts?: { allowRegistrationBypass?: boolean }) 
     }
   };
 import { queueDocumentVerification } from "./jobs/verify-document.job";
+import { queueTradeEmail } from "./jobs/trade-emails.job";
 import { registerWalletRoutes } from "./routes/wallet";
 
 // ============================================================================
@@ -7203,79 +7204,29 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Trade case not found" });
       }
 
-      // Schedule status-specific email triggers to fire after the response is
-      // sent. setImmediate keeps the work non-blocking but inside a reachable,
-      // properly type-narrowed closure (no `!` assertions on tradeCase/caseUser).
+      // Enqueue post-update emails + notifications to the shared BullMQ queue
+      // so they retry on failure and survive an api-server restart between the
+      // response and the deferred work.
       const statusChanged = !!previousCase && previousCase.status !== tradeCase.status;
       const requestDocuments = req.body.requestDocuments === true;
       const notes = req.body.notes || req.body.adminNotes || '';
       const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${(process.env.REPLIT_DOMAINS as string).split(',')[0]}` : 'https://finatrades.com');
       const caseRef = tradeCase.caseNumber || tradeCase.id;
-      const newStatus = tradeCase.status;
-      const tradeValueUsd = tradeCase.tradeValueUsd || '0';
-      const ownerUserId = tradeCase.userId;
 
-      setImmediate(() => {
-        void (async () => {
-          try {
-            const caseUser = await storage.getUser(ownerUserId);
-            if (!caseUser?.email) return;
-            const userName = `${caseUser.firstName || ''} ${caseUser.lastName || ''}`.trim() || 'Valued Client';
-
-            if (requestDocuments) {
-              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_DOCUMENT_REQUEST, {
-                user_name: userName,
-                case_id: caseRef,
-                required_documents: notes || 'Please log in to view the required documents.',
-                upload_url: `${appBaseUrl}/trade-finance`,
-              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade document request email failed:', e));
-              await storage.createNotification({
-                userId: caseUser.id,
-                title: 'Documents Required',
-                message: `Additional documents are required for your trade finance case ${caseRef}. Please upload them promptly.`,
-                type: 'trade',
-                link: '/trade-finance',
-                read: false,
-              }).catch(() => {});
-            }
-
-            if (statusChanged) {
-              if (newStatus === 'Approved') {
-                sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
-                  user_name: userName,
-                  case_id: caseRef,
-                  credit_limit: tradeValueUsd,
-                  valid_until: 'As per agreement',
-                }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
-              } else if (newStatus === 'Rejected' || newStatus === 'Cancelled') {
-                sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
-                  user_name: userName,
-                  trade_ref: caseRef,
-                  rejection_reason: notes || 'Does not meet current eligibility requirements.',
-                  rejection_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
-              } else if (newStatus === 'Settled') {
-                sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
-                  user_name: userName,
-                  case_id: caseRef,
-                  total_value: tradeValueUsd,
-                  completion_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
-              } else {
-                sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
-                  user_name: userName,
-                  case_id: caseRef,
-                  new_status: newStatus || 'Updated',
-                  update_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-                  status_notes: notes || 'Please log in to your account for more details.',
-                }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
-              }
-            }
-          } catch (emailErr) {
-            console.error('[Email] Trade case status email trigger failed:', emailErr);
-          }
-        })();
-      });
+      if (statusChanged || requestDocuments) {
+        queueTradeEmail({
+          kind: 'trade_case_status',
+          caseId: tradeCase.id,
+          caseRef,
+          ownerUserId: tradeCase.userId,
+          newStatus: tradeCase.status ?? null,
+          previousStatus: previousCase?.status ?? null,
+          tradeValueUsd: tradeCase.tradeValueUsd || '0',
+          notes,
+          requestDocuments,
+          appBaseUrl,
+        }).catch(err => console.error('[Email] Failed to queue trade case status email:', err));
+      }
 
       return res.json({ tradeCase });
     } catch (error) {
@@ -7299,53 +7250,34 @@ export async function registerRoutes(
       const documentData = insertTradeDocumentSchema.parse(req.body);
       const document = await storage.createTradeDocument(documentData);
 
-      // Schedule AI verification + admin notification to fire after the response
-      // is sent. setImmediate keeps the work non-blocking but reachable for
-      // type-flow (no `!` assertions on tradeCase/uploaderUser).
-      setImmediate(() => {
-        void (async () => {
-          let tradeCase: Awaited<ReturnType<typeof storage.getTradeCase>> | undefined;
-          try {
-            tradeCase = await storage.getTradeCase(document.caseId);
-          } catch (err) {
-            console.error('[VerifyDoc] Failed to load trade case for post-upload tasks:', err);
-            return;
-          }
+      // Queue AI verification (existing BullMQ queue handles trade case lookup
+      // internally if needed) and enqueue the admin upload notification onto
+      // the shared trade-emails queue so it survives restarts and retries on
+      // failure.
+      if (document.status === 'AI Review') {
+        try {
+          const tradeCase = await storage.getTradeCase(document.caseId);
+          await queueDocumentVerification({
+            documentId: document.id,
+            documentUrl: document.documentUrl,
+            documentType: document.documentType,
+            caseId: document.caseId,
+            tradeValueUsd: tradeCase?.tradeValueUsd ?? undefined,
+            buyerName: tradeCase?.buyerName ?? null,
+            sellerName: tradeCase?.sellerName ?? null,
+            companyName: tradeCase?.companyName ?? null,
+          });
+        } catch (err) {
+          console.error('[VerifyDoc] Failed to queue verification job:', err);
+        }
+      }
 
-          if (document.status === 'AI Review') {
-            queueDocumentVerification({
-              documentId: document.id,
-              documentUrl: document.documentUrl,
-              documentType: document.documentType,
-              caseId: document.caseId,
-              tradeValueUsd: tradeCase?.tradeValueUsd ?? undefined,
-              buyerName: tradeCase?.buyerName ?? null,
-              sellerName: tradeCase?.sellerName ?? null,
-              companyName: tradeCase?.companyName ?? null,
-            }).catch(err => console.error('[VerifyDoc] Failed to queue job:', err));
-          }
-
-          if (!tradeCase) return;
-          try {
-            const uploaderUser = await storage.getUser(tradeCase.userId);
-            const uploaderName = uploaderUser
-              ? `${uploaderUser.firstName || ''} ${uploaderUser.lastName || ''}`.trim() || uploaderUser.email
-              : 'User';
-            const adminEmails = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
-            for (const adminEmail of adminEmails) {
-              sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
-                user_name: uploaderName,
-                trade_ref: tradeCase.caseNumber,
-                document_type: document.documentType || 'Document',
-                uploaded_by: uploaderName,
-                upload_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-              }).catch(e => console.error('[Email] Trade document uploaded admin notification failed:', e));
-            }
-          } catch (notifyErr) {
-            console.error('[Email] Trade document upload notification failed:', notifyErr);
-          }
-        })();
-      });
+      queueTradeEmail({
+        kind: 'trade_document_uploaded',
+        documentId: document.id,
+        caseId: document.caseId,
+        documentType: document.documentType,
+      }).catch(err => console.error('[Email] Failed to queue trade document uploaded notification:', err));
 
       return res.json({ document });
     } catch (error) {

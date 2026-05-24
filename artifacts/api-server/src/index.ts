@@ -611,6 +611,15 @@ async function initializeBackgroundServices(): Promise<void> {
     console.warn('[Enterprise] AI document verification worker skipped:', error);
   }
 
+  // Initialize trade emails worker (status-change + document upload notifications)
+  try {
+    const { initializeTradeEmailsWorker } = await import('./jobs/trade-emails.job');
+    initializeTradeEmailsWorker();
+    console.log('[Enterprise] Trade emails worker enabled');
+  } catch (error) {
+    console.warn('[Enterprise] Trade emails worker skipped:', error);
+  }
+
   // Initialize Warehouse Receipt PDF generation worker
   try {
     const { initializeIssueWrWorker } = await import('./jobs/issue-wr.job');
