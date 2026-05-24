@@ -16,15 +16,15 @@ interface SidebarProps {
 }
 
 const GLASS_CARD: React.CSSProperties = {
-  background: 'linear-gradient(135deg, rgba(255,255,255,0.14) 0%, rgba(255,255,255,0.05) 100%)',
-  backdropFilter: 'blur(20px) saturate(180%)',
-  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-  border: '1px solid rgba(255,255,255,0.22)',
+  background: 'linear-gradient(135deg, rgba(255,255,255,0.72) 0%, rgba(255,255,255,0.45) 100%)',
+  backdropFilter: 'blur(20px) saturate(160%)',
+  WebkitBackdropFilter: 'blur(20px) saturate(160%)',
+  border: '1px solid rgba(255,255,255,0.85)',
   boxShadow: [
-    '0 1px 0 rgba(255,255,255,0.35) inset',
-    '0 -1px 0 rgba(255,255,255,0.06) inset',
-    '0 12px 28px -12px rgba(40,8,4,0.45)',
-    '0 3px 8px -3px rgba(40,8,4,0.25)',
+    '0 1px 0 rgba(255,255,255,0.9) inset',
+    '0 -1px 0 rgba(120,40,20,0.04) inset',
+    '0 12px 28px -12px rgba(120,40,20,0.16)',
+    '0 3px 8px -3px rgba(120,40,20,0.10)',
   ].join(', '),
 };
 
@@ -68,12 +68,12 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           {collapsed ? (
             <img src={faviconIcon} alt="F" className="h-8 w-8 object-contain mx-auto" />
           ) : (
-            <img src={finatradesLogo} alt="Finatrades" className="h-6 w-auto" style={{ filter: 'brightness(0) invert(1)' }} />
+            <img src={finatradesLogo} alt="Finatrades" className="h-6 w-auto" />
           )}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg transition-colors shrink-0 hover:bg-white/20 ${collapsed ? 'hidden' : ''}`}
-            style={{ color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.22)', background: 'rgba(255,255,255,0.10)' }}
+            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg transition-colors shrink-0 hover:bg-black/5 ${collapsed ? 'hidden' : ''}`}
+            style={{ color: '#C73B22', border: '1px solid rgba(199,59,34,0.2)', background: 'rgba(255,255,255,0.55)' }}
             aria-label="Collapse sidebar"
           >
             <PanelLeftClose size={14} />
@@ -94,8 +94,8 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
         {!collapsed && (
           <div className="mt-2.5 px-1">
             <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-bold tracking-wide"
-              style={{ background: 'rgba(255,255,255,0.16)', color: '#FFFFFF', border: '1px solid rgba(255,255,255,0.24)', backdropFilter: 'blur(8px)' }}>
-              <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#FFFFFF', boxShadow: '0 0 0 2px rgba(255,255,255,0.25)' }} />
+              style={{ background: 'rgba(232,84,42,0.12)', color: '#C73B22', border: '1px solid rgba(232,84,42,0.25)', backdropFilter: 'blur(8px)' }}>
+              <div className="w-1.5 h-1.5 rounded-full" style={{ background: '#C73B22', boxShadow: '0 0 0 2px rgba(199,59,34,0.18)' }} />
               {roleLabel.toUpperCase()}
             </div>
           </div>
@@ -114,8 +114,8 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                 {!collapsed && (
                   <button
                     onClick={() => toggle(section.key)}
-                    className="w-full flex items-center justify-between px-3 pt-2.5 pb-1.5 text-[10px] font-bold tracking-widest uppercase transition-colors hover:bg-white/10 rounded-t-2xl"
-                    style={{ color: 'rgba(255,255,255,0.75)' }}
+                    className="w-full flex items-center justify-between px-3 pt-2.5 pb-1.5 text-[10px] font-bold tracking-widest uppercase transition-colors hover:bg-black/5 rounded-t-2xl"
+                    style={{ color: 'rgba(26,20,16,0.55)' }}
                   >
                     {section.label}
                     <ChevronDown
@@ -123,7 +123,7 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                       style={{
                         transform: openSections[section.key] ? 'rotate(0deg)' : 'rotate(-90deg)',
                         transition: 'transform 0.18s',
-                        color: 'rgba(255,255,255,0.85)',
+                        color: 'rgba(26,20,16,0.55)',
                       }}
                     />
                   </button>
@@ -139,20 +139,20 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                             className="flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-sm transition-all relative group"
                             style={{
                               background: active
-                                ? 'linear-gradient(135deg, #C73B22 0%, #A82F1B 100%)'
+                                ? 'linear-gradient(135deg, #E8542A 0%, #C73B22 100%)'
                                 : 'transparent',
-                              color: active ? '#FFFFFF' : 'rgba(255,255,255,0.92)',
+                              color: active ? '#FFFFFF' : '#1A1410',
                               boxShadow: active
-                                ? '0 4px 12px rgba(199,59,34,0.28), 0 1px 0 rgba(255,255,255,0.25) inset'
+                                ? '0 6px 16px rgba(232,84,42,0.32), 0 1px 0 rgba(255,255,255,0.25) inset'
                                 : 'none',
                               border: active
-                                ? '1px solid rgba(168,47,27,0.7)'
+                                ? '1px solid rgba(232,84,42,0.4)'
                                 : '1px solid transparent',
                             }}
                             onMouseEnter={(e) => {
                               if (!active) {
-                                e.currentTarget.style.background = 'rgba(255,255,255,0.12)';
-                                e.currentTarget.style.borderColor = 'rgba(255,255,255,0.20)';
+                                e.currentTarget.style.background = 'rgba(232,84,42,0.08)';
+                                e.currentTarget.style.borderColor = 'rgba(232,84,42,0.18)';
                               }
                             }}
                             onMouseLeave={(e) => {
@@ -165,14 +165,13 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                           >
                             <span
                               className="shrink-0 flex items-center justify-center"
-                              style={{ color: active ? '#FFFFFF' : '#FFD9CC' }}
+                              style={{ color: active ? '#FFFFFF' : '#E8542A' }}
                             >
                               {item.icon}
                             </span>
                             {!collapsed && (
                               <span
                                 className={`truncate ${active ? 'font-bold' : 'font-semibold'}`}
-                                style={{ textShadow: '0 1px 2px rgba(40,8,4,0.35)' }}
                               >
                                 {item.label}
                               </span>
@@ -181,9 +180,9 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                               <span
                                 className="ml-auto text-[10px] font-bold px-1.5 py-0.5 rounded-full tabular-nums"
                                 style={{
-                                  background: active ? 'rgba(255,255,255,0.22)' : 'rgba(255,255,255,0.18)',
-                                  color: '#FFFFFF',
-                                  border: '1px solid rgba(255,255,255,0.30)',
+                                  background: active ? 'rgba(255,255,255,0.28)' : 'rgba(232,84,42,0.14)',
+                                  color: active ? '#FFFFFF' : '#C73B22',
+                                  border: active ? '1px solid rgba(255,255,255,0.35)' : '1px solid rgba(232,84,42,0.3)',
                                 }}
                               >
                                 {item.badge}
@@ -217,8 +216,8 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           {collapsed ? (
             <button
               onClick={() => logout()}
-              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-white/15"
-              style={{ color: '#FFFFFF' }}
+              className="w-full flex items-center justify-center p-2 rounded-xl transition-colors hover:bg-black/5"
+              style={{ color: '#C73B22' }}
               title="Sign out"
             >
               <LogOut size={16} />
@@ -227,30 +226,30 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
             <div className="flex flex-col gap-1.5">
               <div
                 className="flex items-center gap-2.5 px-2 py-2 rounded-xl"
-                style={{ background: 'rgba(255,255,255,0.10)', border: '1px solid rgba(255,255,255,0.18)' }}
+                style={{ background: 'rgba(255,255,255,0.55)', border: '1px solid rgba(232,84,42,0.18)' }}
               >
                 <div
-                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-white"
+                  className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-xs font-bold text-[#1A1410]"
                   style={{
-                    background: 'linear-gradient(135deg, #C73B22 0%, #A82F1B 100%)',
+                    background: 'linear-gradient(135deg, #E8542A 0%, #C73B22 100%)',
                     boxShadow: '0 2px 6px rgba(199,59,34,0.25), 0 1px 0 rgba(255,255,255,0.3) inset',
                   }}
                 >
                   {((user as any)?.fullName || (user as any)?.email || 'U')[0].toUpperCase()}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-bold truncate" style={{ color: '#FFFFFF', textShadow: '0 1px 2px rgba(40,8,4,0.35)' }}>
+                  <p className="text-xs font-bold truncate" style={{ color: '#1A1410' }}>
                     {(user as any)?.fullName || (user as any)?.email?.split('@')[0]}
                   </p>
-                  <p className="text-[10px] truncate font-medium" style={{ color: 'rgba(255,255,255,0.7)' }}>
+                  <p className="text-[10px] truncate font-medium" style={{ color: 'rgba(26,20,16,0.62)' }}>
                     {roleLabel}
                   </p>
                 </div>
               </div>
               <button
                 onClick={() => logout()}
-                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-semibold transition-colors hover:bg-white/15"
-                style={{ color: 'rgba(255,255,255,0.85)' }}
+                className="w-full flex items-center gap-2 px-2.5 py-2 rounded-xl text-[13px] font-semibold transition-colors hover:bg-black/5"
+                style={{ color: '#C73B22' }}
               >
                 <LogOut size={14} />
                 <span>Sign out</span>

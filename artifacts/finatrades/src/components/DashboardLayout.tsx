@@ -89,9 +89,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       className="min-h-screen flex"
       style={{
         background: `
-          radial-gradient(120% 60% at 100% 0%, rgba(255,200,180,0.45) 0%, transparent 55%),
-          radial-gradient(80% 60% at 0% 100%, rgba(168,47,27,0.55) 0%, transparent 60%),
-          linear-gradient(135deg, #C73B22 0%, #A82F1B 55%, #7A1F12 100%)
+          radial-gradient(120% 60% at 100% 0%, rgba(255,210,180,0.55) 0%, transparent 55%),
+          radial-gradient(80% 60% at 0% 100%, rgba(232,84,42,0.18) 0%, transparent 60%),
+          linear-gradient(135deg, #FAEFE3 0%, #F5E8DC 55%, #EBD9C8 100%)
         `,
         backgroundAttachment: 'fixed',
       }}
