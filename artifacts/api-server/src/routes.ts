@@ -440,13 +440,14 @@ const allowedMimeTypes: Record<string, string[]> = {
   'application/msword': ['.doc'],
 };
 
-const upload = multer({ 
+const UPLOAD_MAX_BYTES = 25 * 1024 * 1024; // 25MB
+const upload = multer({
   storage: multerStorage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: UPLOAD_MAX_BYTES },
   fileFilter: (req, file, cb) => {
     const ext = path.extname(file.originalname).toLowerCase();
     const allowedExts = allowedMimeTypes[file.mimetype];
-    
+
     // Check both mimetype is allowed AND extension matches
     if (allowedExts && allowedExts.includes(ext)) {
       cb(null, true);
@@ -1208,7 +1209,26 @@ export async function registerRoutes(
   app.use("/api", counterpartyRouter);
 
   // File upload endpoint for Deal Room and other attachments
-  app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
+  app.post("/api/documents/upload", ensureAuthenticated, (req: Request, res: Response, next: NextFunction): void => {
+    upload.single('file')(req, res, (err: any): void => {
+      if (err) {
+        // multer errors: surface friendly messages instead of generic 500
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          res.status(413).json({
+            message: `File is too large. Maximum allowed size is ${Math.round(UPLOAD_MAX_BYTES / (1024 * 1024))}MB. Please compress the document or split it into parts.`,
+          });
+          return;
+        }
+        if (typeof err.message === 'string' && err.message.includes('Invalid file type')) {
+          res.status(415).json({ message: err.message });
+          return;
+        }
+        res.status(400).json({ message: err.message || 'Upload failed' });
+        return;
+      }
+      next();
+    });
+  }, async (req: Request, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ message: 'No file uploaded' });
