@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { motion, useInView, useSpring, useMotionTemplate } from 'framer-motion';
+import { motion, useInView, useSpring, useMotionTemplate, type Variants } from 'framer-motion';
 import { Link } from 'wouter';
 import {
   ArrowRight, Shield, Globe, Warehouse, Package, Search,
@@ -56,9 +56,9 @@ import layer12 from '@/assets/layer-12.png';
 import backendBg from '@/assets/backend-bg.png';
 import compliance3d from '@/assets/compliance-3d.png';
 
-const fadeUp = {
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] as const } },
 };
 const stagger = {
   hidden: {},

@@ -1601,7 +1601,7 @@ export function registerComplianceRoutes(
           finabridgeWalletRow,
         ] = await Promise.all([
           storage.getUser(userId),
-          storage.getWalletByUserId(userId),
+          storage.getWallet(userId),
           db.select().from(kycSubmissions).where(eq(kycSubmissions.userId, userId)).then(r => r[0] ?? null),
           db.select().from(userRiskProfiles).where(eq(userRiskProfiles.userId, userId)).then(r => r[0] ?? null),
           db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId)).then(r => r[0] ?? null),

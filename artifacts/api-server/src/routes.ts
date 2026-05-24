@@ -168,10 +168,8 @@ import { format } from "date-fns";
 import { registerComplianceRoutes } from "./compliance-routes";
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { checkIsSuperAdmin, loadUserPermissions } from "./rbac-middleware";
-import { registerDualWalletRoutes } from "./dual-wallet-routes";
 import { registerSsoRoutes } from "./sso-routes";
 import vcRoutes from "./vc-routes";
-import wingoldRoutes from "./wingold-routes";
 import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
 import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
@@ -1039,8 +1037,6 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
-  // Register dual wallet routes (LGPW/FGPW)
-  registerDualWalletRoutes(app);
   // Register SSO routes for Wingold integration
   registerSsoRoutes(app);
   // Register Verifiable Credentials routes for W3C VC 2.0
@@ -1096,8 +1092,6 @@ export async function registerRoutes(
     }
   });
 
-  // Register Wingold B2B integration routes
-  app.use("/api/wingold", wingoldRoutes);
   // Register Admin Vault Exposure routes
   app.use("/api/admin/vault-exposure", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), adminVaultExposureRoutes);
   app.use("/api/admin/unified-tally", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), unifiedTallyRoutes);
@@ -11586,7 +11580,8 @@ export async function registerRoutes(
       
       // If recipient exists, credit immediately
       if (recipientUserId) {
-        const recipientWallet = await storage.getOrCreateWallet(recipientUserId);
+        const recipientWallet = (await storage.getWallet(recipientUserId))
+          ?? (await storage.createWallet({ userId: recipientUserId }));
         await storage.updateWallet(recipientWallet.id, {
           goldGrams: (parseFloat(recipientWallet.goldGrams) + grams).toFixed(6),
         });
@@ -11682,7 +11677,8 @@ export async function registerRoutes(
       const goldPrice = parseFloat(gift.goldPriceUsdPerGram);
       
       // Credit recipient
-      const recipientWallet = await storage.getOrCreateWallet(userId);
+      const recipientWallet = (await storage.getWallet(userId))
+        ?? (await storage.createWallet({ userId }));
       await storage.updateWallet(recipientWallet.id, {
         goldGrams: (parseFloat(recipientWallet.goldGrams) + grams).toFixed(6),
       });
