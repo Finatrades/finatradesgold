@@ -7,9 +7,7 @@ import MobileQuickActions from './MobileQuickActions';
 import DepositModal from '@/components/finapay/modals/DepositModal';
 import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
 import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
-import { useQuery } from '@tanstack/react-query';
-import { useAuth } from '@/context/AuthContext';
-import { apiRequest } from '@/lib/queryClient';
+import { useGetWallet } from '@workspace/api-client-react';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -22,20 +20,11 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
   const [sendModalOpen, setSendModalOpen] = useState(false);
   const [requestModalOpen, setRequestModalOpen] = useState(false);
   
-  const { user } = useAuth();
+  const { data: wallet } = useGetWallet();
 
-  const { data: walletData } = useQuery({
-    queryKey: ['/api/wallet', user?.id],
-    queryFn: async () => {
-      if (!user?.id) return null;
-      const res = await apiRequest('GET', `/api/wallet/${user.id}`);
-      return res.json();
-    },
-    enabled: !!user?.id,
-  });
-
-  const walletBalance = parseFloat(walletData?.wallet?.usdBalance || '0');
-  const goldBalance = parseFloat(walletData?.wallet?.goldGrams || '0');
+  // B2B wallet is USD-only; legacy gold balance is no longer surfaced.
+  const walletBalance = Number(wallet?.availableCents || 0) / 100;
+  const goldBalance = 0;
 
   const [location] = useLocation();
   

@@ -1712,6 +1712,73 @@ export const CreateWithdrawalRequestBody = zod.object({
 });
 
 /**
+ * Stripe-signed webhook. On `payment_intent.succeeded` the matching deposit
+intent is marked credited and the user's wallet is funded. Signature is
+verified against `STRIPE_WEBHOOK_SECRET` when configured.
+
+ * @summary Inbound Stripe webhook for card top-ups (payment_intent.succeeded)
+ */
+export const StripeWalletWebhookHeader = zod.object({
+  "stripe-signature": zod.string().optional(),
+});
+
+export const StripeWalletWebhookBody = zod
+  .object({
+    id: zod.string().optional(),
+    type: zod.string(),
+    data: zod
+      .object({
+        object: zod
+          .object({
+            id: zod.string().optional(),
+            amount: zod.number().optional(),
+            amount_received: zod.number().optional(),
+            metadata: zod
+              .object({
+                userId: zod.string().optional(),
+                intentId: zod.string().optional(),
+              })
+              .optional(),
+          })
+          .optional()
+          .describe("Stripe PaymentIntent (subset)"),
+      })
+      .optional(),
+  })
+  .describe(
+    "Minimal subset of the Stripe Event shape that the wallet webhook consumes.\nOnly `payment_intent.succeeded` is acted upon; other event types are\nacknowledged but ignored.\n",
+  );
+
+export const StripeWalletWebhookResponse = zod.object({
+  received: zod.boolean(),
+});
+
+/**
+ * On-chain confirmation observer posts here when a deposit transaction is
+confirmed. The wallet is credited idempotently using the tx hash as the
+idempotency key. Signature is verified against `STABLECOIN_WEBHOOK_SECRET`
+(HMAC-SHA256 of the raw JSON body) via the `x-observer-signature` header
+when configured.
+
+ * @summary Inbound stablecoin chain-observer webhook for on-chain deposits
+ */
+export const StablecoinWalletWebhookHeader = zod.object({
+  "x-observer-signature": zod.string().optional(),
+});
+
+export const StablecoinWalletWebhookBody = zod.object({
+  userId: zod.string(),
+  txHash: zod.string(),
+  amountCents: zod.number().min(1),
+  address: zod.string().nullish(),
+  network: zod.string().nullish(),
+});
+
+export const StablecoinWalletWebhookResponse = zod.object({
+  received: zod.boolean(),
+});
+
+/**
  * @summary List wallets with totals (admin)
  */
 export const AdminListWalletsQueryParams = zod.object({

@@ -1191,6 +1191,57 @@ export interface AdminWalletDetailResponse {
   holds: WalletHold[];
 }
 
+export interface WebhookAck {
+  received: boolean;
+}
+
+export type StripeWebhookEventDataObjectMetadata = {
+  userId?: string;
+  intentId?: string;
+  [key: string]: unknown;
+};
+
+/**
+ * Stripe PaymentIntent (subset)
+ */
+export type StripeWebhookEventDataObject = {
+  id?: string;
+  amount?: number;
+  amount_received?: number;
+  metadata?: StripeWebhookEventDataObjectMetadata;
+  [key: string]: unknown;
+};
+
+export type StripeWebhookEventData = {
+  /** Stripe PaymentIntent (subset) */
+  object?: StripeWebhookEventDataObject;
+  [key: string]: unknown;
+};
+
+/**
+ * Minimal subset of the Stripe Event shape that the wallet webhook consumes.
+Only `payment_intent.succeeded` is acted upon; other event types are
+acknowledged but ignored.
+
+ */
+export interface StripeWebhookEvent {
+  id?: string;
+  type: string;
+  data?: StripeWebhookEventData;
+  [key: string]: unknown;
+}
+
+export interface StablecoinWebhookEvent {
+  userId: string;
+  txHash: string;
+  /** @minimum 1 */
+  amountCents: number;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  network?: string | null;
+}
+
 export interface AdminWithdrawalRow {
   withdrawal: WithdrawalRequest;
   user?: AdminWalletUserSummary | null;

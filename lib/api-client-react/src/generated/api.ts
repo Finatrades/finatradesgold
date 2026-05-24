@@ -71,6 +71,8 @@ import type {
   PlatformStats,
   Rfq,
   RfqInput,
+  StablecoinWebhookEvent,
+  StripeWebhookEvent,
   TradeHub,
   WalletAccount,
   WalletHold,
@@ -79,6 +81,7 @@ import type {
   WalletHoldResult,
   WalletTransaction,
   Warehouse,
+  WebhookAck,
   WithdrawalDecisionInput,
   WithdrawalInput,
   WithdrawalRequest,
@@ -4552,6 +4555,189 @@ export const useCreateWithdrawalRequest = <
   TContext
 > => {
   return useMutation(getCreateWithdrawalRequestMutationOptions(options));
+};
+
+/**
+ * Stripe-signed webhook. On `payment_intent.succeeded` the matching deposit
+intent is marked credited and the user's wallet is funded. Signature is
+verified against `STRIPE_WEBHOOK_SECRET` when configured.
+
+ * @summary Inbound Stripe webhook for card top-ups (payment_intent.succeeded)
+ */
+export const getStripeWalletWebhookUrl = () => {
+  return `/api/b2b/wallet/webhooks/stripe`;
+};
+
+export const stripeWalletWebhook = async (
+  stripeWebhookEvent: StripeWebhookEvent,
+  options?: RequestInit,
+): Promise<WebhookAck> => {
+  return customFetch<WebhookAck>(getStripeWalletWebhookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(stripeWebhookEvent),
+  });
+};
+
+export const getStripeWalletWebhookMutationOptions = <
+  TError = ErrorType<MessageResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stripeWalletWebhook>>,
+    TError,
+    { data: BodyType<StripeWebhookEvent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof stripeWalletWebhook>>,
+  TError,
+  { data: BodyType<StripeWebhookEvent> },
+  TContext
+> => {
+  const mutationKey = ["stripeWalletWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof stripeWalletWebhook>>,
+    { data: BodyType<StripeWebhookEvent> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return stripeWalletWebhook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StripeWalletWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof stripeWalletWebhook>>
+>;
+export type StripeWalletWebhookMutationBody = BodyType<StripeWebhookEvent>;
+export type StripeWalletWebhookMutationError = ErrorType<MessageResponse>;
+
+/**
+ * @summary Inbound Stripe webhook for card top-ups (payment_intent.succeeded)
+ */
+export const useStripeWalletWebhook = <
+  TError = ErrorType<MessageResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stripeWalletWebhook>>,
+    TError,
+    { data: BodyType<StripeWebhookEvent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof stripeWalletWebhook>>,
+  TError,
+  { data: BodyType<StripeWebhookEvent> },
+  TContext
+> => {
+  return useMutation(getStripeWalletWebhookMutationOptions(options));
+};
+
+/**
+ * On-chain confirmation observer posts here when a deposit transaction is
+confirmed. The wallet is credited idempotently using the tx hash as the
+idempotency key. Signature is verified against `STABLECOIN_WEBHOOK_SECRET`
+(HMAC-SHA256 of the raw JSON body) via the `x-observer-signature` header
+when configured.
+
+ * @summary Inbound stablecoin chain-observer webhook for on-chain deposits
+ */
+export const getStablecoinWalletWebhookUrl = () => {
+  return `/api/b2b/wallet/webhooks/stablecoin`;
+};
+
+export const stablecoinWalletWebhook = async (
+  stablecoinWebhookEvent: StablecoinWebhookEvent,
+  options?: RequestInit,
+): Promise<WebhookAck> => {
+  return customFetch<WebhookAck>(getStablecoinWalletWebhookUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(stablecoinWebhookEvent),
+  });
+};
+
+export const getStablecoinWalletWebhookMutationOptions = <
+  TError = ErrorType<MessageResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stablecoinWalletWebhook>>,
+    TError,
+    { data: BodyType<StablecoinWebhookEvent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof stablecoinWalletWebhook>>,
+  TError,
+  { data: BodyType<StablecoinWebhookEvent> },
+  TContext
+> => {
+  const mutationKey = ["stablecoinWalletWebhook"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof stablecoinWalletWebhook>>,
+    { data: BodyType<StablecoinWebhookEvent> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return stablecoinWalletWebhook(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type StablecoinWalletWebhookMutationResult = NonNullable<
+  Awaited<ReturnType<typeof stablecoinWalletWebhook>>
+>;
+export type StablecoinWalletWebhookMutationBody =
+  BodyType<StablecoinWebhookEvent>;
+export type StablecoinWalletWebhookMutationError = ErrorType<MessageResponse>;
+
+/**
+ * @summary Inbound stablecoin chain-observer webhook for on-chain deposits
+ */
+export const useStablecoinWalletWebhook = <
+  TError = ErrorType<MessageResponse>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof stablecoinWalletWebhook>>,
+    TError,
+    { data: BodyType<StablecoinWebhookEvent> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof stablecoinWalletWebhook>>,
+  TError,
+  { data: BodyType<StablecoinWebhookEvent> },
+  TContext
+> => {
+  return useMutation(getStablecoinWalletWebhookMutationOptions(options));
 };
 
 /**
