@@ -1,5 +1,5 @@
 -- Task #133: Drop legacy gold-stack tables (Vault/BNSL/Wingold/Tally/Physical).
--- Production rows confirmed to be 0; dev rows are intentionally dropped.
+-- Production rows confirmed to be 0 and dev rows are intentionally dropped.
 -- migrate.ts is idempotent on duplicate-object errors so re-running is safe.
 
 -- 1) Drop incoming FK columns from KEPT tables before dropping vault_holdings.

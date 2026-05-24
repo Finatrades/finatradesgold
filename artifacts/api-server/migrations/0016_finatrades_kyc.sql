@@ -1,6 +1,6 @@
 -- 0016: Finatrades KYC migration (Task #124)
--- Collapses 3-tier KYC into Personal + Corporate; collapses document and
--- trade-request review statuses to a single "Pending Review" stage.
+-- Collapses 3-tier KYC into Personal + Corporate, and collapses document and
+-- trade-request review statuses to a single Pending Review stage.
 -- Idempotent: migrator skips duplicate-object/table/column errors automatically.
 
 -- Backfill corporate KYC from legacy tier_3 rows. Reset migrated record to

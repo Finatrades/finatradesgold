@@ -43,6 +43,16 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - Theme: redbrick `#C73B22` / cream `#FAFAF8` / dark `#1A1A1A` (rebranded from purple/gold)
 - Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar; backend gold-stack tables and their unreachable handlers were dropped in task #133
 
+### Trade Finance Suite (Task #146)
+- **Multi-currency wallet** (`wallet_balances` + `wallet_balance_transactions`, bigint cents) — USD/EUR/GBP, per-(user, currency) row, `available_cents`/`locked_cents`. USD remains tracked on legacy `b2b_wallets`; this table is the source of truth for EUR/GBP.
+- **FX rates** (`currency_rates`) — daily snapshots seeded with USD/EUR/GBP pairs. `getLatestRate`, `convertCents`, admin `PUT /api/admin/wallet/fx/rates`.
+- **Trade case settlement** — `trade_cases` extended with `settlement_currency`, `settlement_amount_cents`, `milestone_schedule` jsonb, `escrow_hold_id`, `escrow_funded_at`, `escrow_released_at`. Exporter counterparty stored in `trade_cases.notes` JSON as `{ exporterUserId }`.
+- **Milestone escrow** (`trade_milestones`) — default schedule 30/40/30 (`lc_issued` / `shipment_dispatched` / `goods_received`). Importer funds escrow via `POST /api/trade/cases/:id/escrow/fund` (places hold on multi-currency balance), then approves milestones via `POST /api/trade/cases/:id/milestones/:mid/release` which atomically moves locked funds to exporter's available balance. Idempotent on `idempotencyKey`.
+- **Letter of Credit** (`letters_of_credit`, `lc_events`, `lc_presentations`) — Draft → Issued → Documents Presented → Compliant/Discrepant/Rejected. Admin queue at `/admin/lc` reviews presentations.
+- **Dispute tribunal** — `trade_disputes` extended with `trade_case_id`, `panel_member_ids`, `importer/exporter_allocation_cents`, `currency`, `appeal_deadline`. Admin queue at `/admin/disputes` records resolution: importer refund (releases hold) + exporter payout (transfers locked → available) per FX-correct currency.
+- **Service**: `artifacts/api-server/src/trade-finance-service.ts`. **Routes**: `artifacts/api-server/src/routes/trade-finance.ts` mounted via `registerTradeFinanceRoutes(app)`. **UI**: `<TradeFinanceTab>` (deal room tab), `AdminLcQueue`, `AdminDisputeQueue`. All party-facing responses include only FT-IDs via `loadCounterpartyByUserId` (Task #145).
+- Migrator hardened: `splitSqlStatements` now strips `--` line comments before splitting on `;` and respects `$tag$ ... $tag$` blocks. Pre-existing migrations 0016/0017/0018 had comment-text quirks that broke the old splitter — text fixed without changing schema.
+
 ### Counterparty Anonymity (Task #145)
 - Marketplace, Deal Room, RFQs, Forwarded Proposals, doc-verify payloads, and all party-facing emails expose **only the Finatrades ID (FT-ID)** — never real names, emails, phones, or company names.
 - Server helper: `artifacts/api-server/src/lib/counterparty.ts` (`CounterpartySnapshot`, `loadCounterpartyByUserId(s)`, `recomputeUserRatingAggregate`, `incrementCompletedTrades`, `hasMutualIdentityConsent`).

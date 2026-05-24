@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
+import { TradeFinanceTab } from '@/components/finabridge/TradeFinanceTab';
 import { io, Socket } from 'socket.io-client';
 import {
   Send, Paperclip, ArrowLeft, MessageCircle, Users,
@@ -1402,6 +1403,9 @@ Version 1.0 - Effective Date: January 2025`.trim();
                 <TabsTrigger value="timeline" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-timeline">
                   <Clock className="w-4 h-4 mr-2" />Timeline
                 </TabsTrigger>
+                <TabsTrigger value="trade-finance" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-trade-finance">
+                  Trade Finance
+                </TabsTrigger>
                 <TabsTrigger value="discrepancies" className="rounded-none border-b-2 border-transparent data-[state=active]:border-purple-500 data-[state=active]:bg-transparent px-4" data-testid="tab-discrepancies">
                   <Flag className="w-4 h-4 mr-2" />Discrepancies
                   {openDiscrepancies.length > 0 && <Badge className="ml-1 bg-red-50 dark:bg-red-950/200 text-white text-xs py-0 px-1">{openDiscrepancies.length}</Badge>}
@@ -1744,6 +1748,18 @@ Version 1.0 - Effective Date: January 2025`.trim();
               </TabsContent>
 
               {/* Discrepancies Tab */}
+              <TabsContent value="trade-finance" className="flex-1 overflow-auto m-0 data-[state=inactive]:hidden" data-testid="tab-content-trade-finance">
+                {room?.id ? (
+                  <TradeFinanceTab
+                    caseId={room.id}
+                    counterpartyFtId={userRole === 'importer' ? room.exporter?.finatradesId : room.importer?.finatradesId}
+                    counterpartyUserId={userRole === 'importer' ? room.exporterUserId : room.importerUserId}
+                  />
+                ) : (
+                  <div className="p-6 text-sm text-muted-foreground">Trade Finance becomes available once a trade case is opened for this deal.</div>
+                )}
+              </TabsContent>
+
               <TabsContent value="discrepancies" className="flex-1 overflow-auto m-0 p-4 data-[state=inactive]:hidden" data-testid="tab-content-discrepancies">
                 <div className="space-y-4">
                   <div className="flex items-center justify-between mb-4">

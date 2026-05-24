@@ -50,7 +50,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS trade_identity_consents_request_user_uq
 WITH case_counts AS (
   SELECT user_id, COUNT(*)::int AS c
   FROM trade_cases
-  WHERE status IN ('Settled', 'Completed', 'Approved')
+  WHERE status IN ('Settled', 'Approved')
   GROUP BY user_id
 ),
 -- Count Completed trade_requests per importer

@@ -1549,7 +1549,18 @@ export const tradeCases = pgTable("trade_cases", {
 
   // LGPW/FGPW wallet selection - which wallet gold is used for settlement
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
-  
+
+  // Task #146 — Trade Finance suite: multi-currency + milestone escrow
+  settlementCurrency: varchar("settlement_currency", { length: 8 }).notNull().default('USD'),
+  settlementAmountCents: bigint("settlement_amount_cents", { mode: 'number' }),
+  milestoneSchedule: jsonb("milestone_schedule"),
+  escrowHoldId: varchar("escrow_hold_id", { length: 255 }),
+  escrowFundedAt: timestamp("escrow_funded_at"),
+  escrowReleasedAt: timestamp("escrow_released_at"),
+  // Funds held back after Goods Received until the 30-day dispute window
+  // closes (or a tribunal decision spends them). Round-4 fix.
+  disputeReserveCents: bigint("dispute_reserve_cents", { mode: 'number' }).notNull().default(0),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1816,7 +1827,7 @@ export const tradeDisputeStatusEnum = pgEnum('trade_dispute_status', [
 export const tradeDisputes = pgTable("trade_disputes", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   disputeRefId: varchar("dispute_ref_id", { length: 50 }).notNull().unique(),
-  tradeRequestId: varchar("trade_request_id", { length: 255 }).notNull().references(() => tradeRequests.id),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).references(() => tradeRequests.id),
   dealRoomId: varchar("deal_room_id", { length: 255 }).references(() => dealRooms.id),
   raisedByUserId: varchar("raised_by_user_id", { length: 255 }).notNull().references(() => users.id),
   raisedByRole: varchar("raised_by_role", { length: 20 }).notNull(),
@@ -1831,9 +1842,35 @@ export const tradeDisputes = pgTable("trade_disputes", {
   resolution: text("resolution"),
   resolvedBy: varchar("resolved_by", { length: 255 }).references(() => users.id),
   resolvedAt: timestamp("resolved_at"),
+  // Task #146 — dispute tribunal extensions
+  tradeCaseId: varchar("trade_case_id", { length: 255 }).references(() => tradeCases.id),
+  panelMemberIds: text("panel_member_ids").array(),
+  importerAllocationCents: bigint("importer_allocation_cents", { mode: 'number' }),
+  exporterAllocationCents: bigint("exporter_allocation_cents", { mode: 'number' }),
+  currency: varchar("currency", { length: 8 }),
+  appealDeadline: timestamp("appeal_deadline"),
+  finalizedAt: timestamp("finalized_at"),
+  // Task #146 round-2: tribunal decision fields (spec contract).
+  decision: varchar("decision", { length: 48 }), // 'release_to_seller' | 'refund_to_buyer' | 'split'
+  splitBps: integer("split_bps"),
+  decisionNotes: text("decision_notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+// Task #146 round-2: dedicated evidence rows (spec requirement; replaces the
+// loose `evidenceUrls` array, which stays for backwards compat).
+export const tradeDisputeEvidence = pgTable("trade_dispute_evidence", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  disputeId: varchar("dispute_id", { length: 255 }).notNull().references(() => tradeDisputes.id, { onDelete: 'cascade' }),
+  uploadedByUserId: varchar("uploaded_by_user_id", { length: 255 }).notNull().references(() => users.id),
+  uploadedByRole: varchar("uploaded_by_role", { length: 20 }).notNull(),
+  fileUrl: text("file_url").notNull(),
+  fileName: varchar("file_name", { length: 255 }),
+  description: text("description"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type TradeDisputeEvidence = typeof tradeDisputeEvidence.$inferSelect;
 
 export const insertTradeDisputeSchema = createInsertSchema(tradeDisputes).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTradeDispute = z.infer<typeof insertTradeDisputeSchema>;
@@ -5564,3 +5601,124 @@ export const b2bWithdrawalRequests = pgTable("b2b_withdrawal_requests", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 export type B2bWithdrawalRequest = typeof b2bWithdrawalRequests.$inferSelect;
+
+// ============================================
+// TRADE FINANCE SUITE (Task #146)
+// Multi-currency wallet, milestone escrow, LC lifecycle, dispute tribunal.
+// All money in BIGINT cents (decimal places per currency).
+// ============================================
+
+export const SUPPORTED_CURRENCIES = ['USD', 'EUR', 'GBP'] as const;
+export type SupportedCurrency = typeof SUPPORTED_CURRENCIES[number];
+
+export const currencyRates = pgTable("currency_rates", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  baseCurrency: varchar("base_currency", { length: 8 }).notNull(),
+  quoteCurrency: varchar("quote_currency", { length: 8 }).notNull(),
+  rate: decimal("rate", { precision: 18, scale: 8 }).notNull(),
+  source: varchar("source", { length: 64 }).notNull().default('manual'),
+  effectiveDate: timestamp("effective_date", { mode: 'date' }).notNull().defaultNow(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type CurrencyRate = typeof currencyRates.$inferSelect;
+
+export const walletBalances = pgTable("wallet_balances", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  currency: varchar("currency", { length: 8 }).notNull(),
+  availableCents: bigint("available_cents", { mode: 'number' }).notNull().default(0),
+  lockedCents: bigint("locked_cents", { mode: 'number' }).notNull().default(0),
+  // In-flight credits awaiting payment-rail confirmation (bank wire, on-chain
+  // settlement, etc.) — counted neither as available nor locked.
+  pendingCents: bigint("pending_cents", { mode: 'number' }).notNull().default(0),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type WalletBalance = typeof walletBalances.$inferSelect;
+
+export const walletBalanceTransactions = pgTable("wallet_balance_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  balanceId: varchar("balance_id", { length: 255 }).notNull().references(() => walletBalances.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  currency: varchar("currency", { length: 8 }).notNull(),
+  type: varchar("type", { length: 48 }).notNull(),
+  amountCents: bigint("amount_cents", { mode: 'number' }).notNull(),
+  balanceAfterCents: bigint("balance_after_cents", { mode: 'number' }).notNull(),
+  lockedAfterCents: bigint("locked_after_cents", { mode: 'number' }).notNull().default(0),
+  referenceType: varchar("reference_type", { length: 64 }),
+  referenceId: varchar("reference_id", { length: 255 }),
+  idempotencyKey: varchar("idempotency_key", { length: 128 }),
+  description: text("description"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type WalletBalanceTransaction = typeof walletBalanceTransactions.$inferSelect;
+
+export const tradeMilestones = pgTable("trade_milestones", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeCaseId: varchar("trade_case_id", { length: 255 }).notNull().references(() => tradeCases.id, { onDelete: 'cascade' }),
+  sequence: integer("sequence").notNull(),
+  label: varchar("label", { length: 255 }).notNull(),
+  trigger: varchar("trigger", { length: 64 }).notNull(),
+  percent: decimal("percent", { precision: 5, scale: 2 }).notNull(),
+  amountCents: bigint("amount_cents", { mode: 'number' }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default('USD'),
+  status: varchar("status", { length: 32 }).notNull().default('pending'),
+  releasedAmountCents: bigint("released_amount_cents", { mode: 'number' }).notNull().default(0),
+  releasedAt: timestamp("released_at"),
+  releasedBy: varchar("released_by", { length: 255 }).references(() => users.id),
+  releaseReason: text("release_reason"),
+  evidenceDocumentIds: text("evidence_document_ids").array(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type TradeMilestone = typeof tradeMilestones.$inferSelect;
+
+export const lettersOfCredit = pgTable("letters_of_credit", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  lcRef: varchar("lc_ref", { length: 64 }).notNull().unique(),
+  tradeCaseId: varchar("trade_case_id", { length: 255 }).notNull().references(() => tradeCases.id, { onDelete: 'cascade' }),
+  dealRoomId: varchar("deal_room_id", { length: 255 }).references(() => dealRooms.id),
+  issuingBankName: varchar("issuing_bank_name", { length: 255 }),
+  applicantUserId: varchar("applicant_user_id", { length: 255 }).notNull().references(() => users.id),
+  beneficiaryUserId: varchar("beneficiary_user_id", { length: 255 }).notNull().references(() => users.id),
+  currency: varchar("currency", { length: 8 }).notNull().default('USD'),
+  amountCents: bigint("amount_cents", { mode: 'number' }).notNull(),
+  incoterms: varchar("incoterms", { length: 32 }),
+  expiryDate: timestamp("expiry_date", { mode: 'date' }),
+  latestShipmentDate: timestamp("latest_shipment_date", { mode: 'date' }),
+  requiredDocuments: text("required_documents").array(),
+  draftUrl: text("draft_url"),
+  status: varchar("status", { length: 48 }).notNull().default('Draft'),
+  termsJson: jsonb("terms_json"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type LetterOfCredit = typeof lettersOfCredit.$inferSelect;
+
+export const lcEvents = pgTable("lc_events", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  lcId: varchar("lc_id", { length: 255 }).notNull().references(() => lettersOfCredit.id, { onDelete: 'cascade' }),
+  eventType: varchar("event_type", { length: 48 }).notNull(),
+  actorUserId: varchar("actor_user_id", { length: 255 }).references(() => users.id),
+  actorRole: varchar("actor_role", { length: 32 }),
+  payload: jsonb("payload"),
+  notes: text("notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type LcEvent = typeof lcEvents.$inferSelect;
+
+export const lcPresentations = pgTable("lc_presentations", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  lcId: varchar("lc_id", { length: 255 }).notNull().references(() => lettersOfCredit.id, { onDelete: 'cascade' }),
+  presentedByUserId: varchar("presented_by_user_id", { length: 255 }).notNull().references(() => users.id),
+  documentIds: text("document_ids").array().notNull(),
+  status: varchar("status", { length: 48 }).notNull().default('Pending Review'),
+  discrepancies: text("discrepancies").array(),
+  reviewedBy: varchar("reviewed_by", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  decision: varchar("decision", { length: 48 }),
+  decisionNotes: text("decision_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type LcPresentation = typeof lcPresentations.$inferSelect;

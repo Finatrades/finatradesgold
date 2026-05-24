@@ -31,18 +31,51 @@ const IDEMPOTENT_ERROR_CODES = new Set([
 ]);
 
 function splitSqlStatements(sql: string): string[] {
-  // Split on semicolons, strip leading comment lines from each chunk,
-  // then discard chunks that have no actual SQL left.
-  return sql
-    .split(";")
-    .map((chunk) =>
-      chunk
-        .split("\n")
-        .filter((line) => !line.trim().startsWith("--"))
-        .join("\n")
-        .trim()
-    )
-    .filter((s) => s.length > 0);
+  // Strip `-- ...` line comments first so semicolons inside comments don't
+  // become statement separators, then split on semicolons that are outside
+  // of dollar-quoted blocks (e.g. $$ ... $$ in PL/pgSQL function bodies).
+  const stripped = sql
+    .split("\n")
+    .map((line) => {
+      const idx = line.indexOf("--");
+      return idx === -1 ? line : line.slice(0, idx);
+    })
+    .join("\n");
+
+  const out: string[] = [];
+  let buf = "";
+  let dollarTag: string | null = null;
+  for (let i = 0; i < stripped.length; i++) {
+    const ch = stripped[i];
+    if (dollarTag) {
+      buf += ch;
+      if (stripped.startsWith(dollarTag, i)) {
+        buf += stripped.slice(i + 1, i + dollarTag.length);
+        i += dollarTag.length - 1;
+        dollarTag = null;
+      }
+      continue;
+    }
+    if (ch === "$") {
+      const m = stripped.slice(i).match(/^\$[A-Za-z0-9_]*\$/);
+      if (m) {
+        dollarTag = m[0];
+        buf += dollarTag;
+        i += dollarTag.length - 1;
+        continue;
+      }
+    }
+    if (ch === ";") {
+      const trimmed = buf.trim();
+      if (trimmed.length > 0) out.push(trimmed);
+      buf = "";
+      continue;
+    }
+    buf += ch;
+  }
+  const tail = buf.trim();
+  if (tail.length > 0) out.push(tail);
+  return out;
 }
 
 export async function runMigrations(): Promise<void> {

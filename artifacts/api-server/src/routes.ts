@@ -41,6 +41,7 @@ import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
 import * as QRCode from "qrcode";
 import { sendEmail, sendEmailDirect, sendEmailViaTemplate, sendEmailWithAttachment, EMAIL_TEMPLATES, seedEmailTemplates, verifyUnsubscribeToken } from "./email";
+import { triggerMilestones, resolveCaseKey } from "./trade-finance-service";
 import { 
   processTransactionDocuments, 
   resendCertificate, 
@@ -282,6 +283,7 @@ const geoRestrictionMiddleware = (opts?: { allowRegistrationBypass?: boolean }) 
 import { queueDocumentVerification } from "./jobs/verify-document.job";
 import { queueTradeEmail } from "./jobs/trade-emails.job";
 import { registerWalletRoutes } from "./routes/wallet";
+import { registerTradeFinanceRoutes } from "./routes/trade-finance";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1195,6 +1197,7 @@ export async function registerRoutes(
   app.use("/api/b2b", b2bRoutes);
   // Register B2B USD Wallet routes (Task #74)
   registerWalletRoutes(app);
+  registerTradeFinanceRoutes(app);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);
@@ -8969,13 +8972,13 @@ export async function registerRoutes(
       
       if (!isAdmin) {
         // Verify user is party to the trade or is the dispute raiser
-        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        const tradeRequest = await storage.getTradeRequest((dispute.tradeRequestId ?? ""));
         if (!tradeRequest) {
           return res.status(404).json({ message: "Trade not found" });
         }
         
         const isImporter = tradeRequest.importerUserId === sessionUserId;
-        const proposals = await storage.getRequestProposals(dispute.tradeRequestId);
+        const proposals = await storage.getRequestProposals((dispute.tradeRequestId ?? ""));
         const isExporter = proposals.some(p => p.exporterUserId === sessionUserId && p.status === 'Accepted');
         const isDisputeRaiser = dispute.raisedByUserId === sessionUserId;
         
@@ -9018,7 +9021,7 @@ export async function registerRoutes(
         userRole = 'admin';
       } else {
         // Verify user is party to the trade
-        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        const tradeRequest = await storage.getTradeRequest((dispute.tradeRequestId ?? ""));
         if (!tradeRequest) {
           return res.status(404).json({ message: "Trade not found" });
         }
@@ -9026,7 +9029,7 @@ export async function registerRoutes(
         if (tradeRequest.importerUserId === sessionUserId) {
           userRole = 'importer';
         } else {
-          const proposals = await storage.getRequestProposals(dispute.tradeRequestId);
+          const proposals = await storage.getRequestProposals((dispute.tradeRequestId ?? ""));
           const isExporter = proposals.some(p => p.exporterUserId === sessionUserId && p.status === 'Accepted');
           if (isExporter) {
             userRole = 'exporter';
@@ -9058,7 +9061,7 @@ export async function registerRoutes(
       const disputes = await db.select().from(tradeDisputes).orderBy(desc(tradeDisputes.createdAt));
       
       const disputesWithDetails = await Promise.all(disputes.map(async (dispute) => {
-        const tradeRequest = await storage.getTradeRequest(dispute.tradeRequestId);
+        const tradeRequest = await storage.getTradeRequest((dispute.tradeRequestId ?? ""));
         const raisedBy = await storage.getUser(dispute.raisedByUserId);
         return {
           ...dispute,
@@ -9182,7 +9185,30 @@ export async function registerRoutes(
           actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null, originPort, destinationPort, currentLocation, customsStatus, notes,
           updatedAt: new Date()
         }).where(eq(tradeShipments.id, existing.id)).returning();
-        
+
+        // Task #146 — auto-fire `customs_cleared` milestone trigger when an
+        // admin marks customs as cleared on the shipment. Best-effort.
+        if ((customsStatus || '').toLowerCase() === 'cleared') {
+          void (async () => {
+            try {
+              const dealRoom = dealRoomId
+                ? await storage.getDealRoom(dealRoomId)
+                : await storage.getDealRoomByTradeRequest(tradeRequestId);
+              if (dealRoom) {
+                const r = await resolveCaseKey(dealRoom.id);
+                await triggerMilestones({
+                  tradeCaseId: r.case.id,
+                  trigger: "customs_cleared",
+                  releasedBy: req.session?.userId || 'system',
+                  reason: `Customs marked Cleared on shipment ${trackingNumber || existing.id}`,
+                });
+              }
+            } catch (e) {
+              console.error('[TradeFinance] customs_cleared trigger failed:', e);
+            }
+          })();
+        }
+
         // Notify both parties of shipment update (bell + email)
         try {
           const tradeReq = await storage.getTradeRequest(tradeRequestId);
@@ -9609,7 +9635,25 @@ export async function registerRoutes(
           await storage.createNotification({ userId: dealRoom.exporterUserId, title: 'Document Submitted', message: notifMsg, type: 'trade', link: notifLink, read: false });
         }
       } catch (e) { console.error('[Notification] doc upload notify failed:', e); }
-      
+
+      // Task #146 — auto-fire `shipment_documents_uploaded` milestone trigger.
+      // Resolves the deal room to its trade case (creating one idempotently
+      // if needed) so any pending milestone with that trigger can release.
+      // Best-effort: never block the upload response.
+      void (async () => {
+        try {
+          const r = await resolveCaseKey(dealRoom.id);
+          await triggerMilestones({
+            tradeCaseId: r.case.id,
+            trigger: "shipment_documents_uploaded",
+            releasedBy: sessionUserId,
+            reason: `Deal-room document ${documentType} uploaded by ${userRole}`,
+          });
+        } catch (e) {
+          console.error('[TradeFinance] shipment_documents_uploaded trigger failed:', e);
+        }
+      })();
+
       return res.json({ document, message: "Document uploaded successfully" });
     } catch (error) {
       return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });

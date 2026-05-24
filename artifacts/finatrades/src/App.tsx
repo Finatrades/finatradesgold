@@ -29,6 +29,8 @@ import ProfilePage from "@/pages/dashboard/ProfilePage";
 import Wallet from "@/pages/dashboard/Wallet";
 import AdminWallets from "@/pages/dashboard/AdminWallets";
 import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
+import AdminLcQueue from "@/pages/admin/AdminLcQueue";
+import AdminDisputeQueue from "@/pages/admin/AdminDisputeQueue";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
@@ -213,6 +215,12 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/email-queues">
         <AdminRoute component={AdminEmailQueues} />
+      </Route>
+      <Route path="/admin/lc">
+        <AdminRoute component={AdminLcQueue} />
+      </Route>
+      <Route path="/admin/disputes">
+        <AdminRoute component={AdminDisputeQueue} />
       </Route>
 
       {/* Account */}
