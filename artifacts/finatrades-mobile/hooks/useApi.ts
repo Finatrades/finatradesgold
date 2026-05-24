@@ -128,11 +128,3 @@ export function useUserProfile(userId: string | undefined) {
   });
 }
 
-export function useDualWalletBalance(userId: string | undefined) {
-  return useQuery({
-    queryKey: ["dualWalletBalance", userId],
-    queryFn: () => apiFetch(`/api/dual-wallet/${userId}/balance`),
-    enabled: !!userId,
-    staleTime: 30000,
-  });
-}

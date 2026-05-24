@@ -1,13 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLocation } from 'wouter';
 import MobileBottomNav from './MobileBottomNav';
-import BottomSheet from './BottomSheet';
-import MobileQuickActions from './MobileQuickActions';
-import DepositModal from '@/components/finapay/modals/DepositModal';
-import SendGoldModal from '@/components/finapay/modals/SendGoldModal';
-import RequestGoldModal from '@/components/finapay/modals/RequestGoldModal';
-import { useGetWallet } from '@workspace/api-client-react';
 
 interface MobileShellProps {
   children: React.ReactNode;
@@ -15,19 +9,8 @@ interface MobileShellProps {
 }
 
 export default function MobileShell({ children, hideNav = false }: MobileShellProps) {
-  const [quickActionsOpen, setQuickActionsOpen] = useState(false);
-  const [depositModalOpen, setDepositModalOpen] = useState(false);
-  const [sendModalOpen, setSendModalOpen] = useState(false);
-  const [requestModalOpen, setRequestModalOpen] = useState(false);
-  
-  const { data: wallet } = useGetWallet();
-
-  // B2B wallet is USD-only; legacy gold balance is no longer surfaced.
-  const walletBalance = Number(wallet?.availableCents || 0) / 100;
-  const goldBalance = 0;
-
   const [location] = useLocation();
-  
+
   return (
     <div className="min-h-screen bg-muted/40 page-container" style={{ paddingTop: 'var(--safe-area-top)' }}>
       <AnimatePresence mode="wait" initial={false}>
@@ -42,42 +25,7 @@ export default function MobileShell({ children, hideNav = false }: MobileShellPr
         </motion.div>
       </AnimatePresence>
 
-      {!hideNav && (
-        <MobileBottomNav onQuickActionClick={() => setQuickActionsOpen(true)} />
-      )}
-
-      <BottomSheet
-        isOpen={quickActionsOpen}
-        onClose={() => setQuickActionsOpen(false)}
-        title="Quick Actions"
-      >
-        <MobileQuickActions
-          onClose={() => setQuickActionsOpen(false)}
-          onOpenDeposit={() => setDepositModalOpen(true)}
-          onOpenSend={() => setSendModalOpen(true)}
-          onOpenRequest={() => setRequestModalOpen(true)}
-        />
-      </BottomSheet>
-
-      <DepositModal 
-        isOpen={depositModalOpen} 
-        onClose={() => setDepositModalOpen(false)} 
-      />
-      
-      <SendGoldModal 
-        isOpen={sendModalOpen} 
-        onClose={() => setSendModalOpen(false)}
-        walletBalance={walletBalance}
-        goldBalance={goldBalance}
-        onConfirm={() => setSendModalOpen(false)}
-      />
-      
-      <RequestGoldModal 
-        isOpen={requestModalOpen} 
-        onClose={() => setRequestModalOpen(false)}
-        onConfirm={() => setRequestModalOpen(false)}
-      />
-      
+      {!hideNav && <MobileBottomNav />}
     </div>
   );
 }

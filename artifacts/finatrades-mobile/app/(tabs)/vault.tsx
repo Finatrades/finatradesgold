@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useAuth } from "@/context/AuthContext";
-import { useDualWalletBalance, useGoldPrice, useWallet } from "@/hooks/useApi";
+import { useGoldPrice, useWallet } from "@/hooks/useApi";
 import { useColors } from "@/hooks/useColors";
 
 export default function VaultScreen() {
@@ -23,7 +23,6 @@ export default function VaultScreen() {
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
   const { data: wallet, isLoading, refetch, isRefetching } = useWallet(user?.id);
-  const { data: dualWallet } = useDualWalletBalance(user?.id);
   const { data: goldPrice } = useGoldPrice();
 
   const onRefresh = useCallback(async () => {
@@ -35,8 +34,8 @@ export default function VaultScreen() {
   const totalGrams = parseFloat(wallet?.goldGrams || "0");
   const totalValue = (totalGrams * pricePerGram).toFixed(2);
 
-  const mpgwGrams = dualWallet?.mpgw?.availableGrams || 0;
-  const fpgwGrams = dualWallet?.fpgw?.availableGrams || 0;
+  const mpgwGrams = 0;
+  const fpgwGrams = 0;
 
   const topPad = Platform.OS === "web" ? 67 : insets.top;
   const bottomPad = Platform.OS === "web" ? 34 : insets.bottom;

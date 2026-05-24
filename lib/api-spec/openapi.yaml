@@ -44,22 +44,6 @@ tags:
       here purely for end-to-end type safety on the server handlers and to make the
       complete money-movement surface discoverable in one place.
 
-# ─── INTENTIONAL EXCLUSIONS ───────────────────────────────────────────────────
-# The following wallet-adjacent route families are NOT documented in this spec:
-#
-#   /api/dual-wallet/*       (artifacts/api-server/src/dual-wallet-routes.ts)
-#   /api/wallet/mpgw-to-fpgw, /api/wallet/fpgw-to-mpgw
-#   /api/finabridge/wallet/*, /api/bnsl/wallet/*, /api/vault/*
-#
-# These belong to the legacy gold-stack features (WinGold, BNSL, FinaPay, FinaVault,
-# dual MPGW/FPGW conversion). Per replit.md they have been removed from the main
-# routes and sidebar and are unreachable from the active user flows. They remain in
-# the tree as inert code pending full removal and are deliberately kept off the
-# typed-client surface so that no new frontend code can accidentally couple to them.
-# When the deprecation is finalized, both the routes and their callers
-# (artifacts/finatrades/src/hooks/useDualWallet.ts, InternalTransferModal, etc.)
-# should be deleted together rather than promoted into this spec.
-
 paths:
   /healthz:
     get:
