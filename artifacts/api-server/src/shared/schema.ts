@@ -6929,6 +6929,36 @@ export const insertConsignmentStatusHistorySchema = createInsertSchema(consignme
 export type InsertConsignmentStatusHistory = z.infer<typeof insertConsignmentStatusHistorySchema>;
 export type ConsignmentStatusHistory = typeof consignmentStatusHistory.$inferSelect;
 
+// --- Consignment-derived marketplace listings (Task #77) ---
+// Separate from `marketplaceListings` (which requires a warehouse inventory item).
+// Auto-created when an admin approves a consignment, before the goods physically
+// arrive at the hub.
+export const consignmentListings = pgTable("consignment_listings", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().unique().references(() => consignments.id, { onDelete: 'cascade' }),
+  sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
+  commodityName: varchar("commodity_name", { length: 255 }).notNull(),
+  commodityCategory: varchar("commodity_category", { length: 50 }),
+  hsCode: varchar("hs_code", { length: 20 }),
+  hubCode: varchar("hub_code", { length: 10 }),
+  originCountry: varchar("origin_country", { length: 100 }),
+  qualityGrade: qualityGradeEnum("quality_grade"),
+  quantity: decimal("quantity", { precision: 15, scale: 3 }).notNull(),
+  unit: varchar("unit", { length: 20 }).notNull().default('MT'),
+  minOrderQty: decimal("min_order_qty", { precision: 15, scale: 3 }),
+  askingPriceCents: bigint("asking_price_cents", { mode: "number" }),
+  askingCurrency: varchar("asking_currency", { length: 10 }).default('USD'),
+  incoterms: varchar("incoterms", { length: 20 }),
+  isVisible: boolean("is_visible").notNull().default(true),
+  publishedAt: timestamp("published_at").notNull().defaultNow(),
+  hiddenAt: timestamp("hidden_at"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type ConsignmentListing = typeof consignmentListings.$inferSelect;
+export type InsertConsignmentListing = typeof consignmentListings.$inferInsert;
+
 // --- Inventory Items (Steps 3 & 4 — warehouse stock) ---
 export const inventoryItems = pgTable("inventory_items", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),

@@ -9,6 +9,7 @@ import {
   consignmentDocuments,
   consignmentStatusHistory,
   kycSubmissions,
+  consignmentListings,
   users,
 } from "../shared/schema";
 import { uploadToR2, isR2Configured, generateR2Key, getSignedDownloadUrl } from "../r2-storage";
@@ -169,6 +170,79 @@ router.get("/", ensureAuthenticated, async (req: Request, res: Response): Promis
     res.status(500).json({ message: "Failed to list consignments" });
   }
 });
+
+// ─── Public marketplace listings (Task #77) ────────────────────────────────
+// IMPORTANT: must be registered before the "/:id" handler below, otherwise
+// Express would match "marketplace" as the :id parameter.
+router.get(
+  "/marketplace/listings",
+  ensureAuthenticated,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const hub = (req.query.hub as string | undefined)?.toUpperCase();
+      const category = req.query.category as string | undefined;
+      const search = (req.query.search as string | undefined)?.toLowerCase();
+
+      const rows = await db
+        .select({
+          listing: consignmentListings,
+          sellerCompany: users.companyName,
+          sellerFirst: users.firstName,
+          sellerLast: users.lastName,
+          consignmentRef: consignments.referenceNo,
+          consignmentStatus: consignments.status,
+        })
+        .from(consignmentListings)
+        .leftJoin(users, eq(users.id, consignmentListings.sellerId))
+        .leftJoin(consignments, eq(consignments.id, consignmentListings.consignmentId))
+        .where(eq(consignmentListings.isVisible, true))
+        .orderBy(desc(consignmentListings.publishedAt))
+        .limit(500);
+
+      const filtered = rows.filter((r) => {
+        if (hub && hub !== "ALL" && (r.listing.hubCode ?? "").toUpperCase() !== hub) return false;
+        if (category && category !== "All" && (r.listing.commodityCategory ?? "") !== category) return false;
+        if (search) {
+          const hay = `${r.listing.commodityName} ${r.listing.hubCode ?? ""} ${r.listing.originCountry ?? ""}`.toLowerCase();
+          if (!hay.includes(search)) return false;
+        }
+        return true;
+      });
+
+      // Bulk-fetch uploaded lead documents for the surviving listings.
+      const consignmentIds = filtered.map((r) => r.listing.consignmentId);
+      const docsByConsignment = new Map<string, any[]>();
+      if (consignmentIds.length > 0) {
+        const docs = await db
+          .select()
+          .from(consignmentDocuments)
+          .where(and(
+            sql`${consignmentDocuments.consignmentId} = ANY(${consignmentIds})`,
+            eq(consignmentDocuments.status, "uploaded"),
+          ));
+        for (const d of docs) {
+          const arr = docsByConsignment.get(d.consignmentId) ?? [];
+          arr.push(d);
+          docsByConsignment.set(d.consignmentId, arr);
+        }
+      }
+
+      res.json({
+        listings: filtered.map((r) => serializeListing(r.listing, {
+          companyName: r.sellerCompany ?? undefined,
+          firstName: r.sellerFirst ?? undefined,
+          lastName: r.sellerLast ?? undefined,
+          consignmentRef: r.consignmentRef ?? undefined,
+          consignmentStatus: r.consignmentStatus ?? undefined,
+          documents: docsByConsignment.get(r.listing.consignmentId) ?? [],
+        })),
+      });
+    } catch (e: any) {
+      console.error("[marketplace.listings]", e?.message || e);
+      res.status(500).json({ message: "Failed to load marketplace listings" });
+    }
+  }
+);
 
 // ─── GET /b2b/consignments/:id — detail (with docs + history) ──────────────
 router.get("/:id", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
@@ -400,6 +474,204 @@ router.post(
     }
   }
 );
+
+// ─── Admin status transition (Task #77 — drives auto-publish to marketplace) ─
+const STATUS_VALUES = [
+  "Draft", "Submitted", "Pending Review", "Under Review", "Approved",
+  "Rejected", "Needs More Info", "In Transit", "At Warehouse", "Verified",
+] as const;
+type ConsignmentStatus = typeof STATUS_VALUES[number];
+
+// Statuses for which a listing should be visible in the marketplace.
+const VISIBLE_STATUSES: ReadonlySet<ConsignmentStatus> = new Set<ConsignmentStatus>([
+  "Approved", "At Warehouse", "Verified",
+]);
+
+const statusUpdateSchema = z.object({
+  status: z.enum(STATUS_VALUES),
+  note: z.string().max(2000).optional(),
+});
+
+router.patch(
+  "/:id/status",
+  requireUserType("exporter", "importer", "government"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const user = (req as any).currentUser as any;
+      if (user.role !== "admin") {
+        res.status(403).json({ message: "Admin access required" });
+        return;
+      }
+      const parsed = statusUpdateSchema.safeParse(req.body);
+      if (!parsed.success) {
+        res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+        return;
+      }
+      const { status: toStatus, note } = parsed.data;
+
+      const [row] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+      if (!row) { res.status(404).json({ message: "Consignment not found" }); return; }
+      if (row.status === toStatus) {
+        res.json({ ...serializeConsignment(row), unchanged: true });
+        return;
+      }
+
+      const fromStatus = row.status as ConsignmentStatus;
+      const patch: Record<string, any> = { status: toStatus, updatedAt: new Date() };
+      if (toStatus === "Approved") {
+        patch.approvedAt = new Date();
+        patch.approvedBy = user.id;
+      }
+
+      // Transactional: status update + history + marketplace publish/visibility
+      // must all succeed together. If publish fails, the status transition is
+      // rolled back so we never end up "Approved" without a visible listing.
+      const { updated, listingAction } = await db.transaction(async (tx) => {
+        const [updatedRow] = await tx
+          .update(consignments)
+          .set(patch)
+          .where(eq(consignments.id, row.id))
+          .returning();
+
+        await tx.insert(consignmentStatusHistory).values({
+          consignmentId: row.id,
+          fromStatus: fromStatus as any,
+          toStatus: toStatus as any,
+          actorId: user.id,
+          note: note ?? `Status transitioned ${fromStatus} → ${toStatus}`,
+        } as any);
+
+        let action: "created" | "shown" | "hidden" | "none" = "none";
+        if (toStatus === "Approved") {
+          action = await ensureMarketplaceListing(tx, updatedRow);
+        } else if (VISIBLE_STATUSES.has(toStatus)) {
+          if (await setListingVisibility(tx, row.id, true)) action = "shown";
+        } else {
+          if (await setListingVisibility(tx, row.id, false)) action = "hidden";
+        }
+        return { updated: updatedRow, listingAction: action };
+      });
+
+      res.json({ ...serializeConsignment(updated), listingAction });
+    } catch (e: any) {
+      console.error("[consignments.status]", e?.message || e);
+      res.status(500).json({ message: "Failed to update status", error: e?.message });
+    }
+  }
+);
+
+type DbExecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+async function ensureMarketplaceListing(tx: DbExecutor, c: any): Promise<"created" | "shown"> {
+  const existing = await tx
+    .select()
+    .from(consignmentListings)
+    .where(eq(consignmentListings.consignmentId, c.id))
+    .limit(1);
+
+  if (existing.length > 0) {
+    await tx
+      .update(consignmentListings)
+      .set({ isVisible: true, hiddenAt: null, updatedAt: new Date() })
+      .where(eq(consignmentListings.consignmentId, c.id));
+    return "shown";
+  }
+
+  const qty = Number(c.quantity);
+  const minOrder = Math.max(1, Math.round(qty * 0.1 * 1000) / 1000);
+
+  await tx.insert(consignmentListings).values({
+    consignmentId: c.id,
+    sellerId: c.userId,
+    commodityName: c.commodityName,
+    commodityCategory: c.commodityCategory ?? null,
+    hsCode: c.hsCode ?? null,
+    hubCode: c.targetHubCode ?? null,
+    originCountry: c.originCountry ?? null,
+    qualityGrade: c.qualityGrade ?? null,
+    quantity: String(qty),
+    unit: c.unit,
+    minOrderQty: String(minOrder),
+    askingPriceCents: c.askingPriceCents ?? null,
+    askingCurrency: c.askingCurrency ?? "USD",
+    incoterms: c.incoterms ?? null,
+    isVisible: true,
+    publishedAt: new Date(),
+  } as any);
+  return "created";
+}
+
+async function setListingVisibility(tx: DbExecutor, consignmentId: string, visible: boolean): Promise<boolean> {
+  const [existing] = await tx
+    .select()
+    .from(consignmentListings)
+    .where(eq(consignmentListings.consignmentId, consignmentId))
+    .limit(1);
+  if (!existing) return false;
+  if (existing.isVisible === visible) return false;
+  await tx
+    .update(consignmentListings)
+    .set({
+      isVisible: visible,
+      hiddenAt: visible ? null : new Date(),
+      updatedAt: new Date(),
+    })
+    .where(eq(consignmentListings.consignmentId, consignmentId));
+  return true;
+}
+
+function serializeListing(
+  l: any,
+  extra: {
+    companyName?: string;
+    firstName?: string;
+    lastName?: string;
+    consignmentRef?: string;
+    consignmentStatus?: string;
+    documents?: any[];
+  }
+) {
+  const sellerName = extra.companyName
+    || [extra.firstName, extra.lastName].filter(Boolean).join(" ")
+    || "Verified Seller";
+  const qty = Number(l.quantity);
+  const minOrder = l.minOrderQty != null ? Number(l.minOrderQty) : Math.max(1, Math.round(qty * 0.1));
+  const documents = (extra.documents ?? []).map((d) => ({
+    id: d.id,
+    docType: d.docType,
+    docLabel: d.docLabel,
+    fileName: d.fileName,
+    mimeType: d.mimeType,
+    fileSize: d.fileSize,
+    isRequired: d.isRequired,
+    uploadedAt: d.uploadedAt,
+    // Importers fetch a signed URL on demand via this endpoint
+    downloadPath: d.id ? `/api/b2b/consignments/${l.consignmentId}/documents/${d.id}/url` : null,
+  }));
+  return {
+    id: l.id,
+    consignmentId: l.consignmentId,
+    consignmentRef: extra.consignmentRef ?? null,
+    consignmentStatus: extra.consignmentStatus ?? null,
+    commodity: l.commodityName,
+    commodityCategory: l.commodityCategory,
+    hsCode: l.hsCode,
+    hub: l.hubCode,
+    country: l.originCountry,
+    grade: l.qualityGrade,
+    qty,
+    unit: l.unit,
+    minOrder,
+    incoterms: l.incoterms,
+    pricePerUnitCents: l.askingPriceCents,
+    currency: l.askingCurrency ?? "USD",
+    seller: sellerName,
+    documents,
+    documentCount: documents.length,
+    verified: true,
+    publishedAt: l.publishedAt,
+  };
+}
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 async function nextConsignmentRef(): Promise<string> {

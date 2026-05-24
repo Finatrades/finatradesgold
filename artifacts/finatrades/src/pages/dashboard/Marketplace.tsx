@@ -1,9 +1,90 @@
 import React, { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import {
   Store, Search, Filter, Package, MapPin, Star, ArrowRight,
   TrendingUp, TrendingDown, BarChart3, RefreshCw, X, Zap,
   ChevronDown,
 } from 'lucide-react';
+
+interface ApiListingDocument {
+  id: string;
+  docType: string;
+  docLabel: string | null;
+  fileName: string | null;
+  mimeType: string | null;
+  fileSize: number | null;
+  isRequired: boolean;
+  uploadedAt: string | null;
+  downloadPath: string | null;
+}
+
+interface ApiListing {
+  id: string;
+  consignmentId: string;
+  consignmentRef: string | null;
+  commodity: string;
+  commodityCategory: string | null;
+  hsCode: string | null;
+  hub: string | null;
+  country: string | null;
+  grade: string | null;
+  qty: number;
+  unit: string;
+  minOrder: number;
+  incoterms: string | null;
+  pricePerUnitCents: number | null;
+  currency: string;
+  seller: string;
+  verified: boolean;
+  publishedAt: string | null;
+  documents: ApiListingDocument[];
+  documentCount: number;
+}
+
+type UiListing = {
+  id: string;
+  commodity: string;
+  hsCode: string;
+  hub: string;
+  country: string;
+  qty: number;
+  unit: string;
+  grade: string;
+  pricePerMT: number;
+  currency: string;
+  incoterms: string;
+  seller: string;
+  category: string;
+  trend: 'up' | 'down';
+  change: string;
+  minOrder: number;
+  verified: boolean;
+  isLive?: boolean;
+};
+
+function apiToUi(l: ApiListing): UiListing {
+  const price = l.pricePerUnitCents != null ? Math.round(l.pricePerUnitCents / 100) : 0;
+  return {
+    id: l.id,
+    commodity: l.commodity,
+    hsCode: l.hsCode || '—',
+    hub: l.hub || '—',
+    country: l.country || '',
+    qty: l.qty,
+    unit: l.unit,
+    grade: l.grade || 'B',
+    pricePerMT: price,
+    currency: l.currency,
+    incoterms: l.incoterms || 'FOB',
+    seller: l.seller,
+    category: l.commodityCategory || 'Agricultural',
+    trend: 'up',
+    change: 'New',
+    minOrder: l.minOrder,
+    verified: l.verified,
+    isLive: true,
+  };
+}
 
 const HUBS = [
   { code: 'ALL', name: 'All Hubs', country: '' },
@@ -53,7 +134,7 @@ function GradeTag({ grade }: { grade: string }) {
   );
 }
 
-function RFQModal({ listing, onClose }: { listing: typeof LISTINGS[0]; onClose: () => void }) {
+function RFQModal({ listing, onClose }: { listing: UiListing; onClose: () => void }) {
   const [qty, setQty] = useState(String(listing.minOrder));
   const [price, setPrice] = useState(String(listing.pricePerMT));
   const [notes, setNotes] = useState('');
@@ -122,10 +203,19 @@ export default function Marketplace() {
   const [selectedHub, setSelectedHub] = useState('ALL');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [search, setSearch] = useState('');
-  const [rfqTarget, setRfqTarget] = useState<typeof LISTINGS[0] | null>(null);
+  const [rfqTarget, setRfqTarget] = useState<UiListing | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
-  const filtered = LISTINGS.filter(l => {
+  const { data: liveData } = useQuery<{ listings: ApiListing[] }>({
+    queryKey: ['/api/b2b/consignments/marketplace/listings'],
+    staleTime: 30_000,
+  });
+
+  const liveListings: UiListing[] = (liveData?.listings ?? []).map(apiToUi);
+  // Live (approved-consignment) listings first, then the legacy showcase mock data.
+  const allListings: UiListing[] = [...liveListings, ...(LISTINGS as UiListing[])];
+
+  const filtered = allListings.filter(l => {
     const matchHub = selectedHub === 'ALL' || l.hub === selectedHub;
     const matchCat = selectedCategory === 'All' || l.category === selectedCategory;
     const matchSearch = l.commodity.toLowerCase().includes(search.toLowerCase()) ||
