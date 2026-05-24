@@ -43,6 +43,14 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - Theme: redbrick `#C73B22` / cream `#FAFAF8` / dark `#1A1A1A` (rebranded from purple/gold)
 - Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar; backend gold-stack tables and their unreachable handlers were dropped in task #133
 
+### Counterparty Anonymity (Task #145)
+- Marketplace, Deal Room, RFQs, Forwarded Proposals, doc-verify payloads, and all party-facing emails expose **only the Finatrades ID (FT-ID)** — never real names, emails, phones, or company names.
+- Server helper: `artifacts/api-server/src/lib/counterparty.ts` (`CounterpartySnapshot`, `loadCounterpartyByUserId(s)`, `recomputeUserRatingAggregate`, `incrementCompletedTrades`, `hasMutualIdentityConsent`).
+- Public endpoint `GET /api/finatrades-id/:ftId` returns counterparty snapshot + last 5 anonymised review snippets (reviewer shown as their own FT-ID).
+- Web UI: `<CounterpartyChip>` + `<FtIdDetailSheet>` (`artifacts/finatrades/src/components/`).
+- Ratings: `trade_reviews` table, 1–5 stars + optional text. Aggregates cached on `users.rating_avg` / `rating_count`. `users.completed_trades_count` increments on case Completed (backfilled in migration 0018).
+- Identity reveal: both parties must `POST /api/trade/:caseId/identity-consent` before `GET /api/trade/:caseId/settlement-contract` returns real names. Stored in `trade_identity_consents`.
+
 ### KYC Model
 - **Finatrades KYC** is the only active mode (`complianceSettings.activeKycMode = 'finatrades'`).
 - Two flavors stored in dedicated tables:

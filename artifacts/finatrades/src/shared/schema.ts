@@ -86,6 +86,10 @@ export const users = pgTable("users", {
   // Session tracking for auth timestamps display
   lastLoginAt: timestamp("last_login_at"),
   lastLogoutAt: timestamp("last_logout_at"),
+  // Counterparty reputation (Task #145 anonymisation)
+  ratingAvg: decimal("rating_avg", { precision: 2, scale: 1 }),
+  ratingCount: integer("rating_count").notNull().default(0),
+  completedTradesCount: integer("completed_trades_count").notNull().default(0),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -125,6 +129,9 @@ export const insertUserSchema = createInsertSchema(users)
     // Biometric fields
     biometricEnabled: z.boolean().optional(),
     biometricDeviceId: z.string().nullable().optional(),
+    ratingAvg: z.string().nullable().optional(),
+    ratingCount: z.number().optional(),
+    completedTradesCount: z.number().optional(),
   });
 export const selectUserSchema = createSelectSchema(users);
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -2478,6 +2485,37 @@ export const tradeConfirmations = pgTable("trade_confirmations", {
 export const insertTradeConfirmationSchema = createInsertSchema(tradeConfirmations).omit({ id: true, confirmedAt: true });
 export type InsertTradeConfirmation = z.infer<typeof insertTradeConfirmationSchema>;
 export type TradeConfirmation = typeof tradeConfirmations.$inferSelect;
+
+// ============================================
+// COUNTERPARTY REPUTATION (Task #145)
+// ============================================
+
+export const tradeReviews = pgTable("trade_reviews", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeCaseId: varchar("trade_case_id", { length: 255 }).references(() => tradeCases.id, { onDelete: 'cascade' }),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).references(() => tradeRequests.id, { onDelete: 'cascade' }),
+  reviewerUserId: varchar("reviewer_user_id", { length: 255 }).notNull().references(() => users.id),
+  revieweeUserId: varchar("reviewee_user_id", { length: 255 }).notNull().references(() => users.id),
+  rating: integer("rating").notNull(),
+  reviewText: varchar("review_text", { length: 500 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertTradeReviewSchema = createInsertSchema(tradeReviews).omit({ id: true, createdAt: true });
+export type InsertTradeReview = z.infer<typeof insertTradeReviewSchema>;
+export type TradeReview = typeof tradeReviews.$inferSelect;
+
+export const tradeIdentityConsents = pgTable("trade_identity_consents", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  tradeCaseId: varchar("trade_case_id", { length: 255 }).references(() => tradeCases.id, { onDelete: 'cascade' }),
+  tradeRequestId: varchar("trade_request_id", { length: 255 }).references(() => tradeRequests.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  consentedAt: timestamp("consented_at").notNull().defaultNow(),
+});
+
+export const insertTradeIdentityConsentSchema = createInsertSchema(tradeIdentityConsents).omit({ id: true, consentedAt: true });
+export type InsertTradeIdentityConsent = z.infer<typeof insertTradeIdentityConsentSchema>;
+export type TradeIdentityConsent = typeof tradeIdentityConsents.$inferSelect;
 
 export const finabridgeWallets = pgTable("finabridge_wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),

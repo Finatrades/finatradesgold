@@ -179,6 +179,8 @@ import vcRoutes from "./vc-routes";
 import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
 import marketplaceRouter from "./routes/marketplace";
+import counterpartyRouter from "./routes/counterparty";
+import { loadCounterpartyByUserId } from "./lib/counterparty";
 import adminConsignmentsRouter from "./routes/admin-consignments";
 import adminEmailQueuesRouter from "./routes/admin-email-queues";
 import warehouseRouter from "./routes/warehouse";
@@ -1205,6 +1207,9 @@ export async function registerRoutes(
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);
   app.use("/api/b2b/warehouse", warehouseRouter);
   app.use("/api/b2b/marketplace", marketplaceRouter);
+  // Task #145: counterparty FT-ID + ratings + identity-consent + gated contract.
+  // Mounted at /api so it serves /api/finatrades-id/:ftId and /api/trade/*.
+  app.use("/api", counterpartyRouter);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {
@@ -7185,9 +7190,12 @@ export async function registerRoutes(
             documentType: document.documentType,
             caseId: document.caseId,
             tradeValueUsd: tradeCase?.tradeValueUsd ?? undefined,
-            buyerName: tradeCase?.buyerName ?? null,
-            sellerName: tradeCase?.sellerName ?? null,
-            companyName: tradeCase?.companyName ?? null,
+            // Task #145: buyer/seller/company names are NOT forwarded to the
+            // AI verification worker — counterparty PII must stay inside the
+            // sealed case record until identity-reveal consent is given.
+            buyerName: null,
+            sellerName: null,
+            companyName: null,
           });
         } catch (err) {
           console.error('[VerifyDoc] Failed to queue verification job:', err);
@@ -7516,23 +7524,26 @@ export async function registerRoutes(
         proposalIds.map(id => storage.getTradeProposal(id))
       );
       
-      // Include exporter details - use exporter profile as fallback for missing proposal fields
+      // Task #145: importer sees the exporter ONLY as an FT-ID + reputation
+      // snapshot. Real name/email/phone/company are stripped from the payload.
       const proposalsWithExporter = await Promise.all(
         proposals.filter(Boolean).map(async (proposal) => {
-          const exporter = await storage.getUser(proposal!.exporterUserId);
-          const exporterFullName = exporter ? `${exporter.firstName} ${exporter.lastName}` : null;
+          const counterparty = await loadCounterpartyByUserId(proposal!.exporterUserId);
+          // Strip PII fields from the proposal itself
+          const {
+            companyName: _companyName,
+            contactPerson: _contactPerson,
+            contactEmail: _contactEmail,
+            contactPhone: _contactPhone,
+            ...safeProposal
+          } = proposal as any;
           return {
-            ...proposal,
-            // Use exporter profile as fallback for empty proposal fields
-            companyName: proposal!.companyName || exporter?.companyName || null,
-            contactPerson: proposal!.contactPerson || exporterFullName,
-            contactEmail: proposal!.contactEmail || exporter?.email || null,
-            contactPhone: proposal!.contactPhone || exporter?.phoneNumber || null,
-            exporter: exporter ? { 
-              finatradesId: exporter.finatradesId,
-              fullName: exporterFullName,
-              email: exporter.email,
-              companyName: exporter.companyName,
+            ...safeProposal,
+            counterparty,
+            // Backwards-compat shim — old UI reads `exporter.finatradesId`.
+            exporter: counterparty ? {
+              finatradesId: counterparty.finatradesId,
+              displayId: counterparty.displayId,
             } : null,
           };
         })
@@ -7705,12 +7716,20 @@ export async function registerRoutes(
         const dealRoomUrl = `/finabridge/deals/${dealRoom.id}`;
 
         const dealCreatedDate = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        // Task #145: counterparty in emails is the FT-ID only.
+        const exporterFtId = exporterDealUser
+          ? (exporterDealUser.customFinatradesId || exporterDealUser.finatradesId || `FT-${exporterDealUser.id.slice(0, 8).toUpperCase()}`)
+          : 'your exporter';
+        const importerFtId = importerDealUser
+          ? (importerDealUser.customFinatradesId || importerDealUser.finatradesId || `FT-${importerDealUser.id.slice(0, 8).toUpperCase()}`)
+          : 'your importer';
         if (importerDealUser?.email) {
           sendEmail(importerDealUser.email, EMAIL_TEMPLATES.FINABRIDGE_DEAL_ROOM_CREATED, {
             user_name: `${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || 'Valued Client',
             trade_ref: request.tradeRefId,
             deal_room_id: dealRoom.id,
-            counterparty_name: exporterDealUser ? (`${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || exporterDealUser.companyName || 'your exporter') : 'your exporter',
+            counterparty_name: exporterFtId,
+            counterparty_ft_id: exporterFtId,
             created_date: dealCreatedDate,
           }, { userId: importerDealUser.id, recipientName: importerDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created importer email failed:', e));
         }
@@ -7719,30 +7738,34 @@ export async function registerRoutes(
             user_name: `${exporterDealUser.firstName || ''} ${exporterDealUser.lastName || ''}`.trim() || 'Valued Partner',
             trade_ref: request.tradeRefId,
             deal_room_id: dealRoom.id,
-            counterparty_name: importerDealUser ? (`${importerDealUser.firstName || ''} ${importerDealUser.lastName || ''}`.trim() || importerDealUser.companyName || 'your importer') : 'your importer',
+            counterparty_name: importerFtId,
+            counterparty_ft_id: importerFtId,
             created_date: dealCreatedDate,
           }, { userId: exporterDealUser.id, recipientName: exporterDealUser.firstName || undefined }).catch(e => console.error('[Email] Deal room created exporter email failed:', e));
         }
       } catch (dealRoomEmailErr) { console.error('[Email] Deal room created email trigger failed:', dealRoomEmailErr); }
 
-      // Notify exporter that their proposal was accepted
+      // Notify exporter that their proposal was accepted (FT-ID only in notification text)
       try {
         const importerUser = await storage.getUser(request.importerUserId);
-        const importerName = importerUser ? `${importerUser.firstName} ${importerUser.lastName}`.trim() || importerUser.companyName || 'Importer' : 'Importer';
+        const importerFtIdNotif = importerUser
+          ? (importerUser.customFinatradesId || importerUser.finatradesId || `FT-${importerUser.id.slice(0, 8).toUpperCase()}`)
+          : 'the importer';
         await storage.createNotification({
           userId: proposal.exporterUserId,
           title: 'Trade Proposal Accepted',
-          message: `Your trade proposal was accepted by ${importerName} — deal room is open`,
+          message: `Your trade proposal was accepted by ${importerFtIdNotif} — deal room is open`,
           type: 'trade',
           link: `/finabridge/deals/${dealRoom.id}`,
           read: false,
         });
-        // Email to exporter
+        // Email to exporter (FT-ID only — no importer real name)
         const exporterUser = await storage.getUser(proposal.exporterUserId);
         if (exporterUser?.email) {
           sendEmail(exporterUser.email, EMAIL_TEMPLATES.FINABRIDGE_PROPOSAL_ACCEPTED, {
             user_name: `${exporterUser.firstName || ''} ${exporterUser.lastName || ''}`.trim() || 'Valued Partner',
-            importer_name: importerName,
+            importer_name: importerFtIdNotif,
+            counterparty_ft_id: importerFtIdNotif,
             trade_ref: request.tradeRefId,
             trade_value: parseFloat(request.tradeValueUsd).toLocaleString(),
             deal_room_url: `/finabridge/deals/${dealRoom.id}`,
@@ -7932,10 +7955,21 @@ export async function registerRoutes(
           const proposal = await storage.getTradeProposal(fp.proposalId);
           if (proposal) {
             const exporter = await storage.getUser(proposal.exporterUserId);
+            const counterparty = await loadCounterpartyByUserId(proposal.exporterUserId);
+            // Task #145: strip exporter PII from the proposal before
+            // returning it to the importer. Only FT-ID + reputation cross.
+            const {
+              companyName: _cn,
+              contactPerson: _cp,
+              contactEmail: _ce,
+              contactPhone: _cph,
+              ...safeProposal
+            } = proposal as any;
             allForwardedProposals.push({
-              ...proposal,
+              ...safeProposal,
               forwardedAt: fp.createdAt,
               exporter: exporter ? { finatradesId: exporter.finatradesId } : null,
+              counterparty,
               tradeRequest: {
                 tradeRefId: request.tradeRefId,
                 goodsName: request.goodsName,
@@ -7999,9 +8033,11 @@ export async function registerRoutes(
       // Notify importer via email that a new proposal has been submitted
       const importerUser = await storage.getUser(request.importerUserId);
       if (importerUser?.email) {
+        // Task #145: counterparty stays anonymous in the email — FT-ID only.
+        const exporterFtId = exporterUser?.customFinatradesId || exporterUser?.finatradesId || 'Verified Exporter';
         sendEmail(importerUser.email, EMAIL_TEMPLATES.FINABRIDGE_NEW_PROPOSAL, {
           user_name: `${importerUser.firstName || ''} ${importerUser.lastName || ''}`.trim() || 'Valued Client',
-          exporter_name: exporterUser?.companyName || `${exporterUser?.firstName || ''} ${exporterUser?.lastName || ''}`.trim() || 'An Exporter',
+          exporter_name: exporterFtId,
           trade_ref: request.tradeRefId,
           quote_price: parseFloat(proposalData.quotePrice).toLocaleString(),
         }, { userId: request.importerUserId, recipientName: importerUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge new proposal email failed:', err));
@@ -8700,14 +8736,18 @@ export async function registerRoutes(
         const releaseGoldGrams = lockedAmount.toFixed(3);
         const releaseUsdValue = tradeValue.toLocaleString();
 
-        // Email #11 — importer trade complete
+        // Email #11 — importer trade complete (FT-ID only — exporter identity gated)
         if (releaseImporter?.email) {
+          const exporterFtIdEmail = releaseExporter
+            ? (releaseExporter.customFinatradesId || releaseExporter.finatradesId || `FT-${releaseExporter.id.slice(0, 8).toUpperCase()}`)
+            : 'Exporter';
           sendEmail(releaseImporter.email, EMAIL_TEMPLATES.FINABRIDGE_SETTLEMENT_RELEASED, {
             user_name: `${releaseImporter.firstName || ''} ${releaseImporter.lastName || ''}`.trim() || 'Valued Partner',
             trade_ref: releaseTradeRef,
             gold_grams: releaseGoldGrams,
             usd_value: releaseUsdValue,
-            exporter_name: releaseExporter ? `${releaseExporter.firstName || ''} ${releaseExporter.lastName || ''}`.trim() || releaseExporter.companyName || 'Exporter' : 'Exporter',
+            exporter_name: exporterFtIdEmail,
+            counterparty_ft_id: exporterFtIdEmail,
           }, { userId: hold.importerUserId, recipientName: releaseImporter.firstName || undefined }).catch(err => console.error('[Email] FinaBridge settlement importer email failed:', err));
         }
 

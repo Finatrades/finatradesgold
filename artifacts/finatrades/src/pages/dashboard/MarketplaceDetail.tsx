@@ -9,6 +9,8 @@ import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
 import BuyOrRfqModal from '@/components/marketplace/BuyOrRfqModal';
 import { useAuth } from '@/context/AuthContext';
+import CounterpartyChip from '@/components/CounterpartyChip';
+import type { Counterparty } from '@/components/FtIdDetailSheet';
 
 interface LotDetail {
   id: string;
@@ -26,7 +28,7 @@ interface LotDetail {
   incoterms: string | null;
   pricePerUnitCents: number | null;
   currency: string;
-  seller: { id: string; name: string; memberSince: string | null };
+  seller: { id: string; name: string; memberSince: string | null; counterparty: Counterparty | null };
   warehouseReceipt: { wrNumber: string; issuedAt: string; verifyUrl: string } | null;
   documents: Array<{
     id: string; docType: string; docLabel: string | null;
@@ -41,8 +43,13 @@ interface LotDetail {
     notes: string | null;
   };
   sellerProfile: {
-    id: string; name: string; country: string | null;
-    memberSince: string | null; activeListingCount: number; kycVerified: boolean;
+    id: string;
+    displayId: string;
+    counterparty: Counterparty | null;
+    country: string | null;
+    memberSince: string | null;
+    activeListingCount: number;
+    kycVerified: boolean;
   };
 }
 
@@ -308,7 +315,9 @@ export default function MarketplaceDetail() {
             <h2 className="text-sm font-bold mb-3 flex items-center gap-2" style={{ color: '#1A1A1A' }}>
               <Building2 size={14} /> Seller
             </h2>
-            <p className="text-base font-bold" style={{ color: '#1A1A1A' }}>{lot.sellerProfile.name}</p>
+            <div className="mb-1">
+              <CounterpartyChip counterparty={lot.sellerProfile.counterparty} fallbackFtId={lot.sellerProfile.displayId} />
+            </div>
             {lot.sellerProfile.country && (
               <p className="text-xs" style={{ color: '#888880' }}>{lot.sellerProfile.country}</p>
             )}

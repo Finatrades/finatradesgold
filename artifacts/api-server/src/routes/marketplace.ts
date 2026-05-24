@@ -17,8 +17,14 @@ import {
   users,
 } from "../shared/schema";
 import { placeHold, releaseHold } from "../wallet-service";
+import { loadCounterpartiesByUserIds, type CounterpartySnapshot } from "../lib/counterparty";
 
 const router = Router();
+
+// Anonymisation: returns a stable FT-ID display when no custom id is set.
+function ftDisplayId(u: { finatradesId?: string | null; customFinatradesId?: string | null; id: string }): string {
+  return u.customFinatradesId || u.finatradesId || `FT-${u.id.slice(0, 8).toUpperCase()}`;
+}
 
 // ─── Auth helpers ──────────────────────────────────────────────────────────
 function ensureAuth(req: Request, res: Response, next: NextFunction): void {
@@ -93,7 +99,10 @@ function marginCents(totalCents: number): number {
 }
 
 // ─── Lot serialization ─────────────────────────────────────────────────────
-function serializeLot(l: any, seller: { companyName?: string|null; firstName?: string|null; lastName?: string|null; createdAt?: Date|null }, opts: {
+// Task #145: counterparty PII is stripped from marketplace payloads. `seller`
+// now exposes only the FT-ID display + reputation snapshot. Real names live
+// behind the gated settlement contract.
+function serializeLot(l: any, counterparty: CounterpartySnapshot | undefined, opts: {
   consignmentRef?: string|null;
   consignmentStatus?: string|null;
   wrNumber?: string|null;
@@ -102,9 +111,6 @@ function serializeLot(l: any, seller: { companyName?: string|null; firstName?: s
   isWatched?: boolean;
   thumbnailUrl?: string | null;
 }) {
-  const sellerName = seller.companyName
-    || [seller.firstName, seller.lastName].filter(Boolean).join(" ")
-    || "Verified Seller";
   const qty = Number(l.quantity);
   const minOrder = l.minOrderQty != null ? Number(l.minOrderQty) : Math.max(1, Math.round(qty * 0.1));
   const documents = (opts.documents ?? []).map((d) => ({
@@ -136,10 +142,13 @@ function serializeLot(l: any, seller: { companyName?: string|null; firstName?: s
     incoterms: l.incoterms,
     pricePerUnitCents: l.askingPriceCents,
     currency: l.askingCurrency ?? "USD",
+    // Anonymised — only FT-ID + reputation snapshot crosses the party boundary.
     seller: {
       id: l.sellerId,
-      name: sellerName,
-      memberSince: seller.createdAt ?? null,
+      // Legacy field kept for backwards compatibility — always equals FT-ID now.
+      name: counterparty?.displayId ?? "Verified Seller",
+      counterparty: counterparty ?? null,
+      memberSince: counterparty?.memberSince ?? null,
     },
     warehouseReceipt: opts.wrNumber ? {
       wrNumber: opts.wrNumber,
@@ -206,8 +215,8 @@ router.get("/lots", ensureAuth, async (req: Request, res: Response): Promise<voi
       if (priceMinCents != null && (r.listing.askingPriceCents ?? 0) < priceMinCents) return false;
       if (priceMaxCents != null && (r.listing.askingPriceCents ?? Number.MAX_SAFE_INTEGER) > priceMaxCents) return false;
       if (search) {
-        const sellerNm = `${r.sellerCompany ?? ""} ${r.sellerFirst ?? ""} ${r.sellerLast ?? ""}`;
-        const hay = `${r.listing.commodityName} ${r.listing.hubCode ?? ""} ${r.listing.originCountry ?? ""} ${sellerNm}`.toLowerCase();
+        // Search must not leak seller PII — match commodity/hub/country only.
+        const hay = `${r.listing.commodityName} ${r.listing.hubCode ?? ""} ${r.listing.originCountry ?? ""}`.toLowerCase();
         if (!hay.includes(search)) return false;
       }
       return true;
@@ -260,9 +269,12 @@ router.get("/lots", ensureAuth, async (req: Request, res: Response): Promise<voi
       }
     }
 
+    const sellerIds = Array.from(new Set(filtered.map(r => r.listing.sellerId).filter(Boolean) as string[]));
+    const counterpartyMap = await loadCounterpartiesByUserIds(sellerIds);
+
     const lots = filtered.map((r) => serializeLot(
       r.listing,
-      { companyName: r.sellerCompany, firstName: r.sellerFirst, lastName: r.sellerLast, createdAt: r.sellerCreatedAt },
+      counterpartyMap.get(r.listing.sellerId),
       {
         consignmentRef: r.consignmentRef,
         consignmentStatus: r.consignmentStatus,
@@ -354,9 +366,12 @@ router.get("/lots/:id", ensureAuth, async (req: Request, res: Response): Promise
         eq(consignmentListings.isVisible, true),
       ));
 
+    const cpMap = await loadCounterpartiesByUserIds([row.listing.sellerId]);
+    const counterparty = cpMap.get(row.listing.sellerId);
+
     const lot = serializeLot(
       row.listing,
-      { companyName: row.sellerCompany, firstName: row.sellerFirst, lastName: row.sellerLast, createdAt: row.sellerCreatedAt },
+      counterparty,
       {
         consignmentRef: row.consignmentRef,
         consignmentStatus: row.consignmentStatus,
@@ -375,13 +390,15 @@ router.get("/lots/:id", ensureAuth, async (req: Request, res: Response): Promise
         packingType: row.consignmentPacking,
         notes: row.consignmentNotes,
       },
+      // Anonymised seller profile — no name/email exposed to buyers.
       sellerProfile: {
         id: row.listing.sellerId,
-        name: lot.seller.name,
-        country: row.sellerCountry,
-        memberSince: row.sellerCreatedAt,
+        counterparty: counterparty ?? null,
+        displayId: counterparty?.displayId ?? "Verified Seller",
+        country: counterparty?.country ?? row.sellerCountry,
+        memberSince: counterparty?.memberSince ?? row.sellerCreatedAt,
         activeListingCount: sellerListings.length,
-        kycVerified: true,
+        kycVerified: (counterparty?.kycStatus ?? "") === "Approved",
       },
     });
   } catch (e: any) {
@@ -418,11 +435,13 @@ router.get("/watchlist", ensureAuth, async (req: Request, res: Response): Promis
       .where(eq(b2bWatchlist.userId, uid))
       .orderBy(desc(b2bWatchlist.createdAt));
 
+    const wlSellerIds = Array.from(new Set(rows.map(r => r.listing?.sellerId).filter(Boolean) as string[]));
+    const wlCpMap = await loadCounterpartiesByUserIds(wlSellerIds);
     const lots = rows
       .filter(r => r.listing)
       .map(r => serializeLot(
         r.listing!,
-        { companyName: r.sellerCompany, firstName: r.sellerFirst, lastName: r.sellerLast, createdAt: r.sellerCreatedAt },
+        wlCpMap.get(r.listing!.sellerId),
         {
           consignmentRef: r.consignmentRef,
           consignmentStatus: r.consignmentStatus,
@@ -666,6 +685,7 @@ function serializeOrder(o: any, commodityName?: string, unit?: string) {
 
 function serializeRfq(r: any, extras: {
   buyerName?: string|null;
+  counterparty?: CounterpartySnapshot | null;
   hubCode?: string|null;
   unit?: string|null;
   offers?: any[];
@@ -675,6 +695,7 @@ function serializeRfq(r: any, extras: {
     referenceNo: r.referenceNo,
     buyerId: r.buyerId,
     buyerName: extras.buyerName ?? null,
+    counterparty: extras.counterparty ?? null,
     commodity: r.commodityName,
     hubId: r.hubId,
     hubCode: extras.hubCode ?? null,
@@ -692,7 +713,9 @@ function serializeRfq(r: any, extras: {
     offers: (extras.offers ?? []).map(o => ({
       id: o.id,
       sellerId: o.sellerId,
-      sellerName: o.sellerName ?? null,
+      // sellerName retained for legacy compatibility — always equals FT-ID now.
+      sellerName: o.sellerName ?? o.counterparty?.displayId ?? null,
+      counterparty: o.counterparty ?? null,
       offeredQuantity: Number(o.offeredQuantity),
       pricePerUnit: Number(o.pricePerUnit),
       currency: o.currency,
@@ -879,10 +902,14 @@ router.get("/rfqs/mine", ensureAuth, async (req: Request, res: Response): Promis
         .from(rfqOffers)
         .leftJoin(users, eq(users.id, rfqOffers.sellerId))
         .where(inArray(rfqOffers.rfqId, ids));
+      const offerSellerIds = Array.from(new Set(offers.map(o => o.o.sellerId).filter(Boolean) as string[]));
+      const offerCpMap = await loadCounterpartiesByUserIds(offerSellerIds);
       for (const o of offers) {
         const arr = offersByRfq.get(o.o.rfqId) ?? [];
-        const sellerName = o.sellerCompany || [o.sellerFirst, o.sellerLast].filter(Boolean).join(" ") || "Seller";
-        arr.push({ ...o.o, sellerName });
+        const cp = offerCpMap.get(o.o.sellerId);
+        // Anonymised — sellerName is now the FT-ID display.
+        const sellerName = cp?.displayId ?? "Verified Seller";
+        arr.push({ ...o.o, sellerName, counterparty: cp ?? null });
         offersByRfq.set(o.o.rfqId, arr);
       }
     }
@@ -900,17 +927,15 @@ router.get("/rfqs/incoming", requireUserType("exporter"), async (req: Request, r
   try {
     const uid = req.session!.userId!;
     const rows = await db
-      .select({
-        r: rfqs,
-        buyerCompany: users.companyName,
-        buyerFirst: users.firstName,
-        buyerLast: users.lastName,
-      })
+      .select({ r: rfqs })
       .from(rfqs)
-      .leftJoin(users, eq(users.id, rfqs.buyerId))
       .where(sql`${rfqs.status} IN ('Open', 'Offers Received', 'Negotiating')`)
       .orderBy(desc(rfqs.createdAt))
       .limit(200);
+
+    // Task #145: anonymise the buyer — only FT-ID + reputation crosses to seller.
+    const buyerIds = Array.from(new Set(rows.map(r => r.r.buyerId).filter(Boolean) as string[]));
+    const buyerCpMap = await loadCounterpartiesByUserIds(buyerIds);
 
     // For each RFQ, find this seller's existing offer (if any)
     const ids = rows.map(r => r.r.id);
@@ -922,9 +947,10 @@ router.get("/rfqs/incoming", requireUserType("exporter"), async (req: Request, r
     }
 
     res.json({
-      rfqs: rows.map(({ r, buyerCompany, buyerFirst, buyerLast }) => ({
+      rfqs: rows.map(({ r }) => ({
         ...serializeRfq(r, {
-          buyerName: buyerCompany || [buyerFirst, buyerLast].filter(Boolean).join(" ") || "Buyer",
+          buyerName: buyerCpMap.get(r.buyerId)?.displayId ?? "Verified Buyer",
+          counterparty: buyerCpMap.get(r.buyerId) ?? null,
         }),
         myOffer: myOffersByRfq.get(r.id) ? {
           id: myOffersByRfq.get(r.id).id,

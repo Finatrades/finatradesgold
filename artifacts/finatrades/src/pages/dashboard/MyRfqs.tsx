@@ -4,11 +4,14 @@ import { Link, useLocation } from 'wouter';
 import { MessageCircle, CheckCircle2, X, ShieldCheck } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
+import CounterpartyChip from '@/components/CounterpartyChip';
+import type { Counterparty } from '@/components/FtIdDetailSheet';
 
 interface Offer {
   id: string;
   sellerId: string;
   sellerName: string | null;
+  counterparty: Counterparty | null;
   pricePerUnit: number;
   offeredQuantity: number;
   currency: string;
@@ -140,7 +143,7 @@ export default function MyRfqs() {
                         <div key={o.id} className="flex flex-wrap items-center gap-4 p-3 rounded-xl"
                           style={{ background: '#FAFAF8' }}>
                           <div className="flex-1 min-w-[180px]">
-                            <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>{o.sellerName}</p>
+                            <CounterpartyChip counterparty={o.counterparty} fallbackFtId={o.sellerName} size="sm" />
                             <p className="text-xs" style={{ color: '#888880' }}>
                               {o.offeredQuantity} {r.unit} @ <span className="font-bold" style={{ color: '#1A1A1A' }}>{o.currency} {o.pricePerUnit.toLocaleString()}</span>
                               {' '}= <span className="font-bold" style={{ color: '#C73B22' }}>{o.currency} {(o.pricePerUnit * o.offeredQuantity).toLocaleString()}</span>

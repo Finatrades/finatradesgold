@@ -3,11 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Send, X } from 'lucide-react';
 import { apiRequest } from '@/lib/queryClient';
 import { toast } from '@/hooks/use-toast';
+import CounterpartyChip from '@/components/CounterpartyChip';
+import type { Counterparty } from '@/components/FtIdDetailSheet';
 
 interface IncomingRfq {
   id: string;
   referenceNo: string | null;
   buyerName: string | null;
+  counterparty: Counterparty | null;
   commodity: string;
   hubCode: string | null;
   quantity: number;
@@ -161,7 +164,9 @@ export default function IncomingRfqs() {
                 return (
                   <tr key={r.id} style={{ borderTop: '1px solid #F0EBE6' }}>
                     <td className="px-4 py-3 font-mono text-xs">{r.referenceNo}</td>
-                    <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>{r.buyerName}</td>
+                    <td className="px-4 py-3">
+                      <CounterpartyChip counterparty={r.counterparty} fallbackFtId={r.buyerName} size="sm" />
+                    </td>
                     <td className="px-4 py-3 font-semibold" style={{ color: '#1A1A1A' }}>{r.commodity}</td>
                     <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>{r.quantity} {r.unit}</td>
                     <td className="px-4 py-3 text-xs" style={{ color: '#888880' }}>

@@ -205,9 +205,8 @@ router.get(
       const rows = await db
         .select({
           listing: consignmentListings,
-          sellerCompany: users.companyName,
-          sellerFirst: users.firstName,
-          sellerLast: users.lastName,
+          sellerCustomFtId: users.customFinatradesId,
+          sellerFtId: users.finatradesId,
           consignmentRef: consignments.referenceNo,
           consignmentStatus: consignments.status,
         })
@@ -248,9 +247,8 @@ router.get(
 
       res.json({
         listings: filtered.map((r) => serializeListing(r.listing, {
-          companyName: r.sellerCompany ?? undefined,
-          firstName: r.sellerFirst ?? undefined,
-          lastName: r.sellerLast ?? undefined,
+          // Task #145: anonymised — only FT-ID crosses the party boundary.
+          sellerDisplayId: r.sellerCustomFtId ?? r.sellerFtId ?? null,
           consignmentRef: r.consignmentRef ?? undefined,
           consignmentStatus: r.consignmentStatus ?? undefined,
           documents: docsByConsignment.get(r.listing.consignmentId) ?? [],
@@ -842,17 +840,24 @@ async function setListingVisibility(tx: DbExecutor, consignmentId: string, visib
 function serializeListing(
   l: any,
   extra: {
+    // Task #145: only the FT-ID display crosses the party boundary. Legacy
+    // companyName/firstName/lastName parameters are accepted but IGNORED.
     companyName?: string;
     firstName?: string;
     lastName?: string;
+    sellerDisplayId?: string | null;
+    /** Set true only when the viewer is the seller themselves (own-listing view). */
+    viewerIsOwner?: boolean;
     consignmentRef?: string;
     consignmentStatus?: string;
     documents?: any[];
   }
 ) {
-  const sellerName = extra.companyName
-    || [extra.firstName, extra.lastName].filter(Boolean).join(" ")
-    || "Verified Seller";
+  // Anonymised by default. Only the seller's own listings (admin or self)
+  // may see legacy fields, never another party.
+  const sellerName = extra.viewerIsOwner
+    ? (extra.companyName || [extra.firstName, extra.lastName].filter(Boolean).join(" ") || extra.sellerDisplayId || "Verified Seller")
+    : (extra.sellerDisplayId || "Verified Seller");
   const qty = Number(l.quantity);
   const minOrder = l.minOrderQty != null ? Number(l.minOrderQty) : Math.max(1, Math.round(qty * 0.1));
   const documents = (extra.documents ?? []).map((d) => ({
