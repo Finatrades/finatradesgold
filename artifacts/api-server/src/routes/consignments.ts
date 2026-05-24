@@ -345,6 +345,117 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 }, // 10MB per file
 });
 
+// ─── POST /:id/documents — upload a missing/rejected document ──────────────
+// Owner (exporter) — or admin — uploads a single document file for the given
+// docType. If a pending or rejected placeholder exists for that docType, it
+// gets updated in place; otherwise a new optional document row is created.
+router.post(
+  "/:id/documents",
+  ensureAuthenticated,
+  upload.single("file"),
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const uid = req.session!.userId!;
+      const user = await storage.getUser(uid);
+      if (!user) { res.status(401).json({ message: "Authentication required" }); return; }
+
+      const [row] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+      if (!row) { res.status(404).json({ message: "Consignment not found" }); return; }
+      if (user.role !== "admin" && row.userId !== uid) {
+        res.status(403).json({ message: "Access denied" }); return;
+      }
+
+      const docType = String((req.body?.docType ?? "")).trim();
+      if (!docType) {
+        res.status(400).json({ message: "docType is required" }); return;
+      }
+      const file = req.file as Express.Multer.File | undefined;
+      if (!file) {
+        res.status(400).json({ message: "file is required" }); return;
+      }
+
+      const slots = getRequirements(row.commodityCategory ?? undefined);
+      const slot = slots.find((s) => s.docType === (docType as DocType));
+      if (!slot) {
+        res.status(400).json({
+          message: `Unknown docType '${docType}' for this consignment`,
+          allowed: slots.map((s) => s.docType),
+        });
+        return;
+      }
+
+      const stored = await persistFile(row.id, docType, file);
+
+      // Update an existing pending/rejected row for this docType in place if
+      // present, otherwise insert a fresh row.
+      const [existing] = await db.select().from(consignmentDocuments)
+        .where(and(
+          eq(consignmentDocuments.consignmentId, row.id),
+          eq(consignmentDocuments.docType, docType as any),
+        ))
+        .orderBy(desc(consignmentDocuments.uploadedAt));
+
+      let savedId: string;
+      if (existing && (existing.status === "pending" || existing.status === "rejected")) {
+        const [updated] = await db.update(consignmentDocuments)
+          .set({
+            docLabel: slot.label,
+            isRequired: slot.required,
+            status: "uploaded",
+            fileName: file.originalname,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            storageKey: stored.key,
+            storageUrl: stored.url,
+            uploadedAt: new Date(),
+            reviewedAt: null,
+            reviewerId: null,
+            reviewNotes: null,
+            rejectReason: null,
+          } as any)
+          .where(eq(consignmentDocuments.id, existing.id))
+          .returning();
+        savedId = updated.id;
+      } else {
+        const [inserted] = await db.insert(consignmentDocuments).values({
+          consignmentId: row.id,
+          docType: docType as any,
+          docLabel: slot.label,
+          isRequired: slot.required,
+          status: "uploaded",
+          fileName: file.originalname,
+          fileSize: file.size,
+          mimeType: file.mimetype,
+          storageKey: stored.key,
+          storageUrl: stored.url,
+          uploadedAt: new Date(),
+        } as any).returning();
+        savedId = inserted.id;
+      }
+
+      // Log a status-history entry so admins see the activity on the timeline.
+      try {
+        await db.insert(consignmentStatusHistory).values({
+          consignmentId: row.id,
+          fromStatus: row.status as any,
+          toStatus: row.status as any,
+          actorId: user.id,
+          note: `Uploaded ${slot.label}: ${file.originalname}`,
+        } as any);
+      } catch (e: any) {
+        console.error("[consignments.uploadDoc] history failed:", e?.message || e);
+      }
+
+      const [saved] = await db.select().from(consignmentDocuments)
+        .where(eq(consignmentDocuments.id, savedId));
+      res.status(201).json(await serializeDocWithSignedUrl(saved));
+    } catch (e: any) {
+      console.error("[consignments.uploadDoc]", e?.message || e);
+      res.status(500).json({ message: "Failed to upload document", error: e?.message });
+    }
+  }
+);
+
 const createSchema = z.object({
   commodityName: z.string().min(1),
   commodityCategory: z.string().min(1),
