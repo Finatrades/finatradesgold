@@ -99,51 +99,51 @@
   --brand-mono-font-family: 'Geist Mono', 'JetBrains Mono', ui-monospace, monospace;
   --brand-heading-font-family: 'Manrope', 'Inter', system-ui, sans-serif;
   --brand-font-size-body: 1rem;
-  --brand-background: #FAFBFF;
-  --brand-card-background: #ffffff;
-  --brand-sidebar-background: #ffffff;
+  --brand-background: #F5E8DC;
+  --brand-card-background: #FFFAF3;
+  --brand-sidebar-background: transparent;
   --brand-border-radius: 0.5rem;
-  --brand-border-color: #e5e7eb;
-  --brand-header-gradient: linear-gradient(90deg, #0D001E 0%, #2A0055 50%, #4B0082 100%);
+  --brand-border-color: #E8D9C8;
+  --brand-header-gradient: linear-gradient(90deg, #FAEFE3 0%, #F5E8DC 50%, #EBD9C8 100%);
 
-  /* Purple & White Theme */
-  
-  /* Background - Soft Light Gradient Base */
-  --background: #F6F7F9;
-  --foreground: #0A0A0F;
+  /* Cream + Redbrick Light Theme — matches public homepage & dashboard */
 
-  /* Cards - Pure White with Dark Text */
-  --card: #FFFFFF;
-  --card-foreground: #0A0A0F;
+  /* Background - Cream */
+  --background: #F5E8DC;
+  --foreground: #1A1410;
 
-  --popover: #FFFFFF;
-  --popover-foreground: #0A0A0F;
-  
-  /* Sidebar background - Pure white floating card */
-  --sidebar-background: #FFFFFF;
+  /* Cards - Warm cream-white that floats on cream bg */
+  --card: #FFFAF3;
+  --card-foreground: #1A1410;
 
-  /* Primary - Purple */
-  --primary: #8A2BE2;
+  --popover: #FFFAF3;
+  --popover-foreground: #1A1410;
+
+  /* Sidebar background - transparent so cream bg shows through */
+  --sidebar-background: transparent;
+
+  /* Primary - Redbrick */
+  --primary: #C73B22;
   --primary-foreground: #ffffff;
 
-  /* Secondary - Light Purple */
-  --secondary: #f5f3ff;
-  --secondary-foreground: #8A2BE2;
+  /* Secondary - Light Redbrick tint */
+  --secondary: #FBE7DF;
+  --secondary-foreground: #C73B22;
 
-  /* Muted backgrounds - Light Gray-Blue */
-  --muted: #F4F6FC;
-  --muted-foreground: #6b7280;
+  /* Muted backgrounds - Warm cream */
+  --muted: #EFE0CF;
+  --muted-foreground: #5A4838;
 
-  /* Accent - Pink/Purple */
-  --accent: #fdf4ff;
-  --accent-foreground: #8A2BE2;
+  /* Accent - Peach tint */
+  --accent: #FBE7DF;
+  --accent-foreground: #C73B22;
 
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
 
-  --border: #E4E7EC;
-  --input: #E4E7EC;
-  --ring: #8A2BE2;
+  --border: #E8D9C8;
+  --input: #E8D9C8;
+  --ring: #C73B22;
 
   --radius: var(--brand-border-radius);
 
