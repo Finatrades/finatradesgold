@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { useAuth } from '@/context/AuthContext';
@@ -217,6 +217,8 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
   // Task #172: bank partner + LC template come from master data.
   const [lcBankPartnerId, setLcBankPartnerId] = useState('');
   const [lcTemplateId, setLcTemplateId] = useState('');
+  const [lcIncoterms, setLcIncoterms] = useState('');
+  const [lcRequiredDocs, setLcRequiredDocs] = useState('');
   const banksQ = useQuery({
     queryKey: ['/api/bank-partners', lcCurrency],
     queryFn: async () => {
@@ -242,6 +244,13 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
     () => (templatesQ.data?.lcTemplates ?? []).find((t) => t.id === lcTemplateId) || null,
     [templatesQ.data, lcTemplateId],
   );
+  // Auto-fill incoterms and required-documents from the selected template.
+  // Both remain editable so importers can tweak before submitting.
+  useEffect(() => {
+    if (!selectedTemplate) return;
+    setLcIncoterms(selectedTemplate.defaultIncoterms ?? '');
+    setLcRequiredDocs((selectedTemplate.requiredDocuments ?? []).join(', '));
+  }, [selectedTemplate]);
   const lcEscrowCap = useMemo(() => {
     const cfg = (escrowConfigsQ.data?.escrowConfigurations ?? []).find((c) => c.currency === lcCurrency);
     return cfg?.maxHoldPerCaseCents ?? null;
@@ -254,12 +263,18 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
       if (!counterpartyUserId) throw new Error('Counterparty not resolved on this case');
       if (!lcBankPartnerId) throw new Error('Pick an issuing bank.');
       if (lcOverCap) throw new Error(`Amount exceeds platform cap of ${formatMoney(lcEscrowCap!, lcCurrency)}.`);
+      const requiredDocs = lcRequiredDocs
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
       const r = await apiRequest('POST', `/api/trade/cases/${caseId}/lc`, {
         beneficiaryUserId: counterpartyUserId,
         currency: lcCurrency,
         amountCents: lcAmountCents,
         bankPartnerId: lcBankPartnerId,
         lcTemplateId: lcTemplateId || undefined,
+        incoterms: lcIncoterms.trim() || undefined,
+        requiredDocuments: requiredDocs.length > 0 ? requiredDocs : undefined,
       });
       return r.json();
     },
@@ -271,6 +286,8 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
       setLcAmount('');
       setLcBankPartnerId('');
       setLcTemplateId('');
+      setLcIncoterms('');
+      setLcRequiredDocs('');
     },
     onError: (e: any) => toast({ variant: 'destructive', title: 'LC issuance failed', description: e?.message }),
   });
@@ -548,9 +565,29 @@ export function TradeFinanceTab({ caseId, counterpartyFtId, counterpartyUserId }
                 </select>
               </div>
             </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div>
+                <Label className="text-[11px]">Incoterms</Label>
+                <Input
+                  value={lcIncoterms}
+                  onChange={(e) => setLcIncoterms(e.target.value)}
+                  placeholder="e.g. FOB Lagos"
+                  data-testid="input-lc-incoterms"
+                />
+              </div>
+              <div>
+                <Label className="text-[11px]">Required documents (comma-separated)</Label>
+                <Input
+                  value={lcRequiredDocs}
+                  onChange={(e) => setLcRequiredDocs(e.target.value)}
+                  placeholder="Bill of Lading, Commercial Invoice, …"
+                  data-testid="input-lc-required-docs"
+                />
+              </div>
+            </div>
             {selectedTemplate && (
               <div className="text-[11px] text-muted-foreground" data-testid="lc-template-summary">
-                Incoterms: {selectedTemplate.defaultIncoterms || '—'} · Required docs: {(selectedTemplate.requiredDocuments || []).join(', ') || '—'}
+                Pre-filled from {selectedTemplate.code} · {selectedTemplate.name}. Edit if needed.
               </div>
             )}
             {lcEscrowCap !== null && (
