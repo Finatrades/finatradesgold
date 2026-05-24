@@ -180,6 +180,13 @@ export async function recomputeUserRatingAggregate(userId: string): Promise<void
   await db.update(users)
     .set({ ratingAvg: avg.toFixed(1), ratingCount: count })
     .where(eq(users.id, userId));
+  // Task #197 — refresh tier/badges after rating change (best-effort)
+  try {
+    const { reconcileUserReputation } = await import("./reputation");
+    await reconcileUserReputation(userId);
+  } catch (e) {
+    console.error("[counterparty.reputation-hook]", (e as Error)?.message);
+  }
 }
 
 /**
@@ -197,6 +204,13 @@ export async function incrementCompletedTrades(userId: string, by = 1): Promise<
   await db.update(users)
     .set({ completedTradesCount: next })
     .where(eq(users.id, userId));
+  // Task #197 — refresh tier/badges after a completed trade (best-effort)
+  try {
+    const { reconcileUserReputation } = await import("./reputation");
+    await reconcileUserReputation(userId);
+  } catch (e) {
+    console.error("[counterparty.reputation-hook]", (e as Error)?.message);
+  }
 }
 
 export async function hasMutualIdentityConsent(params: {

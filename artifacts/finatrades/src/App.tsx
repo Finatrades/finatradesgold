@@ -49,6 +49,8 @@ import AdminMilestonePresets from "@/pages/admin/AdminMilestonePresets";
 import AdminEscrowConfig from "@/pages/admin/AdminEscrowConfig";
 import AdminStaffRoles from "@/pages/admin/AdminStaffRoles";
 import StaffAcceptInvite from "@/pages/public/StaffAcceptInvite";
+import AdminReputation from "@/pages/admin/AdminReputation";
+import PublicReputationProfile from "@/pages/public/PublicReputationProfile";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import AdminHubs from "@/pages/dashboard/AdminHubs";
@@ -175,6 +177,7 @@ function AppRoutes() {
       <Route path="/register" component={Register} />
       <Route path="/wr/verify/:wrNumber" component={VerifyWarehouseReceipt} />
       <Route path="/staff/accept-invite" component={StaffAcceptInvite} />
+      <Route path="/u/:ftId" component={PublicReputationProfile} />
 
       {/* Dashboard */}
       <Route path="/dashboard">
@@ -331,6 +334,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/sellers">
         <AdminRoute component={AdminSellers} requirePermission="moderate_marketplace" />
+      </Route>
+      <Route path="/admin/reputation">
+        <AdminRoute component={AdminReputation} />
       </Route>
 
       {/* Account */}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Star, Info } from 'lucide-react';
 import FtIdDetailSheet, { type Counterparty } from './FtIdDetailSheet';
+import TierBadge from './TierBadge';
 
 export interface CounterpartyChipProps {
   counterparty: Counterparty | null | undefined;
@@ -26,6 +27,7 @@ export default function CounterpartyChip({
   const kycApproved = counterparty?.kycStatus === 'Approved';
   const rating = counterparty?.ratingAvg;
   const ratingCount = counterparty?.ratingCount ?? 0;
+  const tier = (counterparty as any)?.tier as string | undefined;
 
   const isSm = size === 'sm';
   const padding = isSm ? '4px 8px' : '6px 10px';
@@ -63,6 +65,7 @@ export default function CounterpartyChip({
             )}
           </span>
         )}
+        {tier && <TierBadge tier={tier} size="xs" showLabel={false} />}
         {counterparty && <Info size={isSm ? 10 : 12} style={{ opacity: 0.6 }} />}
       </button>
 

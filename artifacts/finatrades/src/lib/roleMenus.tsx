@@ -169,6 +169,7 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Mail size={16} />, label: 'Email Queues', href: '/admin/email-queues' },
       { icon: <ShieldCheck size={16} />, label: 'Staff & Roles', href: '/admin/staff',
         requires: { component: 'employees', action: 'edit' } },
+      { icon: <Award size={16} />, label: 'Trader Reputation', href: '/admin/reputation' },
     ],
   },
   {

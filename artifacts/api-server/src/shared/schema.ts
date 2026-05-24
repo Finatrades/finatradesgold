@@ -1779,6 +1779,62 @@ export const insertTradeIdentityConsentSchema = createInsertSchema(tradeIdentity
 export type InsertTradeIdentityConsent = z.infer<typeof insertTradeIdentityConsentSchema>;
 export type TradeIdentityConsent = typeof tradeIdentityConsents.$inferSelect;
 
+// ============================================
+// TRADER REPUTATION & GAMIFICATION (Task #197)
+// ============================================
+
+export const traderTiers = pgTable("trader_tiers", {
+  userId: varchar("user_id", { length: 255 }).primaryKey().references(() => users.id, { onDelete: 'cascade' }),
+  tier: varchar("tier", { length: 16 }).notNull().default('bronze'),
+  metricsSnapshot: jsonb("metrics_snapshot").notNull().default(sql`'{}'::jsonb`),
+  computedAt: timestamp("computed_at").notNull().defaultNow(),
+  pendingTier: varchar("pending_tier", { length: 16 }),
+  pendingDemotionAt: timestamp("pending_demotion_at"),
+  manualOverrideTier: varchar("manual_override_tier", { length: 16 }),
+  manualOverrideBy: varchar("manual_override_by", { length: 255 }).references(() => users.id),
+  manualOverrideAt: timestamp("manual_override_at"),
+  manualOverrideReason: text("manual_override_reason"),
+});
+export type TraderTier = typeof traderTiers.$inferSelect;
+
+export const traderBadges = pgTable("trader_badges", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  badgeSlug: varchar("badge_slug", { length: 64 }).notNull(),
+  source: varchar("source", { length: 16 }).notNull().default('auto'),
+  grantedBy: varchar("granted_by", { length: 255 }).references(() => users.id),
+  reason: text("reason"),
+  earnedAt: timestamp("earned_at").notNull().defaultNow(),
+  revokedAt: timestamp("revoked_at"),
+  revokedBy: varchar("revoked_by", { length: 255 }).references(() => users.id),
+  revokeReason: text("revoke_reason"),
+});
+export type TraderBadge = typeof traderBadges.$inferSelect;
+
+export const tierRules = pgTable("tier_rules", {
+  tier: varchar("tier", { length: 16 }).primaryKey(),
+  rank: integer("rank").notNull(),
+  minTrades: integer("min_trades").notNull().default(0),
+  minRating: decimal("min_rating", { precision: 2, scale: 1 }).notNull().default('0.0'),
+  maxDisputeRateBps: integer("max_dispute_rate_bps").notNull().default(10000),
+  minCommodityCategories: integer("min_commodity_categories").notNull().default(0),
+  description: text("description"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type TierRule = typeof tierRules.$inferSelect;
+
+export const badgeRules = pgTable("badge_rules", {
+  slug: varchar("slug", { length: 64 }).primaryKey(),
+  label: varchar("label", { length: 128 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 32 }).notNull().default('milestone'),
+  criteria: jsonb("criteria").notNull().default(sql`'{}'::jsonb`),
+  icon: varchar("icon", { length: 32 }),
+  active: boolean("active").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type BadgeRule = typeof badgeRules.$inferSelect;
+
 export const finabridgeWallets = pgTable("finabridge_wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id).unique(),

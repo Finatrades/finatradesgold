@@ -14,6 +14,7 @@ import {
   recomputeUserRatingAggregate,
   hasMutualIdentityConsent,
 } from "../lib/counterparty";
+import { loadReputationForUser, leaderboardRankForUser } from "../lib/reputation";
 
 const router = Router();
 
@@ -41,8 +42,12 @@ router.get("/finatrades-id/:ftId", async (req: Request, res: Response): Promise<
     const counterparty = await loadCounterpartyByUserId(u.id);
     if (!counterparty) { res.status(404).json({ message: "Counterparty not found" }); return; }
 
-    const reviews = await loadRecentReviewSnippets(u.id, 5);
-    res.json({ counterparty, reviews });
+    const [reviews, reputation, rank] = await Promise.all([
+      loadRecentReviewSnippets(u.id, 5),
+      loadReputationForUser(u.id),
+      leaderboardRankForUser(u.id, counterparty.userType ?? null),
+    ]);
+    res.json({ counterparty, reviews, reputation, leaderboardRank: rank });
   } catch (e: any) {
     console.error("[counterparty.public-lookup]", e?.message || e);
     res.status(500).json({ message: "Failed to load Finatrades ID" });

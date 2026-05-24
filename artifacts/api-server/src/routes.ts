@@ -188,6 +188,7 @@ import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
 import marketplaceRouter from "./routes/marketplace";
 import counterpartyRouter from "./routes/counterparty";
+import reputationRouter from "./routes/reputation";
 import { loadCounterpartyByUserId } from "./lib/counterparty";
 import adminConsignmentsRouter from "./routes/admin-consignments";
 import adminMarketplaceRouter from "./routes/admin-marketplace";
@@ -1255,6 +1256,8 @@ export async function registerRoutes(
   // Task #145: counterparty FT-ID + ratings + identity-consent + gated contract.
   // Mounted at /api so it serves /api/finatrades-id/:ftId and /api/trade/*.
   app.use("/api", counterpartyRouter);
+  // Task #197 — trader tiers, badges, leaderboard, admin tools.
+  app.use("/api", reputationRouter);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, (req: Request, res: Response, next: NextFunction): void => {

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { X, ShieldCheck, Star, Globe, Calendar, Briefcase } from 'lucide-react';
+import { X, ShieldCheck, Star, Globe, Calendar, Briefcase, TrendingUp } from 'lucide-react';
+import TierBadge from './TierBadge';
+import AchievementBadgeList, { type AchievementBadge } from './AchievementBadgeList';
 
 export interface Counterparty {
   finatradesId: string | null;
@@ -12,6 +14,14 @@ export interface Counterparty {
   ratingCount: number;
   country: string | null;
   userType: string | null;
+  tier?: string | null;
+}
+
+interface ReputationInfo {
+  tier: string;
+  pendingTier: string | null;
+  badges: AchievementBadge[];
+  leaderboardRank?: number | null;
 }
 
 interface ReviewSnippet {
@@ -28,6 +38,7 @@ interface Props {
 
 export default function FtIdDetailSheet({ counterparty, onClose }: Props) {
   const [reviews, setReviews] = useState<ReviewSnippet[] | null>(null);
+  const [reputation, setReputation] = useState<ReputationInfo | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,9 +46,19 @@ export default function FtIdDetailSheet({ counterparty, onClose }: Props) {
     async function load() {
       try {
         const r = await fetch(`/api/finatrades-id/${encodeURIComponent(counterparty.displayId)}`, { credentials: 'include' });
-        if (!r.ok) { if (!cancelled) setReviews([]); return; }
+        if (!r.ok) { if (!cancelled) { setReviews([]); } return; }
         const j = await r.json();
-        if (!cancelled) setReviews(j.reviews ?? []);
+        if (!cancelled) {
+          setReviews(j.reviews ?? []);
+          if (j.reputation) {
+            setReputation({
+              tier: j.reputation.tier,
+              pendingTier: j.reputation.pendingTier,
+              badges: j.reputation.badges ?? [],
+              leaderboardRank: j.leaderboardRank ?? null,
+            });
+          }
+        }
       } catch {
         if (!cancelled) setReviews([]);
       } finally {
@@ -71,6 +92,17 @@ export default function FtIdDetailSheet({ counterparty, onClose }: Props) {
             <p className="text-xs mt-1" style={{ color: '#888880' }}>
               Real identity is sealed until both parties consent at settlement.
             </p>
+            <div className="mt-2 flex items-center gap-2 flex-wrap">
+              <TierBadge tier={(reputation?.tier ?? counterparty.tier) as any} size="sm" />
+              {reputation?.leaderboardRank != null && reputation.leaderboardRank <= 100 && (
+                <span
+                  className="inline-flex items-center gap-1 rounded-full text-[11px] font-semibold"
+                  style={{ background: 'rgba(199,59,34,0.08)', color: '#C73B22', border: '1px solid rgba(199,59,34,0.18)', padding: '3px 8px' }}
+                >
+                  <TrendingUp size={11} /> #{reputation.leaderboardRank} leaderboard
+                </span>
+              )}
+            </div>
           </div>
           <button onClick={onClose} className="p-1 rounded-full hover:bg-gray-100" aria-label="Close">
             <X size={20} />
@@ -118,6 +150,13 @@ export default function FtIdDetailSheet({ counterparty, onClose }: Props) {
               />
             )}
           </div>
+
+          {reputation && reputation.badges.length > 0 && (
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#888880' }}>Achievements</p>
+              <AchievementBadgeList badges={reputation.badges} />
+            </div>
+          )}
 
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide mb-2" style={{ color: '#888880' }}>Recent reviews</p>
