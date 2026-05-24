@@ -12,10 +12,13 @@ interface MfaChallenge {
   mfaMethod: 'totp' | 'email';
 }
 
-/** Role-based post-login landing route. Admin -> admin dashboard; otherwise by user_type. */
+/** Role-based post-login landing route. Each role lands on its primary workflow.
+ *  Admins go to /dashboard until the dedicated /admin/* panel rebuild lands (#68 follow-up);
+ *  admin-portal logins (adminLogin / MFA with adminPortal=true) still go to /admin/dashboard
+ *  via their own flow which the admin layout owns. */
 function landingForUser(user: any): string {
   if (!user) return '/dashboard';
-  if (user.role === 'admin') return '/admin/dashboard';
+  if (user.role === 'admin') return '/dashboard';
   const t = user.userType || 'exporter';
   if (t === 'government') return '/sovereign';
   if (t === 'importer') return '/marketplace';
