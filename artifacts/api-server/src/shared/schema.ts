@@ -7042,3 +7042,93 @@ export const deliveryMilestones = pgTable("delivery_milestones", {
 export const insertDeliveryMilestoneSchema = createInsertSchema(deliveryMilestones).omit({ id: true, createdAt: true });
 export type InsertDeliveryMilestone = z.infer<typeof insertDeliveryMilestoneSchema>;
 export type DeliveryMilestone = typeof deliveryMilestones.$inferSelect;
+
+// ============================================
+// B2B USD WALLET (Task #74)
+// All amounts are bigint cents. Balance math owned by walletService.
+// ============================================
+
+export const b2bWallets = pgTable("b2b_wallets", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().unique().references(() => users.id),
+  currency: varchar("currency", { length: 8 }).notNull().default('USD'),
+  availableCents: integer("available_cents").notNull().default(0),
+  lockedCents: integer("locked_cents").notNull().default(0),
+  pendingCents: integer("pending_cents").notNull().default(0),
+  virtualAccountNumber: varchar("virtual_account_number", { length: 64 }),
+  virtualAccountBank: varchar("virtual_account_bank", { length: 128 }),
+  virtualAccountReference: varchar("virtual_account_reference", { length: 64 }),
+  stablecoinAddress: varchar("stablecoin_address", { length: 128 }),
+  stablecoinNetwork: varchar("stablecoin_network", { length: 32 }).notNull().default('polygon'),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type B2bWallet = typeof b2bWallets.$inferSelect;
+
+export const b2bWalletTransactions = pgTable("b2b_wallet_transactions", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id", { length: 255 }).notNull().references(() => b2bWallets.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  type: varchar("type", { length: 48 }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  balanceAfterCents: integer("balance_after_cents").notNull(),
+  lockedAfterCents: integer("locked_after_cents").notNull().default(0),
+  referenceType: varchar("reference_type", { length: 64 }),
+  referenceId: varchar("reference_id", { length: 255 }),
+  idempotencyKey: varchar("idempotency_key", { length: 128 }),
+  description: text("description"),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type B2bWalletTransaction = typeof b2bWalletTransactions.$inferSelect;
+
+export const b2bWalletHolds = pgTable("b2b_wallet_holds", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id", { length: 255 }).notNull().references(() => b2bWallets.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  amountCents: integer("amount_cents").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default('open'),
+  referenceType: varchar("reference_type", { length: 64 }),
+  referenceId: varchar("reference_id", { length: 255 }),
+  expiresAt: timestamp("expires_at"),
+  releasedAt: timestamp("released_at"),
+  convertedEscrowId: varchar("converted_escrow_id", { length: 255 }),
+  metadata: jsonb("metadata"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type B2bWalletHold = typeof b2bWalletHolds.$inferSelect;
+
+export const b2bDepositIntents = pgTable("b2b_deposit_intents", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id", { length: 255 }).notNull().references(() => b2bWallets.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  rail: varchar("rail", { length: 32 }).notNull(),
+  amountCents: integer("amount_cents").notNull(),
+  status: varchar("status", { length: 32 }).notNull().default('pending'),
+  externalRef: varchar("external_ref", { length: 255 }),
+  proofObjectKey: varchar("proof_object_key", { length: 512 }),
+  metadata: jsonb("metadata"),
+  creditedTransactionId: varchar("credited_transaction_id", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type B2bDepositIntent = typeof b2bDepositIntents.$inferSelect;
+
+export const b2bWithdrawalRequests = pgTable("b2b_withdrawal_requests", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  walletId: varchar("wallet_id", { length: 255 }).notNull().references(() => b2bWallets.id, { onDelete: 'cascade' }),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
+  amountCents: integer("amount_cents").notNull(),
+  bankDetailsEncrypted: text("bank_details_encrypted").notNull(),
+  bankDetailsHint: varchar("bank_details_hint", { length: 128 }),
+  holdId: varchar("hold_id", { length: 255 }).references(() => b2bWalletHolds.id),
+  status: varchar("status", { length: 32 }).notNull().default('pending'),
+  reviewerId: varchar("reviewer_id", { length: 255 }).references(() => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  rejectReason: text("reject_reason"),
+  externalRef: varchar("external_ref", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type B2bWithdrawalRequest = typeof b2bWithdrawalRequests.$inferSelect;

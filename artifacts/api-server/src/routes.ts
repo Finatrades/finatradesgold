@@ -123,6 +123,7 @@ import { credentialIssuer } from "./services/credential-issuer";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
 import { geoRestrictionMiddleware } from "./geo-restriction-middleware";
 import { queueDocumentVerification } from "./jobs/verify-document.job";
+import { registerWalletRoutes } from "./routes/wallet";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1040,6 +1041,8 @@ export async function registerRoutes(
   app.use("/api/physical-deposits", physicalDepositRoutes);
   // Register B2B order receiving routes
   app.use("/api/b2b", b2bRoutes);
+  // Register B2B USD Wallet routes (Task #74)
+  registerWalletRoutes(app);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

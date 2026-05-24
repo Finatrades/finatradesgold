@@ -18,6 +18,8 @@ import Escrow from "@/pages/dashboard/Escrow";
 import Transactions from "@/pages/dashboard/Transactions";
 import KycPage from "@/pages/dashboard/KycPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
+import Wallet from "@/pages/dashboard/Wallet";
+import AdminWallets from "@/pages/dashboard/AdminWallets";
 import { Suspense, useEffect } from "react";
 import { canAccess } from "@/lib/roleMenus";
 
@@ -130,6 +132,14 @@ function AppRoutes() {
       </Route>
       <Route path="/sovereign">
         <ProtectedRoute path="/sovereign" component={() => <ComingSoon title="Sovereign Programs" desc="Government-backed trade and policy programs" />} />
+      </Route>
+
+      {/* Wallet */}
+      <Route path="/wallet">
+        <ProtectedRoute path="/wallet" component={Wallet} />
+      </Route>
+      <Route path="/admin/wallets">
+        <ProtectedRoute component={AdminWallets} />
       </Route>
 
       {/* Account */}

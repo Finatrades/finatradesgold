@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
-  Users, BarChart3, AlertTriangle, Globe,
+  Users, BarChart3, AlertTriangle, Globe, Wallet,
 } from 'lucide-react';
 
 export type UserType = 'exporter' | 'importer' | 'government';
@@ -57,6 +57,7 @@ export const EXPORTER_MENU: MenuSection[] = [
     key: 'finance',
     label: 'Finance & Settlement',
     items: [
+      { icon: <Wallet size={16} />, label: 'Wallet', href: '/wallet' },
       { icon: <Shield size={16} />, label: 'Escrow & Settlement', href: '/escrow' },
       { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
       { icon: <FileText size={16} />, label: 'Warehouse Receipts', href: '/certificates' },
@@ -80,6 +81,7 @@ export const IMPORTER_MENU: MenuSection[] = [
     key: 'finance',
     label: 'Finance & Settlement',
     items: [
+      { icon: <Wallet size={16} />, label: 'Wallet', href: '/wallet' },
       { icon: <Shield size={16} />, label: 'Escrow & Settlement', href: '/escrow' },
       { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
     ],
@@ -102,6 +104,7 @@ export const GOVERNMENT_MENU: MenuSection[] = [
     key: 'finance',
     label: 'Treasury',
     items: [
+      { icon: <Wallet size={16} />, label: 'Wallet', href: '/wallet' },
       { icon: <Shield size={16} />, label: 'Escrow & Settlement', href: '/escrow' },
       { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
     ],
@@ -119,6 +122,7 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <ShieldCheck size={16} />, label: 'KYC Review', href: '/admin/kyc' },
       { icon: <Package size={16} />, label: 'All Consignments', href: '/consignments' },
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
+      { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },
       { icon: <AlertTriangle size={16} />, label: 'Risk & AML', href: '/admin/risk' },
       { icon: <BarChart3 size={16} />, label: 'Analytics', href: '/admin/analytics' },
@@ -174,6 +178,7 @@ export const ROUTE_ACCESS: Record<string, UserType[]> = {
   '/certificates':  ['exporter', 'importer'],
   '/barter':        ['government'],
   '/sovereign':     ['government'],
+  '/wallet':        ['exporter', 'importer', 'government'],
 };
 
 export function canAccess(path: string, user: any): boolean {
