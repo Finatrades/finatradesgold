@@ -41,7 +41,7 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
   - Admin = full platform oversight
 - Uses wouter for client-side routing
 - Theme: redbrick `#C73B22` / cream `#FAFAF8` / dark `#1A1A1A` (rebranded from purple/gold)
-- Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar — code remains in tree but unreachable
+- Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar; backend gold-stack tables and their unreachable handlers were dropped in task #133
 
 ### KYC Model
 - **Finatrades KYC** is the only active mode (`complianceSettings.activeKycMode = 'finatrades'`).

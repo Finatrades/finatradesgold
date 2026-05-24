@@ -1,7 +1,7 @@
 import { 
-  users, wallets, transactions, vaultHoldings, kycSubmissions,
-  bnslPlans, bnslPayouts, bnslEarlyTerminations, bnslWallets,
-  bnslPlanTemplates, bnslTemplateVariants, bnslAgreements, finabridgeAgreements,
+  users, wallets, transactions, kycSubmissions,
+  
+  finabridgeAgreements,
   tradeCases, tradeDocuments,
   tradeRequests, tradeProposals, forwardedProposals, tradeConfirmations,
   finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
@@ -9,7 +9,7 @@ import {
   contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
-  vaultOwnershipSummary, fpgwBatches,
+  
   binanceTransactions, reconciliationReports,
   ngeniusTransactions,
   paymentGatewaySettings,
@@ -23,15 +23,7 @@ import {
   type User, type InsertUser,
   type Wallet, type InsertWallet,
   type Transaction, type InsertTransaction,
-  type VaultHolding, type InsertVaultHolding,
   type KycSubmission, type InsertKycSubmission,
-  type BnslPlan, type InsertBnslPlan,
-  type BnslPayout, type InsertBnslPayout,
-  type BnslEarlyTermination, type InsertBnslEarlyTermination,
-  type BnslWallet, type InsertBnslWallet,
-  type BnslPlanTemplate, type InsertBnslPlanTemplate,
-  type BnslTemplateVariant, type InsertBnslTemplateVariant,
-  type BnslAgreement, type InsertBnslAgreement,
   type FinabridgeAgreement, type InsertFinabridgeAgreement,
   type TradeCase, type InsertTradeCase,
   type TradeDocument, type InsertTradeDocument,
@@ -102,8 +94,6 @@ import {
   cryptoWalletConfigs, cryptoPaymentRequests,
   type CryptoWalletConfig, type InsertCryptoWalletConfig,
   type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
-  buyGoldRequests,
-  type BuyGoldRequest, type InsertBuyGoldRequest,
   platformConfig,
   type PlatformConfig, type InsertPlatformConfig,
   emailNotificationSettings,
@@ -112,16 +102,6 @@ import {
   type EmailLog, type InsertEmailLog,
   accountDeletionRequests,
   type AccountDeletionRequest, type InsertAccountDeletionRequest,
-  unifiedTallyTransactions, unifiedTallyEvents, wingoldAllocations, wingoldBars,
-  type UnifiedTallyTransaction, type InsertUnifiedTallyTransaction,
-  type UnifiedTallyEvent, type InsertUnifiedTallyEvent,
-  type WingoldAllocation, type InsertWingoldAllocation,
-  type WingoldBar, type InsertWingoldBar,
-  physicalDepositRequests, depositItems, depositInspections, depositNegotiationMessages,
-  type PhysicalDepositRequest, type InsertPhysicalDepositRequest,
-  type DepositItem, type InsertDepositItem,
-  type DepositInspection, type InsertDepositInspection,
-  type DepositNegotiationMessage, type InsertDepositNegotiationMessage,
   verifiableCredentials, credentialRevocations, credentialPresentations,
   type VerifiableCredential, type InsertVerifiableCredential,
   type CredentialRevocation, type InsertCredentialRevocation,
@@ -154,13 +134,10 @@ export interface TransactionalStorage {
   updateWallet(id: string, updates: Partial<Wallet>): Promise<Wallet | undefined>;
   createTransaction(insertTransaction: InsertTransaction): Promise<Transaction>;
   updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
-  createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding>;
-  updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   createCertificate(insertCertificate: InsertCertificate): Promise<Certificate>;
   updateCertificate(id: string, updates: Partial<Certificate>): Promise<Certificate | undefined>;
   createAuditLog(insertLog: InsertAuditLog): Promise<AuditLog>;
   generateCertificateNumber(type: 'Digital Ownership' | 'Physical Storage'): Promise<string>;
-  getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
   getUserActiveCertificates(userId: string): Promise<Certificate[]>;
   getWallet(userId: string): Promise<Wallet | undefined>;
   getUser(id: string): Promise<User | undefined>;
@@ -169,7 +146,6 @@ export interface TransactionalStorage {
   createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
   createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
   generateInvoiceNumber(): Promise<string>;
-  updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined>;
   updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
   getDbClient(): DbClient;
 }
@@ -188,14 +164,6 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const [transaction] = await txDb.update(transactions).set({ ...updates, updatedAt: new Date() }).where(eq(transactions.id, id)).returning();
       return transaction || undefined;
     },
-    async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {
-      const [holding] = await txDb.insert(vaultHoldings).values(insertHolding).returning();
-      return holding;
-    },
-    async updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
-      const [holding] = await txDb.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
-      return holding || undefined;
-    },
     async createCertificate(insertCertificate: InsertCertificate): Promise<Certificate> {
       const [certificate] = await txDb.insert(certificates).values(insertCertificate).returning();
       return certificate;
@@ -213,9 +181,6 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       return `${prefix}-${timestamp}-${random}`;
-    },
-    async getUserVaultHoldings(userId: string): Promise<VaultHolding[]> {
-      return await txDb.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
     },
     async getUserActiveCertificates(userId: string): Promise<Certificate[]> {
       return await txDb.select().from(certificates).where(and(eq(certificates.userId, userId), eq(certificates.status, 'Active'))).orderBy(desc(certificates.issuedAt));
@@ -249,10 +214,6 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       return `${prefix}-${timestamp}-${random}`;
-    },
-    async updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined> {
-      const [request] = await txDb.update(buyGoldRequests).set({ ...updates, updatedAt: new Date() }).where(eq(buyGoldRequests.id, id)).returning();
-      return request || undefined;
     },
     async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
       const [transfer] = await txDb.update(peerTransfers).set({ ...updates, updatedAt: new Date() }).where(eq(peerTransfers.id, id)).returning();
@@ -294,22 +255,10 @@ export interface IStorage {
   updateTransaction(id: string, updates: Partial<Transaction>): Promise<Transaction | undefined>;
   
   // Vault Holdings
-  getVaultHolding(id: string): Promise<VaultHolding | undefined>;
-  getUserVaultHoldings(userId: string): Promise<VaultHolding[]>;
-  getAllVaultHoldings(): Promise<VaultHolding[]>;
-  createVaultHolding(holding: InsertVaultHolding): Promise<VaultHolding>;
-  updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined>;
   
   // BNSL Plans
-  getBnslPlan(id: string): Promise<BnslPlan | undefined>;
-  getUserBnslPlans(userId: string): Promise<BnslPlan[]>;
-  getAllBnslPlans(): Promise<BnslPlan[]>;
-  createBnslPlan(plan: InsertBnslPlan): Promise<BnslPlan>;
-  updateBnslPlan(id: string, updates: Partial<BnslPlan>): Promise<BnslPlan | undefined>;
   
   // BNSL Payouts
-  getUserBnslPayouts(userId: string): Promise<BnslPayout[]>;
-  getAllBnslPayouts(): Promise<BnslPayout[]>;
   
   // Peer Transfers
   getPeerTransfers(userId: string): Promise<PeerTransfer[]>;
@@ -319,46 +268,6 @@ export interface IStorage {
   getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]>;
   getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]>;
   getExpiredInviteTransfers(): Promise<PeerTransfer[]>;
-  
-  // BNSL Payouts
-  getBnslPayout(id: string): Promise<BnslPayout | undefined>;
-  getPlanPayouts(planId: string): Promise<BnslPayout[]>;
-  createBnslPayout(payout: InsertBnslPayout): Promise<BnslPayout>;
-  updateBnslPayout(id: string, updates: Partial<BnslPayout>): Promise<BnslPayout | undefined>;
-  
-  // BNSL Early Terminations
-  getBnslEarlyTermination(planId: string): Promise<BnslEarlyTermination | undefined>;
-  createBnslEarlyTermination(termination: InsertBnslEarlyTermination): Promise<BnslEarlyTermination>;
-  updateBnslEarlyTermination(id: string, updates: Partial<BnslEarlyTermination>): Promise<BnslEarlyTermination | undefined>;
-  
-  // BNSL Wallets
-  getBnslWallet(userId: string): Promise<BnslWallet | undefined>;
-  createBnslWallet(wallet: InsertBnslWallet): Promise<BnslWallet>;
-  updateBnslWallet(id: string, updates: Partial<BnslWallet>): Promise<BnslWallet | undefined>;
-  getOrCreateBnslWallet(userId: string): Promise<BnslWallet>;
-  
-  // BNSL Plan Templates
-  getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined>;
-  getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
-  getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]>;
-  createBnslPlanTemplate(template: InsertBnslPlanTemplate): Promise<BnslPlanTemplate>;
-  updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined>;
-  deleteBnslPlanTemplate(id: string): Promise<boolean>;
-  
-  // BNSL Template Variants
-  getBnslTemplateVariant(id: string): Promise<BnslTemplateVariant | undefined>;
-  getTemplateVariants(templateId: string): Promise<BnslTemplateVariant[]>;
-  createBnslTemplateVariant(variant: InsertBnslTemplateVariant): Promise<BnslTemplateVariant>;
-  updateBnslTemplateVariant(id: string, updates: Partial<BnslTemplateVariant>): Promise<BnslTemplateVariant | undefined>;
-  deleteBnslTemplateVariant(id: string): Promise<boolean>;
-  
-  // BNSL Agreements
-  getBnslAgreement(id: string): Promise<BnslAgreement | undefined>;
-  getBnslAgreementByPlanId(planId: string): Promise<BnslAgreement | undefined>;
-  getUserBnslAgreements(userId: string): Promise<BnslAgreement[]>;
-  getAllBnslAgreements(): Promise<BnslAgreement[]>;
-  createBnslAgreement(agreement: InsertBnslAgreement): Promise<BnslAgreement>;
-  updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined>;
   
   // FinaBridge Agreements
   getFinabridgeAgreement(id: string): Promise<FinabridgeAgreement | undefined>;
@@ -1025,84 +934,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Vault Holdings
-  async getVaultHolding(id: string): Promise<VaultHolding | undefined> {
-    const [holding] = await db.select().from(vaultHoldings).where(eq(vaultHoldings.id, id));
-    return holding || undefined;
-  }
 
-  async getUserVaultHoldings(userId: string): Promise<VaultHolding[]> {
-    return await db.select().from(vaultHoldings).where(eq(vaultHoldings.userId, userId)).orderBy(desc(vaultHoldings.createdAt));
-  }
 
-  async getAllVaultHoldings(): Promise<VaultHolding[]> {
-    return await db.select().from(vaultHoldings).orderBy(desc(vaultHoldings.createdAt));
-  }
 
-  async createVaultHolding(insertHolding: InsertVaultHolding): Promise<VaultHolding> {
-    const [holding] = await db.insert(vaultHoldings).values(insertHolding).returning();
-    return holding;
-  }
 
-  async updateVaultHolding(id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
-    const [holding] = await db.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
-    return holding || undefined;
-  }
 
   // BNSL Plans
-  async getBnslPlan(id: string): Promise<BnslPlan | undefined> {
-    const [plan] = await db.select().from(bnslPlans).where(eq(bnslPlans.id, id));
-    return plan || undefined;
-  }
 
-  async getUserBnslPlans(userId: string): Promise<BnslPlan[]> {
-    return await db.select().from(bnslPlans).where(eq(bnslPlans.userId, userId)).orderBy(desc(bnslPlans.createdAt));
-  }
 
-  async getUserBnslPlansPaginated(userId: string, options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<BnslPlan>[]; total: number }> {
-    const { status, limit = 20, offset = 0 } = options;
-    const lightweightColumns = {
-      id: bnslPlans.id,
-      contractId: bnslPlans.contractId,
-      userId: bnslPlans.userId,
-      templateName: bnslPlans.templateName,
-      tenorMonths: bnslPlans.tenorMonths,
-      agreedMarginAnnualPercent: bnslPlans.agreedMarginAnnualPercent,
-      goldSoldGrams: bnslPlans.goldSoldGrams,
-      enrollmentPriceUsdPerGram: bnslPlans.enrollmentPriceUsdPerGram,
-      totalSaleProceedsUsd: bnslPlans.totalSaleProceedsUsd,
-      startDate: bnslPlans.startDate,
-      maturityDate: bnslPlans.maturityDate,
-      status: bnslPlans.status,
-      paidMarginUsd: bnslPlans.paidMarginUsd,
-      remainingMarginUsd: bnslPlans.remainingMarginUsd,
-      createdAt: bnslPlans.createdAt,
-    };
-    const conditions: any[] = [eq(bnslPlans.userId, userId)];
-    if (status && status !== "all") conditions.push(eq(bnslPlans.status, status as never));
-    
-    const whereClause = and(...conditions);
-    const [data, countResult] = await Promise.all([
-      db.select(lightweightColumns).from(bnslPlans).where(whereClause).orderBy(desc(bnslPlans.createdAt)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)` }).from(bnslPlans).where(whereClause)
-    ]);
-    return { data, total: Number(countResult[0]?.count || 0) };
-  }
 
-  async getAllBnslPlans(): Promise<BnslPlan[]> {
-    return await db.select().from(bnslPlans).orderBy(desc(bnslPlans.createdAt));
-  }
 
-  async getUserBnslPayouts(userId: string): Promise<BnslPayout[]> {
-    // Get payouts for plans belonging to this user
-    const userPlans = await db.select({ id: bnslPlans.id }).from(bnslPlans).where(eq(bnslPlans.userId, userId));
-    const planIds = userPlans.map(p => p.id);
-    if (planIds.length === 0) return [];
-    return await db.select().from(bnslPayouts).where(inArray(bnslPayouts.planId, planIds)).orderBy(desc(bnslPayouts.createdAt));
-  }
 
-  async getAllBnslPayouts(): Promise<BnslPayout[]> {
-    return await db.select().from(bnslPayouts).orderBy(desc(bnslPayouts.createdAt));
-  }
 
   async getPeerTransfers(userId: string): Promise<PeerTransfer[]> {
     return await db.select().from(peerTransfers).where(
@@ -1140,168 +982,41 @@ export class DatabaseStorage implements IStorage {
     return { data, total: Number(countResult[0]?.count || 0) };
   }
 
-  async createBnslPlan(insertPlan: InsertBnslPlan): Promise<BnslPlan> {
-    const [plan] = await db.insert(bnslPlans).values(insertPlan).returning();
-    return plan;
-  }
 
-  async updateBnslPlan(id: string, updates: Partial<BnslPlan>): Promise<BnslPlan | undefined> {
-    const [plan] = await db.update(bnslPlans).set({ ...updates, updatedAt: new Date() }).where(eq(bnslPlans.id, id)).returning();
-    return plan || undefined;
-  }
 
   // BNSL Payouts
-  async getBnslPayout(id: string): Promise<BnslPayout | undefined> {
-    const [payout] = await db.select().from(bnslPayouts).where(eq(bnslPayouts.id, id));
-    return payout || undefined;
-  }
 
-  async getPlanPayouts(planId: string): Promise<BnslPayout[]> {
-    return await db.select().from(bnslPayouts).where(eq(bnslPayouts.planId, planId)).orderBy(bnslPayouts.sequence);
-  }
 
-  async createBnslPayout(insertPayout: InsertBnslPayout): Promise<BnslPayout> {
-    const [payout] = await db.insert(bnslPayouts).values(insertPayout).returning();
-    return payout;
-  }
 
-  async updateBnslPayout(id: string, updates: Partial<BnslPayout>): Promise<BnslPayout | undefined> {
-    const [payout] = await db.update(bnslPayouts).set(updates).where(eq(bnslPayouts.id, id)).returning();
-    return payout || undefined;
-  }
 
   // BNSL Early Terminations
-  async getBnslEarlyTermination(planId: string): Promise<BnslEarlyTermination | undefined> {
-    const [termination] = await db.select().from(bnslEarlyTerminations).where(eq(bnslEarlyTerminations.planId, planId));
-    return termination || undefined;
-  }
 
-  async createBnslEarlyTermination(insertTermination: InsertBnslEarlyTermination): Promise<BnslEarlyTermination> {
-    const [termination] = await db.insert(bnslEarlyTerminations).values(insertTermination).returning();
-    return termination;
-  }
 
-  async updateBnslEarlyTermination(id: string, updates: Partial<BnslEarlyTermination>): Promise<BnslEarlyTermination | undefined> {
-    const [termination] = await db.update(bnslEarlyTerminations).set(updates).where(eq(bnslEarlyTerminations.id, id)).returning();
-    return termination || undefined;
-  }
 
   // BNSL Wallets
-  async getBnslWallet(userId: string): Promise<BnslWallet | undefined> {
-    const [wallet] = await db.select().from(bnslWallets).where(eq(bnslWallets.userId, userId));
-    return wallet || undefined;
-  }
 
-  async createBnslWallet(insertWallet: InsertBnslWallet): Promise<BnslWallet> {
-    const [wallet] = await db.insert(bnslWallets).values(insertWallet).returning();
-    return wallet;
-  }
 
-  async updateBnslWallet(id: string, updates: Partial<BnslWallet>): Promise<BnslWallet | undefined> {
-    const [wallet] = await db.update(bnslWallets).set({ ...updates, updatedAt: new Date() }).where(eq(bnslWallets.id, id)).returning();
-    return wallet || undefined;
-  }
 
-  async getOrCreateBnslWallet(userId: string): Promise<BnslWallet> {
-    let wallet = await this.getBnslWallet(userId);
-    if (!wallet) {
-      wallet = await this.createBnslWallet({ userId, availableGoldGrams: '0', lockedGoldGrams: '0' });
-    }
-    return wallet;
-  }
 
   // BNSL Plan Templates
-  async getBnslPlanTemplate(id: string): Promise<BnslPlanTemplate | undefined> {
-    const [template] = await db.select().from(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
-    return template || undefined;
-  }
 
-  async getAllBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
-    return await db.select().from(bnslPlanTemplates).orderBy(bnslPlanTemplates.displayOrder);
-  }
 
-  async getActiveBnslPlanTemplates(): Promise<BnslPlanTemplate[]> {
-    return await db.select().from(bnslPlanTemplates)
-      .where(eq(bnslPlanTemplates.status, 'Active'))
-      .orderBy(bnslPlanTemplates.displayOrder);
-  }
 
-  async createBnslPlanTemplate(insertTemplate: InsertBnslPlanTemplate): Promise<BnslPlanTemplate> {
-    const [template] = await db.insert(bnslPlanTemplates).values(insertTemplate).returning();
-    return template;
-  }
 
-  async updateBnslPlanTemplate(id: string, updates: Partial<BnslPlanTemplate>): Promise<BnslPlanTemplate | undefined> {
-    const [template] = await db.update(bnslPlanTemplates)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(bnslPlanTemplates.id, id))
-      .returning();
-    return template || undefined;
-  }
 
-  async deleteBnslPlanTemplate(id: string): Promise<boolean> {
-    const result = await db.delete(bnslPlanTemplates).where(eq(bnslPlanTemplates.id, id));
-    return true;
-  }
 
   // BNSL Template Variants
-  async getBnslTemplateVariant(id: string): Promise<BnslTemplateVariant | undefined> {
-    const [variant] = await db.select().from(bnslTemplateVariants).where(eq(bnslTemplateVariants.id, id));
-    return variant || undefined;
-  }
 
-  async getTemplateVariants(templateId: string): Promise<BnslTemplateVariant[]> {
-    return await db.select().from(bnslTemplateVariants)
-      .where(eq(bnslTemplateVariants.templateId, templateId))
-      .orderBy(bnslTemplateVariants.tenorMonths);
-  }
 
-  async createBnslTemplateVariant(insertVariant: InsertBnslTemplateVariant): Promise<BnslTemplateVariant> {
-    const [variant] = await db.insert(bnslTemplateVariants).values(insertVariant).returning();
-    return variant;
-  }
 
-  async updateBnslTemplateVariant(id: string, updates: Partial<BnslTemplateVariant>): Promise<BnslTemplateVariant | undefined> {
-    const [variant] = await db.update(bnslTemplateVariants)
-      .set(updates)
-      .where(eq(bnslTemplateVariants.id, id))
-      .returning();
-    return variant || undefined;
-  }
 
-  async deleteBnslTemplateVariant(id: string): Promise<boolean> {
-    await db.delete(bnslTemplateVariants).where(eq(bnslTemplateVariants.id, id));
-    return true;
-  }
 
   // BNSL Agreements
-  async getBnslAgreement(id: string): Promise<BnslAgreement | undefined> {
-    const [agreement] = await db.select().from(bnslAgreements).where(eq(bnslAgreements.id, id));
-    return agreement || undefined;
-  }
 
-  async getBnslAgreementByPlanId(planId: string): Promise<BnslAgreement | undefined> {
-    const [agreement] = await db.select().from(bnslAgreements).where(eq(bnslAgreements.planId, planId));
-    return agreement || undefined;
-  }
 
-  async getUserBnslAgreements(userId: string): Promise<BnslAgreement[]> {
-    return await db.select().from(bnslAgreements).where(eq(bnslAgreements.userId, userId)).orderBy(desc(bnslAgreements.createdAt));
-  }
 
-  async getAllBnslAgreements(): Promise<BnslAgreement[]> {
-    return await db.select().from(bnslAgreements).orderBy(desc(bnslAgreements.createdAt));
-  }
 
-  async createBnslAgreement(insertAgreement: InsertBnslAgreement): Promise<BnslAgreement> {
-    const [agreement] = await db.insert(bnslAgreements).values(insertAgreement).returning();
-    return agreement;
-  }
 
-  async updateBnslAgreement(id: string, updates: Partial<BnslAgreement>): Promise<BnslAgreement | undefined> {
-    const [agreement] = await db.update(bnslAgreements).set(updates).where(eq(bnslAgreements.id, id)).returning();
-    return agreement || undefined;
-  }
 
   // FinaBridge Agreements
   async getFinabridgeAgreement(id: string): Promise<FinabridgeAgreement | undefined> {
@@ -2072,15 +1787,7 @@ export class DatabaseStorage implements IStorage {
     return transaction || undefined;
   }
 
-  async createVaultHoldingTx(txDb: DbClient, insertHolding: InsertVaultHolding): Promise<VaultHolding> {
-    const [holding] = await txDb.insert(vaultHoldings).values(insertHolding).returning();
-    return holding;
-  }
 
-  async updateVaultHoldingTx(txDb: DbClient, id: string, updates: Partial<VaultHolding>): Promise<VaultHolding | undefined> {
-    const [holding] = await txDb.update(vaultHoldings).set({ ...updates, updatedAt: new Date() }).where(eq(vaultHoldings.id, id)).returning();
-    return holding || undefined;
-  }
 
   async createCertificateTx(txDb: DbClient, insertCertificate: InsertCertificate): Promise<Certificate> {
     const [certificate] = await txDb.insert(certificates).values(insertCertificate).returning();
@@ -3647,36 +3354,11 @@ export class DatabaseStorage implements IStorage {
   // BUY GOLD REQUESTS (Wingold & Metals)
   // ============================================
 
-  async getBuyGoldRequest(id: string): Promise<BuyGoldRequest | undefined> {
-    const [request] = await db.select().from(buyGoldRequests).where(eq(buyGoldRequests.id, id));
-    return request || undefined;
-  }
 
-  async getUserBuyGoldRequests(userId: string): Promise<BuyGoldRequest[]> {
-    return await db.select().from(buyGoldRequests)
-      .where(eq(buyGoldRequests.userId, userId))
-      .orderBy(desc(buyGoldRequests.createdAt));
-  }
 
-  async getAllBuyGoldRequests(): Promise<BuyGoldRequest[]> {
-    return await db.select().from(buyGoldRequests).orderBy(desc(buyGoldRequests.createdAt));
-  }
 
-  async getBuyGoldRequestsByStatus(status: string): Promise<BuyGoldRequest[]> {
-    return await db.select().from(buyGoldRequests)
-      .where(eq(buyGoldRequests.status, status as never))
-      .orderBy(desc(buyGoldRequests.createdAt));
-  }
 
-  async createBuyGoldRequest(request: InsertBuyGoldRequest): Promise<BuyGoldRequest> {
-    const [newRequest] = await db.insert(buyGoldRequests).values(request).returning();
-    return newRequest;
-  }
 
-  async updateBuyGoldRequest(id: string, updates: Partial<BuyGoldRequest>): Promise<BuyGoldRequest | undefined> {
-    const [request] = await db.update(buyGoldRequests).set({ ...updates, updatedAt: new Date() }).where(eq(buyGoldRequests.id, id)).returning();
-    return request || undefined;
-  }
 
   // ============================================
   // PLATFORM CONFIGURATION
@@ -4045,290 +3727,7 @@ export class DatabaseStorage implements IStorage {
   // GOLD BACKING REPORT
   // ============================================
 
-  async getGoldBackingReport(): Promise<{
-    physicalGold: { totalGrams: number; holdings: any[] };
-    customerLiabilities: {
-      totalGrams: number;
-      wallets: { count: number; totalGrams: number };
-      bnslWallets: { count: number; availableGrams: number; lockedGrams: number };
-    };
-    certificates: { total: number; byStatus: Record<string, number> };
-    backingRatio: number;
-    surplus: number;
-  }> {
-    // Get physical gold in vault (all holdings represent physical gold)
-    const vaultResults = await db.select({
-      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
-    }).from(vaultHoldings);
-    
-    const physicalGoldGrams = vaultResults[0]?.totalGrams ? parseFloat(vaultResults[0].totalGrams) : 0;
 
-    // Get vault holdings details
-    const holdings = await db.select().from(vaultHoldings);
-
-    // Get customer wallet liabilities
-    const walletResults = await db.select({
-      count: sql<string>`COUNT(*)`,
-      totalGrams: sql<string>`COALESCE(SUM(${wallets.goldGrams}::numeric), 0)`,
-    }).from(wallets).where(sql`${wallets.goldGrams}::numeric > 0`);
-
-    const walletCount = walletResults[0]?.count ? parseInt(walletResults[0].count) : 0;
-    const walletGrams = walletResults[0]?.totalGrams ? parseFloat(walletResults[0].totalGrams) : 0;
-
-    // Get BNSL wallet liabilities (both available and locked gold)
-    const bnslResults = await db.select({
-      count: sql<string>`COUNT(*)`,
-      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}::numeric), 0)`,
-      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}::numeric), 0)`,
-    }).from(bnslWallets);
-
-    const bnslCount = bnslResults[0]?.count ? parseInt(bnslResults[0].count) : 0;
-    const bnslAvailableGrams = bnslResults[0]?.availableGrams ? parseFloat(bnslResults[0].availableGrams) : 0;
-    const bnslLockedGrams = bnslResults[0]?.lockedGrams ? parseFloat(bnslResults[0].lockedGrams) : 0;
-    const bnslTotalGrams = bnslAvailableGrams + bnslLockedGrams;
-
-    const totalLiabilities = walletGrams + bnslTotalGrams;
-
-    // Get certificates breakdown by status
-    const certResults = await db.select({
-      status: certificates.status,
-      count: sql<string>`COUNT(*)`,
-    }).from(certificates).groupBy(certificates.status);
-
-    const certByStatus: Record<string, number> = {};
-    let totalCerts = 0;
-    for (const row of certResults) {
-      const count = row.count ? Number(row.count) : 0;
-      certByStatus[row.status] = count;
-      totalCerts += count;
-    }
-
-    // Calculate backing ratio
-    const backingRatio = totalLiabilities > 0 ? (physicalGoldGrams / totalLiabilities) * 100 : 100;
-    const surplus = physicalGoldGrams - totalLiabilities;
-
-    // Parse holdings to ensure goldGrams is a number
-    const parsedHoldings = holdings.map(h => ({
-      id: h.id,
-      userId: h.userId,
-      vaultLocation: h.vaultLocation,
-      goldGrams: h.goldGrams ? parseFloat(h.goldGrams) : 0,
-      isPhysicallyDeposited: h.isPhysicallyDeposited,
-      createdAt: h.createdAt,
-      updatedAt: h.updatedAt,
-    }));
-
-    return {
-      physicalGold: { totalGrams: physicalGoldGrams, holdings: parsedHoldings },
-      customerLiabilities: {
-        totalGrams: totalLiabilities,
-        wallets: { count: walletCount, totalGrams: walletGrams },
-        bnslWallets: { count: bnslCount, availableGrams: bnslAvailableGrams, lockedGrams: bnslLockedGrams },
-      },
-      certificates: { total: totalCerts, byStatus: certByStatus },
-      backingRatio: parseFloat(backingRatio.toFixed(2)),
-      surplus: parseFloat(surplus.toFixed(6)),
-    };
-  }
-
-  async getGoldBackingReportEnhanced(): Promise<{
-    physicalGold: { totalGrams: number; holdings: any[]; byLocation: Record<string, number> };
-    customerLiabilities: {
-      totalGrams: number;
-      mpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number };
-      fpgw: { totalGrams: number; available: number; pending: number; lockedBnsl: number; reservedTrade: number; count: number; weightedAvgPriceUsd: number };
-      bnsl: { count: number; availableGrams: number; lockedGrams: number };
-    };
-    certificates: { total: number; byStatus: Record<string, number>; byType: Record<string, number> };
-    backing: {
-      overallRatio: number;
-      overallSurplus: number;
-      mpgwRatio: number;
-      mpgwSurplus: number;
-      fpgwRatio: number;
-      fpgwSurplus: number;
-    };
-    compliance: {
-      lastReconciliationDate: string | null;
-      totalReconciliations: number;
-      pendingReviews: number;
-      digitalCertificates: number;
-      physicalCertificates: number;
-    };
-    generatedAt: string;
-  }> {
-    // Get physical gold in vault
-    const vaultResults = await db.select({
-      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
-    }).from(vaultHoldings);
-    const physicalGoldGrams = vaultResults[0]?.totalGrams ? parseFloat(vaultResults[0].totalGrams) : 0;
-
-    // Get vault holdings by location
-    const holdingsByLocation = await db.select({
-      location: vaultHoldings.vaultLocation,
-      totalGrams: sql<string>`COALESCE(SUM(${vaultHoldings.goldGrams}::numeric), 0)`,
-    }).from(vaultHoldings).groupBy(vaultHoldings.vaultLocation);
-
-    const byLocation: Record<string, number> = {};
-    for (const h of holdingsByLocation) {
-      byLocation[h.location] = parseFloat(h.totalGrams || '0');
-    }
-
-    // Get all vault holdings
-    const holdings = await db.select().from(vaultHoldings);
-
-    // Get LGPW/FGPW breakdown from vault_ownership_summary
-    const ownershipResults = await db.select({
-      mpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwAvailableGrams}), 0)`,
-      mpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwPendingGrams}), 0)`,
-      mpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwLockedBnslGrams}), 0)`,
-      mpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.mpgwReservedTradeGrams}), 0)`,
-      fpgwAvailable: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwAvailableGrams}), 0)`,
-      fpgwPending: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwPendingGrams}), 0)`,
-      fpgwLockedBnsl: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwLockedBnslGrams}), 0)`,
-      fpgwReservedTrade: sql<string>`COALESCE(SUM(${vaultOwnershipSummary.fpgwReservedTradeGrams}), 0)`,
-    }).from(vaultOwnershipSummary);
-
-    const mpgwAvailable = parseFloat(ownershipResults[0]?.mpgwAvailable || '0');
-    const mpgwPending = parseFloat(ownershipResults[0]?.mpgwPending || '0');
-    const mpgwLockedBnsl = parseFloat(ownershipResults[0]?.mpgwLockedBnsl || '0');
-    const mpgwReservedTrade = parseFloat(ownershipResults[0]?.mpgwReservedTrade || '0');
-    const mpgwTotal = mpgwAvailable + mpgwPending + mpgwLockedBnsl + mpgwReservedTrade;
-
-    const fpgwAvailable = parseFloat(ownershipResults[0]?.fpgwAvailable || '0');
-    const fpgwPending = parseFloat(ownershipResults[0]?.fpgwPending || '0');
-    const fpgwLockedBnsl = parseFloat(ownershipResults[0]?.fpgwLockedBnsl || '0');
-    const fpgwReservedTrade = parseFloat(ownershipResults[0]?.fpgwReservedTrade || '0');
-    const fpgwTotal = fpgwAvailable + fpgwPending + fpgwLockedBnsl + fpgwReservedTrade;
-
-    // Count users with LGPW vs FGPW - use raw SQL for reliability
-    const mpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE mpgw_available_grams > 0 OR mpgw_pending_grams > 0`);
-    const mpgwCount = parseInt((mpgwCountResult.rows[0] as Record<string, any> | undefined)?.count || '0');
-
-    const fpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE fpgw_available_grams > 0 OR fpgw_pending_grams > 0`);
-    const fpgwCount = parseInt((fpgwCountResult.rows[0] as Record<string, any> | undefined)?.count || '0');
-
-    // Get FGPW weighted average price from batches - use raw SQL for reliability
-    const fpgwBatchResult = await db.execute(sql`SELECT COALESCE(SUM(remaining_gold_grams), 0) as total_grams, COALESCE(SUM(remaining_gold_grams * purchase_price_usd_per_gram), 0) as total_value FROM fpgw_batches WHERE remaining_gold_grams > 0`);
-
-    const fpgwBatchGrams = parseFloat((fpgwBatchResult.rows[0] as Record<string, any> | undefined)?.total_grams || '0');
-    const fpgwBatchValue = parseFloat((fpgwBatchResult.rows[0] as Record<string, any> | undefined)?.total_value || '0');
-    const fpgwWeightedAvgPrice = fpgwBatchGrams > 0 ? fpgwBatchValue / fpgwBatchGrams : 0;
-
-    // Get BNSL wallet liabilities
-    const bnslResults = await db.select({
-      count: sql<string>`COUNT(*)`,
-      availableGrams: sql<string>`COALESCE(SUM(${bnslWallets.availableGoldGrams}), 0)`,
-      lockedGrams: sql<string>`COALESCE(SUM(${bnslWallets.lockedGoldGrams}), 0)`,
-    }).from(bnslWallets);
-
-    const bnslCount = parseInt(bnslResults[0]?.count || '0');
-    const bnslAvailableGrams = parseFloat(bnslResults[0]?.availableGrams || '0');
-    const bnslLockedGrams = parseFloat(bnslResults[0]?.lockedGrams || '0');
-    const bnslTotalGrams = bnslAvailableGrams + bnslLockedGrams;
-
-    const totalLiabilities = mpgwTotal + fpgwTotal + bnslTotalGrams;
-
-    // Get certificates breakdown by status and type
-    const certStatusResults = await db.select({
-      status: certificates.status,
-      count: sql<string>`COUNT(*)`,
-    }).from(certificates).groupBy(certificates.status);
-
-    const certByStatus: Record<string, number> = {};
-    let totalCerts = 0;
-    for (const row of certStatusResults) {
-      const count = parseInt(row.count || '0');
-      certByStatus[row.status] = count;
-      totalCerts += count;
-    }
-
-    const certTypeResults = await db.select({
-      type: certificates.type,
-      count: sql<string>`COUNT(*)`,
-    }).from(certificates).groupBy(certificates.type);
-
-    const certByType: Record<string, number> = {};
-    let digitalCerts = 0;
-    let physicalCerts = 0;
-    for (const row of certTypeResults) {
-      const count = parseInt(row.count || '0');
-      certByType[row.type] = count;
-      if (row.type === 'Digital Ownership') digitalCerts = count;
-      if (row.type === 'Physical Storage') physicalCerts = count;
-    }
-
-    // Get reconciliation data
-    const reconResults = await db.select({
-      count: sql<string>`COUNT(*)`,
-      lastDate: sql<string>`MAX(${reconciliationReports.reportDate})`,
-      pendingReviews: sql<string>`COUNT(*) FILTER (WHERE ${reconciliationReports.status} = 'pending_review')`,
-    }).from(reconciliationReports);
-
-    const totalReconciliations = parseInt(reconResults[0]?.count || '0');
-    const lastReconciliationDate = reconResults[0]?.lastDate || null;
-    const pendingReviews = parseInt(reconResults[0]?.pendingReviews || '0');
-
-    // Calculate backing ratios
-    const overallRatio = totalLiabilities > 0 ? (physicalGoldGrams / totalLiabilities) * 100 : 100;
-    const overallSurplus = physicalGoldGrams - totalLiabilities;
-
-    // For per-wallet-type ratios, we assume physical gold is allocated proportionally
-    const mpgwRatio = mpgwTotal > 0 ? Math.min((physicalGoldGrams * (mpgwTotal / totalLiabilities)) / mpgwTotal * 100, overallRatio) : 100;
-    const fpgwRatio = fpgwTotal > 0 ? Math.min((physicalGoldGrams * (fpgwTotal / totalLiabilities)) / fpgwTotal * 100, overallRatio) : 100;
-    const mpgwSurplus = totalLiabilities > 0 ? overallSurplus * (mpgwTotal / totalLiabilities) : 0;
-    const fpgwSurplus = totalLiabilities > 0 ? overallSurplus * (fpgwTotal / totalLiabilities) : 0;
-
-    const parsedHoldings = holdings.map(h => ({
-      id: h.id,
-      userId: h.userId,
-      vaultLocation: h.vaultLocation,
-      goldGrams: h.goldGrams ? parseFloat(h.goldGrams) : 0,
-      isPhysicallyDeposited: h.isPhysicallyDeposited,
-    }));
-
-    return {
-      physicalGold: { totalGrams: physicalGoldGrams, holdings: parsedHoldings, byLocation },
-      customerLiabilities: {
-        totalGrams: totalLiabilities,
-        mpgw: {
-          totalGrams: mpgwTotal,
-          available: mpgwAvailable,
-          pending: mpgwPending,
-          lockedBnsl: mpgwLockedBnsl,
-          reservedTrade: mpgwReservedTrade,
-          count: mpgwCount,
-        },
-        fpgw: {
-          totalGrams: fpgwTotal,
-          available: fpgwAvailable,
-          pending: fpgwPending,
-          lockedBnsl: fpgwLockedBnsl,
-          reservedTrade: fpgwReservedTrade,
-          count: fpgwCount,
-          weightedAvgPriceUsd: parseFloat(fpgwWeightedAvgPrice.toFixed(2)),
-        },
-        bnsl: { count: bnslCount, availableGrams: bnslAvailableGrams, lockedGrams: bnslLockedGrams },
-      },
-      certificates: { total: totalCerts, byStatus: certByStatus, byType: certByType },
-      backing: {
-        overallRatio: parseFloat(overallRatio.toFixed(2)),
-        overallSurplus: parseFloat(overallSurplus.toFixed(6)),
-        mpgwRatio: parseFloat(mpgwRatio.toFixed(2)),
-        mpgwSurplus: parseFloat(mpgwSurplus.toFixed(6)),
-        fpgwRatio: parseFloat(fpgwRatio.toFixed(2)),
-        fpgwSurplus: parseFloat(fpgwSurplus.toFixed(6)),
-      },
-      compliance: {
-        lastReconciliationDate,
-        totalReconciliations,
-        pendingReviews,
-        digitalCertificates: digitalCerts,
-        physicalCertificates: physicalCerts,
-      },
-      generatedAt: new Date().toISOString(),
-    };
-  }
 
   // ============================================
   // GOLD BACKING DRILL-DOWN METHODS
@@ -4371,85 +3770,7 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUsersWithBnslHoldings(): Promise<Array<{
-    userId: string;
-    email: string;
-    firstName: string;
-    lastName: string;
-    finatradesId: string | null;
-    availableGoldGrams: number;
-    lockedGoldGrams: number;
-    totalGoldGrams: number;
-    kycStatus: string;
-    accountType: string;
-  }>> {
-    const results = await db.select({
-      userId: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      finatradesId: users.finatradesId,
-      availableGoldGrams: bnslWallets.availableGoldGrams,
-      lockedGoldGrams: bnslWallets.lockedGoldGrams,
-      kycStatus: users.kycStatus,
-      accountType: users.accountType,
-    })
-    .from(bnslWallets)
-    .innerJoin(users, eq(bnslWallets.userId, users.id))
-    .where(sql`(${bnslWallets.availableGoldGrams}::numeric + ${bnslWallets.lockedGoldGrams}::numeric) > 0`)
-    .orderBy(sql`(${bnslWallets.availableGoldGrams}::numeric + ${bnslWallets.lockedGoldGrams}::numeric) DESC`);
 
-    return results.map(r => ({
-      userId: r.userId,
-      email: r.email,
-      firstName: r.firstName,
-      lastName: r.lastName,
-      finatradesId: r.finatradesId,
-      availableGoldGrams: r.availableGoldGrams ? parseFloat(r.availableGoldGrams) : 0,
-      lockedGoldGrams: r.lockedGoldGrams ? parseFloat(r.lockedGoldGrams) : 0,
-      totalGoldGrams: (r.availableGoldGrams ? parseFloat(r.availableGoldGrams) : 0) + 
-                      (r.lockedGoldGrams ? parseFloat(r.lockedGoldGrams) : 0),
-      kycStatus: r.kycStatus,
-      accountType: r.accountType,
-    }));
-  }
-
-  async getVaultHoldingDetails(holdingId: string): Promise<{
-    holding: any;
-    certificates: any[];
-  } | null> {
-    const holding = await db.select()
-      .from(vaultHoldings)
-      .where(eq(vaultHoldings.id, holdingId))
-      .limit(1);
-
-    if (!holding[0]) return null;
-
-    // Get certificates linked to this vault holding
-    const certs = await db.select({
-      id: certificates.id,
-      userId: certificates.userId,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      finatradesId: users.finatradesId,
-      certificateNumber: certificates.certificateNumber,
-      goldGrams: certificates.goldGrams,
-      status: certificates.status,
-      issuedAt: certificates.issuedAt,
-    })
-    .from(certificates)
-    .innerJoin(users, eq(certificates.userId, users.id))
-    .where(eq(certificates.vaultHoldingId, holdingId));
-
-    return {
-      holding: holding[0],
-      certificates: certs.map(c => ({
-        ...c,
-        goldGrams: c.goldGrams ? parseFloat(c.goldGrams) : 0,
-      })),
-    };
-  }
 
   async getUsersByVaultLocation(vaultLocation: string): Promise<Array<{
     userId: string;
@@ -4494,121 +3815,6 @@ export class DatabaseStorage implements IStorage {
     }));
   }
 
-  async getUserFinancialProfile(userId: string): Promise<{
-    user: any;
-    finapayWallet: { goldGrams: number; usdBalance: number } | null;
-    bnslWallet: { availableGoldGrams: number; lockedGoldGrams: number } | null;
-    vaultHoldings: any[];
-    certificates: any[];
-    recentTransactions: any[];
-    kycSubmission: any | null;
-  } | null> {
-    // Get user details
-    const user = await db.select()
-      .from(users)
-      .where(eq(users.id, userId))
-      .limit(1);
-
-    if (!user[0]) return null;
-
-    // Get FinaPay wallet
-    const wallet = await db.select()
-      .from(wallets)
-      .where(eq(wallets.userId, userId))
-      .limit(1);
-
-    // Get BNSL wallet
-    const bnsl = await db.select()
-      .from(bnslWallets)
-      .where(eq(bnslWallets.userId, userId))
-      .limit(1);
-
-    // Get vault holdings owned by user
-    const vaultResults = await db.select()
-      .from(vaultHoldings)
-      .where(eq(vaultHoldings.userId, userId));
-
-    // Get certificates
-    const certResults = await db.select()
-      .from(certificates)
-      .where(eq(certificates.userId, userId));
-
-    // Get recent transactions from both legacy and unified tally tables
-    const txResults = await db.select()
-      .from(transactions)
-      .where(eq(transactions.userId, userId))
-      .orderBy(sql`${transactions.createdAt} DESC`)
-      .limit(20);
-    
-    // Also get unified gold tally transactions
-    const tallyResults = await db.select()
-      .from(unifiedTallyTransactions)
-      .where(eq(unifiedTallyTransactions.userId, userId))
-      .orderBy(sql`${unifiedTallyTransactions.createdAt} DESC`)
-      .limit(20);
-
-    // Get KYC submission
-    const kycResult = await db.select()
-      .from(kycSubmissions)
-      .where(eq(kycSubmissions.userId, userId))
-      .limit(1);
-
-    return {
-      user: user[0],
-      finapayWallet: wallet[0] ? {
-        goldGrams: wallet[0].goldGrams ? parseFloat(wallet[0].goldGrams) : 0,
-        usdBalance: wallet[0].usdBalance ? parseFloat(wallet[0].usdBalance) : 0,
-      } : null,
-      bnslWallet: bnsl[0] ? {
-        availableGoldGrams: bnsl[0].availableGoldGrams ? parseFloat(bnsl[0].availableGoldGrams) : 0,
-        lockedGoldGrams: bnsl[0].lockedGoldGrams ? parseFloat(bnsl[0].lockedGoldGrams) : 0,
-      } : null,
-      vaultHoldings: vaultResults.map(v => ({
-        id: v.id,
-        userId: v.userId,
-        vaultLocation: v.vaultLocation,
-        goldGrams: v.goldGrams ? parseFloat(v.goldGrams) : 0,
-        isPhysicallyDeposited: v.isPhysicallyDeposited,
-        createdAt: v.createdAt,
-        updatedAt: v.updatedAt,
-      })),
-      certificates: certResults.map(c => ({
-        id: c.id,
-        userId: c.userId,
-        certificateNumber: c.certificateNumber,
-        vaultLocation: c.vaultLocation,
-        goldGrams: c.goldGrams ? parseFloat(c.goldGrams) : 0,
-        status: c.status,
-        issuedAt: c.issuedAt,
-        expiresAt: c.expiresAt,
-      })),
-      recentTransactions: [
-        // Legacy transactions
-        ...txResults.map(t => ({
-          id: t.id,
-          type: t.type,
-          status: t.status,
-          description: t.description,
-          amountGold: t.amountGold ? parseFloat(t.amountGold) : 0,
-          amountUsd: t.amountUsd ? parseFloat(t.amountUsd) : 0,
-          createdAt: t.createdAt,
-          source: 'legacy' as const,
-        })),
-        // Unified Gold Tally transactions
-        ...tallyResults.map(t => ({
-          id: t.id,
-          type: t.txnType === 'FIAT_CRYPTO_DEPOSIT' ? 'Deposit' : 'Vault Deposit',
-          status: t.status,
-          description: `${t.sourceMethod} deposit - ${t.walletType} wallet`,
-          amountGold: t.goldCreditedG ? parseFloat(t.goldCreditedG) : 0,
-          amountUsd: t.depositAmount ? parseFloat(t.depositAmount) : 0,
-          createdAt: t.createdAt,
-          source: 'unified_tally' as const,
-        })),
-      ].sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()).slice(0, 20),
-      kycSubmission: kycResult[0] || null,
-    };
-  }
 
   // Account Deletion Requests
   async getAccountDeletionRequest(id: string): Promise<AccountDeletionRequest | undefined> {
@@ -5731,156 +4937,18 @@ export class DatabaseStorage implements IStorage {
     return `UGT-${year}-${String(count).padStart(6, '0')}`;
   }
 
-  async createUnifiedTallyTransaction(data: InsertUnifiedTallyTransaction, tx?: typeof db): Promise<UnifiedTallyTransaction> {
-    const dbClient = tx || db;
-    const txnId = await this.generateUnifiedTallyTxnId();
-    const [transaction] = await dbClient.insert(unifiedTallyTransactions).values({
-      ...data,
-      txnId,
-    }).returning();
-    return transaction;
-  }
 
-  async getUnifiedTallyTransaction(id: string): Promise<UnifiedTallyTransaction | undefined> {
-    const [transaction] = await db.select().from(unifiedTallyTransactions).where(
-      or(eq(unifiedTallyTransactions.id, id), eq(unifiedTallyTransactions.txnId, id))
-    );
-    return transaction || undefined;
-  }
 
-  async getUserUnifiedTallyTransactions(userId: string): Promise<UnifiedTallyTransaction[]> {
-    const results = await db.select()
-      .from(unifiedTallyTransactions)
-      .where(eq(unifiedTallyTransactions.userId, userId))
-      .orderBy(sql`${unifiedTallyTransactions.createdAt} DESC`);
-    return results;
-  }
 
-  async updateUnifiedTallyTransaction(id: string, updates: Partial<UnifiedTallyTransaction>, tx?: typeof db): Promise<UnifiedTallyTransaction | undefined> {
-    const dbClient = tx || db;
-    const [transaction] = await dbClient.update(unifiedTallyTransactions)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(or(eq(unifiedTallyTransactions.id, id), eq(unifiedTallyTransactions.txnId, id)))
-      .returning();
-    return transaction || undefined;
-  }
 
-  async listUnifiedTallyTransactions(params: {
-    page?: number;
-    pageSize?: number;
-    status?: string;
-    txnType?: string;
-    sourceMethod?: string;
-    walletType?: string;
-    userId?: string;
-    search?: string;
-    fromDate?: Date;
-    toDate?: Date;
-  }): Promise<{ items: UnifiedTallyTransaction[]; total: number; page: number; pageSize: number }> {
-    const page = params.page || 1;
-    const pageSize = params.pageSize || 25;
-    const offset = (page - 1) * pageSize;
 
-    let whereConditions: any[] = [];
-    
-    if (params.status) {
-      whereConditions.push(sql`status = ${params.status}`);
-    }
-    if (params.txnType) {
-      whereConditions.push(sql`txn_type = ${params.txnType}`);
-    }
-    if (params.sourceMethod) {
-      whereConditions.push(sql`source_method = ${params.sourceMethod}`);
-    }
-    if (params.walletType) {
-      whereConditions.push(sql`wallet_type = ${params.walletType}`);
-    }
-    if (params.userId) {
-      whereConditions.push(sql`user_id = ${params.userId}`);
-    }
-    if (params.fromDate) {
-      whereConditions.push(sql`created_at >= ${params.fromDate}`);
-    }
-    if (params.toDate) {
-      whereConditions.push(sql`created_at <= ${params.toDate}`);
-    }
-    if (params.search) {
-      const searchTerm = `%${params.search}%`;
-      whereConditions.push(sql`(
-        txn_id ILIKE ${searchTerm} OR 
-        user_name ILIKE ${searchTerm} OR 
-        user_email ILIKE ${searchTerm} OR
-        wingold_order_id ILIKE ${searchTerm}
-      )`);
-    }
 
-    const whereClause = whereConditions.length > 0 
-      ? sql`WHERE ${sql.join(whereConditions, sql` AND `)}` 
-      : sql``;
 
-    const countResult = await db.execute(sql`
-      SELECT COUNT(*) as total FROM unified_tally_transactions ${whereClause}
-    `);
-    const total = parseInt((countResult.rows[0] as Record<string, any> | undefined)?.total || '0');
 
-    const items = await db.execute(sql`
-      SELECT * FROM unified_tally_transactions 
-      ${whereClause}
-      ORDER BY created_at DESC
-      LIMIT ${pageSize} OFFSET ${offset}
-    `);
 
-    return {
-      items: items.rows as UnifiedTallyTransaction[],
-      total,
-      page,
-      pageSize
-    };
-  }
 
-  async createUnifiedTallyEvent(data: InsertUnifiedTallyEvent, tx?: typeof db): Promise<UnifiedTallyEvent> {
-    const dbClient = tx || db;
-    const [event] = await dbClient.insert(unifiedTallyEvents).values(data).returning();
-    return event;
-  }
 
-  async getUnifiedTallyEvents(tallyId: string): Promise<UnifiedTallyEvent[]> {
-    return await db.select().from(unifiedTallyEvents)
-      .where(eq(unifiedTallyEvents.tallyId, tallyId))
-      .orderBy(desc(unifiedTallyEvents.createdAt));
-  }
 
-  async createWingoldAllocation(data: InsertWingoldAllocation): Promise<WingoldAllocation> {
-    const [allocation] = await db.insert(wingoldAllocations).values(data).returning();
-    return allocation;
-  }
-
-  async getWingoldAllocationsByUser(userId: string): Promise<WingoldAllocation[]> {
-    return await db.select().from(wingoldAllocations)
-      .where(eq(wingoldAllocations.userId, userId))
-      .orderBy(desc(wingoldAllocations.createdAt));
-  }
-
-  async getWingoldAllocationsByTally(tallyId: string): Promise<WingoldAllocation[]> {
-    return await db.select().from(wingoldAllocations)
-      .where(eq(wingoldAllocations.tallyId, tallyId));
-  }
-
-  async createWingoldBar(data: InsertWingoldBar): Promise<WingoldBar> {
-    const [bar] = await db.insert(wingoldBars).values(data).returning();
-    return bar;
-  }
-
-  async createWingoldBars(bars: InsertWingoldBar[]): Promise<WingoldBar[]> {
-    if (bars.length === 0) return [];
-    return await db.insert(wingoldBars).values(bars).returning();
-  }
-
-  async getWingoldBarsByTally(tallyId: string): Promise<WingoldBar[]> {
-    return await db.select().from(wingoldBars)
-      .where(eq(wingoldBars.tallyId, tallyId))
-      .orderBy(wingoldBars.createdAt);
-  }
 
   async checkBarSerialUniqueness(serials: string[]): Promise<{ serial: string; exists: boolean }[]> {
     if (serials.length === 0) return [];
@@ -6082,44 +5150,11 @@ export class DatabaseStorage implements IStorage {
   // PHYSICAL GOLD DEPOSIT STORAGE
   // ====================================
 
-  async createPhysicalDepositRequest(data: InsertPhysicalDepositRequest): Promise<PhysicalDepositRequest> {
-    const [result] = await db.insert(physicalDepositRequests).values(data).returning();
-    return result;
-  }
 
-  async getPhysicalDepositById(id: string): Promise<PhysicalDepositRequest | undefined> {
-    const [result] = await db.select().from(physicalDepositRequests).where(eq(physicalDepositRequests.id, id));
-    return result;
-  }
 
-  async getPhysicalDepositByReference(ref: string): Promise<PhysicalDepositRequest | undefined> {
-    const [result] = await db.select().from(physicalDepositRequests).where(eq(physicalDepositRequests.referenceNumber, ref));
-    return result;
-  }
 
-  async getUserPhysicalDeposits(userId: string): Promise<PhysicalDepositRequest[]> {
-    return await db.select().from(physicalDepositRequests)
-      .where(eq(physicalDepositRequests.userId, userId))
-      .orderBy(desc(physicalDepositRequests.createdAt));
-  }
 
-  async getAllPhysicalDeposits(filters?: { status?: string }): Promise<PhysicalDepositRequest[]> {
-    if (filters?.status) {
-      return await db.select().from(physicalDepositRequests)
-        .where(eq(physicalDepositRequests.status, filters.status as never))
-        .orderBy(desc(physicalDepositRequests.createdAt));
-    }
-    return await db.select().from(physicalDepositRequests)
-      .orderBy(desc(physicalDepositRequests.createdAt));
-  }
 
-  async updatePhysicalDeposit(id: string, updates: Partial<PhysicalDepositRequest>): Promise<PhysicalDepositRequest | undefined> {
-    const [result] = await db.update(physicalDepositRequests)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(physicalDepositRequests.id, id))
-      .returning();
-    return result;
-  }
 
   async generatePhysicalDepositReference(): Promise<string> {
     const prefix = 'PHY';
@@ -6129,81 +5164,18 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Deposit Items
-  async createDepositItem(data: InsertDepositItem): Promise<DepositItem> {
-    const [result] = await db.insert(depositItems).values(data).returning();
-    return result;
-  }
 
-  async createDepositItems(items: InsertDepositItem[]): Promise<DepositItem[]> {
-    if (items.length === 0) return [];
-    return await db.insert(depositItems).values(items).returning();
-  }
 
-  async getDepositItems(depositRequestId: string): Promise<DepositItem[]> {
-    return await db.select().from(depositItems)
-      .where(eq(depositItems.depositRequestId, depositRequestId));
-  }
 
-  async updateDepositItem(id: string, updates: Partial<DepositItem>): Promise<DepositItem | undefined> {
-    const [result] = await db.update(depositItems)
-      .set({ ...updates, updatedAt: new Date() })
-      .where(eq(depositItems.id, id))
-      .returning();
-    return result;
-  }
 
   // Deposit Inspections
-  async createDepositInspection(data: InsertDepositInspection): Promise<DepositInspection> {
-    const [result] = await db.insert(depositInspections).values(data).returning();
-    return result;
-  }
 
-  async getDepositInspection(depositRequestId: string): Promise<DepositInspection | undefined> {
-    const [result] = await db.select().from(depositInspections)
-      .where(eq(depositInspections.depositRequestId, depositRequestId))
-      .orderBy(desc(depositInspections.createdAt));
-    return result;
-  }
 
-  async updateDepositInspection(id: string, updates: Partial<DepositInspection>): Promise<DepositInspection | undefined> {
-    const [result] = await db.update(depositInspections)
-      .set(updates)
-      .where(eq(depositInspections.id, id))
-      .returning();
-    return result;
-  }
 
   // Deposit Negotiation Messages
-  async createNegotiationMessage(data: InsertDepositNegotiationMessage): Promise<DepositNegotiationMessage> {
-    // Mark previous messages as not latest
-    await db.update(depositNegotiationMessages)
-      .set({ isLatest: false })
-      .where(eq(depositNegotiationMessages.depositRequestId, data.depositRequestId));
-    
-    const [result] = await db.insert(depositNegotiationMessages).values(data).returning();
-    return result;
-  }
 
-  async getNegotiationMessages(depositRequestId: string): Promise<DepositNegotiationMessage[]> {
-    return await db.select().from(depositNegotiationMessages)
-      .where(eq(depositNegotiationMessages.depositRequestId, depositRequestId))
-      .orderBy(desc(depositNegotiationMessages.createdAt));
-  }
 
-  async getLatestNegotiationMessage(depositRequestId: string): Promise<DepositNegotiationMessage | undefined> {
-    const [result] = await db.select().from(depositNegotiationMessages)
-      .where(and(
-        eq(depositNegotiationMessages.depositRequestId, depositRequestId),
-        eq(depositNegotiationMessages.isLatest, true)
-      ));
-    return result;
-  }
 
-  async markNegotiationResponded(id: string): Promise<void> {
-    await db.update(depositNegotiationMessages)
-      .set({ respondedAt: new Date() })
-      .where(eq(depositNegotiationMessages.id, id));
-  }
 
   // Stats for dashboard
   async getPhysicalDepositStats(): Promise<{
