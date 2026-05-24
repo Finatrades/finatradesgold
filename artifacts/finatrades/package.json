@@ -10,6 +10,7 @@
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@workspace/api-client-react": "workspace:*",
     "@capacitor/core": "^7.4.4",
     "@capacitor/preferences": "^7.0.3",
     "@capacitor/push-notifications": "^7.0.4",

@@ -20,8 +20,15 @@
  *   PATCH /api/b2b/admin/withdrawals/:id
  */
 import type { Express, Request, Response, NextFunction } from "express";
-import { z } from "zod";
 import crypto from "crypto";
+import {
+  CreateWalletHoldBody,
+  ConvertWalletHoldToEscrowBody,
+  CreateDepositIntentBody,
+  CreateWithdrawalRequestBody,
+  AdminCreditWalletBody,
+  AdminDecideWithdrawalBody,
+} from "@workspace/api-zod";
 import { eq, and, desc, sql, ilike, or } from "drizzle-orm";
 import { db } from "../db";
 import {
@@ -79,46 +86,12 @@ function moneyFmt(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
 
-const holdInputSchema = z.object({
-  amountCents: z.number().int().positive(),
-  referenceType: z.string().min(1).max(64),
-  referenceId: z.string().max(255).optional(),
-  expiresInHours: z.number().int().positive().max(24 * 30).optional(),
-});
-
-const convertInputSchema = z.object({
-  escrowId: z.string().min(1).max(255),
-});
-
-const depositIntentSchema = z.object({
-  rail: z.enum(["bank", "stablecoin", "card"]),
-  amountCents: z.number().int().positive(),
-  metadata: z.record(z.any()).optional(),
-});
-
-const withdrawalSchema = z.object({
-  amountCents: z.number().int().positive(),
-  bankDetails: z.object({
-    bankName: z.string().min(1),
-    accountName: z.string().min(1),
-    accountNumber: z.string().min(1),
-    swiftCode: z.string().optional(),
-    iban: z.string().optional(),
-    country: z.string().optional(),
-  }),
-});
-
-const adminCreditSchema = z.object({
-  amountCents: z.number().int().positive(),
-  reference: z.string().min(1).max(255),
-  proofObjectKey: z.string().optional(),
-  note: z.string().max(1000).optional(),
-});
-
-const withdrawalDecisionSchema = z.object({
-  action: z.enum(["approve", "reject"]),
-  rejectReason: z.string().max(1000).optional(),
-});
+const holdInputSchema = CreateWalletHoldBody;
+const convertInputSchema = ConvertWalletHoldToEscrowBody;
+const depositIntentSchema = CreateDepositIntentBody;
+const withdrawalSchema = CreateWithdrawalRequestBody;
+const adminCreditSchema = AdminCreditWalletBody;
+const withdrawalDecisionSchema = AdminDecideWithdrawalBody;
 
 export function registerWalletRoutes(app: Express) {
   // ───────────────────────── USER ENDPOINTS ─────────────────────────

@@ -893,6 +893,309 @@ export interface Warehouse {
   lng?: number | null;
 }
 
+/**
+ * Cents amount. Bigint columns come back as string, in-memory math returns number.
+ */
+export type MoneyCents = number | string;
+
+export type WalletAccountVirtualAccount = {
+  /** @nullable */
+  number?: string | null;
+  /** @nullable */
+  bank?: string | null;
+  /** @nullable */
+  reference?: string | null;
+};
+
+export type WalletAccountStablecoin = {
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  network?: string | null;
+};
+
+export interface WalletAccount {
+  id: string;
+  currency: string;
+  availableCents: number;
+  lockedCents: number;
+  pendingCents: number;
+  virtualAccount?: WalletAccountVirtualAccount;
+  stablecoin?: WalletAccountStablecoin;
+  /** @nullable */
+  createdAt?: string | null;
+}
+
+/**
+ * @nullable
+ */
+export type WalletTransactionMetadata = { [key: string]: unknown } | null;
+
+export interface WalletTransaction {
+  id: string;
+  walletId: string;
+  type: string;
+  amountCents: MoneyCents;
+  balanceAfterCents?: MoneyCents;
+  /** @nullable */
+  referenceType?: string | null;
+  /** @nullable */
+  referenceId?: string | null;
+  /** @nullable */
+  description?: string | null;
+  /** @nullable */
+  idempotencyKey?: string | null;
+  /** @nullable */
+  metadata?: WalletTransactionMetadata;
+  createdAt: string;
+}
+
+export interface WalletHold {
+  id: string;
+  walletId: string;
+  amountCents: MoneyCents;
+  /** @nullable */
+  referenceType?: string | null;
+  /** @nullable */
+  referenceId?: string | null;
+  status: string;
+  /** @nullable */
+  expiresAt?: string | null;
+  /** @nullable */
+  escrowId?: string | null;
+  createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface WalletHoldInput {
+  /** @minimum 1 */
+  amountCents: number;
+  /**
+   * @minLength 1
+   * @maxLength 64
+   */
+  referenceType: string;
+  /** @maxLength 255 */
+  referenceId?: string;
+  /**
+   * @minimum 1
+   * @maximum 720
+   */
+  expiresInHours?: number;
+}
+
+export interface WalletHoldConvertInput {
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  escrowId: string;
+}
+
+export interface WalletHoldResult {
+  hold: WalletHold;
+  transaction?: WalletTransaction;
+}
+
+export type DepositIntentInputRail =
+  (typeof DepositIntentInputRail)[keyof typeof DepositIntentInputRail];
+
+export const DepositIntentInputRail = {
+  bank: "bank",
+  stablecoin: "stablecoin",
+  card: "card",
+} as const;
+
+export type DepositIntentInputMetadata = { [key: string]: unknown };
+
+export interface DepositIntentInput {
+  rail: DepositIntentInputRail;
+  /** @minimum 1 */
+  amountCents: number;
+  metadata?: DepositIntentInputMetadata;
+}
+
+/**
+ * @nullable
+ */
+export type DepositIntentMetadata = { [key: string]: unknown } | null;
+
+export interface DepositIntent {
+  id: string;
+  walletId: string;
+  userId: string;
+  rail: string;
+  amountCents: MoneyCents;
+  status: string;
+  /** @nullable */
+  externalRef?: string | null;
+  /** @nullable */
+  metadata?: DepositIntentMetadata;
+  createdAt?: string;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export type DepositIntentResponseWallet = { [key: string]: unknown };
+
+export type DepositIntentResponseVirtualAccount = {
+  /** @nullable */
+  number?: string | null;
+  /** @nullable */
+  bank?: string | null;
+  /** @nullable */
+  reference?: string | null;
+};
+
+export interface DepositIntentResponse {
+  intent: DepositIntent;
+  wallet: DepositIntentResponseWallet;
+  cardClientSecret?: string;
+  note?: string;
+  /** @nullable */
+  depositAddress?: string | null;
+  /** @nullable */
+  network?: string | null;
+  token?: string;
+  virtualAccount?: DepositIntentResponseVirtualAccount;
+}
+
+export interface BankDetails {
+  /** @minLength 1 */
+  bankName: string;
+  /** @minLength 1 */
+  accountName: string;
+  /** @minLength 1 */
+  accountNumber: string;
+  swiftCode?: string;
+  iban?: string;
+  country?: string;
+}
+
+export interface WithdrawalInput {
+  /** @minimum 1 */
+  amountCents: number;
+  bankDetails: BankDetails;
+}
+
+export interface WithdrawalRequest {
+  id: string;
+  walletId: string;
+  userId: string;
+  amountCents: MoneyCents;
+  /** @nullable */
+  bankDetailsHint?: string | null;
+  /** @nullable */
+  holdId?: string | null;
+  status: string;
+  /** @nullable */
+  reviewerId?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
+  /** @nullable */
+  rejectReason?: string | null;
+  createdAt: string;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export interface AdminCreditInput {
+  /** @minimum 1 */
+  amountCents: number;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  reference: string;
+  proofObjectKey?: string;
+  /** @maxLength 1000 */
+  note?: string;
+}
+
+export type WithdrawalDecisionInputAction =
+  (typeof WithdrawalDecisionInputAction)[keyof typeof WithdrawalDecisionInputAction];
+
+export const WithdrawalDecisionInputAction = {
+  approve: "approve",
+  reject: "reject",
+} as const;
+
+export interface WithdrawalDecisionInput {
+  action: WithdrawalDecisionInputAction;
+  /** @maxLength 1000 */
+  rejectReason?: string;
+}
+
+export interface AdminWalletUserSummary {
+  /** @nullable */
+  id?: string | null;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  firstName?: string | null;
+  /** @nullable */
+  lastName?: string | null;
+  /** @nullable */
+  companyName?: string | null;
+  /** @nullable */
+  userType?: string | null;
+}
+
+export type AdminWalletRowWallet = {
+  id: string;
+  userId: string;
+  currency: string;
+  availableCents: MoneyCents;
+  lockedCents: MoneyCents;
+  pendingCents: MoneyCents;
+  /** @nullable */
+  virtualAccountNumber?: string | null;
+  /** @nullable */
+  virtualAccountBank?: string | null;
+  /** @nullable */
+  virtualAccountReference?: string | null;
+  /** @nullable */
+  stablecoinAddress?: string | null;
+  /** @nullable */
+  stablecoinNetwork?: string | null;
+  /** @nullable */
+  createdAt?: string | null;
+  /** @nullable */
+  updatedAt?: string | null;
+};
+
+export interface AdminWalletRow {
+  wallet: AdminWalletRowWallet;
+  user?: AdminWalletUserSummary | null;
+}
+
+export interface AdminWalletTotals {
+  total_available?: MoneyCents;
+  total_locked?: MoneyCents;
+  total_pending?: MoneyCents;
+  wallet_count?: number;
+}
+
+export interface AdminWalletListResponse {
+  wallets: AdminWalletRow[];
+  totals?: AdminWalletTotals;
+}
+
+export type AdminWalletDetailResponseWallet = { [key: string]: unknown };
+
+export interface AdminWalletDetailResponse {
+  wallet: AdminWalletDetailResponseWallet;
+  user?: AdminWalletUserSummary | null;
+  transactions: WalletTransaction[];
+  holds: WalletHold[];
+}
+
+export interface AdminWithdrawalRow {
+  withdrawal: WithdrawalRequest;
+  user?: AdminWalletUserSummary | null;
+}
+
 export type GetConsignmentRequirementsParams = {
   category?: string;
 };
@@ -907,4 +1210,29 @@ export type AdminListConsignmentsParams = {
   search?: string;
   limit?: number;
   offset?: number;
+};
+
+export type ListWalletTransactionsParams = {
+  type?: string;
+  /**
+   * @minimum 1
+   * @maximum 200
+   */
+  limit?: number;
+  /**
+   * @minimum 0
+   */
+  offset?: number;
+};
+
+export type ListWalletHoldsParams = {
+  status?: string;
+};
+
+export type AdminListWalletsParams = {
+  q?: string;
+};
+
+export type AdminListWithdrawalsParams = {
+  status?: string;
 };

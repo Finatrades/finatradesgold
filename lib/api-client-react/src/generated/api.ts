@@ -23,10 +23,17 @@ import type {
   AdminConsignmentDocumentUpdate,
   AdminConsignmentQueue,
   AdminConsignmentStatusUpdate,
+  AdminCreditInput,
   AdminListConsignmentsParams,
+  AdminListWalletsParams,
+  AdminListWithdrawalsParams,
+  AdminWalletDetailResponse,
+  AdminWalletListResponse,
+  AdminWithdrawalRow,
   AuthResponse,
   B2BRegisterInput,
   B2BUser,
+  BankDetails,
   BarterRequest,
   BarterRequestInput,
   Commodity,
@@ -39,6 +46,8 @@ import type {
   ConsignmentRequirements,
   ConsignmentStatusUpdate,
   DashboardSummary,
+  DepositIntentInput,
+  DepositIntentResponse,
   DocumentSubmissionInput,
   EscrowAccount,
   EscrowReleaseInput,
@@ -47,6 +56,8 @@ import type {
   InventoryItem,
   InventoryStatusUpdate,
   InventorySummary,
+  ListWalletHoldsParams,
+  ListWalletTransactionsParams,
   Listing,
   LoginInput,
   MessageResponse,
@@ -61,7 +72,16 @@ import type {
   Rfq,
   RfqInput,
   TradeHub,
+  WalletAccount,
+  WalletHold,
+  WalletHoldConvertInput,
+  WalletHoldInput,
+  WalletHoldResult,
+  WalletTransaction,
   Warehouse,
+  WithdrawalDecisionInput,
+  WithdrawalInput,
+  WithdrawalRequest,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -3832,6 +3852,1251 @@ export function useGetBarterRequest<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetBarterRequestQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get current user's wallet balance & funding details
+ */
+export const getGetWalletUrl = () => {
+  return `/api/b2b/wallet`;
+};
+
+export const getWallet = async (
+  options?: RequestInit,
+): Promise<WalletAccount> => {
+  return customFetch<WalletAccount>(getGetWalletUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getGetWalletQueryKey = () => {
+  return [`/api/b2b/wallet`] as const;
+};
+
+export const getGetWalletQueryOptions = <
+  TData = Awaited<ReturnType<typeof getWallet>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getWallet>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getGetWalletQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof getWallet>>> = ({
+    signal,
+  }) => getWallet({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getWallet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetWalletQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getWallet>>
+>;
+export type GetWalletQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get current user's wallet balance & funding details
+ */
+
+export function useGetWallet<
+  TData = Awaited<ReturnType<typeof getWallet>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<Awaited<ReturnType<typeof getWallet>>, TError, TData>;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetWalletQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List wallet transactions
+ */
+export const getListWalletTransactionsUrl = (
+  params?: ListWalletTransactionsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/b2b/wallet/transactions?${stringifiedParams}`
+    : `/api/b2b/wallet/transactions`;
+};
+
+export const listWalletTransactions = async (
+  params?: ListWalletTransactionsParams,
+  options?: RequestInit,
+): Promise<WalletTransaction[]> => {
+  return customFetch<WalletTransaction[]>(
+    getListWalletTransactionsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListWalletTransactionsQueryKey = (
+  params?: ListWalletTransactionsParams,
+) => {
+  return [`/api/b2b/wallet/transactions`, ...(params ? [params] : [])] as const;
+};
+
+export const getListWalletTransactionsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWalletTransactions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWalletTransactionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWalletTransactions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListWalletTransactionsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listWalletTransactions>>
+  > = ({ signal }) =>
+    listWalletTransactions(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWalletTransactions>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWalletTransactionsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWalletTransactions>>
+>;
+export type ListWalletTransactionsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List wallet transactions
+ */
+
+export function useListWalletTransactions<
+  TData = Awaited<ReturnType<typeof listWalletTransactions>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWalletTransactionsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWalletTransactions>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWalletTransactionsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List wallet holds
+ */
+export const getListWalletHoldsUrl = (params?: ListWalletHoldsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/b2b/wallet/holds?${stringifiedParams}`
+    : `/api/b2b/wallet/holds`;
+};
+
+export const listWalletHolds = async (
+  params?: ListWalletHoldsParams,
+  options?: RequestInit,
+): Promise<WalletHold[]> => {
+  return customFetch<WalletHold[]>(getListWalletHoldsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListWalletHoldsQueryKey = (params?: ListWalletHoldsParams) => {
+  return [`/api/b2b/wallet/holds`, ...(params ? [params] : [])] as const;
+};
+
+export const getListWalletHoldsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listWalletHolds>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWalletHoldsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWalletHolds>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListWalletHoldsQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listWalletHolds>>> = ({
+    signal,
+  }) => listWalletHolds(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listWalletHolds>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListWalletHoldsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listWalletHolds>>
+>;
+export type ListWalletHoldsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List wallet holds
+ */
+
+export function useListWalletHolds<
+  TData = Awaited<ReturnType<typeof listWalletHolds>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: ListWalletHoldsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listWalletHolds>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListWalletHoldsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Place a hold on available balance
+ */
+export const getCreateWalletHoldUrl = () => {
+  return `/api/b2b/wallet/holds`;
+};
+
+export const createWalletHold = async (
+  walletHoldInput: WalletHoldInput,
+  options?: RequestInit,
+): Promise<WalletHoldResult> => {
+  return customFetch<WalletHoldResult>(getCreateWalletHoldUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(walletHoldInput),
+  });
+};
+
+export const getCreateWalletHoldMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWalletHold>>,
+    TError,
+    { data: BodyType<WalletHoldInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWalletHold>>,
+  TError,
+  { data: BodyType<WalletHoldInput> },
+  TContext
+> => {
+  const mutationKey = ["createWalletHold"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWalletHold>>,
+    { data: BodyType<WalletHoldInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWalletHold(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWalletHoldMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWalletHold>>
+>;
+export type CreateWalletHoldMutationBody = BodyType<WalletHoldInput>;
+export type CreateWalletHoldMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Place a hold on available balance
+ */
+export const useCreateWalletHold = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWalletHold>>,
+    TError,
+    { data: BodyType<WalletHoldInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWalletHold>>,
+  TError,
+  { data: BodyType<WalletHoldInput> },
+  TContext
+> => {
+  return useMutation(getCreateWalletHoldMutationOptions(options));
+};
+
+/**
+ * @summary Release a wallet hold
+ */
+export const getReleaseWalletHoldUrl = (id: string) => {
+  return `/api/b2b/wallet/holds/${id}/release`;
+};
+
+export const releaseWalletHold = async (
+  id: string,
+  options?: RequestInit,
+): Promise<WalletHoldResult> => {
+  return customFetch<WalletHoldResult>(getReleaseWalletHoldUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getReleaseWalletHoldMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof releaseWalletHold>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof releaseWalletHold>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["releaseWalletHold"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof releaseWalletHold>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return releaseWalletHold(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ReleaseWalletHoldMutationResult = NonNullable<
+  Awaited<ReturnType<typeof releaseWalletHold>>
+>;
+
+export type ReleaseWalletHoldMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Release a wallet hold
+ */
+export const useReleaseWalletHold = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof releaseWalletHold>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof releaseWalletHold>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getReleaseWalletHoldMutationOptions(options));
+};
+
+/**
+ * @summary Convert a hold into an escrow lock
+ */
+export const getConvertWalletHoldToEscrowUrl = (id: string) => {
+  return `/api/b2b/wallet/holds/${id}/convert-to-escrow`;
+};
+
+export const convertWalletHoldToEscrow = async (
+  id: string,
+  walletHoldConvertInput: WalletHoldConvertInput,
+  options?: RequestInit,
+): Promise<WalletHoldResult> => {
+  return customFetch<WalletHoldResult>(getConvertWalletHoldToEscrowUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(walletHoldConvertInput),
+  });
+};
+
+export const getConvertWalletHoldToEscrowMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof convertWalletHoldToEscrow>>,
+    TError,
+    { id: string; data: BodyType<WalletHoldConvertInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof convertWalletHoldToEscrow>>,
+  TError,
+  { id: string; data: BodyType<WalletHoldConvertInput> },
+  TContext
+> => {
+  const mutationKey = ["convertWalletHoldToEscrow"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof convertWalletHoldToEscrow>>,
+    { id: string; data: BodyType<WalletHoldConvertInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return convertWalletHoldToEscrow(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ConvertWalletHoldToEscrowMutationResult = NonNullable<
+  Awaited<ReturnType<typeof convertWalletHoldToEscrow>>
+>;
+export type ConvertWalletHoldToEscrowMutationBody =
+  BodyType<WalletHoldConvertInput>;
+export type ConvertWalletHoldToEscrowMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Convert a hold into an escrow lock
+ */
+export const useConvertWalletHoldToEscrow = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof convertWalletHoldToEscrow>>,
+    TError,
+    { id: string; data: BodyType<WalletHoldConvertInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof convertWalletHoldToEscrow>>,
+  TError,
+  { id: string; data: BodyType<WalletHoldConvertInput> },
+  TContext
+> => {
+  return useMutation(getConvertWalletHoldToEscrowMutationOptions(options));
+};
+
+/**
+ * @summary Create a deposit intent (bank, stablecoin, or card)
+ */
+export const getCreateDepositIntentUrl = () => {
+  return `/api/b2b/wallet/deposits/intents`;
+};
+
+export const createDepositIntent = async (
+  depositIntentInput: DepositIntentInput,
+  options?: RequestInit,
+): Promise<DepositIntentResponse> => {
+  return customFetch<DepositIntentResponse>(getCreateDepositIntentUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(depositIntentInput),
+  });
+};
+
+export const getCreateDepositIntentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDepositIntent>>,
+    TError,
+    { data: BodyType<DepositIntentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createDepositIntent>>,
+  TError,
+  { data: BodyType<DepositIntentInput> },
+  TContext
+> => {
+  const mutationKey = ["createDepositIntent"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createDepositIntent>>,
+    { data: BodyType<DepositIntentInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createDepositIntent(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateDepositIntentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createDepositIntent>>
+>;
+export type CreateDepositIntentMutationBody = BodyType<DepositIntentInput>;
+export type CreateDepositIntentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a deposit intent (bank, stablecoin, or card)
+ */
+export const useCreateDepositIntent = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createDepositIntent>>,
+    TError,
+    { data: BodyType<DepositIntentInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createDepositIntent>>,
+  TError,
+  { data: BodyType<DepositIntentInput> },
+  TContext
+> => {
+  return useMutation(getCreateDepositIntentMutationOptions(options));
+};
+
+/**
+ * @summary Submit a withdrawal request to bank
+ */
+export const getCreateWithdrawalRequestUrl = () => {
+  return `/api/b2b/wallet/withdrawals`;
+};
+
+export const createWithdrawalRequest = async (
+  withdrawalInput: WithdrawalInput,
+  options?: RequestInit,
+): Promise<WithdrawalRequest> => {
+  return customFetch<WithdrawalRequest>(getCreateWithdrawalRequestUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(withdrawalInput),
+  });
+};
+
+export const getCreateWithdrawalRequestMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWithdrawalRequest>>,
+    TError,
+    { data: BodyType<WithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createWithdrawalRequest>>,
+  TError,
+  { data: BodyType<WithdrawalInput> },
+  TContext
+> => {
+  const mutationKey = ["createWithdrawalRequest"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createWithdrawalRequest>>,
+    { data: BodyType<WithdrawalInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createWithdrawalRequest(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateWithdrawalRequestMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createWithdrawalRequest>>
+>;
+export type CreateWithdrawalRequestMutationBody = BodyType<WithdrawalInput>;
+export type CreateWithdrawalRequestMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Submit a withdrawal request to bank
+ */
+export const useCreateWithdrawalRequest = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createWithdrawalRequest>>,
+    TError,
+    { data: BodyType<WithdrawalInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createWithdrawalRequest>>,
+  TError,
+  { data: BodyType<WithdrawalInput> },
+  TContext
+> => {
+  return useMutation(getCreateWithdrawalRequestMutationOptions(options));
+};
+
+/**
+ * @summary List wallets with totals (admin)
+ */
+export const getAdminListWalletsUrl = (params?: AdminListWalletsParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/b2b/admin/wallets?${stringifiedParams}`
+    : `/api/b2b/admin/wallets`;
+};
+
+export const adminListWallets = async (
+  params?: AdminListWalletsParams,
+  options?: RequestInit,
+): Promise<AdminWalletListResponse> => {
+  return customFetch<AdminWalletListResponse>(getAdminListWalletsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListWalletsQueryKey = (
+  params?: AdminListWalletsParams,
+) => {
+  return [`/api/b2b/admin/wallets`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListWalletsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListWallets>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListWalletsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListWallets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListWalletsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListWallets>>
+  > = ({ signal }) => adminListWallets(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListWallets>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListWalletsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListWallets>>
+>;
+export type AdminListWalletsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List wallets with totals (admin)
+ */
+
+export function useAdminListWallets<
+  TData = Awaited<ReturnType<typeof adminListWallets>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListWalletsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListWallets>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListWalletsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get one user's wallet, transactions and holds
+ */
+export const getAdminGetWalletUrl = (userId: string) => {
+  return `/api/b2b/admin/wallets/${userId}`;
+};
+
+export const adminGetWallet = async (
+  userId: string,
+  options?: RequestInit,
+): Promise<AdminWalletDetailResponse> => {
+  return customFetch<AdminWalletDetailResponse>(getAdminGetWalletUrl(userId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetWalletQueryKey = (userId: string) => {
+  return [`/api/b2b/admin/wallets/${userId}`] as const;
+};
+
+export const getAdminGetWalletQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetWallet>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetWallet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetWalletQueryKey(userId);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetWallet>>> = ({
+    signal,
+  }) => adminGetWallet(userId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!userId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetWallet>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetWalletQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetWallet>>
+>;
+export type AdminGetWalletQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get one user's wallet, transactions and holds
+ */
+
+export function useAdminGetWallet<
+  TData = Awaited<ReturnType<typeof adminGetWallet>>,
+  TError = ErrorType<unknown>,
+>(
+  userId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetWallet>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetWalletQueryOptions(userId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Reconcile a bank deposit by crediting a user's wallet
+ */
+export const getAdminCreditWalletUrl = (userId: string) => {
+  return `/api/b2b/admin/wallets/${userId}/credit`;
+};
+
+export const adminCreditWallet = async (
+  userId: string,
+  adminCreditInput: AdminCreditInput,
+  options?: RequestInit,
+): Promise<WalletTransaction> => {
+  return customFetch<WalletTransaction>(getAdminCreditWalletUrl(userId), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminCreditInput),
+  });
+};
+
+export const getAdminCreditWalletMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreditWallet>>,
+    TError,
+    { userId: string; data: BodyType<AdminCreditInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminCreditWallet>>,
+  TError,
+  { userId: string; data: BodyType<AdminCreditInput> },
+  TContext
+> => {
+  const mutationKey = ["adminCreditWallet"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminCreditWallet>>,
+    { userId: string; data: BodyType<AdminCreditInput> }
+  > = (props) => {
+    const { userId, data } = props ?? {};
+
+    return adminCreditWallet(userId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminCreditWalletMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminCreditWallet>>
+>;
+export type AdminCreditWalletMutationBody = BodyType<AdminCreditInput>;
+export type AdminCreditWalletMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Reconcile a bank deposit by crediting a user's wallet
+ */
+export const useAdminCreditWallet = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminCreditWallet>>,
+    TError,
+    { userId: string; data: BodyType<AdminCreditInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminCreditWallet>>,
+  TError,
+  { userId: string; data: BodyType<AdminCreditInput> },
+  TContext
+> => {
+  return useMutation(getAdminCreditWalletMutationOptions(options));
+};
+
+/**
+ * @summary List withdrawal requests
+ */
+export const getAdminListWithdrawalsUrl = (
+  params?: AdminListWithdrawalsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/b2b/admin/withdrawals?${stringifiedParams}`
+    : `/api/b2b/admin/withdrawals`;
+};
+
+export const adminListWithdrawals = async (
+  params?: AdminListWithdrawalsParams,
+  options?: RequestInit,
+): Promise<AdminWithdrawalRow[]> => {
+  return customFetch<AdminWithdrawalRow[]>(getAdminListWithdrawalsUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListWithdrawalsQueryKey = (
+  params?: AdminListWithdrawalsParams,
+) => {
+  return [`/api/b2b/admin/withdrawals`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListWithdrawalsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListWithdrawals>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListWithdrawalsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListWithdrawals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListWithdrawalsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListWithdrawals>>
+  > = ({ signal }) =>
+    adminListWithdrawals(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListWithdrawals>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListWithdrawalsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListWithdrawals>>
+>;
+export type AdminListWithdrawalsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List withdrawal requests
+ */
+
+export function useAdminListWithdrawals<
+  TData = Awaited<ReturnType<typeof adminListWithdrawals>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListWithdrawalsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListWithdrawals>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListWithdrawalsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Approve or reject a withdrawal request
+ */
+export const getAdminDecideWithdrawalUrl = (id: string) => {
+  return `/api/b2b/admin/withdrawals/${id}`;
+};
+
+export const adminDecideWithdrawal = async (
+  id: string,
+  withdrawalDecisionInput: WithdrawalDecisionInput,
+  options?: RequestInit,
+): Promise<WithdrawalRequest> => {
+  return customFetch<WithdrawalRequest>(getAdminDecideWithdrawalUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(withdrawalDecisionInput),
+  });
+};
+
+export const getAdminDecideWithdrawalMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDecideWithdrawal>>,
+    TError,
+    { id: string; data: BodyType<WithdrawalDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminDecideWithdrawal>>,
+  TError,
+  { id: string; data: BodyType<WithdrawalDecisionInput> },
+  TContext
+> => {
+  const mutationKey = ["adminDecideWithdrawal"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminDecideWithdrawal>>,
+    { id: string; data: BodyType<WithdrawalDecisionInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminDecideWithdrawal(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminDecideWithdrawalMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminDecideWithdrawal>>
+>;
+export type AdminDecideWithdrawalMutationBody =
+  BodyType<WithdrawalDecisionInput>;
+export type AdminDecideWithdrawalMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve or reject a withdrawal request
+ */
+export const useAdminDecideWithdrawal = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminDecideWithdrawal>>,
+    TError,
+    { id: string; data: BodyType<WithdrawalDecisionInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminDecideWithdrawal>>,
+  TError,
+  { id: string; data: BodyType<WithdrawalDecisionInput> },
+  TContext
+> => {
+  return useMutation(getAdminDecideWithdrawalMutationOptions(options));
+};
+
+/**
+ * @summary Decrypt and return bank details for a withdrawal (audit-logged)
+ */
+export const getAdminGetWithdrawalBankDetailsUrl = (id: string) => {
+  return `/api/b2b/admin/withdrawals/${id}/bank-details`;
+};
+
+export const adminGetWithdrawalBankDetails = async (
+  id: string,
+  options?: RequestInit,
+): Promise<BankDetails> => {
+  return customFetch<BankDetails>(getAdminGetWithdrawalBankDetailsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetWithdrawalBankDetailsQueryKey = (id: string) => {
+  return [`/api/b2b/admin/withdrawals/${id}/bank-details`] as const;
+};
+
+export const getAdminGetWithdrawalBankDetailsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminGetWithdrawalBankDetailsQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>
+  > = ({ signal }) =>
+    adminGetWithdrawalBankDetails(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetWithdrawalBankDetailsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>
+>;
+export type AdminGetWithdrawalBankDetailsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Decrypt and return bank details for a withdrawal (audit-logged)
+ */
+
+export function useAdminGetWithdrawalBankDetails<
+  TData = Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetWithdrawalBankDetails>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetWithdrawalBankDetailsQueryOptions(
+    id,
+    options,
+  );
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;

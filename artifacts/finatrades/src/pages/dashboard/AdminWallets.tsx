@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Search, CheckCircle2, X, AlertCircle, Wallet as WalletIcon, ChevronRight, Eye } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import { useQueryClient } from '@tanstack/react-query';
+import { Search, X, AlertCircle, ChevronRight, Eye } from 'lucide-react';
+import {
+  useAdminListWallets,
+  useAdminGetWallet,
+  useAdminCreditWallet,
+  useAdminListWithdrawals,
+  useAdminDecideWithdrawal,
+  useAdminGetWithdrawalBankDetails,
+  getAdminListWithdrawalsQueryKey,
+  getAdminGetWithdrawalBankDetailsQueryKey,
+} from '@workspace/api-client-react';
 import { toast } from 'sonner';
 
-function fmt(cents: number | string) {
-  const n = typeof cents === 'string' ? Number(cents) : cents;
+function fmt(cents: number | string | undefined | null) {
+  const n = typeof cents === 'string' ? Number(cents) : (cents || 0);
   return `$${(n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -45,10 +54,7 @@ export default function AdminWallets() {
 function WalletList() {
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string | null>(null);
-  const { data } = useQuery({
-    queryKey: ['admin-wallets', q],
-    queryFn: async () => (await apiRequest('GET', `/api/b2b/admin/wallets?q=${encodeURIComponent(q)}`)).json(),
-  });
+  const { data } = useAdminListWallets({ q });
 
   return (
     <div className="space-y-4">
@@ -80,8 +86,8 @@ function WalletList() {
           </tr></thead>
           <tbody>
             {(!data?.wallets || data.wallets.length === 0) && <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: '#B0AAA4' }}>No wallets</td></tr>}
-            {data?.wallets?.map((row: any) => (
-              <tr key={row.wallet.id} className="hover:bg-[#FAFAF8] cursor-pointer" onClick={() => setSelected(row.user?.id)}>
+            {data?.wallets?.map((row) => (
+              <tr key={row.wallet.id} className="hover:bg-[#FAFAF8] cursor-pointer" onClick={() => row.user?.id && setSelected(row.user.id)}>
                 <td className="px-4 py-3">
                   <p className="font-semibold text-sm" style={{ color: '#1A1A1A' }}>{row.user?.companyName || `${row.user?.firstName || ''} ${row.user?.lastName || ''}`}</p>
                   <p className="text-xs" style={{ color: '#888880' }}>{row.user?.email}</p>
@@ -103,17 +109,15 @@ function WalletList() {
 }
 
 function WalletDetailModal({ userId, onClose }: { userId: string; onClose: () => void }) {
-  const { data } = useQuery({
-    queryKey: ['admin-wallet-detail', userId],
-    queryFn: async () => (await apiRequest('GET', `/api/b2b/admin/wallets/${userId}`)).json(),
-  });
+  const { data } = useAdminGetWallet(userId);
+  const wallet = data?.wallet as any;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.5)' }}>
       <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[85vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid #E8E2DC' }}>
           <div>
             <h2 className="font-bold" style={{ color: '#1A1A1A' }}>{data?.user?.companyName || data?.user?.email}</h2>
-            <p className="text-xs" style={{ color: '#888880' }}>{data?.wallet?.virtualAccountNumber}</p>
+            <p className="text-xs" style={{ color: '#888880' }}>{wallet?.virtualAccountNumber}</p>
           </div>
           <button onClick={onClose}><X size={18} /></button>
         </div>
@@ -121,15 +125,15 @@ function WalletDetailModal({ userId, onClose }: { userId: string; onClose: () =>
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-xl p-3" style={{ background: 'rgba(5,150,105,0.06)' }}>
               <p className="text-[10px] font-semibold uppercase" style={{ color: '#059669' }}>Available</p>
-              <p className="text-lg font-bold" style={{ color: '#059669' }}>{fmt(data?.wallet?.availableCents || 0)}</p>
+              <p className="text-lg font-bold" style={{ color: '#059669' }}>{fmt(wallet?.availableCents)}</p>
             </div>
             <div className="rounded-xl p-3" style={{ background: 'rgba(245,158,11,0.06)' }}>
               <p className="text-[10px] font-semibold uppercase" style={{ color: '#D97706' }}>Locked</p>
-              <p className="text-lg font-bold" style={{ color: '#D97706' }}>{fmt(data?.wallet?.lockedCents || 0)}</p>
+              <p className="text-lg font-bold" style={{ color: '#D97706' }}>{fmt(wallet?.lockedCents)}</p>
             </div>
             <div className="rounded-xl p-3" style={{ background: 'rgba(59,130,246,0.06)' }}>
               <p className="text-[10px] font-semibold uppercase" style={{ color: '#2563EB' }}>Pending</p>
-              <p className="text-lg font-bold" style={{ color: '#2563EB' }}>{fmt(data?.wallet?.pendingCents || 0)}</p>
+              <p className="text-lg font-bold" style={{ color: '#2563EB' }}>{fmt(wallet?.pendingCents)}</p>
             </div>
           </div>
 
@@ -141,7 +145,7 @@ function WalletDetailModal({ userId, onClose }: { userId: string; onClose: () =>
                   {['Date', 'Type', 'Amount', 'Balance After', 'Ref'].map(h => <th key={h} className="text-left px-3 py-2 font-semibold" style={{ color: '#888880' }}>{h}</th>)}
                 </tr></thead>
                 <tbody>
-                  {data?.transactions?.map((tx: any) => (
+                  {data?.transactions?.map((tx) => (
                     <tr key={tx.id}>
                       <td className="px-3 py-2 font-mono">{new Date(tx.createdAt).toLocaleString()}</td>
                       <td className="px-3 py-2">{tx.type}</td>
@@ -163,12 +167,12 @@ function WalletDetailModal({ userId, onClose }: { userId: string; onClose: () =>
                   {['Placed', 'Amount', 'Status', 'Reference'].map(h => <th key={h} className="text-left px-3 py-2 font-semibold" style={{ color: '#888880' }}>{h}</th>)}
                 </tr></thead>
                 <tbody>
-                  {data?.holds?.map((h: any) => (
+                  {data?.holds?.map((h) => (
                     <tr key={h.id}>
                       <td className="px-3 py-2 font-mono">{new Date(h.createdAt).toLocaleString()}</td>
                       <td className="px-3 py-2 font-bold">{fmt(h.amountCents)}</td>
                       <td className="px-3 py-2">{h.status}</td>
-                      <td className="px-3 py-2 font-mono">{h.referenceType} #{h.referenceId?.slice(0, 8)}</td>
+                      <td className="px-3 py-2 font-mono">{h.referenceType} {h.referenceId ? `#${h.referenceId.slice(0, 8)}` : ''}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -188,26 +192,25 @@ function WithdrawalQueue() {
   const [reason, setReason] = useState('');
   const [viewingBank, setViewingBank] = useState<string | null>(null);
 
-  const { data: list = [] } = useQuery({
-    queryKey: ['admin-withdrawals', status],
-    queryFn: async () => (await apiRequest('GET', `/api/b2b/admin/withdrawals?status=${status}`)).json(),
-  });
+  const { data: list = [] } = useAdminListWithdrawals({ status });
 
-  const decisionMut = useMutation({
-    mutationFn: async (input: { id: string; action: 'approve' | 'reject'; rejectReason?: string }) => {
-      const res = await apiRequest('PATCH', `/api/b2b/admin/withdrawals/${input.id}`, {
-        action: input.action, rejectReason: input.rejectReason,
-      });
-      return res.json();
+  const decisionMut = useAdminDecideWithdrawal({
+    mutation: {
+      onSuccess: () => {
+        toast.success('Updated');
+        qc.invalidateQueries({ queryKey: getAdminListWithdrawalsQueryKey({ status }) });
+        setRejecting(null);
+        setReason('');
+      },
+      onError: (e: any) => toast.error(e?.message || 'Failed'),
     },
-    onSuccess: () => { toast.success('Updated'); qc.invalidateQueries({ queryKey: ['admin-withdrawals'] }); setRejecting(null); setReason(''); },
-    onError: (e: any) => toast.error(e?.message || 'Failed'),
   });
 
-  const { data: bankDetails } = useQuery({
-    queryKey: ['admin-bank-details', viewingBank],
-    queryFn: async () => (await apiRequest('GET', `/api/b2b/admin/withdrawals/${viewingBank}/bank-details`)).json(),
-    enabled: !!viewingBank,
+  const { data: bankDetails } = useAdminGetWithdrawalBankDetails(viewingBank || '', {
+    query: {
+      enabled: !!viewingBank,
+      queryKey: getAdminGetWithdrawalBankDetailsQueryKey(viewingBank || ''),
+    },
   });
 
   return (
@@ -232,13 +235,13 @@ function WithdrawalQueue() {
           </tr></thead>
           <tbody>
             {list.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: '#B0AAA4' }}>No withdrawals</td></tr>}
-            {list.map((row: any) => {
+            {list.map((row) => {
               const wd = row.withdrawal;
               return (
                 <tr key={wd.id} style={{ borderBottom: '1px solid #F0EBE6' }}>
                   <td className="px-4 py-3 text-xs font-mono" style={{ color: '#888880' }}>{new Date(wd.createdAt).toLocaleString()}</td>
                   <td className="px-4 py-3">
-                    <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{row.user?.companyName || `${row.user?.firstName} ${row.user?.lastName}`}</p>
+                    <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>{row.user?.companyName || `${row.user?.firstName || ''} ${row.user?.lastName || ''}`}</p>
                     <p className="text-xs" style={{ color: '#888880' }}>{row.user?.email}</p>
                   </td>
                   <td className="px-4 py-3 font-bold" style={{ color: '#1A1A1A' }}>{fmt(wd.amountCents)}</td>
@@ -257,7 +260,7 @@ function WithdrawalQueue() {
                   <td className="px-4 py-3">
                     {wd.status === 'pending' && (
                       <div className="flex gap-2">
-                        <button onClick={() => decisionMut.mutate({ id: wd.id, action: 'approve' })} disabled={decisionMut.isPending}
+                        <button onClick={() => decisionMut.mutate({ id: wd.id, data: { action: 'approve' } })} disabled={decisionMut.isPending}
                           className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ background: '#059669' }}>Approve</button>
                         <button onClick={() => setRejecting(wd.id)}
                           className="px-3 py-1 rounded-lg text-xs font-semibold" style={{ border: '1px solid #E8E2DC', color: '#DC2626' }}>Reject</button>
@@ -280,7 +283,7 @@ function WithdrawalQueue() {
               className="w-full px-3 py-2 rounded-xl text-sm outline-none mb-3" style={{ border: '1px solid #E8E2DC' }} />
             <div className="flex justify-end gap-2">
               <button onClick={() => { setRejecting(null); setReason(''); }} className="px-4 py-2 rounded-xl text-sm" style={{ border: '1px solid #E8E2DC' }}>Cancel</button>
-              <button onClick={() => decisionMut.mutate({ id: rejecting, action: 'reject', rejectReason: reason })}
+              <button onClick={() => decisionMut.mutate({ id: rejecting, data: { action: 'reject', rejectReason: reason } })}
                 disabled={!reason || decisionMut.isPending}
                 className="px-4 py-2 rounded-xl text-sm font-semibold text-white disabled:opacity-60" style={{ background: '#DC2626' }}>Confirm reject</button>
             </div>
@@ -312,18 +315,22 @@ function WithdrawalQueue() {
 
 function ReconcileForm() {
   const [form, setForm] = useState({ userId: '', amount: '', reference: '', note: '' });
-  const mut = useMutation({
-    mutationFn: async () => {
-      const res = await apiRequest('POST', `/api/b2b/admin/wallets/${form.userId}/credit`, {
+  const mut = useAdminCreditWallet({
+    mutation: {
+      onSuccess: () => { toast.success('Wallet credited'); setForm({ userId: '', amount: '', reference: '', note: '' }); },
+      onError: (e: any) => toast.error(e?.message || 'Failed'),
+    },
+  });
+  const submit = () => {
+    mut.mutate({
+      userId: form.userId,
+      data: {
         amountCents: Math.round(parseFloat(form.amount || '0') * 100),
         reference: form.reference,
         note: form.note || undefined,
-      });
-      return res.json();
-    },
-    onSuccess: () => { toast.success('Wallet credited'); setForm({ userId: '', amount: '', reference: '', note: '' }); },
-    onError: (e: any) => toast.error(e?.message || 'Failed'),
-  });
+      },
+    });
+  };
   return (
     <div className="rounded-2xl p-6 bg-white max-w-2xl" style={{ border: '1px solid #E8E2DC' }}>
       <h3 className="font-bold mb-1" style={{ color: '#1A1A1A' }}>Reconcile inbound bank deposit</h3>
@@ -345,7 +352,7 @@ function ReconcileForm() {
           <AlertCircle size={14} className="mt-0.5 shrink-0" />
           Proof upload is logged via metadata for v1. Use a unique bank reference per deposit to prevent double-credit.
         </p>
-        <button onClick={() => mut.mutate()} disabled={mut.isPending || !form.userId || !form.amount || !form.reference}
+        <button onClick={submit} disabled={mut.isPending || !form.userId || !form.amount || !form.reference}
           className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60" style={{ background: '#C73B22' }}>
           {mut.isPending ? 'Crediting…' : 'Credit wallet'}
         </button>

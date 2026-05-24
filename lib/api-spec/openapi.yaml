@@ -32,6 +32,10 @@ tags:
     description: Government barter workflow
   - name: warehouses
     description: Warehouse network
+  - name: wallet
+    description: B2B wallet — balances, holds, deposits, withdrawals
+  - name: wallet-admin
+    description: B2B wallet — admin reconciliation & withdrawal queue
 
 paths:
   /healthz:
@@ -883,6 +887,288 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/BarterRequest"
+
+  # ─── WALLET (USER) ──────────────────────────────────────────────────────────
+  /b2b/wallet:
+    get:
+      operationId: getWallet
+      tags: [wallet]
+      summary: Get current user's wallet balance & funding details
+      responses:
+        "200":
+          description: Wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletAccount"
+
+  /b2b/wallet/transactions:
+    get:
+      operationId: listWalletTransactions
+      tags: [wallet]
+      summary: List wallet transactions
+      parameters:
+        - name: type
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 200 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, minimum: 0 }
+      responses:
+        "200":
+          description: Transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WalletTransaction"
+
+  /b2b/wallet/holds:
+    get:
+      operationId: listWalletHolds
+      tags: [wallet]
+      summary: List wallet holds
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Holds
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WalletHold"
+    post:
+      operationId: createWalletHold
+      tags: [wallet]
+      summary: Place a hold on available balance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletHoldInput"
+      responses:
+        "201":
+          description: Hold placed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletHoldResult"
+
+  /b2b/wallet/holds/{id}/release:
+    post:
+      operationId: releaseWalletHold
+      tags: [wallet]
+      summary: Release a wallet hold
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Hold released
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletHoldResult"
+
+  /b2b/wallet/holds/{id}/convert-to-escrow:
+    post:
+      operationId: convertWalletHoldToEscrow
+      tags: [wallet]
+      summary: Convert a hold into an escrow lock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WalletHoldConvertInput"
+      responses:
+        "200":
+          description: Hold converted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletHoldResult"
+
+  /b2b/wallet/deposits/intents:
+    post:
+      operationId: createDepositIntent
+      tags: [wallet]
+      summary: Create a deposit intent (bank, stablecoin, or card)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DepositIntentInput"
+      responses:
+        "201":
+          description: Intent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DepositIntentResponse"
+
+  /b2b/wallet/withdrawals:
+    post:
+      operationId: createWithdrawalRequest
+      tags: [wallet]
+      summary: Submit a withdrawal request to bank
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalInput"
+      responses:
+        "201":
+          description: Withdrawal request created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequest"
+
+  # ─── WALLET (ADMIN) ─────────────────────────────────────────────────────────
+  /b2b/admin/wallets:
+    get:
+      operationId: adminListWallets
+      tags: [wallet-admin]
+      summary: List wallets with totals (admin)
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Wallets
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWalletListResponse"
+
+  /b2b/admin/wallets/{userId}:
+    get:
+      operationId: adminGetWallet
+      tags: [wallet-admin]
+      summary: Get one user's wallet, transactions and holds
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Wallet detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminWalletDetailResponse"
+
+  /b2b/admin/wallets/{userId}/credit:
+    post:
+      operationId: adminCreditWallet
+      tags: [wallet-admin]
+      summary: Reconcile a bank deposit by crediting a user's wallet
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminCreditInput"
+      responses:
+        "201":
+          description: Credited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WalletTransaction"
+
+  /b2b/admin/withdrawals:
+    get:
+      operationId: adminListWithdrawals
+      tags: [wallet-admin]
+      summary: List withdrawal requests
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: Withdrawal requests
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminWithdrawalRow"
+
+  /b2b/admin/withdrawals/{id}:
+    patch:
+      operationId: adminDecideWithdrawal
+      tags: [wallet-admin]
+      summary: Approve or reject a withdrawal request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawalDecisionInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalRequest"
+
+  /b2b/admin/withdrawals/{id}/bank-details:
+    get:
+      operationId: adminGetWithdrawalBankDetails
+      tags: [wallet-admin]
+      summary: Decrypt and return bank details for a withdrawal (audit-logged)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Bank details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BankDetails"
 
   # ─── WAREHOUSES ─────────────────────────────────────────────────────────────
   /b2b/warehouses:
@@ -1919,3 +2205,270 @@ components:
           type: ["number", "null"]
         lng:
           type: ["number", "null"]
+
+    # ── WALLET ──
+    MoneyCents:
+      description: Cents amount. Bigint columns come back as string, in-memory math returns number.
+      oneOf:
+        - type: number
+        - type: string
+
+    WalletAccount:
+      type: object
+      required: [id, currency, availableCents, lockedCents, pendingCents]
+      properties:
+        id: { type: string }
+        currency: { type: string }
+        availableCents: { type: number }
+        lockedCents: { type: number }
+        pendingCents: { type: number }
+        virtualAccount:
+          type: object
+          properties:
+            number: { type: ["string", "null"] }
+            bank: { type: ["string", "null"] }
+            reference: { type: ["string", "null"] }
+        stablecoin:
+          type: object
+          properties:
+            address: { type: ["string", "null"] }
+            network: { type: ["string", "null"] }
+        createdAt: { type: ["string", "null"] }
+
+    WalletTransaction:
+      type: object
+      required: [id, walletId, type, amountCents, createdAt]
+      properties:
+        id: { type: string }
+        walletId: { type: string }
+        type: { type: string }
+        amountCents: { $ref: "#/components/schemas/MoneyCents" }
+        balanceAfterCents: { $ref: "#/components/schemas/MoneyCents" }
+        referenceType: { type: ["string", "null"] }
+        referenceId: { type: ["string", "null"] }
+        description: { type: ["string", "null"] }
+        idempotencyKey: { type: ["string", "null"] }
+        metadata:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt: { type: string }
+
+    WalletHold:
+      type: object
+      required: [id, walletId, amountCents, status, createdAt]
+      properties:
+        id: { type: string }
+        walletId: { type: string }
+        amountCents: { $ref: "#/components/schemas/MoneyCents" }
+        referenceType: { type: ["string", "null"] }
+        referenceId: { type: ["string", "null"] }
+        status: { type: string }
+        expiresAt: { type: ["string", "null"] }
+        escrowId: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: ["string", "null"] }
+
+    WalletHoldInput:
+      type: object
+      required: [amountCents, referenceType]
+      properties:
+        amountCents: { type: integer, minimum: 1 }
+        referenceType: { type: string, minLength: 1, maxLength: 64 }
+        referenceId: { type: string, maxLength: 255 }
+        expiresInHours: { type: integer, minimum: 1, maximum: 720 }
+
+    WalletHoldConvertInput:
+      type: object
+      required: [escrowId]
+      properties:
+        escrowId: { type: string, minLength: 1, maxLength: 255 }
+
+    WalletHoldResult:
+      type: object
+      required: [hold]
+      properties:
+        hold: { $ref: "#/components/schemas/WalletHold" }
+        transaction: { $ref: "#/components/schemas/WalletTransaction" }
+
+    DepositIntentInput:
+      type: object
+      required: [rail, amountCents]
+      properties:
+        rail:
+          type: string
+          enum: [bank, stablecoin, card]
+        amountCents: { type: integer, minimum: 1 }
+        metadata:
+          type: object
+          additionalProperties: true
+
+    DepositIntent:
+      type: object
+      required: [id, walletId, userId, rail, amountCents, status]
+      properties:
+        id: { type: string }
+        walletId: { type: string }
+        userId: { type: string }
+        rail: { type: string }
+        amountCents: { $ref: "#/components/schemas/MoneyCents" }
+        status: { type: string }
+        externalRef: { type: ["string", "null"] }
+        metadata:
+          type: ["object", "null"]
+          additionalProperties: true
+        createdAt: { type: string }
+        updatedAt: { type: ["string", "null"] }
+
+    DepositIntentResponse:
+      type: object
+      required: [intent, wallet]
+      properties:
+        intent: { $ref: "#/components/schemas/DepositIntent" }
+        wallet:
+          type: object
+          additionalProperties: true
+        cardClientSecret: { type: string }
+        note: { type: string }
+        depositAddress: { type: ["string", "null"] }
+        network: { type: ["string", "null"] }
+        token: { type: string }
+        virtualAccount:
+          type: object
+          properties:
+            number: { type: ["string", "null"] }
+            bank: { type: ["string", "null"] }
+            reference: { type: ["string", "null"] }
+
+    BankDetails:
+      type: object
+      required: [bankName, accountName, accountNumber]
+      properties:
+        bankName: { type: string, minLength: 1 }
+        accountName: { type: string, minLength: 1 }
+        accountNumber: { type: string, minLength: 1 }
+        swiftCode: { type: string }
+        iban: { type: string }
+        country: { type: string }
+
+    WithdrawalInput:
+      type: object
+      required: [amountCents, bankDetails]
+      properties:
+        amountCents: { type: integer, minimum: 1 }
+        bankDetails: { $ref: "#/components/schemas/BankDetails" }
+
+    WithdrawalRequest:
+      type: object
+      required: [id, walletId, userId, amountCents, status, createdAt]
+      properties:
+        id: { type: string }
+        walletId: { type: string }
+        userId: { type: string }
+        amountCents: { $ref: "#/components/schemas/MoneyCents" }
+        bankDetailsHint: { type: ["string", "null"] }
+        holdId: { type: ["string", "null"] }
+        status: { type: string }
+        reviewerId: { type: ["string", "null"] }
+        reviewedAt: { type: ["string", "null"] }
+        rejectReason: { type: ["string", "null"] }
+        createdAt: { type: string }
+        updatedAt: { type: ["string", "null"] }
+
+    AdminCreditInput:
+      type: object
+      required: [amountCents, reference]
+      properties:
+        amountCents: { type: integer, minimum: 1 }
+        reference: { type: string, minLength: 1, maxLength: 255 }
+        proofObjectKey: { type: string }
+        note: { type: string, maxLength: 1000 }
+
+    WithdrawalDecisionInput:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject]
+        rejectReason: { type: string, maxLength: 1000 }
+
+    AdminWalletUserSummary:
+      type: object
+      properties:
+        id: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
+        lastName: { type: ["string", "null"] }
+        companyName: { type: ["string", "null"] }
+        userType: { type: ["string", "null"] }
+
+    AdminWalletRow:
+      type: object
+      required: [wallet]
+      properties:
+        wallet:
+          type: object
+          required: [id, userId, currency, availableCents, lockedCents, pendingCents]
+          properties:
+            id: { type: string }
+            userId: { type: string }
+            currency: { type: string }
+            availableCents: { $ref: "#/components/schemas/MoneyCents" }
+            lockedCents: { $ref: "#/components/schemas/MoneyCents" }
+            pendingCents: { $ref: "#/components/schemas/MoneyCents" }
+            virtualAccountNumber: { type: ["string", "null"] }
+            virtualAccountBank: { type: ["string", "null"] }
+            virtualAccountReference: { type: ["string", "null"] }
+            stablecoinAddress: { type: ["string", "null"] }
+            stablecoinNetwork: { type: ["string", "null"] }
+            createdAt: { type: ["string", "null"] }
+            updatedAt: { type: ["string", "null"] }
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AdminWalletUserSummary"
+            - type: "null"
+
+    AdminWalletTotals:
+      type: object
+      properties:
+        total_available: { $ref: "#/components/schemas/MoneyCents" }
+        total_locked: { $ref: "#/components/schemas/MoneyCents" }
+        total_pending: { $ref: "#/components/schemas/MoneyCents" }
+        wallet_count: { type: integer }
+
+    AdminWalletListResponse:
+      type: object
+      required: [wallets]
+      properties:
+        wallets:
+          type: array
+          items: { $ref: "#/components/schemas/AdminWalletRow" }
+        totals: { $ref: "#/components/schemas/AdminWalletTotals" }
+
+    AdminWalletDetailResponse:
+      type: object
+      required: [wallet, transactions, holds]
+      properties:
+        wallet:
+          type: object
+          additionalProperties: true
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AdminWalletUserSummary"
+            - type: "null"
+        transactions:
+          type: array
+          items: { $ref: "#/components/schemas/WalletTransaction" }
+        holds:
+          type: array
+          items: { $ref: "#/components/schemas/WalletHold" }
+
+    AdminWithdrawalRow:
+      type: object
+      required: [withdrawal]
+      properties:
+        withdrawal: { $ref: "#/components/schemas/WithdrawalRequest" }
+        user:
+          oneOf:
+            - $ref: "#/components/schemas/AdminWalletUserSummary"
+            - type: "null"

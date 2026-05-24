@@ -1463,6 +1463,512 @@ export const GetBarterRequestResponse = zod.object({
 });
 
 /**
+ * @summary Get current user's wallet balance & funding details
+ */
+export const GetWalletResponse = zod.object({
+  id: zod.string(),
+  currency: zod.string(),
+  availableCents: zod.number(),
+  lockedCents: zod.number(),
+  pendingCents: zod.number(),
+  virtualAccount: zod
+    .object({
+      number: zod.string().nullish(),
+      bank: zod.string().nullish(),
+      reference: zod.string().nullish(),
+    })
+    .optional(),
+  stablecoin: zod
+    .object({
+      address: zod.string().nullish(),
+      network: zod.string().nullish(),
+    })
+    .optional(),
+  createdAt: zod.string().nullish(),
+});
+
+/**
+ * @summary List wallet transactions
+ */
+export const listWalletTransactionsQueryLimitMax = 200;
+
+export const listWalletTransactionsQueryOffsetMin = 0;
+
+export const ListWalletTransactionsQueryParams = zod.object({
+  type: zod.coerce.string().optional(),
+  limit: zod.coerce
+    .number()
+    .min(1)
+    .max(listWalletTransactionsQueryLimitMax)
+    .optional(),
+  offset: zod.coerce
+    .number()
+    .min(listWalletTransactionsQueryOffsetMin)
+    .optional(),
+});
+
+export const ListWalletTransactionsResponseItem = zod.object({
+  id: zod.string(),
+  walletId: zod.string(),
+  type: zod.string(),
+  amountCents: zod
+    .union([zod.number(), zod.string()])
+    .describe(
+      "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+    ),
+  balanceAfterCents: zod
+    .union([zod.number(), zod.string()])
+    .optional()
+    .describe(
+      "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+    ),
+  referenceType: zod.string().nullish(),
+  referenceId: zod.string().nullish(),
+  description: zod.string().nullish(),
+  idempotencyKey: zod.string().nullish(),
+  metadata: zod.record(zod.string(), zod.unknown()).nullish(),
+  createdAt: zod.string(),
+});
+export const ListWalletTransactionsResponse = zod.array(
+  ListWalletTransactionsResponseItem,
+);
+
+/**
+ * @summary List wallet holds
+ */
+export const ListWalletHoldsQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const ListWalletHoldsResponseItem = zod.object({
+  id: zod.string(),
+  walletId: zod.string(),
+  amountCents: zod
+    .union([zod.number(), zod.string()])
+    .describe(
+      "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+    ),
+  referenceType: zod.string().nullish(),
+  referenceId: zod.string().nullish(),
+  status: zod.string(),
+  expiresAt: zod.string().nullish(),
+  escrowId: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
+});
+export const ListWalletHoldsResponse = zod.array(ListWalletHoldsResponseItem);
+
+/**
+ * @summary Place a hold on available balance
+ */
+
+export const createWalletHoldBodyReferenceTypeMax = 64;
+
+export const createWalletHoldBodyReferenceIdMax = 255;
+
+export const createWalletHoldBodyExpiresInHoursMax = 720;
+
+export const CreateWalletHoldBody = zod.object({
+  amountCents: zod.number().min(1),
+  referenceType: zod.string().min(1).max(createWalletHoldBodyReferenceTypeMax),
+  referenceId: zod.string().max(createWalletHoldBodyReferenceIdMax).optional(),
+  expiresInHours: zod
+    .number()
+    .min(1)
+    .max(createWalletHoldBodyExpiresInHoursMax)
+    .optional(),
+});
+
+/**
+ * @summary Release a wallet hold
+ */
+export const ReleaseWalletHoldParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const ReleaseWalletHoldResponse = zod.object({
+  hold: zod.object({
+    id: zod.string(),
+    walletId: zod.string(),
+    amountCents: zod
+      .union([zod.number(), zod.string()])
+      .describe(
+        "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+      ),
+    referenceType: zod.string().nullish(),
+    referenceId: zod.string().nullish(),
+    status: zod.string(),
+    expiresAt: zod.string().nullish(),
+    escrowId: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().nullish(),
+  }),
+  transaction: zod
+    .object({
+      id: zod.string(),
+      walletId: zod.string(),
+      type: zod.string(),
+      amountCents: zod
+        .union([zod.number(), zod.string()])
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      balanceAfterCents: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      referenceType: zod.string().nullish(),
+      referenceId: zod.string().nullish(),
+      description: zod.string().nullish(),
+      idempotencyKey: zod.string().nullish(),
+      metadata: zod.record(zod.string(), zod.unknown()).nullish(),
+      createdAt: zod.string(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Convert a hold into an escrow lock
+ */
+export const ConvertWalletHoldToEscrowParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const convertWalletHoldToEscrowBodyEscrowIdMax = 255;
+
+export const ConvertWalletHoldToEscrowBody = zod.object({
+  escrowId: zod.string().min(1).max(convertWalletHoldToEscrowBodyEscrowIdMax),
+});
+
+export const ConvertWalletHoldToEscrowResponse = zod.object({
+  hold: zod.object({
+    id: zod.string(),
+    walletId: zod.string(),
+    amountCents: zod
+      .union([zod.number(), zod.string()])
+      .describe(
+        "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+      ),
+    referenceType: zod.string().nullish(),
+    referenceId: zod.string().nullish(),
+    status: zod.string(),
+    expiresAt: zod.string().nullish(),
+    escrowId: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().nullish(),
+  }),
+  transaction: zod
+    .object({
+      id: zod.string(),
+      walletId: zod.string(),
+      type: zod.string(),
+      amountCents: zod
+        .union([zod.number(), zod.string()])
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      balanceAfterCents: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      referenceType: zod.string().nullish(),
+      referenceId: zod.string().nullish(),
+      description: zod.string().nullish(),
+      idempotencyKey: zod.string().nullish(),
+      metadata: zod.record(zod.string(), zod.unknown()).nullish(),
+      createdAt: zod.string(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Create a deposit intent (bank, stablecoin, or card)
+ */
+
+export const CreateDepositIntentBody = zod.object({
+  rail: zod.enum(["bank", "stablecoin", "card"]),
+  amountCents: zod.number().min(1),
+  metadata: zod.record(zod.string(), zod.unknown()).optional(),
+});
+
+/**
+ * @summary Submit a withdrawal request to bank
+ */
+
+export const CreateWithdrawalRequestBody = zod.object({
+  amountCents: zod.number().min(1),
+  bankDetails: zod.object({
+    bankName: zod.string().min(1),
+    accountName: zod.string().min(1),
+    accountNumber: zod.string().min(1),
+    swiftCode: zod.string().optional(),
+    iban: zod.string().optional(),
+    country: zod.string().optional(),
+  }),
+});
+
+/**
+ * @summary List wallets with totals (admin)
+ */
+export const AdminListWalletsQueryParams = zod.object({
+  q: zod.coerce.string().optional(),
+});
+
+export const AdminListWalletsResponse = zod.object({
+  wallets: zod.array(
+    zod.object({
+      wallet: zod.object({
+        id: zod.string(),
+        userId: zod.string(),
+        currency: zod.string(),
+        availableCents: zod
+          .union([zod.number(), zod.string()])
+          .describe(
+            "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+          ),
+        lockedCents: zod
+          .union([zod.number(), zod.string()])
+          .describe(
+            "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+          ),
+        pendingCents: zod
+          .union([zod.number(), zod.string()])
+          .describe(
+            "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+          ),
+        virtualAccountNumber: zod.string().nullish(),
+        virtualAccountBank: zod.string().nullish(),
+        virtualAccountReference: zod.string().nullish(),
+        stablecoinAddress: zod.string().nullish(),
+        stablecoinNetwork: zod.string().nullish(),
+        createdAt: zod.string().nullish(),
+        updatedAt: zod.string().nullish(),
+      }),
+      user: zod
+        .union([
+          zod.object({
+            id: zod.string().nullish(),
+            email: zod.string().nullish(),
+            firstName: zod.string().nullish(),
+            lastName: zod.string().nullish(),
+            companyName: zod.string().nullish(),
+            userType: zod.string().nullish(),
+          }),
+          zod.null(),
+        ])
+        .optional(),
+    }),
+  ),
+  totals: zod
+    .object({
+      total_available: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      total_locked: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      total_pending: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      wallet_count: zod.number().optional(),
+    })
+    .optional(),
+});
+
+/**
+ * @summary Get one user's wallet, transactions and holds
+ */
+export const AdminGetWalletParams = zod.object({
+  userId: zod.coerce.string(),
+});
+
+export const AdminGetWalletResponse = zod.object({
+  wallet: zod.record(zod.string(), zod.unknown()),
+  user: zod
+    .union([
+      zod.object({
+        id: zod.string().nullish(),
+        email: zod.string().nullish(),
+        firstName: zod.string().nullish(),
+        lastName: zod.string().nullish(),
+        companyName: zod.string().nullish(),
+        userType: zod.string().nullish(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+  transactions: zod.array(
+    zod.object({
+      id: zod.string(),
+      walletId: zod.string(),
+      type: zod.string(),
+      amountCents: zod
+        .union([zod.number(), zod.string()])
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      balanceAfterCents: zod
+        .union([zod.number(), zod.string()])
+        .optional()
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      referenceType: zod.string().nullish(),
+      referenceId: zod.string().nullish(),
+      description: zod.string().nullish(),
+      idempotencyKey: zod.string().nullish(),
+      metadata: zod.record(zod.string(), zod.unknown()).nullish(),
+      createdAt: zod.string(),
+    }),
+  ),
+  holds: zod.array(
+    zod.object({
+      id: zod.string(),
+      walletId: zod.string(),
+      amountCents: zod
+        .union([zod.number(), zod.string()])
+        .describe(
+          "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+        ),
+      referenceType: zod.string().nullish(),
+      referenceId: zod.string().nullish(),
+      status: zod.string(),
+      expiresAt: zod.string().nullish(),
+      escrowId: zod.string().nullish(),
+      createdAt: zod.string(),
+      updatedAt: zod.string().nullish(),
+    }),
+  ),
+});
+
+/**
+ * @summary Reconcile a bank deposit by crediting a user's wallet
+ */
+export const AdminCreditWalletParams = zod.object({
+  userId: zod.coerce.string(),
+});
+
+export const adminCreditWalletBodyReferenceMax = 255;
+
+export const adminCreditWalletBodyNoteMax = 1000;
+
+export const AdminCreditWalletBody = zod.object({
+  amountCents: zod.number().min(1),
+  reference: zod.string().min(1).max(adminCreditWalletBodyReferenceMax),
+  proofObjectKey: zod.string().optional(),
+  note: zod.string().max(adminCreditWalletBodyNoteMax).optional(),
+});
+
+/**
+ * @summary List withdrawal requests
+ */
+export const AdminListWithdrawalsQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+});
+
+export const AdminListWithdrawalsResponseItem = zod.object({
+  withdrawal: zod.object({
+    id: zod.string(),
+    walletId: zod.string(),
+    userId: zod.string(),
+    amountCents: zod
+      .union([zod.number(), zod.string()])
+      .describe(
+        "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+      ),
+    bankDetailsHint: zod.string().nullish(),
+    holdId: zod.string().nullish(),
+    status: zod.string(),
+    reviewerId: zod.string().nullish(),
+    reviewedAt: zod.string().nullish(),
+    rejectReason: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().nullish(),
+  }),
+  user: zod
+    .union([
+      zod.object({
+        id: zod.string().nullish(),
+        email: zod.string().nullish(),
+        firstName: zod.string().nullish(),
+        lastName: zod.string().nullish(),
+        companyName: zod.string().nullish(),
+        userType: zod.string().nullish(),
+      }),
+      zod.null(),
+    ])
+    .optional(),
+});
+export const AdminListWithdrawalsResponse = zod.array(
+  AdminListWithdrawalsResponseItem,
+);
+
+/**
+ * @summary Approve or reject a withdrawal request
+ */
+export const AdminDecideWithdrawalParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const adminDecideWithdrawalBodyRejectReasonMax = 1000;
+
+export const AdminDecideWithdrawalBody = zod.object({
+  action: zod.enum(["approve", "reject"]),
+  rejectReason: zod
+    .string()
+    .max(adminDecideWithdrawalBodyRejectReasonMax)
+    .optional(),
+});
+
+export const AdminDecideWithdrawalResponse = zod.object({
+  id: zod.string(),
+  walletId: zod.string(),
+  userId: zod.string(),
+  amountCents: zod
+    .union([zod.number(), zod.string()])
+    .describe(
+      "Cents amount. Bigint columns come back as string, in-memory math returns number.",
+    ),
+  bankDetailsHint: zod.string().nullish(),
+  holdId: zod.string().nullish(),
+  status: zod.string(),
+  reviewerId: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
+  rejectReason: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
+});
+
+/**
+ * @summary Decrypt and return bank details for a withdrawal (audit-logged)
+ */
+export const AdminGetWithdrawalBankDetailsParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminGetWithdrawalBankDetailsResponse = zod.object({
+  bankName: zod.string().min(1),
+  accountName: zod.string().min(1),
+  accountNumber: zod.string().min(1),
+  swiftCode: zod.string().optional(),
+  iban: zod.string().optional(),
+  country: zod.string().optional(),
+});
+
+/**
  * @summary List all warehouse hubs
  */
 export const ListWarehousesResponseItem = zod.object({

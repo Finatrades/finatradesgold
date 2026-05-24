@@ -1,17 +1,27 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
-  Wallet as WalletIcon, Lock, Clock, ArrowDownToLine, ArrowUpFromLine,
-  Copy, CheckCircle2, AlertCircle, RefreshCw, Building2, Bitcoin, CreditCard,
-  ChevronRight, X,
+  Wallet as WalletIcon, Lock, Clock, Copy, CheckCircle2, AlertCircle, RefreshCw,
+  Building2, Bitcoin, CreditCard,
 } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
+import {
+  useGetWallet,
+  useListWalletTransactions,
+  useListWalletHolds,
+  useReleaseWalletHold,
+  useCreateDepositIntent,
+  useCreateWithdrawalRequest,
+  getGetWalletQueryKey,
+  getListWalletHoldsQueryKey,
+  getListWalletTransactionsQueryKey,
+  type WalletAccount,
+} from '@workspace/api-client-react';
 import { toast } from 'sonner';
 
 type TabKey = 'transactions' | 'holds' | 'deposit' | 'withdraw';
 
-function fmt(cents: number | string) {
-  const n = typeof cents === 'string' ? Number(cents) : cents;
+function fmt(cents: number | string | undefined | null) {
+  const n = typeof cents === 'string' ? Number(cents) : (cents || 0);
   return `$${(n / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
@@ -53,30 +63,37 @@ export default function Wallet() {
   const [tab, setTab] = useState<TabKey>('transactions');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const { data: wallet, isLoading, refetch } = useQuery({
-    queryKey: ['b2b-wallet'],
-    queryFn: async () => (await apiRequest('GET', '/api/b2b/wallet')).json(),
-  });
+  const { data: wallet, isLoading, refetch } = useGetWallet();
 
-  const { data: transactions = [] } = useQuery({
-    queryKey: ['b2b-wallet-transactions', typeFilter],
-    queryFn: async () => {
-      const url = `/api/b2b/wallet/transactions?type=${encodeURIComponent(typeFilter)}&limit=100`;
-      return (await apiRequest('GET', url)).json();
+  const { data: transactions = [] } = useListWalletTransactions(
+    { type: typeFilter, limit: 100 },
+    {
+      query: {
+        enabled: tab === 'transactions',
+        queryKey: getListWalletTransactionsQueryKey({ type: typeFilter, limit: 100 }),
+      },
     },
-    enabled: tab === 'transactions',
-  });
+  );
 
-  const { data: holds = [] } = useQuery({
-    queryKey: ['b2b-wallet-holds'],
-    queryFn: async () => (await apiRequest('GET', '/api/b2b/wallet/holds?status=open')).json(),
-    enabled: tab === 'holds',
-  });
+  const { data: holds = [] } = useListWalletHolds(
+    { status: 'open' },
+    {
+      query: {
+        enabled: tab === 'holds',
+        queryKey: getListWalletHoldsQueryKey({ status: 'open' }),
+      },
+    },
+  );
 
-  const releaseMut = useMutation({
-    mutationFn: async (id: string) => (await apiRequest('POST', `/api/b2b/wallet/holds/${id}/release`)).json(),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['b2b-wallet'] }); qc.invalidateQueries({ queryKey: ['b2b-wallet-holds'] }); toast.success('Hold released'); },
-    onError: (e: any) => toast.error(e?.message || 'Failed'),
+  const releaseMut = useReleaseWalletHold({
+    mutation: {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: getGetWalletQueryKey() });
+        qc.invalidateQueries({ queryKey: getListWalletHoldsQueryKey({ status: 'open' }) });
+        toast.success('Hold released');
+      },
+      onError: (e: any) => toast.error(e?.message || 'Failed'),
+    },
   });
 
   if (isLoading) {
@@ -96,11 +113,11 @@ export default function Wallet() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <StatCard label="Available" value={fmt(wallet?.availableCents || 0)} sub="Ready to spend or withdraw"
+        <StatCard label="Available" value={fmt(wallet?.availableCents)} sub="Ready to spend or withdraw"
           accent={{ bg: 'rgba(5,150,105,0.08)', color: '#059669' }} icon={<WalletIcon />} />
-        <StatCard label="Locked" value={fmt(wallet?.lockedCents || 0)} sub="Held for orders / escrow"
+        <StatCard label="Locked" value={fmt(wallet?.lockedCents)} sub="Held for orders / escrow"
           accent={{ bg: 'rgba(245,158,11,0.08)', color: '#D97706' }} icon={<Lock />} />
-        <StatCard label="Pending Settlement" value={fmt(wallet?.pendingCents || 0)} sub="Deposits awaiting confirmation"
+        <StatCard label="Pending Settlement" value={fmt(wallet?.pendingCents)} sub="Deposits awaiting confirmation"
           accent={{ bg: 'rgba(59,130,246,0.08)', color: '#2563EB' }} icon={<Clock />} />
       </div>
 
@@ -144,7 +161,7 @@ export default function Wallet() {
               </tr></thead>
               <tbody>
                 {transactions.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: '#B0AAA4' }}>No transactions yet</td></tr>}
-                {transactions.map((tx: any, i: number) => (
+                {transactions.map((tx, i) => (
                   <tr key={tx.id} style={{ borderBottom: i < transactions.length - 1 ? '1px solid #F0EBE6' : 'none' }}>
                     <td className="px-4 py-3 text-xs font-mono" style={{ color: '#888880' }}>{new Date(tx.createdAt).toLocaleString()}</td>
                     <td className="px-4 py-3"><span className="px-2 py-0.5 rounded-full text-[11px] font-semibold" style={{ background: 'rgba(199,59,34,0.08)', color: '#C73B22' }}>{tx.type}</span></td>
@@ -169,7 +186,7 @@ export default function Wallet() {
             </tr></thead>
             <tbody>
               {holds.length === 0 && <tr><td colSpan={6} className="text-center py-12 text-sm" style={{ color: '#B0AAA4' }}>No open holds</td></tr>}
-              {holds.map((h: any) => (
+              {holds.map((h) => (
                 <tr key={h.id}>
                   <td className="px-4 py-3 text-xs font-mono" style={{ color: '#888880' }}>{new Date(h.createdAt).toLocaleString()}</td>
                   <td className="px-4 py-3 font-bold" style={{ color: '#D97706' }}>{fmt(h.amountCents)}</td>
@@ -177,7 +194,7 @@ export default function Wallet() {
                   <td className="px-4 py-3 text-xs" style={{ color: '#888880' }}>{h.expiresAt ? new Date(h.expiresAt).toLocaleString() : '—'}</td>
                   <td className="px-4 py-3 text-xs"><span className="px-2 py-0.5 rounded-full font-semibold" style={{ background: 'rgba(245,158,11,0.1)', color: '#D97706' }}>{h.status}</span></td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => releaseMut.mutate(h.id)} disabled={releaseMut.isPending}
+                    <button onClick={() => releaseMut.mutate({ id: h.id })} disabled={releaseMut.isPending}
                       className="px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-[#F0EBE6] transition" style={{ border: '1px solid #E8E2DC', color: '#C73B22' }}>
                       Release
                     </button>
@@ -190,24 +207,30 @@ export default function Wallet() {
       )}
 
       {tab === 'deposit' && <DepositTab wallet={wallet} />}
-      {tab === 'withdraw' && <WithdrawTab available={wallet?.availableCents || 0} />}
+      {tab === 'withdraw' && <WithdrawTab available={Number(wallet?.availableCents || 0)} />}
     </div>
   );
 }
 
-function DepositTab({ wallet }: { wallet: any }) {
+function DepositTab({ wallet }: { wallet: WalletAccount | undefined }) {
   const [rail, setRail] = useState<'bank' | 'stablecoin' | 'card'>('bank');
   const [amount, setAmount] = useState('');
   const qc = useQueryClient();
-  const intentMut = useMutation({
-    mutationFn: async () => {
-      const cents = Math.round(parseFloat(amount || '0') * 100);
-      const res = await apiRequest('POST', '/api/b2b/wallet/deposits/intents', { rail, amountCents: cents });
-      return res.json();
+  const intentMut = useCreateDepositIntent({
+    mutation: {
+      onSuccess: (data) => {
+        toast.success(data?.note || 'Deposit intent created');
+        qc.invalidateQueries({ queryKey: getGetWalletQueryKey() });
+        setAmount('');
+      },
+      onError: (e: any) => toast.error(e?.message || 'Failed'),
     },
-    onSuccess: (data) => { toast.success(data?.note || 'Deposit intent created'); qc.invalidateQueries({ queryKey: ['b2b-wallet'] }); setAmount(''); },
-    onError: (e: any) => toast.error(e?.message || 'Failed'),
   });
+
+  const submit = () => {
+    const cents = Math.round(parseFloat(amount || '0') * 100);
+    intentMut.mutate({ data: { rail, amountCents: cents } });
+  };
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -265,7 +288,7 @@ function DepositTab({ wallet }: { wallet: any }) {
             <input value={amount} onChange={e => setAmount(e.target.value)} type="number" min="1" step="0.01" placeholder="0.00"
               className="w-full mt-1 px-3 py-2.5 rounded-xl text-sm outline-none" style={{ border: '1px solid #E8E2DC', background: '#fff' }} />
           </div>
-          <button onClick={() => intentMut.mutate()} disabled={intentMut.isPending || !amount || Number(amount) <= 0}
+          <button onClick={submit} disabled={intentMut.isPending || !amount || Number(amount) <= 0}
             className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
             style={{ background: '#C73B22' }}>
             {intentMut.isPending ? 'Creating…' : 'Create deposit intent'}
@@ -287,21 +310,33 @@ function WithdrawTab({ available }: { available: number }) {
     iban: '',
     country: '',
   });
-  const mut = useMutation({
-    mutationFn: async () => {
-      const cents = Math.round(parseFloat(form.amount || '0') * 100);
-      const res = await apiRequest('POST', '/api/b2b/wallet/withdrawals', {
+  const mut = useCreateWithdrawalRequest({
+    mutation: {
+      onSuccess: () => {
+        toast.success('Withdrawal request submitted. Awaiting admin approval.');
+        qc.invalidateQueries({ queryKey: getGetWalletQueryKey() });
+        setForm({ amount: '', bankName: '', accountName: '', accountNumber: '', swiftCode: '', iban: '', country: '' });
+      },
+      onError: (e: any) => toast.error(e?.message || 'Failed'),
+    },
+  });
+
+  const submit = () => {
+    const cents = Math.round(parseFloat(form.amount || '0') * 100);
+    mut.mutate({
+      data: {
         amountCents: cents,
         bankDetails: {
-          bankName: form.bankName, accountName: form.accountName, accountNumber: form.accountNumber,
-          swiftCode: form.swiftCode || undefined, iban: form.iban || undefined, country: form.country || undefined,
+          bankName: form.bankName,
+          accountName: form.accountName,
+          accountNumber: form.accountNumber,
+          swiftCode: form.swiftCode || undefined,
+          iban: form.iban || undefined,
+          country: form.country || undefined,
         },
-      });
-      return res.json();
-    },
-    onSuccess: () => { toast.success('Withdrawal request submitted. Awaiting admin approval.'); qc.invalidateQueries({ queryKey: ['b2b-wallet'] }); setForm({ amount: '', bankName: '', accountName: '', accountNumber: '', swiftCode: '', iban: '', country: '' }); },
-    onError: (e: any) => toast.error(e?.message || 'Failed'),
-  });
+      },
+    });
+  };
 
   const fields: [keyof typeof form, string, boolean][] = [
     ['bankName', 'Bank name', true],
@@ -331,7 +366,7 @@ function WithdrawTab({ available }: { available: number }) {
             </div>
           ))}
         </div>
-        <button onClick={() => mut.mutate()} disabled={mut.isPending || !form.amount || !form.bankName || !form.accountName || !form.accountNumber}
+        <button onClick={submit} disabled={mut.isPending || !form.amount || !form.bankName || !form.accountName || !form.accountNumber}
           className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white disabled:opacity-60"
           style={{ background: '#C73B22' }}>
           {mut.isPending ? 'Submitting…' : 'Submit withdrawal request'}
