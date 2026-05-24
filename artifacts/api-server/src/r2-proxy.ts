@@ -16,20 +16,37 @@ export function registerR2ProxyRoutes(app: Express): void {
       return res.status(503).json({ error: "Storage not configured" });
     }
     
-    try {
-      console.log("[R2 Proxy] Fetching file:", key);
-      const { body, contentType } = await getFromR2(key);
-      res.setHeader("Content-Type", contentType);
-      res.setHeader("Cache-Control", "public, max-age=31536000");
-      body.pipe(res);
-      return undefined;
-    } catch (error: any) {
-      console.error("[R2 Proxy] Error fetching file:", key, error.message);
-      if (error.name === "NoSuchKey" || error.Code === "NoSuchKey") {
-        return res.status(404).json({ error: "File not found" });
+    // Some legacy DB rows stored the raw `pub-*.r2.dev/<filename>` URL
+    // without the `documents/` prefix the upload code actually uses. Try the
+    // requested key first, then fall back to `documents/<key>` so old
+    // submissions render without a migration.
+    const candidates = key.startsWith("documents/")
+      ? [key]
+      : [key, `documents/${key}`];
+
+    let lastError: any = null;
+    for (const candidate of candidates) {
+      try {
+        console.log("[R2 Proxy] Fetching file:", candidate);
+        const { body, contentType } = await getFromR2(candidate);
+        res.setHeader("Content-Type", contentType);
+        res.setHeader("Cache-Control", "public, max-age=31536000");
+        body.pipe(res);
+        return undefined;
+      } catch (error: any) {
+        lastError = error;
+        console.warn("[R2 Proxy] Miss for", candidate, "-", error?.name || error?.message);
+        // Only try the next candidate when the object is missing/unreadable.
+        if (error?.name !== "NoSuchKey" && error?.Code !== "NoSuchKey" && !/EntityReplacer|Invalid character/i.test(String(error?.message))) {
+          break;
+        }
       }
-      return res.status(500).json({ error: "Failed to fetch file" });
     }
+    console.error("[R2 Proxy] All candidates failed for", key, "-", lastError?.message);
+    if (lastError?.name === "NoSuchKey" || lastError?.Code === "NoSuchKey") {
+      return res.status(404).json({ error: "File not found" });
+    }
+    return res.status(500).json({ error: "Failed to fetch file" });
   });
   
   console.log("[R2 Proxy] Routes registered");
