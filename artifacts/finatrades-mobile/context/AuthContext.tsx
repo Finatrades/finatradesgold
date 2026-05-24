@@ -1,6 +1,7 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { invalidateCsrfToken } from "@/hooks/useApi";
+import { getCurrentPushToken, unregisterPushToken } from "@/hooks/usePushNotifications";
 
 const domain = process.env.EXPO_PUBLIC_DOMAIN;
 const API_BASE = domain ? `https://${domain}` : "";
@@ -100,6 +101,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function logout() {
+    try {
+      // Unregister the device's push token while the session is still valid
+      const pushToken = getCurrentPushToken();
+      if (pushToken) {
+        await unregisterPushToken(pushToken).catch(() => {});
+      }
+    } catch {}
+
     try {
       const csrfToken = await getCsrfToken();
       await fetch(`${API_BASE}/api/auth/logout`, {

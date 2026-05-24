@@ -110,4 +110,24 @@ export async function notifyExporterOfStatusChange(
       console.error("[consignment-notifications] socket emit failed", err);
     }
   }
+
+  try {
+    const { sendPushNotification } = await import("../push-notifications");
+    await sendPushNotification(
+      c.userId,
+      {
+        title,
+        body: message,
+        link,
+        data: {
+          kind: "consignment_status_change",
+          consignmentId: c.id,
+          status: newStatus,
+        },
+      },
+      { skipInAppRecord: true },
+    );
+  } catch (err) {
+    console.error("[ConsignmentNotifications] push dispatch failed:", err);
+  }
 }

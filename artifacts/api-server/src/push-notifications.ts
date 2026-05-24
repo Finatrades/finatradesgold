@@ -276,9 +276,48 @@ export async function checkUserPushEnabled(userId: string): Promise<boolean> {
   return prefs.length > 0 ? prefs[0].pushNotifications : true;
 }
 
+export type SendPushOptions = {
+  skipInAppRecord?: boolean;
+  inAppType?: 'info' | 'success' | 'warning' | 'error' | 'system' | 'trade';
+};
+
+async function deliverToExpo(
+  tokens: string[],
+  payload: PushNotificationPayload
+): Promise<void> {
+  const expoTokens = tokens.filter((t) => t.startsWith('ExponentPushToken[') || t.startsWith('ExpoPushToken['));
+  if (expoTokens.length === 0) return;
+
+  const messages = expoTokens.map((to) => ({
+    to,
+    sound: 'default',
+    title: payload.title,
+    body: payload.body,
+    data: { ...(payload.data ?? {}), ...(payload.link ? { link: payload.link } : {}) },
+  }));
+
+  try {
+    const res = await fetch('https://exp.host/--/api/v2/push/send', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'Accept-Encoding': 'gzip, deflate',
+      },
+      body: JSON.stringify(messages),
+    });
+    if (!res.ok) {
+      console.error(`[Push] Expo push delivery failed: ${res.status} ${await res.text().catch(() => '')}`);
+    }
+  } catch (err) {
+    console.error('[Push] Expo push delivery error:', err);
+  }
+}
+
 export async function sendPushNotification(
   userId: string,
-  payload: PushNotificationPayload
+  payload: PushNotificationPayload,
+  options: SendPushOptions = {}
 ): Promise<{ sent: boolean; tokens: number }> {
   const isPushEnabled = await checkUserPushEnabled(userId);
   if (!isPushEnabled) {
@@ -290,16 +329,20 @@ export async function sendPushNotification(
     return { sent: false, tokens: 0 };
   }
 
-  await db.insert(notifications).values({
-    userId,
-    title: payload.title,
-    message: payload.body,
-    type: 'trade',
-    link: payload.link,
-    read: false
-  });
+  if (!options.skipInAppRecord) {
+    await db.insert(notifications).values({
+      userId,
+      title: payload.title,
+      message: payload.body,
+      type: options.inAppType ?? 'trade',
+      link: payload.link,
+      read: false
+    });
+  }
 
-  console.log(`[Push] Would send to ${tokens.length} device(s) for user ${userId}:`, payload);
+  await deliverToExpo(tokens, payload);
+
+  console.log(`[Push] Dispatched to ${tokens.length} device(s) for user ${userId}: ${payload.title}`);
 
   return { sent: true, tokens: tokens.length };
 }
