@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/queryClient';
@@ -400,6 +400,12 @@ export default function KycPage() {
 
   const [selectedKind, setSelectedKind] = useState<KycKind>(requiredKind);
   const canChooseKind = userType === 'importer';
+
+  // Sync selectedKind once the user loads, so exporter/government users
+  // don't get stuck on the personal form because user was undefined at mount.
+  useEffect(() => {
+    if (!canChooseKind) setSelectedKind(requiredKind);
+  }, [canChooseKind, requiredKind]);
 
   const kycQuery = useQuery<KycResponse>({
     queryKey: [`/api/finatrades-kyc/${selectedKind}`, userId],
