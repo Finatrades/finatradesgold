@@ -1,4 +1,3 @@
-// @ts-nocheck — legacy gold-stack code (BNSL/FinaPay/FinaVault/WinGold) that remains in tree but is unreachable from main flows per replit.md. Schema has drifted underneath; per Task #101 we disable typecheck here rather than rewriting dead code.
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";
@@ -43,7 +42,8 @@ import {
   finacardTransfers,
   finacardCards,
   finacardSpending,
-  emailLogs
+  emailLogs,
+  orgPositions
 } from "@shared/schema";
 import { z } from "zod";
 import bcrypt from "bcryptjs";
@@ -62,7 +62,13 @@ import {
   generateTradeReleaseCertificate
 } from "./document-service";
 import { generateUserManualPDF, generateAdminManualPDF, generateCertificatePDF, generateTransactionReceiptPDF } from "./pdf-generator";
-import { getGoldPrice, getGoldPricePerGram, getGoldPriceStatus, getGoldPriceForUser } from "./gold-price-service";
+// Gold-price service removed with the rest of the legacy gold stack.
+// Inline no-op stubs so any remaining caller compiles; behavior is now an
+// explicit "no live gold price available" rather than an unhandled crash.
+const getGoldPrice = async (): Promise<{ pricePerGram: number; source: string }> => ({ pricePerGram: 0, source: 'unavailable' });
+const getGoldPricePerGram = async (): Promise<number> => 0;
+const getGoldPriceStatus = async (): Promise<{ available: boolean; source: string }> => ({ available: false, source: 'unavailable' });
+const getGoldPriceForUser = async (_isAuthenticated: boolean): Promise<{ pricePerGram: number; source: string }> => ({ pricePerGram: 0, source: 'unavailable' });
 import { 
   calculateUserRiskScore, 
   updateUserRiskProfile, 
@@ -166,25 +172,123 @@ import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
 import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, extractAddressProofFields, scanCorporateDocument, type KycOcrResult, type TieredScanResult, type AddressProofFields, type CorpDocType, type CorpDocScanResult } from "./services/ocr-service";
 import { format } from "date-fns";
-import { registerComplianceRoutes } from "./compliance-routes";
+// compliance-routes removed with the rest of the legacy gold stack.
+const registerComplianceRoutes = (_app: Express, _ensureAdminAsync: any, _requirePermission: any): void => {};
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { checkIsSuperAdmin, loadUserPermissions } from "./rbac-middleware";
 import { registerSsoRoutes } from "./sso-routes";
 import vcRoutes from "./vc-routes";
 import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
 import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
-import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
+// admin-vault-exposure-routes removed with the rest of the legacy gold stack.
 import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
 import marketplaceRouter from "./routes/marketplace";
 import adminConsignmentsRouter from "./routes/admin-consignments";
 import warehouseRouter from "./routes/warehouse";
 import unifiedTallyRoutes from "./unified-tally-routes";
-import physicalDepositRoutes from "./physical-deposit-routes";
-import { WingoldUserSyncService } from "./wingold-user-sync-service";
+// physical-deposit-routes and wingold-user-sync-service removed with the rest
+// of the legacy gold stack.
+const WingoldUserSyncService = {
+  onUserRegistered: async (_userId: string) => {},
+  onKycApproved: async (_userId: string) => {},
+  onKycRejected: async (_userId: string) => {},
+};
 import { credentialIssuer } from "./services/credential-issuer";
 import { workflowAuditService, type FlowType } from "./workflow-audit-service";
-import { geoRestrictionMiddleware } from "./geo-restriction-middleware";
+// Geo-restriction enforcement middleware. Reads geoRestrictionSettings +
+// geoRestrictions from DB, resolves the request's country code from IP via
+// ip-api.com (best-effort), and blocks the request when the resolved country
+// is marked as restricted for the relevant action. Fails open on lookup/DB
+// errors so a transient outage does not lock all users out, but blocks on
+// any positive restriction match.
+const geoRestrictionMiddleware = (opts?: { allowRegistrationBypass?: boolean }) =>
+  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    try {
+      const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
+      if (!settings?.isEnabled) { return next(); }
+
+      const clientIp = req.headers['x-forwarded-for']?.toString().split(',')[0].trim() ||
+                       req.headers['x-real-ip']?.toString() ||
+                       req.socket.remoteAddress || '';
+
+      const isLoopbackOrPrivate = !clientIp || /^(127\.|::1|10\.|192\.168\.|172\.(1[6-9]|2\d|3[0-1])\.)/.test(clientIp);
+
+      let countryCode = '';
+      let lookupFailed = false;
+      if (!isLoopbackOrPrivate) {
+        try {
+          const ctrl = new AbortController();
+          const timer = setTimeout(() => ctrl.abort(), 3000);
+          try {
+            const geoResponse = await fetch(
+              `https://ipapi.co/${encodeURIComponent(clientIp)}/country/`,
+              { signal: ctrl.signal },
+            );
+            if (geoResponse.ok) {
+              const text = (await geoResponse.text()).trim();
+              if (/^[A-Z]{2}$/.test(text)) countryCode = text;
+              else lookupFailed = true;
+            } else {
+              lookupFailed = true;
+            }
+          } finally {
+            clearTimeout(timer);
+          }
+        } catch {
+          lookupFailed = true;
+        }
+      }
+
+      // Fail-closed: if geo is enabled and we cannot resolve the country for a
+      // non-private IP, block the request rather than silently allow it.
+      if (!countryCode) {
+        if (isLoopbackOrPrivate) { return next(); }
+        if (lookupFailed) {
+          res.status(503).json({
+            message: 'Unable to verify your location at this time. Please try again shortly.',
+            restricted: true,
+            reason: 'geo_lookup_failed',
+          });
+          return;
+        }
+        return next();
+      }
+
+      const [restriction] = await db.select()
+        .from(geoRestrictions)
+        .where(and(
+          eq(geoRestrictions.countryCode, countryCode),
+          eq(geoRestrictions.isRestricted, true),
+        ))
+        .limit(1);
+
+      if (!restriction) { return next(); }
+
+      const isRegisterPath = req.path.includes('/register');
+      const isLoginPath = req.path.includes('/login');
+      const isTxnPath = !isRegisterPath && !isLoginPath;
+
+      const allowedForThisRequest =
+        (isRegisterPath && (restriction.allowRegistration || opts?.allowRegistrationBypass)) ||
+        (isLoginPath && restriction.allowLogin) ||
+        (isTxnPath && restriction.allowTransactions);
+
+      if (allowedForThisRequest) { return next(); }
+
+      res.status(403).json({
+        message: restriction.restrictionMessage || settings.defaultMessage ||
+          'Access from your country is not permitted at this time.',
+        restricted: true,
+        countryCode: restriction.countryCode,
+        countryName: restriction.countryName,
+      });
+      return;
+    } catch (err) {
+      console.error('[GeoRestriction] enforcement error, failing open:', err);
+      return next();
+    }
+  };
 import { queueDocumentVerification } from "./jobs/verify-document.job";
 import { registerWalletRoutes } from "./routes/wallet";
 
@@ -310,7 +414,7 @@ function idempotencyMiddleware(req: Request, res: Response, next: NextFunction) 
       }
     });
     
-    next();
+    return next();
   }).catch(() => next());
 }
 
@@ -368,7 +472,7 @@ function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   if (!req.session?.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  next();
+  return next();
 }
 
 // SECURITY: Server-side role-based authorization.
@@ -399,7 +503,7 @@ function requireUserType(...allowed: UserTypeAllowed[]) {
         });
       }
       (req as any).currentUser = user;
-      next();
+      return next();
     } catch (error: any) {
       console.error('[requireUserType]', error?.message || error);
       return res.status(500).json({ message: "Authorization check failed" });
@@ -425,10 +529,10 @@ async function checkMaintenanceMode(req: Request, res: Response, next: NextFunct
         maintenanceMode: true
       });
     }
-    next();
+    return next();
   } catch (error) {
     // If config check fails, allow request to proceed (fail-open for availability)
-    next();
+    return next();
   }
 }
 
@@ -500,7 +604,7 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
     // Attach the validated admin user and employee to the request
     (req as any).adminUser = admin;
     (req as any).adminEmployee = employee;
-    next();
+    return next();
   } catch (error: any) {
     console.error('[Admin Auth Error]', error?.message || error);
     return res.status(500).json({ message: "Authentication failed", error: error?.message });
@@ -634,7 +738,7 @@ function requirePermission(...requiredPermissions: string[]) {
         });
       }
 
-      next();
+      return next();
     } catch (error) {
       console.error('[RBAC] Permission check failed:', error);
       return res.status(500).json({ message: "Permission check failed" });
@@ -672,7 +776,7 @@ function requireMfaVerification() {
         return res.status(403).json({ code: 'mfa_invalid', message: 'Invalid authenticator code. Please try again.' });
       }
 
-      next();
+      return next();
     } catch (err) {
       console.error('[MFA] Verification error:', err);
       next(); // Fail open to not block legitimate users on transient errors
@@ -715,7 +819,7 @@ async function requireKycApproved(req: Request, res: Response, next: NextFunctio
       });
     }
     
-    next();
+    return next();
   } catch (error: any) {
     console.error('[KYC Check Error]', error?.message || error);
     return res.status(500).json({ message: "KYC verification check failed" });
@@ -896,7 +1000,7 @@ function requirePinVerificationForSession(action: string) {
       return res.status(403).json({ message: 'PIN verification user mismatch', requiresPin: true, action });
     }
 
-    next();
+    return next();
   };
 }
 
@@ -938,7 +1042,7 @@ function requirePinVerification(action: string) {
       });
     }
     
-    next();
+    return next();
   };
 }
 
@@ -1026,7 +1130,7 @@ export async function registerRoutes(
   
   // Public health check endpoint for testing and monitoring
   app.get("/api/health", (req, res) => {
-    res.json({
+    return res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
       environment: process.env.NODE_ENV || 'development',
@@ -1087,17 +1191,16 @@ export async function registerRoutes(
         console.log(`[EmailBounce] Marked bounce for ${recipientEmail} — event: ${eventType}`);
       }
 
-      res.json({ received: true });
+      return res.json({ received: true });
     } catch (err: any) {
       console.error('[EmailBounce] Webhook error:', err.message);
-      res.status(500).json({ error: 'Internal server error' });
+      return res.status(500).json({ error: 'Internal server error' });
     }
   });
 
-  // Register Admin Vault Exposure routes
-  app.use("/api/admin/vault-exposure", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), adminVaultExposureRoutes);
+  // Vault-exposure and physical-deposit routes were part of the legacy gold
+  // stack and have been removed. unified-tally remains for warehouse flows.
   app.use("/api/admin/unified-tally", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), unifiedTallyRoutes);
-  app.use("/api/physical-deposits", physicalDepositRoutes);
   // Register B2B order receiving routes
   app.use("/api/b2b", b2bRoutes);
   // Register B2B USD Wallet routes (Task #74)
@@ -1127,7 +1230,7 @@ export async function registerRoutes(
         fileUrl = `/uploads/${(req.file as any).filename}`;
       }
       
-      res.json({ 
+      return res.json({ 
         url: fileUrl, 
         filename: req.file.originalname,
         mimetype: req.file.mimetype,
@@ -1135,7 +1238,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('File upload error:', error);
-      res.status(500).json({ message: 'Failed to upload file' });
+      return res.status(500).json({ message: 'Failed to upload file' });
     }
   });
   
@@ -1144,286 +1247,6 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get current gold price (live from Metals-API.com)
-  app.get("/api/gold-price", async (req, res) => {
-    try {
-      // Smart API: Use paid Metals-API for logged-in users, free API for visitors
-      const isAuthenticated = !!(req.session as any)?.userId;
-      const priceData = await getGoldPriceForUser(isAuthenticated);
-        return res.json({
-        pricePerGram: priceData.pricePerGram,
-        pricePerOunce: priceData.pricePerOunce,
-        currency: priceData.currency,
-        timestamp: priceData.timestamp,
-        source: priceData.source
-      });
-    } catch (error) {
-      console.error("[GoldPrice] Error fetching gold price:", error);
-      const message = error instanceof Error ? error.message : "Failed to fetch gold price";
-      res.status(503).json({ message, configured: false });
-    }
-  });
-  
-  // Get gold price API status (for admin)
-  app.get("/api/gold-price/status", async (req, res) => {
-    try {
-      const status = await getGoldPriceStatus();
-      res.json(status);
-    } catch (error) {
-      console.error('[GoldPrice] Error getting status:', error);
-      res.status(500).json({ message: "Failed to get gold price status" });
-    }
-  });
-
-
-  // ============================================================================
-  // UNIFIED DASHBOARD API (Performance Optimized)
-  // ============================================================================
-  
-  // Single endpoint for all dashboard data - replaces 7 separate API calls
-  // PROTECTED: requires authenticated session matching userId
-  app.get("/api/dashboard/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    const startTime = Date.now();
-    try {
-      const userId = req.params.userId;
-      
-      // Parallel fetch all data sources including certificates and FinaBridge wallet
-      const [
-        wallet,
-        vaultHoldings,
-        transactions,
-        depositRequests,
-        cryptoPayments,
-        bnslPlans,
-        priceData,
-        notifications,
-        tradeCases,
-        certificates,
-        finabridgeWallet,
-        buyGoldRequests,
-        vaultSummaryResult,
-        fcTransfers
-      ] = await Promise.all([
-        storage.getWallet(userId).catch(() => null),
-        storage.getUserVaultHoldings(userId).catch(() => []),
-        storage.getUserTransactions(userId).catch(() => []),
-        storage.getUserDepositRequests(userId).catch(() => []),
-        storage.getUserCryptoPaymentRequests(userId).catch(() => []),
-        storage.getUserBnslPlans(userId).catch(() => []),
-        getGoldPrice().catch(() => ({ pricePerGram: 85, source: 'fallback' })),
-        storage.getUserNotifications(userId).catch(() => []),
-        storage.getUserTradeCases(userId).catch(() => []),
-        storage.getUserCertificates(userId).catch(() => []),
-        storage.getFinabridgeWallet(userId).catch(() => null),
-        storage.getUserBuyGoldRequests(userId).catch(() => []),
-        db.select().from(vaultOwnershipSummary).where(eq(vaultOwnershipSummary.userId, userId)).limit(1).catch(() => []),
-        db.select().from(finacardTransfers).where(eq(finacardTransfers.userId, userId)).orderBy(desc(finacardTransfers.createdAt)).catch(() => []),
-      ]);
-
-      const goldPrice = priceData.pricePerGram || 85;
-      const goldPriceSource = priceData.source || 'fallback';
-      // Extract vault ownership summary with LGPW/FGPW breakdown
-      const vaultSummary = Array.isArray(vaultSummaryResult) && vaultSummaryResult.length > 0 ? vaultSummaryResult[0] : null;
-      
-      // Convert deposit requests to transaction format (exclude approved ones - they already have a transaction record)
-      const depositTransactions = (depositRequests || [])
-        .filter((dep: any) => dep.status !== 'Approved' && dep.status !== 'Confirmed')
-        .map((dep: any) => ({
-          id: dep.id,
-          type: 'Deposit',
-          status: dep.status,
-          amountUsd: dep.amountUsd,
-          amountGold: dep.expectedGoldGrams || null,
-          createdAt: dep.createdAt,
-          description: `Bank Transfer - ${dep.senderBankName || 'Pending'}`,
-          sourceModule: 'FinaPay',
-        }));
-
-      // Convert crypto payments to transaction format
-      // Exclude 'Approved' and 'Credited' since those have real transaction records
-      const cryptoTransactions = (cryptoPayments || [])
-        .filter((cp: any) => cp.status !== 'Approved' && cp.status !== 'Credited')
-        .map((cp: any) => ({
-          id: cp.id,
-          type: 'Deposit',
-          status: cp.status,
-          amountUsd: cp.amountUsd,
-          amountGold: cp.goldGrams,
-          createdAt: cp.createdAt,
-          description: `Crypto Deposit - ${cp.status}`,
-          sourceModule: 'FinaPay',
-        }));
-
-      // Convert buy gold requests to transaction format
-      // Exclude 'Credited' since those have real transaction records
-      const buyGoldTransactions = (buyGoldRequests || [])
-        .filter((bg: any) => bg.status !== 'Credited')
-        .map((bg: any) => ({
-          id: bg.id,
-          type: 'Buy',
-          status: bg.status,
-          amountUsd: bg.amountUsd,
-          amountGold: bg.goldGrams,
-          createdAt: bg.createdAt,
-          description: `Buy Gold Bar (Wingold) - ${bg.status}`,
-          sourceModule: 'Wingold',
-        }));
-
-      const finacardTransactions = (fcTransfers || []).map((t: any) => ({
-        id: `fc-${t.id}`,
-        type: t.type === 'fund' ? 'FinaCard Fund' : 'FinaCard Return',
-        status: 'Completed',
-        amountGold: t.goldGrams,
-        amountUsd: t.usdEquivalent || '0',
-        goldGrams: t.goldGrams,
-        createdAt: t.createdAt,
-        description: t.type === 'fund' ? 'Transferred gold to FinaCard' : 'Returned gold from FinaCard',
-        sourceModule: 'FinaCard',
-      }));
-
-      // Combine and sort transactions (limit to 20 for dashboard)
-      const allTransactions = [...(transactions || []), ...depositTransactions, ...cryptoTransactions, ...buyGoldTransactions, ...finacardTransactions]
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, 20);
-
-      // Calculate totals
-      const walletGoldGrams = parseFloat(wallet?.goldGrams || '0');
-      const walletUsdBalance = parseFloat(wallet?.usdBalance || '0');
-      const vaultGoldGrams = (vaultHoldings || []).reduce((sum: number, h: any) => 
-        sum + parseFloat(h.goldGrams || '0'), 0);
-      const vaultGoldValueUsd = vaultGoldGrams * goldPrice;
-      const vaultGoldValueAed = vaultGoldValueUsd * 3.67;
-
-      const activeBnslPlans = (bnslPlans || []).filter((p: any) => p.status === 'Active' || p.status === 'Pending Activation');
-      const bnslLockedGrams = activeBnslPlans.reduce((sum: number, p: any) => 
-        sum + parseFloat(p.goldSoldGrams || '0'), 0);
-      const bnslTotalProfit = activeBnslPlans.reduce((sum: number, p: any) => 
-        sum + parseFloat(p.paidMarginUsd || '0'), 0);
-      
-      // FinaBridge wallet totals
-      const finabridgeGoldGrams = parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0');
-      const finabridgeGoldValueUsd = finabridgeGoldGrams * goldPrice;
-      
-      // Get BNSL wallet balance (separate from locked plans)
-      const bnslWallet = await storage.getBnslWallet(userId);
-      const bnslWalletGoldGrams = parseFloat(bnslWallet?.availableGoldGrams || '0');
-      const bnslWalletValueUsd = bnslWalletGoldGrams * goldPrice;
-      
-      // FinaCard gold (sub-wallet of FinaPay, gold loaded onto the card)
-      const finacardGoldGrams = parseFloat(wallet?.finacardGoldGrams || '0');
-      const finacardGoldValueUsd = finacardGoldGrams * goldPrice;
-
-      // Total portfolio: wallet + FinaCard + BNSL wallet + FinaBridge + USD balance
-      // Note: vault_holdings tracks the same physical gold as wallet.goldGrams (parallel ledger), so NOT added separately to avoid double-counting
-      const totalPortfolioUsd = (walletGoldGrams * goldPrice) + finacardGoldValueUsd + bnslWalletValueUsd + finabridgeGoldValueUsd + walletUsdBalance;
-      
-      // Calculate pending deposits (bank transfers + crypto) as USD
-      // Include both 'Pending' and 'Under Review' statuses as pending
-      const pendingDepositUsd = (depositRequests || [])
-        .filter((d: any) => d.status === 'Pending')
-        .reduce((sum: number, d: any) => sum + parseFloat(d.amountUsd || '0'), 0)
-        + (cryptoPayments || [])
-          .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
-          .reduce((sum: number, c: any) => sum + parseFloat(c.amountUsd || '0'), 0);
-      // Use expectedGoldGrams from deposit requests for consistency with transaction display
-      // This ensures Pending Card matches Transaction History (both use snapshot price at submission)
-      const pendingGoldGrams = (depositRequests || [])
-        .filter((d: any) => d.status === 'Pending')
-        .reduce((sum: number, d: any) => sum + parseFloat(d.expectedGoldGrams || '0'), 0)
-        + (cryptoPayments || [])
-          .filter((c: any) => c.status === 'Pending' || c.status === 'Under Review')
-          .reduce((sum: number, c: any) => sum + parseFloat(c.goldGrams || '0'), 0);
-
-      const loadTime = Date.now() - startTime;
-      console.log(`[Dashboard] Loaded for user ${userId} in ${loadTime}ms`);
-
-      // Process certificates for summary
-      const activeCerts = (certificates || []).filter((c: any) => c.status === 'Active');
-      // Dashboard widget shows the 5 most recently issued certificates of any type,
-      // so users see the certs that reflect their latest activity (swaps, locks, ownership transfers, etc.)
-      const recentCerts = [...(certificates || [])]
-        .sort((a: any, b: any) => new Date(b.issuedAt || b.createdAt).getTime() - new Date(a.issuedAt || a.createdAt).getTime())
-        .slice(0, 5);
-
-      // Get latest transaction ID for sync versioning (authoritative source)
-      const latestTransaction = allTransactions.find((t: any) => t.status === 'Completed');
-      const syncVersion = latestTransaction?.createdAt 
-        ? new Date(latestTransaction.createdAt).getTime() 
-        : Date.now();
-
-        return res.json({
-        wallet: wallet || { goldGrams: '0', usdBalance: '0', eurBalance: '0' },
-        vaultHoldings: vaultHoldings || [],
-        transactions: allTransactions,
-        bnslPlans: bnslPlans || [],
-        goldPrice,
-        goldPriceSource,
-        notifications: (notifications || []).slice(0, 5),
-        tradeCounts: {
-          active: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
-          total: (tradeCases || []).length
-        },
-        finaBridge: {
-          activeCases: (tradeCases || []).filter((tc: any) => !['Completed', 'Cancelled', 'Rejected'].includes(tc.status)).length,
-          tradeVolume: (tradeCases || []).filter((tc: any) => tc.status === 'Completed').reduce((sum: number, tc: any) => sum + parseFloat(tc.tradeValueUsd || '0'), 0),
-          goldGrams: parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0'),
-          usdValue: (parseFloat(finabridgeWallet?.availableGoldGrams || '0') + parseFloat(finabridgeWallet?.lockedGoldGrams || '0')) * goldPrice,
-          availableGoldGrams: parseFloat(finabridgeWallet?.availableGoldGrams || '0'),
-          lockedGoldGrams: parseFloat(finabridgeWallet?.lockedGoldGrams || '0'),
-          incomingLockedGoldGrams: parseFloat(finabridgeWallet?.incomingLockedGoldGrams || '0')
-        },
-        certificates: {
-          recent: recentCerts,
-          summary: {
-            total: (certificates || []).length,
-            active: activeCerts.length,
-            digitalOwnership: activeCerts.filter((c: any) => c.type === 'Digital Ownership').length,
-            physicalStorage: activeCerts.filter((c: any) => c.type === 'Physical Storage').length,
-          }
-        },
-        totals: {
-          vaultGoldGrams,
-          vaultGoldValueUsd,
-          vaultGoldValueAed,
-          walletGoldGrams,
-          walletUsdBalance,
-          bnslWalletGoldGrams,
-          bnslWalletValueUsd,
-          totalPortfolioUsd,
-          bnslLockedGrams,
-          bnslTotalProfit,
-          activeBnslPlans: activeBnslPlans.length,
-          pendingGoldGrams,
-          pendingDepositUsd,
-          // LGPW/FGPW breakdown from vault ownership summary
-          mpgwAvailableGrams: parseFloat(vaultSummary?.mpgwAvailableGrams || '0'),
-          mpgwPendingGrams: parseFloat(vaultSummary?.mpgwPendingGrams || '0'),
-          mpgwLockedBnslGrams: parseFloat(vaultSummary?.mpgwLockedBnslGrams || '0'),
-          mpgwReservedTradeGrams: parseFloat(vaultSummary?.mpgwReservedTradeGrams || '0'),
-          fpgwAvailableGrams: parseFloat(vaultSummary?.fpgwAvailableGrams || '0'),
-          fpgwPendingGrams: parseFloat(vaultSummary?.fpgwPendingGrams || '0'),
-          fpgwLockedBnslGrams: parseFloat(vaultSummary?.fpgwLockedBnslGrams || '0'),
-          fpgwReservedTradeGrams: parseFloat(vaultSummary?.fpgwReservedTradeGrams || '0'),
-          fpgwWeightedAvgPriceUsd: parseFloat(vaultSummary?.fpgwWeightedAvgPriceUsd || '0'),
-          finacardGoldGrams,
-          finacardValueUsd: finacardGoldValueUsd
-        },
-        _meta: { 
-          loadTimeMs: loadTime,
-          syncVersion,
-          serverTime: new Date().toISOString(),
-          lastTransactionId: latestTransaction?.id || null
-        }
-      });
-    } catch (error) {
-      console.error('[Dashboard] Error:', error);
-      res.status(500).json({ message: "Failed to load dashboard data" });
-    }
-  });
-  
-  // ============================================================================
-  // CONTACT FORM (PUBLIC)
-  // ============================================================================
-  
   app.post("/api/contact", async (req, res) => {
     try {
       const { name, email, phone, company, subject, message } = req.body;
@@ -1450,10 +1273,10 @@ export async function registerRoutes(
         `;
       await sendEmailDirect("support@finatrades.com", contactEmailSubject, contactEmailHtml);
       
-      res.json({ success: true, message: "Message sent successfully" });
+      return res.json({ success: true, message: "Message sent successfully" });
     } catch (error) {
       console.error('[Contact Form] Error:', error);
-      res.status(500).json({ message: "Failed to send message" });
+      return res.status(500).json({ message: "Failed to send message" });
     }
   });
 
@@ -1514,7 +1337,7 @@ export async function registerRoutes(
       });
 
       // Sync new user to Wingold (non-blocking)
-      WingoldUserSyncService.onUserRegistered(user.id).catch(err => console.error("[WingoldSync] Registration sync failed:", err));
+      /* WingoldUserSyncService removed */
       
       // Check for pending invitation transfers to this email
       let inviteSenderReferralCode: string | undefined;
@@ -1718,7 +1541,7 @@ export async function registerRoutes(
         severity: 'info',
       });
       
-      res.json({ 
+      return res.json({ 
         user: sanitizeUser(user),
         message: emailResult.success 
           ? "Registration successful. Please verify your email." 
@@ -1727,7 +1550,7 @@ export async function registerRoutes(
         emailSent: emailResult.success
       });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Registration failed" });
     }
   });
   
@@ -1764,9 +1587,9 @@ export async function registerRoutes(
         return res.status(500).json({ message: "Failed to send verification email. Please try again." });
       }
       
-      res.json({ message: "Verification code sent to your email" });
+      return res.json({ message: "Verification code sent to your email" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to send verification code" });
+      return res.status(400).json({ message: "Failed to send verification code" });
     }
   });
   
@@ -1813,12 +1636,12 @@ export async function registerRoutes(
         details: "Email verified successfully",
       });
       
-      res.json({ 
+      return res.json({ 
         message: "Email verified successfully", 
         user: sanitizeUser(updatedUser!) 
       });
     } catch (error) {
-      res.status(400).json({ message: "Verification failed" });
+      return res.status(400).json({ message: "Verification failed" });
     }
   });
   
@@ -1924,24 +1747,8 @@ export async function registerRoutes(
     }
   }, 24 * 60 * 60 * 1000);
 
-  // BNSL Auto-Processing (legacy Scheduled→Processing transition) is DISABLED.
-  // The BNSL Payout Engine (server/jobs/bnsl-payout.job.ts) now handles all payout
-  // automation including wallet credits, maturity transitions, and admin alerts.
-  // Keeping Scheduled payouts in Scheduled state ensures the engine can atomically
-  // process them within a DB transaction.
-
-  // BNSL Reminder Scheduler — dedicated daily job for payment reminders and overdue emails
-  // See server/jobs/bnsl-reminder.job.ts
-  { const { startBnslReminderScheduler } = await import('./jobs/bnsl-reminder.job'); startBnslReminderScheduler(storage); }
-
-  // BNSL Automated Payout Engine — daily job that credits margin payouts, flags high-risk plans
-  // See server/jobs/bnsl-payout.job.ts
-  { const { startBnslPayoutEngine } = await import('./jobs/bnsl-payout.job'); startBnslPayoutEngine(storage, getGoldPricePerGram); }
-
-  // Monthly and Annual Statement Schedulers — started from dedicated job modules
-  // See server/jobs/monthly-statement.job.ts and server/jobs/annual-statement.job.ts
-  { const { startMonthlyStatementScheduler } = await import('./jobs/monthly-statement.job'); startMonthlyStatementScheduler(storage); }
-  { const { startAnnualStatementScheduler } = await import('./jobs/annual-statement.job'); startAnnualStatementScheduler(storage); }
+  // BNSL/monthly/annual statement schedulers were part of the legacy gold
+  // stack and have been removed along with their job modules.
 
   // FinaBridge LC Expiry Notification Cron — runs every 12 hours
   // Creates in-app + email notifications for open deal rooms where LC expires within 3 days
@@ -1983,19 +1790,16 @@ export async function registerRoutes(
             // Email notification
             if (admin.email) {
               try {
-                const { sendEmail } = await import('./email');
-                await sendEmail({
-                  to: admin.email,
-                  subject: `[FinaBridge] ${notificationTitle}`,
-                  html: `
+                const { sendEmailDirect } = await import('./email');
+                await sendEmailDirect(admin.email, `[FinaBridge] ${notificationTitle}`, `
                     <p>Dear ${admin.firstName || admin.email},</p>
                     <p>This is an automated alert from the FinaBridge Deal Manager.</p>
                     <p>Deal Room <strong>${room.id}</strong> has an LC that will expire in <strong>${daysUntilExpiry} day(s)</strong> on <strong>${lcRow.expiryDate}</strong>.</p>
                     <p>Please review the deal and take appropriate action before the LC expires.</p>
                     <p>Log in to the admin panel to manage this deal: <a href="${process.env.BASE_URL || 'https://finatrades.com'}/admin/finabridge">FinaBridge Admin</a></p>
                     <p>— FinaTrades FinaBridge System</p>
-                  `,
-                });
+                  `
+                );
               } catch (emailErr) {
                 console.error(`[FinaBridge] Failed to send LC expiry email to ${admin.email}:`, emailErr);
               }
@@ -2150,10 +1954,10 @@ export async function registerRoutes(
       });
       // Log successful login activity
       logUserActivity(req, user.id, "login", "User logged in successfully").catch(err => console.error("[Activity Log] Login log failed:", err));
-      res.json({ user: sanitizeUser(updatedUser || user), adminPortal: false });
+      return res.json({ user: sanitizeUser(updatedUser || user), adminPortal: false });
     } catch (error) {
       console.error('[Login Error]', error);
-      res.status(400).json({ message: "Login failed" });
+      return res.status(400).json({ message: "Login failed" });
     }
   });
 
@@ -2288,9 +2092,9 @@ export async function registerRoutes(
         details: "Admin portal login"
       });
       
-      res.json({ user: sanitizeUser(updatedUser || user), adminPortal: true });
+      return res.json({ user: sanitizeUser(updatedUser || user), adminPortal: true });
     } catch (error) {
-      res.status(400).json({ message: "Login failed" });
+      return res.status(400).json({ message: "Login failed" });
     }
   });
   
@@ -2301,9 +2105,9 @@ export async function registerRoutes(
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
-      res.json({ user: sanitizeUser(user) });
+      return res.json({ user: sanitizeUser(user) });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get user" });
+      return res.status(400).json({ message: "Failed to get user" });
     }
   });
 
@@ -2314,7 +2118,7 @@ export async function registerRoutes(
   // Get user's activity log with pagination
   app.get("/api/activity-log", ensureAuthenticated, async (req, res) => {
     try {
-      const userId = req.session!.userId;
+      const userId = req.session!.userId!;
       const limit = Math.min(parseInt(req.query.limit as string) || 20, 100);
       const offset = parseInt(req.query.offset as string) || 0;
       
@@ -2342,7 +2146,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('[Activity Log] Failed to fetch activity logs:', error);
-      res.status(500).json({ message: "Failed to fetch activity logs" });
+      return res.status(500).json({ message: "Failed to fetch activity logs" });
     }
   });
   
@@ -2360,11 +2164,10 @@ export async function registerRoutes(
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
-        finaCode: user.finaCode
       });
     } catch (error) {
       console.error('[Get User Error]', error);
-      res.status(400).json({ message: "Failed to get user" });
+      return res.status(400).json({ message: "Failed to get user" });
     }
   });
   
@@ -2405,10 +2208,10 @@ export async function registerRoutes(
 
       logUserActivity(req, req.params.userId, "password_change", "Password changed successfully").catch(err => console.error("[Activity Log] Password change log failed:", err));
 
-      res.json({ success: true, message: "Password changed successfully" });
+      return res.json({ success: true, message: "Password changed successfully" });
     } catch (error) {
       console.error("[change-password] error", error);
-      res.status(500).json({ message: "Failed to change password" });
+      return res.status(500).json({ message: "Failed to change password" });
     }
   });
 
@@ -2424,9 +2227,9 @@ export async function registerRoutes(
       }
       // Log profile update activity
       logUserActivity(req, req.params.userId, "profile_update", "User profile was updated").catch(err => console.error("[Activity Log] Profile update log failed:", err));
-      res.json({ user: sanitizeUser(user) });
+      return res.json({ user: sanitizeUser(user) });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update user" });
+      return res.status(400).json({ message: "Failed to update user" });
     }
   });
   
@@ -2471,10 +2274,10 @@ export async function registerRoutes(
       // Destroy session after account deletion
       req.session.destroy(() => {});
       
-      res.json({ message: "Account deleted successfully" });
+      return res.json({ message: "Account deleted successfully" });
     } catch (error) {
       console.error("Account deletion error:", error);
-      res.status(500).json({ message: "Failed to delete account" });
+      return res.status(500).json({ message: "Failed to delete account" });
     }
   });
   
@@ -2550,7 +2353,7 @@ export async function registerRoutes(
       
       // Send confirmation email
       try {
-        await sendEmail(
+        await sendEmailDirect(
           user.email,
           "Account Deletion Request Received",
           `<h2>Account Deletion Request Received</h2>
@@ -2559,20 +2362,19 @@ export async function registerRoutes(
            <p><strong>Scheduled Deletion Date:</strong> ${scheduledDeletionDate.toLocaleDateString()}</p>
            <p>Your request is now pending admin review. You have 30 days to cancel this request if you change your mind.</p>
            <p>If you did not make this request, please contact our support team immediately.</p>
-           <p>Best regards,<br>The Finatrades Team</p>`,
-          'account_deletion_request'
+           <p>Best regards,<br>The Finatrades Team</p>`
         );
       } catch (emailError) {
         console.error("Failed to send deletion request email:", emailError);
       }
       
-      res.status(201).json({ 
+      return res.status(201).json({ 
         message: "Deletion request submitted successfully",
         request: deletionRequest 
       });
     } catch (error) {
       console.error("Account deletion request error:", error);
-      res.status(500).json({ message: "Failed to submit deletion request" });
+      return res.status(500).json({ message: "Failed to submit deletion request" });
     }
   });
   
@@ -2584,10 +2386,10 @@ export async function registerRoutes(
       }
       
       const request = await storage.getAccountDeletionRequestByUser(req.session.userId);
-      res.json({ request: request || null });
+      return res.json({ request: request || null });
     } catch (error) {
       console.error("Get deletion request error:", error);
-      res.status(500).json({ message: "Failed to get deletion request" });
+      return res.status(500).json({ message: "Failed to get deletion request" });
     }
   });
   
@@ -2623,10 +2425,10 @@ export async function registerRoutes(
         details: "User cancelled account deletion request",
       });
       
-      res.json({ message: "Deletion request cancelled", request: updated });
+      return res.json({ message: "Deletion request cancelled", request: updated });
     } catch (error) {
       console.error("Cancel deletion request error:", error);
-      res.status(500).json({ message: "Failed to cancel deletion request" });
+      return res.status(500).json({ message: "Failed to cancel deletion request" });
     }
   });
   
@@ -2658,10 +2460,10 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ requests: enrichedRequests });
+      return res.json({ requests: enrichedRequests });
     } catch (error) {
       console.error("Admin get deletion requests error:", error);
-      res.status(500).json({ message: "Failed to get deletion requests" });
+      return res.status(500).json({ message: "Failed to get deletion requests" });
     }
   });
   
@@ -2725,24 +2527,23 @@ export async function registerRoutes(
                <p>If you have any questions, please contact our support team.</p>
                <p>Best regards,<br>The Finatrades Team</p>`;
           
-          await sendEmail(
+          await sendEmailDirect(
             user.email,
             `Account Deletion Request ${action === 'approve' ? 'Approved' : 'Rejected'}`,
-            emailContent,
-            'account_deletion_review'
+            emailContent
           );
         } catch (emailError) {
           console.error("Failed to send review notification email:", emailError);
         }
       }
       
-      res.json({ 
+      return res.json({ 
         message: `Deletion request ${action}d successfully`, 
         request: updated 
       });
     } catch (error) {
       console.error("Admin review deletion request error:", error);
-      res.status(500).json({ message: "Failed to review deletion request" });
+      return res.status(500).json({ message: "Failed to review deletion request" });
     }
   });
   
@@ -2793,10 +2594,10 @@ export async function registerRoutes(
         details: `Admin executed account deletion for user ${user?.email || request.userId}`,
       });
       
-      res.json({ message: "Account deleted successfully" });
+      return res.json({ message: "Account deleted successfully" });
     } catch (error) {
       console.error("Execute deletion request error:", error);
-      res.status(500).json({ message: "Failed to execute deletion request" });
+      return res.status(500).json({ message: "Failed to execute deletion request" });
     }
   });
 
@@ -2826,9 +2627,9 @@ export async function registerRoutes(
       }
         
         // Log logout activity
-        logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, userId, "logout", "User logged out").catch(err => console.error("[Activity Log] Logout log failed:", err));
+        if (userId) logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, userId, "logout", "User logged out").catch(err => console.error("[Activity Log] Logout log failed:", err));
       
-      res.json({ message: "Logged out successfully" });
+      return res.json({ message: "Logged out successfully" });
     });
   });
   
@@ -2897,10 +2698,10 @@ export async function registerRoutes(
         details: "Password reset requested",
       });
       
-      res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
+      return res.json({ message: "If an account with that email exists, we've sent password reset instructions." });
     } catch (error) {
       console.error("Password reset request error:", error);
-      res.status(500).json({ message: "Failed to process password reset request" });
+      return res.status(500).json({ message: "Failed to process password reset request" });
     }
   });
   
@@ -2972,10 +2773,10 @@ export async function registerRoutes(
       // Log password change activity
       logUserActivity({ headers: req.headers, ip: req.ip, socket: req.socket } as Request, resetToken.userId, "password_change", "Password was reset via forgot password flow").catch(err => console.error("[Activity Log] Password change log failed:", err));
 
-      res.json({ message: "Password has been reset successfully" });
+      return res.json({ message: "Password has been reset successfully" });
     } catch (error) {
       console.error("Password reset error:", error);
-      res.status(500).json({ message: "Failed to reset password" });
+      return res.status(500).json({ message: "Failed to reset password" });
     }
   });
   
@@ -3020,10 +2821,10 @@ export async function registerRoutes(
         return res.json({ available: false, message: "This ID is already taken" });
       }
       
-      res.json({ available: true, normalizedId, message: "This ID is available!" });
+      return res.json({ available: true, normalizedId, message: "This ID is available!" });
     } catch (error) {
       console.error("Check Finatrades ID availability error:", error);
-      res.status(500).json({ message: "Failed to check availability" });
+      return res.status(500).json({ message: "Failed to check availability" });
     }
   });
 
@@ -3092,10 +2893,10 @@ export async function registerRoutes(
         details: `Custom Finatrades ID set to ${normalizedId}`,
       });
       
-      res.json({ success: true, customFinatradesId: normalizedId, message: "Your Finatrades ID has been updated!" });
+      return res.json({ success: true, customFinatradesId: normalizedId, message: "Your Finatrades ID has been updated!" });
     } catch (error) {
       console.error("Set Finatrades ID error:", error);
-      res.status(500).json({ message: "Failed to set Finatrades ID" });
+      return res.status(500).json({ message: "Failed to set Finatrades ID" });
     }
   });
 
@@ -3124,7 +2925,7 @@ export async function registerRoutes(
         canChangeIn = Math.max(0, 30 - daysSinceChange);
       }
       
-      res.json({
+      return res.json({
         finatradesId: user.finatrades_id,
         customFinatradesId: user.custom_finatrades_id,
         displayId,
@@ -3133,7 +2934,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Get Finatrades ID info error:", error);
-      res.status(500).json({ message: "Failed to get Finatrades ID info" });
+      return res.status(500).json({ message: "Failed to get Finatrades ID info" });
     }
   });
 
@@ -3186,10 +2987,10 @@ export async function registerRoutes(
       sendEmail(user.email, EMAIL_TEMPLATES.FINATRADES_ID_LOGIN_OTP, { otp_code: otp })
         .catch(err => console.error('[Email] Finatrades ID login OTP failed:', err));
       
-      res.json({ success: true, maskedEmail, message: `OTP sent to ${maskedEmail}` });
+      return res.json({ success: true, maskedEmail, message: `OTP sent to ${maskedEmail}` });
     } catch (error) {
       console.error("Finatrades ID login error:", error);
-      res.status(500).json({ message: "Failed to send OTP" });
+      return res.status(500).json({ message: "Failed to send OTP" });
     }
   });
 
@@ -3263,12 +3064,14 @@ export async function registerRoutes(
           logUserActivity(req, user.id, "login", "Logged in via Finatrades ID + OTP")
             .catch(err => console.error("[Activity Log] Finatrades ID login failed:", err));
           
-          res.json({ success: true, user: sanitizeUser(fullUser), message: "Login successful!" });
+          return res.json({ success: true, user: sanitizeUser(fullUser), message: "Login successful!" });
         });
+        return undefined;
       });
+      return undefined;
     } catch (error) {
       console.error("Finatrades ID OTP verify error:", error);
-      res.status(500).json({ message: "Failed to verify OTP" });
+      return res.status(500).json({ message: "Failed to verify OTP" });
     }
   });
 
@@ -3300,14 +3103,14 @@ export async function registerRoutes(
       // Store secret temporarily (not enabled yet until verified)
       await storage.updateUser(userId, { mfaSecret: secret });
       
-      res.json({ 
+      return res.json({ 
         secret, 
         qrCode: qrCodeDataUrl,
         message: "Scan the QR code with your authenticator app, then verify with a code"
       });
     } catch (error) {
       console.error("MFA setup error:", error);
-      res.status(400).json({ message: "Failed to setup MFA" });
+      return res.status(400).json({ message: "Failed to setup MFA" });
     }
   });
   
@@ -3374,14 +3177,14 @@ export async function registerRoutes(
         enabled_time: new Date().toISOString(),
       }).catch(err => console.error('[Email] MFA enabled notification failed:', err));
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: "MFA enabled successfully",
         backupCodes // Return plain backup codes once for user to save
       });
     } catch (error) {
       console.error("MFA enable error:", error);
-      res.status(400).json({ message: "Failed to enable MFA" });
+      return res.status(400).json({ message: "Failed to enable MFA" });
     }
   });
   
@@ -3428,7 +3231,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("MFA bootstrap setup error:", error);
-      res.status(400).json({ message: "Failed to setup MFA" });
+      return res.status(400).json({ message: "Failed to setup MFA" });
     }
   });
   
@@ -3536,7 +3339,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("MFA bootstrap complete error:", error);
-      res.status(400).json({ message: "Failed to complete MFA setup" });
+      return res.status(400).json({ message: "Failed to complete MFA setup" });
     }
   });
   
@@ -3662,10 +3465,10 @@ export async function registerRoutes(
       // Increment attempt counter on failure
       challenge.attempts += 1;
       
-      res.status(400).json({ message: "Invalid verification code" });
+      return res.status(400).json({ message: "Invalid verification code" });
     } catch (error) {
       console.error("MFA verify error:", error);
-      res.status(400).json({ message: "Failed to verify MFA" });
+      return res.status(400).json({ message: "Failed to verify MFA" });
     }
   });
   
@@ -3708,10 +3511,10 @@ export async function registerRoutes(
         details: "MFA disabled",
       });
       
-      res.json({ success: true, message: "MFA disabled successfully" });
+      return res.json({ success: true, message: "MFA disabled successfully" });
     } catch (error) {
       console.error("MFA disable error:", error);
-      res.status(400).json({ message: "Failed to disable MFA" });
+      return res.status(400).json({ message: "Failed to disable MFA" });
     }
   });
   
@@ -3724,13 +3527,13 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      res.json({ 
+      return res.json({ 
         mfaEnabled: user.mfaEnabled,
         mfaMethod: user.mfaMethod,
         hasBackupCodes: user.mfaBackupCodes ? JSON.parse(user.mfaBackupCodes).length > 0 : false
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get MFA status" });
+      return res.status(400).json({ message: "Failed to get MFA status" });
     }
   });
 
@@ -3775,14 +3578,14 @@ export async function registerRoutes(
         details: "Biometric authentication enabled",
       });
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: "Biometric authentication enabled successfully",
         biometricEnabled: true
       });
     } catch (error) {
       console.error("Biometric enable error:", error);
-      res.status(400).json({ message: "Failed to enable biometric authentication" });
+      return res.status(400).json({ message: "Failed to enable biometric authentication" });
     }
   });
 
@@ -3823,14 +3626,14 @@ export async function registerRoutes(
         details: "Biometric authentication disabled",
       });
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: "Biometric authentication disabled successfully",
         biometricEnabled: false
       });
     } catch (error) {
       console.error("Biometric disable error:", error);
-      res.status(400).json({ message: "Failed to disable biometric authentication" });
+      return res.status(400).json({ message: "Failed to disable biometric authentication" });
     }
   });
 
@@ -3843,12 +3646,12 @@ export async function registerRoutes(
         return res.status(404).json({ message: "User not found" });
       }
       
-      res.json({ 
+      return res.json({ 
         biometricEnabled: user.biometricEnabled || false,
         hasDeviceId: !!user.biometricDeviceId
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get biometric status" });
+      return res.status(400).json({ message: "Failed to get biometric status" });
     }
   });
 
@@ -3901,14 +3704,14 @@ export async function registerRoutes(
       
       // Return user without password
       const { password: _, ...safeUser } = user;
-      res.json({ 
+      return res.json({ 
         success: true, 
         user: safeUser,
         message: "Biometric login successful"
       });
     } catch (error) {
       console.error("Biometric login error:", error);
-      res.status(400).json({ message: "Biometric login failed" });
+      return res.status(400).json({ message: "Biometric login failed" });
     }
   });
   
@@ -3949,7 +3752,7 @@ export async function registerRoutes(
         details: `Invitation ${emailResult.success ? 'sent' : 'failed'} to ${email} from ${senderName} for ${type} of ${amount}g gold`,
       });
       
-      res.json({ 
+      return res.json({ 
         userExists: false, 
         invitationSent: emailResult.success,
         message: emailResult.success 
@@ -3958,7 +3761,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Check and invite error:", error);
-      res.status(500).json({ message: "Failed to process request" });
+      return res.status(500).json({ message: "Failed to process request" });
     }
   });
   
@@ -4128,22 +3931,10 @@ export async function registerRoutes(
       
       const totalRequests = allTransactions.length + allDepositRequests.length;
       
-      // Get BNSL data
-      let activeBnslPlans = 0;
-      let bnslBaseLiability = 0;
-      let bnslMarginLiability = 0;
-      let pendingBnslTermRequests = 0;
-      try {
-        const allBnslPlans = await db.select().from(bnslPlans);
-        activeBnslPlans = allBnslPlans.filter(p => p.status === 'Active').length;
-        bnslBaseLiability = allBnslPlans.filter(p => p.status === 'Active').reduce((sum, p) => 
-          sum + parseFloat(p.baseAmountUsd || '0'), 0
-        );
-        bnslMarginLiability = allBnslPlans.filter(p => p.status === 'Active').reduce((sum, p) => 
-          sum + parseFloat(p.marginAmountUsd || '0'), 0
-        );
-        pendingBnslTermRequests = allBnslPlans.filter(p => p.status === 'Pending Termination').length;
-      } catch (e) { /* table may not exist */ }
+      const activeBnslPlans = 0;
+      const bnslBaseLiability = 0;
+      const bnslMarginLiability = 0;
+      const pendingBnslTermRequests = 0;
       
       // Get trade finance cases
       let openTradeCases = 0;
@@ -4357,282 +4148,62 @@ export async function registerRoutes(
       adminStatsCache = { data: responseData, timestamp: Date.now() };
       console.log(`[Admin Stats] Generated in ${Date.now() - startTime}ms`);
       
-      res.json(responseData);
+      return res.json(responseData);
     } catch (error) {
       console.error("Failed to get admin stats:", error);
-      res.status(400).json({ message: "Failed to get admin stats" });
+      return res.status(400).json({ message: "Failed to get admin stats" });
     }
   });
 
   // Admin Pending Counts for Sidebar Badges
   app.get("/api/admin/pending-counts", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
     try {
-      let kycSubmissions: any[] = [];
-      let allTransactions: any[] = [];
-      let allDepositRequests: any[] = [];
-      let allUsers: any[] = [];
-
-      try {
-        [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
-          storage.getAllKycSubmissions().catch(() => []),
-          storage.getAllTransactions().catch(() => []),
-          storage.getAllDepositRequests().catch(() => []),
-          storage.getAllUsers().catch(() => [])
-        ]);
-      } catch (e) {
-        console.error('[pending-counts] Core data fetch failed:', e);
-      }
-
-      // Count pending KYC from both kyc_submissions and users table
-      const pendingKycSubmissions = kycSubmissions.filter(k => k.status === 'In Progress' || k.status === 'Pending Review').length;
-      const pendingKycUsers = allUsers.filter(u => u.kycStatus === 'In Progress' || u.kycStatus === 'Pending Review').length;
+      const [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
+        storage.getAllKycSubmissions().catch(() => []),
+        storage.getAllTransactions().catch(() => []),
+        storage.getAllDepositRequests().catch(() => []),
+        storage.getAllUsers().catch(() => [])
+      ]);
+      const pendingKycSubmissions = kycSubmissions.filter((k: any) => k.status === 'In Progress' || k.status === 'Pending Review').length;
+      const pendingKycUsers = allUsers.filter((u: any) => u.kycStatus === 'In Progress' || u.kycStatus === 'Pending Review').length;
       const pendingKyc = Math.max(pendingKycSubmissions, pendingKycUsers);
-      const pendingTransactions = allTransactions.filter(tx => tx.status === 'Pending').length;
-      const pendingDeposits = allDepositRequests.filter(d => d.status === 'Pending' || d.status === 'Under Review').length;
-      
-      let pendingWithdrawals = 0;
-      let pendingVaultRequests = 0;
-      let pendingTradeCases = 0;
-      let pendingBnslRequests = 0;
-      let unreadChats = 0;
+      const pendingTransactions = allTransactions.filter((tx: any) => tx.status === 'Pending').length;
+      const pendingDeposits = allDepositRequests.filter((d: any) => d.status === 'Pending' || d.status === 'Under Review').length;
 
+      let pendingWithdrawals = 0, pendingTradeCases = 0, pendingAccountDeletions = 0, openAmlCases = 0;
       try {
         const allWithdrawals = await db.select().from(withdrawalRequests);
-        pendingWithdrawals = allWithdrawals.filter((w: any) => 
-          w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
-        ).length;
-      } catch (e) { /* table may not exist */ }
-
-      try {
-        const allVaultWithdrawals = await db.select().from(vaultWithdrawalRequests);
-        pendingVaultRequests = allVaultWithdrawals.filter((v: any) => 
-          v.status === 'Submitted' || v.status === 'Pending' || v.status === 'Processing'
-        ).length;
-      } catch (e) { /* table may not exist */ }
-
+        pendingWithdrawals = allWithdrawals.filter((w: any) => w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing').length;
+      } catch {}
       try {
         const allTrades = await db.select().from(tradeCases);
         pendingTradeCases = allTrades.filter((t: any) => t.status === 'pending_review' || t.status === 'open').length;
-      } catch (e) { /* table may not exist */ }
-
+      } catch {}
       try {
-        const allBnsl = await db.select().from(bnslPlans);
-        pendingBnslRequests = allBnsl.filter((b: any) => b.status === 'Pending Termination' || b.status === 'Pending').length;
-      } catch (e) { /* table may not exist */ }
-
-      try {
-        const allChats = await db.select().from(chatSessions);
-        unreadChats = allChats.filter((c: any) => c.status === 'active' || c.status === 'waiting').length;
-      } catch (e) { /* table may not exist */ }
-
-      let pendingCryptoPayments = 0;
-      let pendingBuyGold = 0;
-      let pendingPhysicalDeposits = 0;
-      let pendingAccountDeletions = 0;
-
-      try {
-        const allCrypto = await db.select().from(cryptoPaymentRequests);
-        pendingCryptoPayments = allCrypto.filter((c: any) => c.status === 'Pending' || c.status === 'Under Review').length;
-      } catch (e) { /* table may not exist */ }
-
-      try {
-        const allBuyGold = await db.select().from(buyGoldRequests);
-        pendingBuyGold = allBuyGold.filter((b: any) => b.status === 'Pending' || b.status === 'Under Review').length;
-      } catch (e) { /* table may not exist */ }
-
-      try {
-        const allPhysicalDeposits = await db.select().from(physicalGoldDeposits);
-        pendingPhysicalDeposits = allPhysicalDeposits.filter((p: any) => 
-          ["SUBMITTED", "UNDER_REVIEW", "RECEIVED", "INSPECTION", "NEGOTIATION", "AGREED", "READY_FOR_PAYMENT"].includes(p.status)
-        ).length;
-      } catch (e) { /* table may not exist */ }
-
-      try {
-        const allDeletionRequests = await db.select().from(accountDeletionRequests);
-        pendingAccountDeletions = allDeletionRequests.filter((d: any) => d.status === "Pending").length;
-      } catch (e) { /* table may not exist */ }
-
-      let openAmlCases = 0;
+        const allDeletionRequests = await storage.getAllAccountDeletionRequests();
+        pendingAccountDeletions = allDeletionRequests.filter((d: any) => d.status === 'Pending').length;
+      } catch {}
       try {
         const allAmlCases = await db.select().from(amlCases);
-        openAmlCases = allAmlCases.filter((c: any) => c.status === "Open" || c.status === "Under Investigation").length;
-      } catch (e) { /* table may not exist */ }
+        openAmlCases = allAmlCases.filter((c: any) => c.status === 'Open' || c.status === 'Under Investigation').length;
+      } catch {}
 
-        return res.json({
+      return res.json({
         pendingKyc,
         pendingTransactions,
         pendingDeposits,
         pendingWithdrawals,
-        pendingVaultRequests,
         pendingTradeCases,
-        pendingBnslRequests,
-        unreadChats,
-        pendingCryptoPayments,
-        pendingBuyGold,
-        pendingPhysicalDeposits,
         pendingAccountDeletions,
         openAmlCases
       });
     } catch (error) {
       console.error("Failed to get pending counts:", error);
-      res.status(400).json({ message: "Failed to get pending counts" });
+      return res.status(400).json({ message: "Failed to get pending counts" });
     }
   });
 
   // Gold Backing Report (Admin)
-  app.get("/api/admin/gold-backing-report", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const report = await storage.getGoldBackingReportEnhanced();
-      res.json(report);
-    } catch (error) {
-      console.error("Failed to get gold backing report:", error);
-      res.status(500).json({ message: "Failed to get gold backing report" });
-    }
-  });
-
-  // Enhanced Gold Backing Report with LGPW/FGPW segmentation (Admin)
-  app.get("/api/admin/gold-backing-report/enhanced", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const report = await storage.getGoldBackingReportEnhanced();
-      res.json(report);
-    } catch (error) {
-      console.error("Failed to get enhanced gold backing report:", error);
-      res.status(500).json({ message: "Failed to get enhanced gold backing report" });
-    }
-  });
-
-  // Gold Backing Drill-Down: FinaPay Users with Holdings
-  app.get("/api/admin/gold-backing/finapay-users", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const users = await storage.getUsersWithFinaPayHoldings();
-      res.json({ users });
-    } catch (error) {
-      console.error("Failed to get FinaPay users:", error);
-      res.status(500).json({ message: "Failed to get FinaPay users" });
-    }
-  });
-
-  // Gold Backing Drill-Down: BNSL Users with Holdings
-  app.get("/api/admin/gold-backing/bnsl-users", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const users = await storage.getUsersWithBnslHoldings();
-      res.json({ users });
-    } catch (error) {
-      console.error("Failed to get BNSL users:", error);
-      res.status(500).json({ message: "Failed to get BNSL users" });
-    }
-  });
-
-  // Gold Backing Drill-Down: Vault Holding Details
-  app.get("/api/admin/gold-backing/vault/:holdingId", ensureAdminAsync, requirePermission('view_vault'), async (req, res) => {
-    try {
-      const details = await storage.getVaultHoldingDetails(req.params.holdingId);
-      if (!details) {
-        return res.status(404).json({ message: "Vault holding not found" });
-      }
-      res.json(details);
-    } catch (error) {
-      console.error("Failed to get vault holding details:", error);
-      res.status(500).json({ message: "Failed to get vault holding details" });
-    }
-  });
-
-  // Gold Backing Drill-Down: Users by Vault Location
-  app.get("/api/admin/gold-backing/vault-location/:location", ensureAdminAsync, requirePermission('view_vault'), async (req, res) => {
-    try {
-      const users = await storage.getUsersByVaultLocation(decodeURIComponent(req.params.location));
-      res.json({ users });
-    } catch (error) {
-      console.error("Failed to get users by vault location:", error);
-      res.status(500).json({ message: "Failed to get users by vault location" });
-    }
-  });
-
-  // Gold Backing Drill-Down: Full User Financial Profile
-  app.get("/api/admin/gold-backing/user/:userId", ensureAdminAsync, requirePermission('view_vault', 'view_users'), async (req, res) => {
-    try {
-      const profile = await storage.getUserFinancialProfile(req.params.userId);
-      if (!profile) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json(profile);
-    } catch (error) {
-      console.error("Failed to get user financial profile:", error);
-      res.status(500).json({ message: "Failed to get user financial profile" });
-    }
-  });
-
-  // Gold Backing Report PDF Download
-  app.get("/api/admin/gold-backing-report/pdf", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
-    try {
-      const { generateGoldBackingReportPDF } = await import('./pdf-generator');
-      
-      const report = await storage.getGoldBackingReportEnhanced();
-      const finapayUsers = await storage.getUsersWithFinaPayHoldings();
-      const bnslUsers = await storage.getUsersWithBnslHoldings();
-      
-      const vaultHoldingsGrouped = report.physicalGold.holdings.reduce((acc: any, h: any) => {
-        const loc = h.vaultLocation || 'Unknown';
-        if (!acc[loc]) acc[loc] = { goldGrams: 0, count: 0 };
-        acc[loc].goldGrams += parseFloat(h.goldGrams) || 0;
-        acc[loc].count += 1;
-        return acc;
-      }, {});
-
-      const pdfData = {
-        summary: {
-          physicalGoldGrams: report.physicalGold.totalGrams,
-          customerLiabilitiesGrams: report.customerLiabilities.totalGrams,
-          backingRatio: report.backing?.overallRatio ?? 0,
-          surplus: report.backing?.overallSurplus ?? 0,
-          generatedAt: new Date().toISOString()
-        },
-        physicalGold: {
-          totalGrams: report.physicalGold.totalGrams,
-          holdings: Object.entries(vaultHoldingsGrouped).map(([loc, data]: [string, any]) => ({
-            vaultLocation: loc,
-            goldGrams: data.goldGrams,
-            holdingsCount: data.count
-          }))
-        },
-        customerLiabilities: {
-          totalGrams: report.customerLiabilities.totalGrams,
-          finapay: {
-            count: report.customerLiabilities.mpgw?.count ?? 0,
-            totalGrams: report.customerLiabilities.mpgw?.totalGrams ?? 0,
-            users: finapayUsers.map((u: any) => ({
-              name: `${u.firstName} ${u.lastName}`,
-              email: u.email,
-              goldGrams: parseFloat(u.goldGrams) || 0
-            }))
-          },
-          bnsl: {
-            count: report.customerLiabilities.bnsl?.count ?? 0,
-            availableGrams: report.customerLiabilities.bnsl?.availableGrams ?? 0,
-            lockedGrams: report.customerLiabilities.bnsl?.lockedGrams ?? 0,
-            users: bnslUsers.map((u: any) => ({
-              name: `${u.firstName} ${u.lastName}`,
-              email: u.email,
-              availableGrams: parseFloat(u.availableGoldGrams) || 0,
-              lockedGrams: parseFloat(u.lockedGoldGrams) || 0
-            }))
-          }
-        },
-        certificates: report.certificates
-      };
-
-      const pdfBuffer = await generateGoldBackingReportPDF(pdfData);
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="gold-backing-report-${format(new Date(), 'yyyy-MM-dd')}.pdf"`);
-      res.send(pdfBuffer);
-    } catch (error) {
-      console.error("Failed to generate gold backing report PDF:", error);
-      res.status(500).json({ message: "Failed to generate PDF report" });
-    }
-  });
-
-  // System Health Check (Admin)
   app.get("/api/admin/system-health", ensureAdminAsync, requirePermission('view_reports', 'manage_settings'), async (req, res) => {
     const startTime = process.hrtime();
     
@@ -4733,27 +4304,6 @@ export async function registerRoutes(
         });
       }
 
-      // Check Gold Price API
-      try {
-        const goldStatus = await getGoldPriceStatus();
-        const cachedUntil = goldStatus.cachedUntil;
-        const isStale = !cachedUntil || cachedUntil < new Date();
-        checks.push({
-          name: 'Gold Price API',
-          status: goldStatus.configured ? (isStale ? 'degraded' : 'healthy') : 'degraded',
-          lastChecked: new Date().toISOString(),
-          details: goldStatus.configured
-            ? `Provider: ${goldStatus.provider} | Cache expires: ${cachedUntil ? cachedUntil.toISOString() : 'N/A'} | API calls today: ${goldStatus.apiUsage?.callsToday ?? 0}`
-            : 'Gold API not configured (using fallback price)'
-        });
-      } catch (goldErr) {
-        checks.push({
-          name: 'Gold Price API',
-          status: 'degraded',
-          lastChecked: new Date().toISOString(),
-          details: 'Gold price API check failed'
-        });
-      }
       
       // Get recent errors from system logs
       let recentErrorCount = 0;
@@ -4814,7 +4364,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("System health check failed:", error);
-      res.status(500).json({ 
+      return res.status(500).json({ 
         health: {
           overall: 'unhealthy',
           checks: [],
@@ -4863,9 +4413,9 @@ export async function registerRoutes(
         return sanitized;
       }));
       
-      res.json({ users: enrichedUsers });
+      return res.json({ users: enrichedUsers });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get users" });
+      return res.status(400).json({ message: "Failed to get users" });
     }
   });
 
@@ -4895,10 +4445,10 @@ export async function registerRoutes(
         email: u.email,
         accountType: u.accountType || 'Personal'
       }));
-      res.json(userList);
+      return res.json(userList);
     } catch (error) {
       console.error("Failed to get users list:", error);
-      res.status(400).json({ message: "Failed to get users list" });
+      return res.status(400).json({ message: "Failed to get users list" });
     }
   });
   
@@ -4932,7 +4482,7 @@ export async function registerRoutes(
             idBackUrl: personalKyc.idBackUrl,
             passportUrl: personalKyc.passportUrl,
             addressProofUrl: personalKyc.addressProofUrl,
-            livenessCapture: personalKyc.selfieUrl,
+            livenessCapture: (personalKyc as any).selfieUrl,
           } as any;
         }
       }
@@ -4954,7 +4504,7 @@ export async function registerRoutes(
       // Get audit logs for this user
       const auditLogs = await storage.getEntityAuditLogs('user', user.id);
       
-      res.json({ 
+      return res.json({ 
         user: sanitizeUser(user),
         wallet,
         transactions,
@@ -4962,7 +4512,7 @@ export async function registerRoutes(
         auditLogs
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get user details" });
+      return res.status(400).json({ message: "Failed to get user details" });
     }
   });
   
@@ -4996,12 +4546,12 @@ export async function registerRoutes(
         details: "Admin manually verified user email",
       });
       
-      res.json({ 
+      return res.json({ 
         message: "User email verified by admin", 
         user: sanitizeUser(updatedUser!) 
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to verify user email" });
+      return res.status(400).json({ message: "Failed to verify user email" });
     }
   });
   
@@ -5028,12 +4578,12 @@ export async function registerRoutes(
         details: `User suspended. Reason: ${reason || 'Not specified'}`,
       });
       
-      res.json({ 
+      return res.json({ 
         message: "User suspended", 
         user: sanitizeUser(updatedUser!) 
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to suspend user" });
+      return res.status(400).json({ message: "Failed to suspend user" });
     }
   });
   
@@ -5060,12 +4610,12 @@ export async function registerRoutes(
         details: "User activated by admin",
       });
       
-      res.json({ 
+      return res.json({ 
         message: "User activated", 
         user: sanitizeUser(updatedUser!) 
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to activate user" });
+      return res.status(400).json({ message: "Failed to activate user" });
     }
   });
   
@@ -5102,10 +4652,10 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ employees: enrichedEmployees });
+      return res.json({ employees: enrichedEmployees });
     } catch (error) {
       console.error("Failed to get employees:", error);
-      res.status(400).json({ message: "Failed to get employees" });
+      return res.status(400).json({ message: "Failed to get employees" });
     }
   });
   
@@ -5119,7 +4669,7 @@ export async function registerRoutes(
       
       const user = employee.userId ? await storage.getUser(employee.userId) : null;
       
-      res.json({ 
+      return res.json({ 
         employee: {
           ...employee,
           user: user ? {
@@ -5132,7 +4682,7 @@ export async function registerRoutes(
         }
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get employee" });
+      return res.status(400).json({ message: "Failed to get employee" });
     }
   });
   
@@ -5145,9 +4695,9 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Employee not found for this user" });
       }
       
-      res.json({ employee });
+      return res.json({ employee });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get employee" });
+      return res.status(400).json({ message: "Failed to get employee" });
     }
   });
   
@@ -5208,13 +4758,13 @@ export async function registerRoutes(
         actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${employeeId} created with role ${role}`,
-        newData: JSON.stringify({ role, department, jobTitle, permissions }),
+        newValue: JSON.stringify({ role, department, jobTitle, permissions }),
       });
       
-      res.json({ employee });
+      return res.json({ employee });
     } catch (error) {
       console.error("Failed to create employee:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create employee" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create employee" });
     }
   });
   
@@ -5275,19 +4825,19 @@ export async function registerRoutes(
         actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} updated`,
-        previousData: JSON.stringify({
+        oldValue: JSON.stringify({
           role: existingEmployee.role,
           department: existingEmployee.department,
           jobTitle: existingEmployee.jobTitle,
           permissions: existingEmployee.permissions,
         }),
-        newData: JSON.stringify(updates),
+        newValue: JSON.stringify(updates),
       });
       
-      res.json({ employee });
+      return res.json({ employee });
     } catch (error) {
       console.error('[Employee Update Error]', error);
-      res.status(400).json({ message: "Failed to update employee", error: String(error) });
+      return res.status(400).json({ message: "Failed to update employee", error: String(error) });
     }
   });
   
@@ -5335,13 +4885,13 @@ export async function registerRoutes(
         actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} deactivated. Reason: ${reason || 'Not specified'}. Sessions invalidated.`,
-        previousData: JSON.stringify({ status: existingEmployee.status }),
-        newData: JSON.stringify({ status: 'inactive' }),
+        oldValue: JSON.stringify({ status: existingEmployee.status }),
+        newValue: JSON.stringify({ status: 'inactive' }),
       });
       
-      res.json({ message: "Employee deactivated and sessions invalidated", employee });
+      return res.json({ message: "Employee deactivated and sessions invalidated", employee });
     } catch (error) {
-      res.status(400).json({ message: "Failed to deactivate employee" });
+      return res.status(400).json({ message: "Failed to deactivate employee" });
     }
   });
   
@@ -5381,13 +4931,13 @@ export async function registerRoutes(
         actor: adminUser.id,
         actorRole: "admin",
         details: `Employee ${existingEmployee.employeeId} activated`,
-        previousData: JSON.stringify({ status: existingEmployee.status }),
-        newData: JSON.stringify({ status: 'active' }),
+        oldValue: JSON.stringify({ status: existingEmployee.status }),
+        newValue: JSON.stringify({ status: 'active' }),
       });
       
-      res.json({ message: "Employee activated", employee });
+      return res.json({ message: "Employee activated", employee });
     } catch (error) {
-      res.status(400).json({ message: "Failed to activate employee" });
+      return res.status(400).json({ message: "Failed to activate employee" });
     }
   });
   
@@ -5395,9 +4945,9 @@ export async function registerRoutes(
   app.get("/api/admin/role-permissions", ensureAdminAsync, requirePermission('manage_employees', 'manage_settings'), async (req, res) => {
     try {
       const permissions = await storage.getAllRolePermissions();
-      res.json({ permissions });
+      return res.json({ permissions });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get role permissions" });
+      return res.status(400).json({ message: "Failed to get role permissions" });
     }
   });
   
@@ -5431,10 +4981,10 @@ export async function registerRoutes(
         details: `Role ${role} permissions updated`,
       });
       
-      res.json({ permission: rolePermission });
+      return res.json({ permission: rolePermission });
     } catch (error) {
       console.error("Failed to update role permissions:", error);
-      res.status(400).json({ message: "Failed to update role permissions" });
+      return res.status(400).json({ message: "Failed to update role permissions" });
     }
   });
   
@@ -5446,10 +4996,10 @@ export async function registerRoutes(
   app.get("/api/admin/backups", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const backups = await listBackups();
-      res.json({ backups });
+      return res.json({ backups });
     } catch (error) {
       console.error("Failed to list backups:", error);
-      res.status(500).json({ message: "Failed to list backups" });
+      return res.status(500).json({ message: "Failed to list backups" });
     }
   });
   
@@ -5511,7 +5061,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to create backup:", error);
-      res.status(500).json({ message: "Failed to create backup" });
+      return res.status(500).json({ message: "Failed to create backup" });
     }
   });
   
@@ -5522,10 +5072,10 @@ export async function registerRoutes(
       if (!backup) {
         return res.status(404).json({ message: "Backup not found" });
       }
-      res.json({ backup });
+      return res.json({ backup });
     } catch (error) {
       console.error("Failed to get backup:", error);
-      res.status(500).json({ message: "Failed to get backup details" });
+      return res.status(500).json({ message: "Failed to get backup details" });
     }
   });
   
@@ -5533,10 +5083,10 @@ export async function registerRoutes(
   app.post("/api/admin/backups/:id/verify", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const result = await verifyBackup(req.params.id);
-      res.json({ valid: result.valid, error: result.error });
+      return res.json({ valid: result.valid, error: result.error });
     } catch (error) {
       console.error("Failed to verify backup:", error);
-      res.status(500).json({ message: "Failed to verify backup" });
+      return res.status(500).json({ message: "Failed to verify backup" });
     }
   });
   
@@ -5597,9 +5147,10 @@ export async function registerRoutes(
       res.setHeader('Content-Disposition', `attachment; filename="${fileResult.fileName}"`);
       res.setHeader('Content-Type', 'application/octet-stream');
       fileResult.stream.pipe(res);
+      return undefined;
     } catch (error) {
       console.error("Failed to download backup:", error);
-      res.status(500).json({ message: "Failed to download backup" });
+      return res.status(500).json({ message: "Failed to download backup" });
     }
   });
   
@@ -5652,7 +5203,7 @@ export async function registerRoutes(
         result.error,
         {
           preRestoreBackupId: result.preRestoreBackupId,
-          userCount: result.count,
+          userCount: result.userCount,
           transactionCount: result.transactionCount
         }
       );
@@ -5668,13 +5219,13 @@ export async function registerRoutes(
         message: "Database restored successfully",
         preRestoreBackupId: result.preRestoreBackupId,
         restoredFromBackupId: result.restoredFromBackupId,
-        userCount: result.count,
+        userCount: result.userCount,
         transactionCount: result.transactionCount,
         lastTransactionDate: result.lastTransactionDate
       });
     } catch (error) {
       console.error("Failed to restore backup:", error);
-      res.status(500).json({ message: "Failed to restore backup" });
+      return res.status(500).json({ message: "Failed to restore backup" });
     }
   });
   
@@ -5704,10 +5255,10 @@ export async function registerRoutes(
         return res.status(500).json({ message: result.error || "Delete failed" });
       }
       
-      res.json({ message: "Backup deleted successfully" });
+      return res.json({ message: "Backup deleted successfully" });
     } catch (error) {
       console.error("Failed to delete backup:", error);
-      res.status(500).json({ message: "Failed to delete backup" });
+      return res.status(500).json({ message: "Failed to delete backup" });
     }
   });
   
@@ -5716,10 +5267,10 @@ export async function registerRoutes(
     try {
       const limit = parseInt(req.query.limit as string) || 100;
       const logs = await getBackupAuditLogs(limit);
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
       console.error("Failed to get backup audit logs:", error);
-      res.status(500).json({ message: "Failed to get backup audit logs" });
+      return res.status(500).json({ message: "Failed to get backup audit logs" });
     }
   });
 
@@ -5749,9 +5300,9 @@ export async function registerRoutes(
         details: "KYC submitted",
       });
       
-      res.json({ submission });
+      return res.json({ submission });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
     }
   });
   
@@ -5837,9 +5388,9 @@ export async function registerRoutes(
         details: `User reset ${kycType} KYC submission for resubmission`,
       });
 
-      res.json({ success: true, message: "KYC reset successfully. You can now update and resubmit your verification." });
+      return res.json({ success: true, message: "KYC reset successfully. You can now update and resubmit your verification." });
     } catch (error) {
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to reset KYC" });
+      return res.status(500).json({ message: error instanceof Error ? error.message : "Failed to reset KYC" });
     }
   });
   // KYC Draft — server-side draft persistence (keyed by userId + submissionType)
@@ -5861,9 +5412,9 @@ export async function registerRoutes(
         const sla = corporate.updatedAt ? new Date(new Date(corporate.updatedAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null;
         return res.json({ referenceNumber: ref, slaDeadline: sla, kycType: 'corporate', status: corporate.status });
       }
-      res.json({ referenceNumber: null, slaDeadline: null });
+      return res.json({ referenceNumber: null, slaDeadline: null });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get KYC reference" });
+      return res.status(400).json({ message: "Failed to get KYC reference" });
     }
   });
 
@@ -5876,9 +5427,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "submissionType must be 'personal' or 'corporate'" });
       }
       const draft = await storage.getKycDraft(userId, submissionType);
-      res.json({ draft: draft || null });
+      return res.json({ draft: draft || null });
     } catch (err) {
-      res.status(500).json({ message: "Failed to fetch draft" });
+      return res.status(500).json({ message: "Failed to fetch draft" });
     }
   });
 
@@ -5899,9 +5450,9 @@ export async function registerRoutes(
         return res.status(413).json({ message: "draftData payload exceeds 256 KB limit" });
       }
       const draft = await storage.upsertKycDraft(userId, submissionType, draftData);
-      res.json({ draft });
+      return res.json({ draft });
     } catch (err) {
-      res.status(500).json({ message: "Failed to save draft" });
+      return res.status(500).json({ message: "Failed to save draft" });
     }
   });
 
@@ -5914,9 +5465,9 @@ export async function registerRoutes(
         return res.status(400).json({ message: "submissionType must be 'personal' or 'corporate'" });
       }
       await storage.deleteKycDraft(userId, submissionType);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (err) {
-      res.status(500).json({ message: "Failed to delete draft" });
+      return res.status(500).json({ message: "Failed to delete draft" });
     }
   });
 
@@ -6017,9 +5568,9 @@ export async function registerRoutes(
   app.get("/api/kyc/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const submission = await storage.getKycSubmission(req.params.userId);
-      res.json({ submission });
+      return res.json({ submission });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get KYC submission" });
+      return res.status(400).json({ message: "Failed to get KYC submission" });
     }
   });
   
@@ -6151,14 +5702,14 @@ export async function registerRoutes(
               read: false,
             });
 
-            WingoldUserSyncService.onKycApproved(submission.userId).catch(err => console.error("[WingoldSync] KYC approval sync failed:", err));
+            /* WingoldUserSyncService removed */
             import('./push-notifications').then(({ sendFinancialPushNotification }) => {
               sendFinancialPushNotification(submission.userId, 'kyc_approved', {}).catch(err => console.error('[Push] KYC approved notification failed:', err));
             });
 
-            credentialIssuer.issueKycCredential(user).then(credential => {
+            (credentialIssuer.issueKycCredential as any)(user).then((credential: any) => {
               console.log("[VC] Verifiable credential issued on KYC approval for user:", submission.userId, "credentialId:", credential?.credentialId);
-            }).catch(err => console.error("[VC] Failed to issue verifiable credential on KYC approval:", err));
+            }).catch((err: any) => console.error("[VC] Failed to issue verifiable credential on KYC approval:", err));
           } else if (req.body.status === 'Rejected') {
             const rejectionSummary = Array.isArray(sectionReviewsInput)
               ? sectionReviewsInput.filter((s: any) => s.status === 'rejected').map((s: any) => `${s.section}: ${s.freeText || s.reasonCode || 'Not specified'}`).join('; ')
@@ -6184,7 +5735,7 @@ export async function registerRoutes(
               sendFinancialPushNotification(submission.userId, 'kyc_rejected', { reason: rejectionSummary }).catch(err => console.error('[Push] KYC rejected notification failed:', err));
             });
 
-            WingoldUserSyncService.onKycRejected(submission.userId).catch(err => console.error("[WingoldSync] KYC rejection sync failed:", err));
+            /* WingoldUserSyncService removed */
           } else if (req.body.status === 'Changes Requested') {
             const rejectedSections = Array.isArray(sectionReviewsInput)
               ? sectionReviewsInput.filter((s: any) => s.status === 'rejected')
@@ -6218,16 +5769,16 @@ export async function registerRoutes(
           data: { status: req.body.status, submissionId: req.params.id },
           timestamp: new Date().toISOString(),
           syncVersion: Date.now(),
-        });
+        } as any);
 
         return res.json({ submission, emailSent, kycType });
       }
       
-      res.json({ submission, kycType });
+      return res.json({ submission, kycType });
     } catch (error) {
       console.error("KYC update error:", error);
       const message = error instanceof Error ? error.message : "Failed to update KYC";
-      res.status(400).json({ message });
+      return res.status(400).json({ message });
     }
   });
 
@@ -6235,9 +5786,9 @@ export async function registerRoutes(
   app.get("/api/kyc/reason-codes", ensureAuthenticated, async (_req, res) => {
     try {
       const codes = await storage.getKycReasonCodes();
-      res.json({ reasonCodes: codes });
+      return res.json({ reasonCodes: codes });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch reason codes" });
+      return res.status(500).json({ message: "Failed to fetch reason codes" });
     }
   });
 
@@ -6245,9 +5796,9 @@ export async function registerRoutes(
   app.get("/api/admin/kyc/:id/versions", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const versions = await storage.getKycVersions(req.params.id);
-      res.json({ versions });
+      return res.json({ versions });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch KYC versions" });
+      return res.status(500).json({ message: "Failed to fetch KYC versions" });
     }
   });
 
@@ -6259,9 +5810,9 @@ export async function registerRoutes(
         return res.json({ reviews: [] });
       }
       const reviews = await storage.getKycSectionReviews(latestVersion.id);
-      res.json({ reviews });
+      return res.json({ reviews });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch section reviews" });
+      return res.status(500).json({ message: "Failed to fetch section reviews" });
     }
   });
 
@@ -6269,9 +5820,9 @@ export async function registerRoutes(
   app.get("/api/admin/kyc/:id/decisions", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const decisions = await storage.getKycDecisionRecords(req.params.id);
-      res.json({ decisions });
+      return res.json({ decisions });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch decision records" });
+      return res.status(500).json({ message: "Failed to fetch decision records" });
     }
   });
 
@@ -6328,9 +5879,9 @@ export async function registerRoutes(
         details: `KYC review claimed by ${adminUser?.firstName || 'admin'} ${adminUser?.lastName || ''}`,
       });
 
-      res.json({ submission, kycType, message: "Review claimed successfully" });
+      return res.json({ submission, kycType, message: "Review claimed successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to claim review" });
+      return res.status(400).json({ message: "Failed to claim review" });
     }
   });
 
@@ -6369,9 +5920,9 @@ export async function registerRoutes(
         await storage.updateKycVersion(latestVersion.id, { status: 'submitted' as any });
       }
 
-      res.json({ submission, kycType, message: "Review released" });
+      return res.json({ submission, kycType, message: "Review released" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to release review" });
+      return res.status(400).json({ message: "Failed to release review" });
     }
   });
 
@@ -6578,10 +6129,10 @@ export async function registerRoutes(
         severity: 'info',
       });
       
-      res.json({ submission, slaDeadline });
+      return res.json({ submission, slaDeadline });
     } catch (error) {
       console.error("Tiered KYC submission error:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "KYC submission failed" });
     }
   });
 
@@ -6614,9 +6165,9 @@ export async function registerRoutes(
         details: `KYC escalated to ${escalatedTo}: ${escalationReason}`,
       });
       
-      res.json({ submission });
+      return res.json({ submission });
     } catch (error) {
-      res.status(400).json({ message: "Failed to escalate KYC" });
+      return res.status(400).json({ message: "Failed to escalate KYC" });
     }
   });
 
@@ -6683,10 +6234,10 @@ export async function registerRoutes(
         details: `AML screening completed - Status: Clear`,
       });
       
-      res.json({ screeningResults, status: 'Clear' });
+      return res.json({ screeningResults, status: 'Clear' });
     } catch (error) {
       console.error("AML screening error:", error);
-      res.status(400).json({ message: "Failed to run AML screening" });
+      return res.status(400).json({ message: "Failed to run AML screening" });
     }
   });
 
@@ -6705,9 +6256,9 @@ export async function registerRoutes(
           isBreached: s.slaDeadline ? new Date(s.slaDeadline) < now : false,
         }));
       
-      res.json({ slaAlerts });
+      return res.json({ slaAlerts });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get SLA alerts" });
+      return res.status(400).json({ message: "Failed to get SLA alerts" });
     }
   });
 
@@ -6719,9 +6270,9 @@ export async function registerRoutes(
   app.get("/api/risk-profile/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const profile = await storage.getOrCreateUserRiskProfile(req.params.userId);
-      res.json({ profile });
+      return res.json({ profile });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get risk profile" });
+      return res.status(400).json({ message: "Failed to get risk profile" });
     }
   });
 
@@ -6729,9 +6280,9 @@ export async function registerRoutes(
   app.get("/api/admin/risk-profiles", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const profiles = await storage.getAllUserRiskProfiles();
-      res.json({ profiles });
+      return res.json({ profiles });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get risk profiles" });
+      return res.status(400).json({ message: "Failed to get risk profiles" });
     }
   });
 
@@ -6739,9 +6290,9 @@ export async function registerRoutes(
   app.get("/api/admin/risk-profiles/high-risk", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const profiles = await storage.getHighRiskProfiles();
-      res.json({ profiles });
+      return res.json({ profiles });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get high-risk profiles" });
+      return res.status(400).json({ message: "Failed to get high-risk profiles" });
     }
   });
 
@@ -6770,9 +6321,9 @@ export async function registerRoutes(
         details: `Risk profile updated - Level: ${updates.riskLevel || profile.riskLevel}`,
       });
       
-      res.json({ profile });
+      return res.json({ profile });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update risk profile" });
+      return res.status(400).json({ message: "Failed to update risk profile" });
     }
   });
 
@@ -6798,10 +6349,10 @@ export async function registerRoutes(
         details: `Risk score calculated - Score: ${profile.overallRiskScore}, Level: ${profile.riskLevel}`,
       });
       
-      res.json({ profile });
+      return res.json({ profile });
     } catch (error) {
       console.error("Risk calculation error:", error);
-      res.status(400).json({ message: "Failed to calculate risk score" });
+      return res.status(400).json({ message: "Failed to calculate risk score" });
     }
   });
 
@@ -6816,10 +6367,10 @@ export async function registerRoutes(
       }
       
       const riskScore = await calculateUserRiskScore(userId);
-      res.json({ riskScore });
+      return res.json({ riskScore });
     } catch (error) {
       console.error("Risk preview error:", error);
-      res.status(400).json({ message: "Failed to preview risk score" });
+      return res.status(400).json({ message: "Failed to preview risk score" });
     }
   });
 
@@ -6833,10 +6384,10 @@ export async function registerRoutes(
       }
       
       const result = await checkTransactionAgainstLimits(userId, amountUsd);
-      res.json(result);
+      return res.json(result);
     } catch (error) {
       console.error("Limit check error:", error);
-      res.status(400).json({ message: "Failed to check transaction limits" });
+      return res.status(400).json({ message: "Failed to check transaction limits" });
     }
   });
 
@@ -6848,7 +6399,7 @@ export async function registerRoutes(
         elevated: ELEVATED_RISK_COUNTRIES
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get country risk data" });
+      return res.status(400).json({ message: "Failed to get country risk data" });
     }
   });
 
@@ -6870,10 +6421,10 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ processed: results.length, results });
+      return res.json({ processed: results.length, results });
     } catch (error) {
       console.error("Batch calculation error:", error);
-      res.status(400).json({ message: "Failed to batch calculate risk scores" });
+      return res.status(400).json({ message: "Failed to batch calculate risk scores" });
     }
   });
 
@@ -6885,9 +6436,9 @@ export async function registerRoutes(
   app.get("/api/screening-logs/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const logs = await storage.getUserAmlScreeningLogs(req.params.userId);
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get screening logs" });
+      return res.status(400).json({ message: "Failed to get screening logs" });
     }
   });
 
@@ -6895,9 +6446,9 @@ export async function registerRoutes(
   app.get("/api/admin/screening-logs", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const logs = await storage.getAllAmlScreeningLogs();
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get screening logs" });
+      return res.status(400).json({ message: "Failed to get screening logs" });
     }
   });
 
@@ -6918,9 +6469,9 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Screening log not found" });
       }
       
-      res.json({ log });
+      return res.json({ log });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update screening log" });
+      return res.status(400).json({ message: "Failed to update screening log" });
     }
   });
 
@@ -6932,9 +6483,9 @@ export async function registerRoutes(
   app.get("/api/admin/aml-cases", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const cases = await storage.getAllAmlCases();
-      res.json({ cases });
+      return res.json({ cases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get AML cases" });
+      return res.status(400).json({ message: "Failed to get AML cases" });
     }
   });
 
@@ -6942,9 +6493,9 @@ export async function registerRoutes(
   app.get("/api/admin/aml-cases/open", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const cases = await storage.getOpenAmlCases();
-      res.json({ cases });
+      return res.json({ cases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get open AML cases" });
+      return res.status(400).json({ message: "Failed to get open AML cases" });
     }
   });
 
@@ -6959,9 +6510,9 @@ export async function registerRoutes(
       const activities = await storage.getAmlCaseActivities(req.params.id);
       const user = await storage.getUser(amlCase.userId);
       
-      res.json({ case: amlCase, activities, user });
+      return res.json({ case: amlCase, activities, user });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get AML case" });
+      return res.status(400).json({ message: "Failed to get AML case" });
     }
   });
 
@@ -7001,10 +6552,10 @@ export async function registerRoutes(
         details: `AML case ${caseNumber} created`,
       });
       
-      res.json({ case: amlCase });
+      return res.json({ case: amlCase });
     } catch (error) {
       console.error("Create AML case error:", error);
-      res.status(400).json({ message: "Failed to create AML case" });
+      return res.status(400).json({ message: "Failed to create AML case" });
     }
   });
 
@@ -7075,9 +6626,9 @@ export async function registerRoutes(
         details: `AML case updated`,
       });
       
-      res.json({ case: amlCase });
+      return res.json({ case: amlCase });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update AML case" });
+      return res.status(400).json({ message: "Failed to update AML case" });
     }
   });
 
@@ -7111,9 +6662,9 @@ export async function registerRoutes(
         performedAt: new Date(),
       });
       
-      res.json({ message: "Note added successfully" });
+      return res.json({ message: "Note added successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to add note" });
+      return res.status(400).json({ message: "Failed to add note" });
     }
   });
 
@@ -7125,9 +6676,9 @@ export async function registerRoutes(
   app.get("/api/admin/aml-rules", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const rules = await storage.getAllAmlMonitoringRules();
-      res.json({ rules });
+      return res.json({ rules });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get AML rules" });
+      return res.status(400).json({ message: "Failed to get AML rules" });
     }
   });
 
@@ -7135,9 +6686,9 @@ export async function registerRoutes(
   app.get("/api/admin/aml-rules/active", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const rules = await storage.getActiveAmlMonitoringRules();
-      res.json({ rules });
+      return res.json({ rules });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get active AML rules" });
+      return res.status(400).json({ message: "Failed to get active AML rules" });
     }
   });
 
@@ -7161,10 +6712,10 @@ export async function registerRoutes(
         details: `AML rule created: ${rule.ruleName}`,
       });
       
-      res.json({ rule });
+      return res.json({ rule });
     } catch (error) {
       console.error("Create AML rule error:", error);
-      res.status(400).json({ message: "Failed to create AML rule" });
+      return res.status(400).json({ message: "Failed to create AML rule" });
     }
   });
 
@@ -7189,9 +6740,9 @@ export async function registerRoutes(
         details: `AML rule updated: ${rule.ruleName}`,
       });
       
-      res.json({ rule });
+      return res.json({ rule });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update AML rule" });
+      return res.status(400).json({ message: "Failed to update AML rule" });
     }
   });
 
@@ -7216,9 +6767,9 @@ export async function registerRoutes(
         details: "AML rule deleted",
       });
       
-      res.json({ message: "Rule deleted successfully" });
+      return res.json({ message: "Rule deleted successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete AML rule" });
+      return res.status(400).json({ message: "Failed to delete AML rule" });
     }
   });
 
@@ -7227,10 +6778,10 @@ export async function registerRoutes(
     try {
       await seedDefaultAmlRules();
       const rules = await storage.getAllAmlMonitoringRules();
-      res.json({ message: `Seeded default AML rules`, rules });
+      return res.json({ message: `Seeded default AML rules`, rules });
     } catch (error) {
       console.error("Seed AML rules error:", error);
-      res.status(400).json({ message: "Failed to seed AML rules" });
+      return res.status(400).json({ message: "Failed to seed AML rules" });
     }
   });
 
@@ -7249,10 +6800,10 @@ export async function registerRoutes(
       }
       
       const result = await evaluateTransaction(transaction, userId);
-      res.json(result);
+      return res.json(result);
     } catch (error) {
       console.error("AML evaluation error:", error);
-      res.status(400).json({ message: "Failed to evaluate transaction" });
+      return res.status(400).json({ message: "Failed to evaluate transaction" });
     }
   });
 
@@ -7261,10 +6812,10 @@ export async function registerRoutes(
     try {
       await seedDefaultAmlRules();
       const rules = await storage.getAllAmlMonitoringRules();
-      res.json({ success: true, message: `Seeded default AML rules`, rules });
+      return res.json({ success: true, message: `Seeded default AML rules`, rules });
     } catch (error) {
       console.error("Seed AML rules error:", error);
-      res.status(400).json({ success: false, message: "Failed to seed AML rules" });
+      return res.status(400).json({ success: false, message: "Failed to seed AML rules" });
     }
   });
 
@@ -7272,19 +6823,19 @@ export async function registerRoutes(
   app.get("/api/admin/aml/alerts", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const alerts = await getAmlAlerts();
-      res.json(alerts);
+      return res.json(alerts);
     } catch (error) {
       console.error("AML alerts error:", error);
-      res.status(400).json({ message: "Failed to get AML alerts" });
+      return res.status(400).json({ message: "Failed to get AML alerts" });
     }
   });
 
   // Get default AML rule templates
   app.get("/api/admin/aml-rules/templates", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
-      res.json({ templates: DEFAULT_AML_RULES });
+      return res.json({ templates: DEFAULT_AML_RULES });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get rule templates" });
+      return res.status(400).json({ message: "Failed to get rule templates" });
     }
   });
 
@@ -7297,10 +6848,10 @@ export async function registerRoutes(
     try {
       const daysAhead = parseInt(req.query.days as string) || 30;
       const expiringDocs = await getExpiringDocuments(daysAhead);
-      res.json({ expiringDocuments: expiringDocs });
+      return res.json({ expiringDocuments: expiringDocs });
     } catch (error) {
       console.error("Document expiry check error:", error);
-      res.status(400).json({ message: "Failed to get expiring documents" });
+      return res.status(400).json({ message: "Failed to get expiring documents" });
     }
   });
 
@@ -7308,10 +6859,10 @@ export async function registerRoutes(
   app.get("/api/admin/document-expiry/stats", ensureAdminAsync, requirePermission('view_kyc'), async (req, res) => {
     try {
       const stats = await getDocumentExpiryStats();
-      res.json(stats);
+      return res.json(stats);
     } catch (error) {
       console.error("Document expiry stats error:", error);
-      res.status(400).json({ message: "Failed to get expiry statistics" });
+      return res.status(400).json({ message: "Failed to get expiry statistics" });
     }
   });
 
@@ -7319,13 +6870,13 @@ export async function registerRoutes(
   app.post("/api/admin/document-expiry/send-reminders", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const result = await sendDocumentExpiryReminders();
-      res.json({ 
+      return res.json({ 
         message: `Sent ${result.sent} reminders`,
         ...result 
       });
     } catch (error) {
       console.error("Document expiry reminder error:", error);
-      res.status(400).json({ message: "Failed to send reminders" });
+      return res.status(400).json({ message: "Failed to send reminders" });
     }
   });
   
@@ -7334,2885 +6885,13 @@ export async function registerRoutes(
   // ============================================================================
   
   // Get user wallet - PROTECTED: requires matching session
-  app.get("/api/wallet/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const wallet = await storage.getWallet(req.params.userId);
-      if (!wallet) {
-        return res.status(404).json({ message: "Wallet not found" });
-      }
-      res.json({ wallet });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get wallet" });
-    }
-  });
-  
-  // Update wallet - REMOVED FOR SECURITY
-  // Direct wallet modification is a critical security risk.
-  // All wallet updates must go through proper transaction flows
-  // with admin approval (deposits, purchases, transfers, etc.)
-  // app.patch("/api/wallet/:id") - INTENTIONALLY REMOVED
-
-  // FinaCard - Gold-backed card wallet
-  app.get("/api/finacard/balance/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const wallet = await storage.getWallet(req.params.userId);
-      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
-      res.json({ 
-        finacardGoldGrams: wallet.finacardGoldGrams || '0',
-        walletGoldGrams: wallet.goldGrams || '0'
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get FinaCard balance" });
-    }
-  });
-
-  app.get("/api/finacard/transfers/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const transfers = await db.select().from(finacardTransfers)
-        .where(eq(finacardTransfers.userId, req.params.userId))
-        .orderBy(desc(finacardTransfers.createdAt))
-        .limit(50);
-      res.json({ transfers });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get FinaCard transfers" });
-    }
-  });
-
-  app.post("/api/finacard/fund", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-      
-      const { goldGrams } = req.body;
-      const amount = parseFloat(goldGrams);
-      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
-      if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
-
-      const wallet = await storage.getWallet(userId);
-      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
-
-      const available = parseFloat(wallet.goldGrams || '0');
-      if (amount > available) return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
-
-      const price = await getGoldPricePerGram() || 0;
-      const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
-
-      // SECURITY: Atomic conditional UPDATE prevents concurrent fund-double-spend (TOCTOU race).
-      try {
-        await db.transaction(async (tx) => {
-          const debited = await tx.update(wallets)
-            .set({
-              goldGrams: sql`${wallets.goldGrams} - ${amount.toFixed(6)}`,
-              finacardGoldGrams: sql`${wallets.finacardGoldGrams} + ${amount.toFixed(6)}`,
-              updatedAt: new Date()
-            })
-            .where(and(
-              eq(wallets.userId, userId),
-              sql`CAST(${wallets.goldGrams} AS NUMERIC) >= ${amount}`,
-            ))
-            .returning({ id: wallets.id });
-          if (debited.length === 0) {
-            throw new Error('INSUFFICIENT_FINAPAY_BALANCE');
-          }
-
-          await tx.insert(finacardTransfers).values({
-            userId,
-            type: 'fund',
-            goldGrams: amount.toFixed(6),
-            goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
-            usdEquivalent: usdEquiv,
-          });
-        });
-      } catch (txErr: any) {
-        if (txErr?.message === 'INSUFFICIENT_FINAPAY_BALANCE') {
-          return res.status(400).json({ message: "Insufficient gold balance in FinaPay wallet" });
-        }
-        throw txErr;
-      }
-
-      const updatedWallet = await storage.getWallet(userId);
-      res.json({ 
-        success: true,
-        message: `${amount.toFixed(4)}g gold transferred to FinaCard`,
-        finacardGoldGrams: updatedWallet?.finacardGoldGrams || '0',
-        walletGoldGrams: updatedWallet?.goldGrams || '0'
-      });
-    } catch (error: any) {
-      console.error('[FinaCard] Fund error:', error);
-      res.status(500).json({ message: "Failed to fund FinaCard" });
-    }
-  });
-
-  app.post("/api/finacard/withdraw", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
-      const { goldGrams } = req.body;
-      const amount = parseFloat(goldGrams);
-      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
-      if (amount < 0.001) return res.status(400).json({ message: "Minimum transfer is 0.001g" });
-
-      const wallet = await storage.getWallet(userId);
-      if (!wallet) return res.status(404).json({ message: "Wallet not found" });
-
-      const finacardBalance = parseFloat(wallet.finacardGoldGrams || '0');
-      if (amount > finacardBalance) return res.status(400).json({ message: "Insufficient FinaCard balance" });
-
-      const price = await getGoldPricePerGram() || 0;
-      const usdEquiv = price > 0 ? (amount * price).toFixed(2) : null;
-
-      // SECURITY: Atomic conditional UPDATE prevents concurrent FinaCard-withdraw double-spend.
-      try {
-        await db.transaction(async (tx) => {
-          const debited = await tx.update(wallets)
-            .set({
-              goldGrams: sql`${wallets.goldGrams} + ${amount.toFixed(6)}`,
-              finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${amount.toFixed(6)}`,
-              updatedAt: new Date()
-            })
-            .where(and(
-              eq(wallets.userId, userId),
-              sql`CAST(${wallets.finacardGoldGrams} AS NUMERIC) >= ${amount}`,
-            ))
-            .returning({ id: wallets.id });
-          if (debited.length === 0) {
-            throw new Error('INSUFFICIENT_FINACARD_BALANCE');
-          }
-
-          await tx.insert(finacardTransfers).values({
-            userId,
-            type: 'withdraw',
-            goldGrams: amount.toFixed(6),
-            goldPriceUsdPerGram: price > 0 ? price.toFixed(6) : null,
-            usdEquivalent: usdEquiv,
-          });
-        });
-      } catch (txErr: any) {
-        if (txErr?.message === 'INSUFFICIENT_FINACARD_BALANCE') {
-          return res.status(400).json({ message: "Insufficient FinaCard balance" });
-        }
-        throw txErr;
-      }
-
-      const updatedWallet = await storage.getWallet(userId);
-      res.json({
-        success: true,
-        message: `${amount.toFixed(4)}g gold returned to FinaPay wallet`,
-        finacardGoldGrams: updatedWallet?.finacardGoldGrams || '0',
-        walletGoldGrams: updatedWallet?.goldGrams || '0'
-      });
-    } catch (error: any) {
-      console.error('[FinaCard] Withdraw error:', error);
-      res.status(500).json({ message: "Failed to withdraw from FinaCard" });
-    }
-  });
-
-  // FinaCard - Card Application & Management
-  app.post("/api/finacard/apply", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
-      const { cardType } = req.body;
-      const type = cardType === 'physical' ? 'physical' : 'virtual';
-
-      const existing = await db.select().from(finacardCards)
-        .where(and(
-          eq(finacardCards.userId, userId),
-          inArray(finacardCards.cardStatus, ['applied', 'under_review', 'approved', 'active'])
-        ))
-        .limit(1);
-
-      if (existing.length > 0) {
-        return res.status(400).json({ message: "You already have an active or pending card application" });
-      }
-
-      const last4 = String(Math.floor(1000 + Math.random() * 9000));
-      const now = new Date();
-      const expiryMonth = now.getMonth() + 1;
-      const expiryYear = now.getFullYear() + 3;
-
-      const [card] = await db.insert(finacardCards).values({
-        userId,
-        cardType: type,
-        cardStatus: 'applied',
-        last4Digits: last4,
-        expiryMonth,
-        expiryYear,
-      }).returning();
-
-      res.json({ success: true, message: "Card application submitted successfully", card });
-    } catch (error: any) {
-      console.error('[FinaCard] Apply error:', error);
-      res.status(500).json({ message: "Failed to submit card application" });
-    }
-  });
-
-  app.get("/api/finacard/card/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const cards = await db.select().from(finacardCards)
-        .where(eq(finacardCards.userId, req.params.userId))
-        .orderBy(desc(finacardCards.appliedAt));
-      
-      const activeCard = cards.find(c => ['active', 'approved', 'applied', 'under_review'].includes(c.cardStatus));
-      res.json({ card: activeCard || null, allCards: cards });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get card details" });
-    }
-  });
-
-  app.post("/api/finacard/activate", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
-      const { cardId } = req.body;
-
-      let card;
-      if (cardId) {
-        const [found] = await db.select().from(finacardCards)
-          .where(and(
-            eq(finacardCards.id, cardId),
-            eq(finacardCards.userId, userId),
-            eq(finacardCards.cardStatus, 'approved')
-          ))
-          .limit(1);
-        card = found;
-      } else {
-        const [found] = await db.select().from(finacardCards)
-          .where(and(
-            eq(finacardCards.userId, userId),
-            eq(finacardCards.cardStatus, 'approved')
-          ))
-          .limit(1);
-        card = found;
-      }
-
-      if (!card) return res.status(404).json({ message: "No approved card found to activate" });
-
-      const [updated] = await db.update(finacardCards)
-        .set({ cardStatus: 'active', activatedAt: new Date(), issuedAt: new Date() })
-        .where(eq(finacardCards.id, card.id))
-        .returning();
-
-      res.json({ success: true, message: "Card activated successfully", card: updated });
-    } catch (error: any) {
-      console.error('[FinaCard] Activate error:', error);
-      res.status(500).json({ message: "Failed to activate card" });
-    }
-  });
-
-  app.get("/api/finacard/spending/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const spending = await db.select().from(finacardSpending)
-        .where(eq(finacardSpending.userId, req.params.userId))
-        .orderBy(desc(finacardSpending.createdAt))
-        .limit(50);
-      res.json({ spending });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get spending history" });
-    }
-  });
-
-  app.post("/api/finacard/spend", ensureAuthenticated, checkMaintenanceMode, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) return res.status(401).json({ message: "Not authenticated" });
-
-      const { merchantName, merchantCategory, merchantCountry, amountLocal, currencyLocal } = req.body;
-      
-      if (!merchantName || !amountLocal) return res.status(400).json({ message: "Merchant name and amount are required" });
-      
-      const amount = parseFloat(amountLocal);
-      if (!amount || amount <= 0) return res.status(400).json({ message: "Invalid amount" });
-
-      const [card] = await db.select().from(finacardCards)
-        .where(and(
-          eq(finacardCards.userId, userId),
-          eq(finacardCards.cardStatus, 'active')
-        ))
-        .limit(1);
-
-      if (!card) return res.status(400).json({ message: "No active card found. Please activate your card first." });
-      if (card.isFrozen) return res.status(400).json({ message: "Your card is currently frozen" });
-
-      const priceData = await getGoldPrice().catch(() => ({ pricePerGram: 0, source: 'fallback' }));
-      const price = priceData.pricePerGram;
-      if (price <= 0) return res.status(400).json({ message: "Unable to determine gold price. Please try again." });
-
-      const currency = currencyLocal || 'USD';
-      let usdAmount = amount;
-      let fxRate = null;
-      
-      const fxRates: Record<string, number> = { USD: 1, AED: 0.2723, EUR: 1.08, GBP: 1.27, CHF: 1.12, SAR: 0.2667 };
-      if (currency !== 'USD') {
-        const rate = fxRates[currency];
-        if (!rate) return res.status(400).json({ message: `Unsupported currency: ${currency}` });
-        usdAmount = amount * rate;
-        fxRate = rate;
-      }
-
-      const goldGramsNeeded = parseFloat((usdAmount / price).toFixed(6));
-
-      const result = await db.transaction(async (tx) => {
-        const [updated] = await tx.update(wallets)
-          .set({
-            finacardGoldGrams: sql`${wallets.finacardGoldGrams} - ${goldGramsNeeded.toFixed(6)}`,
-            updatedAt: new Date()
-          })
-          .where(and(
-            eq(wallets.userId, userId),
-            sql`${wallets.finacardGoldGrams} >= ${goldGramsNeeded.toFixed(6)}`
-          ))
-          .returning();
-
-        if (!updated) {
-          throw new Error('INSUFFICIENT_BALANCE');
-        }
-
-        await tx.insert(finacardSpending).values({
-          userId,
-          cardId: card.id,
-          merchantName,
-          merchantCategory: merchantCategory || null,
-          merchantCountry: merchantCountry || null,
-          amountLocal: amount.toFixed(2),
-          currencyLocal: currency,
-          goldGramsDeducted: goldGramsNeeded.toFixed(6),
-          goldPriceAtTime: price.toFixed(6),
-          usdEquivalent: usdAmount.toFixed(2),
-          fxRate: fxRate ? fxRate.toFixed(6) : null,
-          fxFeeGrams: '0',
-        });
-
-        return updated;
-      });
-
-      res.json({
-        success: true,
-        message: `Payment of ${currency} ${amount.toFixed(2)} at ${merchantName} successful`,
-        goldDeducted: goldGramsNeeded,
-        finacardGoldGrams: result?.finacardGoldGrams || '0',
-      });
-    } catch (error: any) {
-      if (error.message === 'INSUFFICIENT_BALANCE') {
-        return res.status(400).json({ message: "Insufficient card balance for this transaction" });
-      }
-      console.error('[FinaCard] Spend error:', error);
-      res.status(500).json({ message: "Failed to process card payment" });
-    }
-  });
-
-  // FinaCard Admin Routes
-  app.get("/api/admin/finacard/applications", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { status } = req.query;
-      let query = db.select({
-        card: finacardCards,
-        user: {
-          id: users.id,
-          firstName: users.firstName,
-          lastName: users.lastName,
-          email: users.email,
-        }
-      }).from(finacardCards)
-        .innerJoin(users, eq(finacardCards.userId, users.id))
-        .orderBy(desc(finacardCards.appliedAt));
-
-      if (status && status !== 'all') {
-        query = query.where(eq(finacardCards.cardStatus, status as any)) as any;
-      }
-
-      const results = await query;
-      res.json({ applications: results });
-    } catch (error: any) {
-      console.error('[FinaCard Admin] List error:', error);
-      res.status(500).json({ message: "Failed to list card applications" });
-    }
-  });
-
-  app.post("/api/admin/finacard/approve/:cardId", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { cardId } = req.params;
-      const adminId = (req as any).adminUser?.id || req.session.userId;
-
-      const [card] = await db.select().from(finacardCards).where(eq(finacardCards.id, cardId)).limit(1);
-      if (!card) return res.status(404).json({ message: "Card application not found" });
-      if (!['applied', 'under_review'].includes(card.cardStatus)) {
-        return res.status(400).json({ message: `Cannot approve card with status: ${card.cardStatus}` });
-      }
-
-      const [updated] = await db.update(finacardCards)
-        .set({
-          cardStatus: 'approved',
-          reviewedAt: new Date(),
-          reviewedBy: adminId,
-          adminNotes: req.body.notes || null,
-        })
-        .where(eq(finacardCards.id, cardId))
-        .returning();
-
-      res.json({ success: true, message: "Card application approved", card: updated });
-    } catch (error: any) {
-      console.error('[FinaCard Admin] Approve error:', error);
-      res.status(500).json({ message: "Failed to approve card application" });
-    }
-  });
-
-  app.post("/api/admin/finacard/reject/:cardId", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { cardId } = req.params;
-      const adminId = (req as any).adminUser?.id || req.session.userId;
-      const { reason } = req.body;
-
-      const [card] = await db.select().from(finacardCards).where(eq(finacardCards.id, cardId)).limit(1);
-      if (!card) return res.status(404).json({ message: "Card application not found" });
-      if (!['applied', 'under_review', 'approved'].includes(card.cardStatus)) {
-        return res.status(400).json({ message: `Cannot reject card with status: ${card.cardStatus}` });
-      }
-
-      const [updated] = await db.update(finacardCards)
-        .set({
-          cardStatus: 'cancelled',
-          reviewedAt: new Date(),
-          reviewedBy: adminId,
-          adminNotes: reason || 'Rejected by admin',
-          cancelledAt: new Date(),
-        })
-        .where(eq(finacardCards.id, cardId))
-        .returning();
-
-      res.json({ success: true, message: "Card application rejected", card: updated });
-    } catch (error: any) {
-      console.error('[FinaCard Admin] Reject error:', error);
-      res.status(500).json({ message: "Failed to reject card application" });
-    }
-  });
-
-  // Create transaction - all transactions start as Pending and require admin approval
-  app.post("/api/transactions", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
-    try {
-      const transactionData = insertTransactionSchema.parse(req.body);
-      
-      // Validate platform limits for Buy/Sell transactions
-      if (transactionData.type === 'Buy' || transactionData.type === 'Sell') {
-        const user = await storage.getUser(transactionData.userId);
-        if (!user) {
-          return res.status(404).json({ message: "User not found" });
-        }
-        
-        const amountUsd = parseFloat(transactionData.amountUsd || "0");
-        const limitResult = await platformLimits.validateFullTransactionLimits(
-          amountUsd,
-          user,
-          transactionData.type as "Buy" | "Sell"
-        );
-        
-        if (!limitResult.valid) {
-          return res.status(400).json({ 
-            message: limitResult.message,
-            limit: limitResult.limit,
-            current: limitResult.current
-          });
-        }
-      }
-      
-      // Require PIN verification for Sell transactions
-      if (transactionData.type === 'Sell') {
-        const pinToken = req.headers['x-pin-token'] as string | undefined;
-        const userId = transactionData.userId;
-        
-        if (!pinToken) {
-          return res.status(403).json({ message: 'PIN verification required for this transaction' });
-        }
-        
-        const pinValidation = await validatePinToken(pinToken, 'sell_gold');
-        if (!pinValidation.valid) {
-          return res.status(403).json({ message: pinValidation.message || 'Invalid PIN token' });
-        }
-        
-        if (pinValidation.userId !== userId) {
-          return res.status(403).json({ message: 'PIN token does not match user' });
-        }
-      }
-      
-      // Force all transactions to start as Pending (requires admin authorization)
-      const transaction = await storage.createTransaction({
-        ...transactionData,
-        status: 'Pending'
-      });
-      
-      // Create audit log
-      await storage.createAuditLog({
-        entityType: "transaction",
-        entityId: transaction.id,
-        actionType: "create",
-        actor: transactionData.userId,
-        actorRole: "user",
-        details: `Transaction submitted for approval - Type: ${transactionData.type}, Gold: ${transaction.amountGold || 0}g, USD: $${transaction.amountUsd || 0}`,
-      });
-      
-      res.json({ transaction, message: 'Transaction submitted for admin approval' });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Transaction failed" });
-    }
-  });
-  
-  // Get user transactions - PROTECTED: requires matching session
-  app.get("/api/transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const [transactions, fcTransfers] = await Promise.all([
-        storage.getUserTransactions(req.params.userId),
-        db.select().from(finacardTransfers)
-          .where(eq(finacardTransfers.userId, req.params.userId))
-          .orderBy(desc(finacardTransfers.createdAt))
-          .catch(() => [])
-      ]);
-
-      const finacardTxns = fcTransfers.map((t: any) => ({
-        id: `fc-${t.id}`,
-        type: t.type === 'fund' ? 'FinaCard Fund' : 'FinaCard Return',
-        status: 'Completed',
-        amountGold: t.goldGrams,
-        amountUsd: t.usdEquivalent || '0',
-        goldGrams: t.goldGrams,
-        createdAt: t.createdAt,
-        description: t.type === 'fund' ? 'Transferred gold to FinaCard' : 'Returned gold from FinaCard',
-        sourceModule: 'FinaCard',
-      }));
-
-      res.json({ transactions: [...transactions, ...finacardTxns].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get transactions" });
-    }
-  });
-
-  // Paginated user transactions endpoint for better performance
-  app.get("/api/transactions/:userId/paginated", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { status, type, limit = '20', offset = '0' } = req.query;
-      const result = await storage.getUserTransactionsPaginated(req.params.userId, {
-        status: status as string | undefined,
-        type: type as string | undefined,
-        limit: parseInt(limit as string, 10),
-        offset: parseInt(offset as string, 10),
-      });
-      res.json(result);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get transactions" });
-    }
-  });
-
-  // ============================================================================
-  // UNIFIED TRANSACTIONS API (All Modules)
-  // ============================================================================
-  
-  // Get unified transactions with advanced filtering - PROTECTED
-  app.get("/api/unified-transactions/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const userId = req.params.userId;
-      const { module, type, status, fromDate, toDate, limit = '50', cursor } = req.query;
-      
-      // Fetch all transaction types from all modules
-      const [
-        regularTransactions,
-        depositRequests,
-        cryptoPayments,
-        bnslPlans,
-        bnslPayouts,
-        peerTransfers,
-        vaultDepositReqs,
-        vaultWithdrawalReqs,
-        tradeCases,
-        userCertificates,
-        buyGoldRequests,
-        unifiedTallyTxns,
-        physicalDeposits
-      ] = await Promise.all([
-        storage.getUserTransactions(userId),
-        storage.getUserDepositRequests(userId),
-        storage.getUserCryptoPaymentRequests(userId),
-        storage.getUserBnslPlans(userId),
-        storage.getUserBnslPayouts(userId),
-        storage.getPeerTransfers(userId),
-        storage.getUserVaultDepositRequests(userId),
-        storage.getUserVaultWithdrawalRequests(userId),
-        storage.getUserTradeCases(userId),
-        storage.getUserCertificates(userId),
-        storage.getUserBuyGoldRequests(userId),
-        storage.getUserUnifiedTallyTransactions(userId),
-        storage.getUserPhysicalDeposits(userId)
-      ]);
-      
-      // Normalize all transactions to unified format
-      let unifiedTransactions: any[] = [];
-      
-      // Get transaction IDs that have certificates - these will be shown as certificate entries, not Buy
-      const transactionIdsWithCerts = new Set(
-        userCertificates
-          .filter(c => c.transactionId && (c.type === 'Digital Ownership' || c.type === 'Physical Storage'))
-          .map(c => c.transactionId)
-      );
-      
-      // Regular transactions (FinaPay) - exclude transactions that have certificates or are vault deposits
-      regularTransactions
-        .filter(tx => {
-          // Skip Buy, Deposit, and Receive transactions that have certificates (they're shown as ADD_FUNDS from certificate)
-          if ((tx.type === 'Buy' || tx.type === 'Deposit' || tx.type === 'Receive') && transactionIdsWithCerts.has(tx.id)) {
-            return false;
-          }
-          // Skip Deposit transactions that are linked to vault deposits (they're shown separately as vault_deposit entries)
-          if (tx.type === 'Deposit' && tx.description?.includes('FinaVault')) {
-            return false;
-          }
-          // Skip transactions created by unified-tally - they are shown via unified_tally_transactions
-          if (tx.sourceModule === 'unified-tally') {
-            return false;
-          }
-          return true;
-        })
-        .forEach(tx => {
-        unifiedTransactions.push({
-          id: tx.id,
-          userId: tx.userId,
-          module: tx.sourceModule || 'finapay',
-          actionType: tx.type,
-          grams: tx.amountGold,
-          usd: tx.amountUsd,
-          usdPerGram: tx.goldPriceUsdPerGram,
-          status: tx.status,
-          referenceId: tx.referenceId,
-          description: tx.description,
-          counterpartyUserId: tx.recipientUserId,
-          createdAt: tx.createdAt,
-          completedAt: tx.completedAt,
-          sourceType: 'transaction',
-          goldWalletType: tx.goldWalletType || null
-        });
-      });
-      
-      // Deposit requests (exclude approved/confirmed - they already have a transaction record)
-      // Also exclude Crypto payment method deposits - they are shown via crypto_payment_requests
-      depositRequests
-        .filter(dep => dep.status !== 'Confirmed' && dep.status !== 'Approved' && dep.paymentMethod !== 'Crypto')
-        .forEach(dep => {
-          unifiedTransactions.push({
-            id: dep.id,
-            userId: dep.userId,
-            module: 'finapay',
-            actionType: 'ADD_FUNDS',
-            grams: dep.expectedGoldGrams || null,
-            usd: dep.amountUsd,
-            usdPerGram: dep.priceSnapshotUsdPerGram || null,
-            status: dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
-            referenceId: dep.referenceNumber,
-            description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
-            counterpartyUserId: null,
-            createdAt: dep.createdAt,
-            completedAt: dep.processedAt,
-            sourceType: 'deposit_request'
-          });
-        });
-      
-      // Crypto payments (exclude approved/credited - they already have a transaction record)
-      cryptoPayments
-        .filter(cp => cp.status !== 'Approved' && cp.status !== 'Credited')
-        .forEach(cp => {
-          unifiedTransactions.push({
-            id: cp.id,
-            userId: cp.userId,
-            module: 'finapay',
-            actionType: 'ADD_FUNDS',
-            grams: cp.goldGrams,
-            usd: cp.amountUsd,
-            usdPerGram: cp.goldPriceUsdPerGram,
-            status: cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
-            referenceId: cp.transactionHash,
-            description: `Crypto Deposit - ${cp.cryptoCurrency}`,
-            counterpartyUserId: null,
-            createdAt: cp.createdAt,
-            completedAt: cp.verifiedAt,
-            sourceType: 'crypto_payment'
-          });
-        });
-      
-      // BNSL plans
-      bnslPlans.forEach(plan => {
-        unifiedTransactions.push({
-          id: plan.id,
-          userId: plan.userId,
-          module: 'bnsl',
-          actionType: 'LOCK',
-          grams: plan.goldGrams,
-          usd: plan.purchaseValueUsd,
-          usdPerGram: plan.purchasePriceUsdPerGram,
-          status: plan.status === 'Completed' ? 'COMPLETED' : plan.status === 'Active' ? 'LOCKED' : 'PENDING',
-          referenceId: plan.planNumber,
-          description: `BNSL Plan - ${plan.termMonths} months`,
-          counterpartyUserId: null,
-          createdAt: plan.createdAt,
-          completedAt: plan.maturityDate,
-          sourceType: 'bnsl_plan'
-        });
-      });
-      
-      // BNSL payouts
-      bnslPayouts.forEach(payout => {
-        unifiedTransactions.push({
-          id: payout.id,
-          userId: payout.userId,
-          module: 'bnsl',
-          actionType: 'UNLOCK',
-          grams: payout.goldGrams,
-          usd: payout.payoutAmountUsd,
-          usdPerGram: null,
-          status: payout.status === 'Paid' ? 'COMPLETED' : payout.status === 'Failed' ? 'FAILED' : 'PENDING',
-          referenceId: payout.planId,
-          description: `BNSL Payout - ${payout.payoutType}`,
-          counterpartyUserId: null,
-          createdAt: payout.createdAt,
-          completedAt: payout.paidAt,
-          sourceType: 'bnsl_payout'
-        });
-      });
-      
-      // P2P transfers - only include pending ones (completed transfers are already in regularTransactions)
-      // Completed peer transfers create transaction records, so filter them out to avoid duplicates
-      peerTransfers
-        .filter(transfer => transfer.status !== 'Completed')
-        .forEach(transfer => {
-          const isSender = transfer.senderId === userId;
-          unifiedTransactions.push({
-            id: transfer.id,
-            userId: userId,
-            module: 'finapay',
-            actionType: isSender ? 'SEND' : 'RECEIVE',
-            grams: transfer.amountGold,
-            usd: transfer.amountUsd,
-            usdPerGram: transfer.goldPriceUsdPerGram,
-            status: transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
-            referenceId: transfer.referenceNumber,
-            description: transfer.memo || (isSender ? `Sending to ${transfer.recipientIdentifier}` : `Receiving from sender`),
-            counterpartyUserId: isSender ? transfer.recipientId : transfer.senderId,
-            createdAt: transfer.createdAt,
-            completedAt: transfer.respondedAt,
-            sourceType: 'peer_transfer'
-          });
-        });
-      
-      // Vault deposits - physical gold deposited and converted to digital
-      vaultDepositReqs.forEach(dep => {
-        const goldWeight = dep.verifiedWeightGrams || dep.totalDeclaredWeightGrams || dep.goldGrams;
-        const isStored = dep.status === 'Stored' || dep.status === 'Approved';
-        unifiedTransactions.push({
-          id: dep.id,
-          userId: dep.userId,
-          module: 'finavault',
-          actionType: 'DEPOSIT_PHYSICAL_GOLD',
-          grams: goldWeight,
-          usd: null,
-          usdPerGram: null,
-          status: isStored ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: dep.referenceNumber,
-          description: isStored 
-            ? `Physical gold ${goldWeight}g deposited & converted to digital` 
-            : `Vault Deposit - ${dep.vaultLocation || 'Pending'}`,
-          counterpartyUserId: null,
-          createdAt: dep.createdAt,
-          completedAt: dep.processedAt || dep.storedAt,
-          sourceType: 'vault_deposit'
-        });
-      });
-      
-      // Physical gold deposits (from physical_deposit_requests table)
-      physicalDeposits.forEach((dep: any) => {
-        const isApproved = dep.status === 'APPROVED';
-        const goldWeight = dep.finalCreditedGrams || dep.totalDeclaredWeightGrams || '0';
-        unifiedTransactions.push({
-          id: dep.id,
-          userId: dep.userId,
-          module: 'finavault',
-          actionType: 'DEPOSIT_PHYSICAL_GOLD',
-          grams: goldWeight,
-          usd: null,
-          usdPerGram: dep.goldPriceAtApproval || null,
-          status: isApproved ? 'COMPLETED' : dep.status === 'REJECTED' ? 'FAILED' : 'PENDING',
-          referenceId: dep.referenceNumber,
-          description: isApproved 
-            ? `Physical gold ${parseFloat(goldWeight).toFixed(4)}g deposited` 
-            : `Physical Deposit - ${dep.status}`,
-          counterpartyUserId: null,
-          createdAt: dep.createdAt,
-          completedAt: dep.approvedAt,
-          sourceType: 'physical_deposit',
-          goldWalletType: 'LGPW'
-        });
-      });
-      
-      // Vault withdrawals
-      vaultWithdrawalReqs.forEach(wd => {
-        unifiedTransactions.push({
-          id: wd.id,
-          userId: wd.userId,
-          module: 'finavault',
-          actionType: 'UNLOCK',
-          grams: wd.goldGrams,
-          usd: null,
-          usdPerGram: null,
-          status: wd.status === 'Completed' || wd.status === 'Approved' ? 'COMPLETED' : wd.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: wd.referenceNumber,
-          description: `Vault Withdrawal - ${wd.deliveryMethod}`,
-          counterpartyUserId: null,
-          createdAt: wd.createdAt,
-          completedAt: wd.processedAt,
-          sourceType: 'vault_withdrawal'
-        });
-      });
-      
-      // FinaBridge trade cases
-      tradeCases.forEach(tc => {
-        const statusMap: Record<string, string> = {
-          'Completed': 'COMPLETED',
-          'Approved': 'COMPLETED',
-          'Rejected': 'FAILED',
-          'Cancelled': 'FAILED'
-        };
-        unifiedTransactions.push({
-          id: tc.id,
-          userId: tc.userId,
-          module: 'finabridge',
-          actionType: tc.tradeType?.toUpperCase() || 'TRADE',
-          grams: dep.expectedGoldGrams || null,
-          usd: tc.amount,
-          usdPerGram: null,
-          status: statusMap[tc.status] || 'PENDING',
-          referenceId: tc.referenceNumber,
-          description: `Trade Finance - ${tc.tradeType || 'Trade'} (${tc.productCategory || 'General'})`,
-          counterpartyUserId: null,
-          createdAt: tc.createdAt,
-          completedAt: tc.updatedAt,
-          sourceType: 'trade_case'
-        });
-      });
-      
-      // DESIGN: Certificates are EXCLUDED from transaction list
-      // Certificates are documentation of ownership, NOT financial transactions.
-      // The actual transactions are in: unified_tally_transactions, transactions table, trade_cases.
-      // Including certificates here caused double-entry issues (same gold shown twice).
-      // Users can view certificates separately in FinaVault > Certificates section.
-      
-      // Buy Gold Bar requests (Wingold) - exclude 'Credited' since those have transaction records
-      buyGoldRequests
-        .filter(bg => bg.status !== 'Credited')
-        .forEach(bg => {
-          unifiedTransactions.push({
-            id: bg.id,
-            userId: bg.userId,
-            module: 'finapay',
-            actionType: 'BUY_GOLD_BAR',
-            grams: bg.goldGrams,
-            usd: bg.amountUsd,
-            usdPerGram: bg.goldPriceAtTime,
-            status: bg.status === 'Rejected' ? 'FAILED' : 'PENDING',
-            referenceId: bg.wingoldReferenceId,
-            description: `Buy Gold Bar (Wingold) - ${bg.status}`,
-            counterpartyUserId: null,
-            createdAt: bg.createdAt,
-            completedAt: bg.reviewedAt,
-            sourceType: 'buy_gold_request'
-          });
-        });
-      // Unified Gold Tally transactions - show completed deposits from the new unified tally system
-      unifiedTallyTxns
-        .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
-        .forEach(ut => {
-          const goldGrams = parseFloat(ut.goldCreditedG || ut.physicalGoldAllocatedG || ut.goldEquivalentG || '0');
-          const usdAmount = parseFloat(ut.depositAmount || '0');
-          const goldRate = parseFloat(ut.goldRateValue || '0');
-          unifiedTransactions.push({
-            id: ut.id,
-            userId: ut.userId,
-            module: 'finapay',
-            actionType: 'ADD_FUNDS',
-            grams: goldGrams,
-            usd: usdAmount,
-            usdPerGram: goldRate,
-            status: 'COMPLETED',
-            referenceId: ut.txnId,
-            description: `${ut.sourceMethod} deposit - ${ut.walletType} wallet`,
-            counterpartyUserId: null,
-            createdAt: ut.createdAt,
-            completedAt: ut.approvedAt,
-            sourceType: 'unified_tally',
-            goldWalletType: ut.walletType
-          });
-        });
-
-      // Apply filters
-      if (module && module !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);
-      }
-      if (type && type !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.actionType === type);
-      }
-      if (status && status !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.status === status);
-      }
-      if (fromDate) {
-        const from = new Date(fromDate as string);
-        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) >= from);
-      }
-      if (toDate) {
-        const to = new Date(toDate as string);
-        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
-      }
-      
-      // Sort by date descending
-      unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      // Calculate totals
-      const totals = {
-        totalGrams: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.grams) || 0), 0),
-        totalUSD: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.usd) || 0), 0),
-        count: unifiedTransactions.length
-      };
-      
-      // Apply pagination
-      const limitNum = parseInt(limit as string) || 50;
-      const startIndex = cursor ? parseInt(cursor as string) : 0;
-      const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
-      const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
-      
-        return res.json({
-        transactions: paginatedTransactions,
-        nextCursor,
-        totals
-      });
-    } catch (error) {
-      console.error('Unified transactions error:', error);
-      res.status(400).json({ message: "Failed to get unified transactions" });
-    }
-  });
-  
-  // Admin: Get all unified transactions
-  app.get("/api/admin/unified-transactions", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
-    try {
-      const { module, type, status, userId, fromDate, toDate, limit = '100', cursor } = req.query;
-      
-      // Get all users for enrichment
-      const allUsers = await storage.getAllUsers();
-      const userMap = new Map(allUsers.map(u => [u.id, u]));
-      
-      // Fetch all transaction sources
-      const [
-        allTransactions,
-        allDepositRequests,
-        allCryptoPayments,
-        allBnslPlans,
-        allBnslPayouts,
-        allPeerTransfers,
-        allTradeCases
-      ] = await Promise.all([
-        storage.getAllTransactions(),
-        storage.getAllDepositRequests(),
-        storage.getAllCryptoPaymentRequests(),
-        storage.getAllBnslPlans(),
-        storage.getAllBnslPayouts(),
-        storage.getAllPeerTransfers(),
-        storage.getAllTradeCases()
-      ]);
-      
-      let unifiedTransactions: any[] = [];
-      
-      // Process all transactions similar to user endpoint
-      allTransactions.forEach(tx => {
-        const user = userMap.get(tx.userId);
-        unifiedTransactions.push({
-          id: tx.id,
-          userId: tx.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: tx.sourceModule || 'finapay',
-          actionType: tx.type,
-          grams: tx.amountGold,
-          usd: tx.amountUsd,
-          usdPerGram: tx.goldPriceUsdPerGram,
-          status: tx.status,
-          referenceId: tx.referenceId,
-          description: tx.description,
-          createdAt: tx.createdAt,
-          completedAt: tx.completedAt,
-          sourceType: 'transaction',
-          goldWalletType: tx.goldWalletType || null
-        });
-      });
-      
-      allDepositRequests.forEach(dep => {
-        const user = userMap.get(dep.userId);
-        unifiedTransactions.push({
-          id: dep.id,
-          userId: dep.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: 'finapay',
-          actionType: 'ADD_FUNDS',
-          grams: dep.expectedGoldGrams || null,
-          usd: dep.amountUsd,
-          usdPerGram: dep.priceSnapshotUsdPerGram || null,
-          status: dep.status === 'Confirmed' ? 'COMPLETED' : dep.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: dep.referenceNumber,
-          description: `Bank Deposit - ${dep.senderBankName || 'Bank Transfer'}`,
-          createdAt: dep.createdAt,
-          completedAt: dep.processedAt,
-          sourceType: 'deposit_request'
-        });
-      });
-      
-      allCryptoPayments.forEach(cp => {
-        const user = userMap.get(cp.userId);
-        unifiedTransactions.push({
-          id: cp.id,
-          userId: cp.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: 'finapay',
-          actionType: 'ADD_FUNDS',
-          grams: cp.goldGrams,
-          usd: cp.amountUsd,
-          usdPerGram: cp.goldPriceUsdPerGram,
-          status: cp.status === 'Approved' ? 'COMPLETED' : cp.status === 'Rejected' ? 'FAILED' : 'PENDING',
-          referenceId: cp.transactionHash,
-          description: `Crypto Deposit - ${cp.cryptoCurrency}`,
-          createdAt: cp.createdAt,
-          completedAt: cp.verifiedAt,
-          sourceType: 'crypto_payment'
-        });
-      });
-      
-      allBnslPlans.forEach(plan => {
-        const user = userMap.get(plan.userId);
-        unifiedTransactions.push({
-          id: plan.id,
-          userId: plan.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: 'bnsl',
-          actionType: 'LOCK',
-          grams: plan.goldGrams,
-          usd: plan.purchaseValueUsd,
-          usdPerGram: plan.purchasePriceUsdPerGram,
-          status: plan.status === 'Completed' ? 'COMPLETED' : plan.status === 'Active' ? 'LOCKED' : 'PENDING',
-          referenceId: plan.planNumber,
-          description: `BNSL Plan - ${plan.termMonths} months`,
-          createdAt: plan.createdAt,
-          completedAt: plan.maturityDate,
-          sourceType: 'bnsl_plan'
-        });
-      });
-      
-      allBnslPayouts.forEach(payout => {
-        const user = userMap.get(payout.userId);
-        unifiedTransactions.push({
-          id: payout.id,
-          userId: payout.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: 'bnsl',
-          actionType: 'UNLOCK',
-          grams: payout.goldGrams,
-          usd: payout.payoutAmountUsd,
-          usdPerGram: null,
-          status: payout.status === 'Paid' ? 'COMPLETED' : payout.status === 'Failed' ? 'FAILED' : 'PENDING',
-          referenceId: payout.planId,
-          description: `BNSL Payout - ${payout.payoutType}`,
-          createdAt: payout.createdAt,
-          completedAt: payout.paidAt,
-          sourceType: 'bnsl_payout'
-        });
-      });
-      
-      // P2P transfers - only pending (completed ones already have transaction records)
-      allPeerTransfers
-        .filter(transfer => transfer.status !== 'Completed')
-        .forEach(transfer => {
-          const sender = userMap.get(transfer.senderId);
-          const recipient = userMap.get(transfer.recipientId || '');
-          unifiedTransactions.push({
-            id: transfer.id,
-            userId: transfer.senderId,
-            userName: sender ? `${sender.firstName} ${sender.lastName}` : 'Unknown',
-            userEmail: sender?.email || 'Unknown',
-            recipientName: recipient ? `${recipient.firstName} ${recipient.lastName}` : transfer.recipientIdentifier,
-            module: 'finapay',
-            actionType: 'SEND',
-            grams: transfer.amountGold,
-            usd: transfer.amountUsd,
-            usdPerGram: transfer.goldPriceUsdPerGram,
-            status: transfer.status === 'Failed' ? 'FAILED' : 'PENDING',
-            referenceId: transfer.referenceNumber,
-            description: transfer.memo || `Transfer to ${transfer.recipientIdentifier}`,
-            createdAt: transfer.createdAt,
-            completedAt: transfer.respondedAt,
-            sourceType: 'peer_transfer'
-          });
-        });
-      
-      // FinaBridge trade cases
-      allTradeCases.forEach(tc => {
-        const user = userMap.get(tc.userId);
-        const statusMap: Record<string, string> = {
-          'Completed': 'COMPLETED',
-          'Approved': 'COMPLETED',
-          'Rejected': 'FAILED',
-          'Cancelled': 'FAILED'
-        };
-        unifiedTransactions.push({
-          id: tc.id,
-          userId: tc.userId,
-          userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-          userEmail: user?.email || 'Unknown',
-          module: 'finabridge',
-          actionType: tc.tradeType?.toUpperCase() || 'TRADE',
-          grams: dep.expectedGoldGrams || null,
-          usd: tc.amount,
-          usdPerGram: null,
-          status: statusMap[tc.status] || 'PENDING',
-          referenceId: tc.referenceNumber,
-          description: `Trade Finance - ${tc.tradeType || 'Trade'} (${tc.productCategory || 'General'})`,
-          createdAt: tc.createdAt,
-          completedAt: tc.updatedAt,
-          sourceType: 'trade_case'
-        });
-      });
-      // Unified Gold Tally transactions - show completed deposits from the new unified tally system
-      unifiedTallyTxns
-        .filter(ut => ut.status === 'COMPLETED' || ut.status === 'CREDITED')
-        .forEach(ut => {
-          const goldGrams = parseFloat(ut.goldCreditedG || ut.physicalGoldAllocatedG || ut.goldEquivalentG || '0');
-          const usdAmount = parseFloat(ut.depositAmount || '0');
-          const goldRate = parseFloat(ut.goldRateValue || '0');
-          unifiedTransactions.push({
-            id: ut.id,
-            userId: ut.userId,
-            module: 'finapay',
-            actionType: 'ADD_FUNDS',
-            grams: goldGrams,
-            usd: usdAmount,
-            usdPerGram: goldRate,
-            status: 'COMPLETED',
-            referenceId: ut.txnId,
-            description: `${ut.sourceMethod} deposit - ${ut.walletType} wallet`,
-            counterpartyUserId: null,
-            createdAt: ut.createdAt,
-            completedAt: ut.approvedAt,
-            sourceType: 'unified_tally',
-            goldWalletType: ut.walletType
-          });
-        });
-
-      // Apply filters
-      if (module && module !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.module === module);
-      }
-      if (type && type !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.actionType === type);
-      }
-      if (status && status !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.status === status);
-      }
-      if (userId && userId !== 'all') {
-        unifiedTransactions = unifiedTransactions.filter(tx => tx.userId === userId);
-      }
-      if (fromDate) {
-        const from = new Date(fromDate as string);
-        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) >= from);
-      }
-      if (toDate) {
-        const to = new Date(toDate as string);
-        unifiedTransactions = unifiedTransactions.filter(tx => new Date(tx.createdAt) <= to);
-      }
-      
-      // Sort by date descending
-      unifiedTransactions.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      // Calculate totals
-      const totals = {
-        totalGrams: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.grams) || 0), 0),
-        totalUSD: unifiedTransactions.reduce((sum, tx) => sum + (parseFloat(tx.usd) || 0), 0),
-        count: unifiedTransactions.length
-      };
-      
-      // Apply pagination
-      const limitNum = parseInt(limit as string) || 100;
-      const startIndex = cursor ? parseInt(cursor as string) : 0;
-      const paginatedTransactions = unifiedTransactions.slice(startIndex, startIndex + limitNum);
-      const nextCursor = startIndex + limitNum < unifiedTransactions.length ? (startIndex + limitNum).toString() : null;
-      
-        return res.json({
-        transactions: paginatedTransactions,
-        nextCursor,
-        totals
-      });
-    } catch (error) {
-      console.error('Admin unified transactions error:', error);
-      res.status(400).json({ message: "Failed to get admin unified transactions" });
-    }
-  });
-  
-  // Update transaction status (basic update without processing)
-  app.patch("/api/transactions/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const transaction = await storage.updateTransaction(req.params.id, req.body);
-      if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
-      }
-      res.json({ transaction });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to update transaction" });
-    }
-  });
-  
-  // Admin: Approve transaction - processes wallet/vault updates and generates certificates
-  app.post("/api/admin/transactions/:id/approve", ensureAdminAsync, requirePermission('manage_transactions'), async (req, res) => {
-    try {
-      const { sourceTable } = req.body;
-      
-      // Handle Buy Gold Bar requests from buyGoldRequests table
-      if (sourceTable === 'buyGoldRequests') {
-        try {
-          const [buyGoldReq] = await db.select().from(buyGoldRequests).where(eq(buyGoldRequests.id, req.params.id));
-          if (!buyGoldReq) {
-            return res.status(404).json({ message: "Buy Gold Bar request not found" });
-          }
-          if (buyGoldReq.status !== 'Pending' && buyGoldReq.status !== 'Under Review') {
-            return res.status(400).json({ message: "Only pending requests can be approved" });
-          }
-          
-          // Get admin-provided gold amount and price from request body
-          const { goldGrams: adminGoldGrams, goldPricePerGram: adminGoldPrice, amountUsd: adminAmountUsd } = req.body;
-          
-          if (!adminGoldGrams || adminGoldGrams <= 0) {
-            return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
-          }
-          if (!adminGoldPrice || adminGoldPrice <= 0) {
-            return res.status(400).json({ message: "Gold price per gram is required for approval" });
-          }
-          
-          const goldGrams = parseFloat(adminGoldGrams);
-          // Validate admin-supplied price against live (±2%). Fail-closed if live price unavailable.
-          const { livePrice: livePriceAdmin, priceToUse: goldPrice, valid: adminPriceValid, deviation: adminDev, unavailable: adminPriceUnavailable } =
-            await validateAndFetchGoldPrice(parseFloat(adminGoldPrice));
-          if (adminPriceUnavailable) {
-            return res.status(503).json({ message: 'Live gold price is temporarily unavailable. Please try again shortly.' });
-          }
-          if (!adminPriceValid) {
-            return res.status(409).json({
-              message: `Submitted price deviates ${(adminDev * 100).toFixed(1)}% from live price (${livePriceAdmin.toFixed(2)}/g). Please use the current market price.`,
-              livePrice: livePriceAdmin.toFixed(2),
-            });
-          }
-          // goldPrice = server-fetched live price (priceToUse), used for all calculations
-          const usdAmount = adminAmountUsd ? parseFloat(adminAmountUsd) : goldGrams * goldPrice;
-          
-          // Process the approval with full wallet/vault/certificate creation
-          const result = await storage.withTransaction(async (txStorage) => {
-            const generatedCertificates: any[] = [];
-            
-            // 1. Update user's wallet with gold balance
-            const wallet = await txStorage.getWallet(buyGoldReq.userId);
-            if (!wallet) {
-              throw new Error('User wallet not found');
-            }
-            const currentGold = parseFloat(wallet.goldGrams || '0');
-            const newGoldBalance = currentGold + goldGrams;
-            
-            await txStorage.updateWallet(buyGoldReq.userId, {
-              goldGrams: newGoldBalance.toFixed(6)
-            });
-            
-            // 2. Create a completed transaction record
-            const newTransaction = await txStorage.createTransaction({
-              userId: buyGoldReq.userId,
-              type: 'Buy',
-              status: 'Completed',
-              amountGold: goldGrams.toFixed(6),
-              amountUsd: usdAmount.toFixed(2),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              sourceModule: 'Buy Gold Bar',
-              method: 'Wingold Purchase',
-              description: `Buy Gold Bar - ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-              completedAt: new Date()
-            });
-            
-            // 3. Create vault holding
-            const wingoldRef = `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-            
-            // Check for existing holdings
-            const existingHoldings = await txStorage.getUserVaultHoldings(buyGoldReq.userId);
-            let holdingId: string;
-            
-            if (existingHoldings.length > 0) {
-              // Update existing holding
-              const holding = existingHoldings[0];
-              const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
-              await txStorage.updateVaultHolding(holding.id, {
-                goldGrams: (currentHoldingGrams + goldGrams).toFixed(6),
-                wingoldStorageRef: wingoldRef
-              });
-              holdingId = holding.id;
-            } else {
-              // Create new holding
-              const newHolding = await txStorage.createVaultHolding({
-                userId: buyGoldReq.userId,
-                goldGrams: goldGrams.toFixed(6),
-                vaultLocation: 'Dubai - Wingold & Metals DMCC',
-                wingoldStorageRef: wingoldRef,
-                purchasePriceUsdPerGram: goldPrice.toFixed(2),
-                isPhysicallyDeposited: false
-              });
-              holdingId = newHolding.id;
-            }
-            
-            // 4. Issue Digital Ownership Certificate from Finatrades
-            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-            const digitalCert = await txStorage.createCertificate({
-              certificateNumber: docCertNum,
-              userId: buyGoldReq.userId,
-              transactionId: newTransaction.id,
-              vaultHoldingId: holdingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: usdAmount.toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(digitalCert);
-            
-            // 5. Issue Physical Storage Certificate from Wingold
-            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-            const storageCert = await txStorage.createCertificate({
-              certificateNumber: pscCertNum,
-              userId: buyGoldReq.userId,
-              transactionId: newTransaction.id,
-              vaultHoldingId: holdingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: usdAmount.toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(storageCert);
-            
-            // 6. Record vault ledger entry
-            const { vaultLedgerService } = await import('./vault-ledger-service');
-            await vaultLedgerService.recordLedgerEntry({
-              userId: buyGoldReq.userId,
-              action: 'Deposit',
-              goldGrams: goldGrams,
-              goldPriceUsdPerGram: goldPrice,
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              toStatus: 'Available',
-              transactionId: newTransaction.id,
-              certificateId: digitalCert.id,
-              notes: `Buy Gold Bar - Purchased ${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g via Wingold & Metals DMCC`,
-              createdBy: req.body.adminId || 'admin',
-            });
-            
-            // 7. Update the buy gold request with the credited transaction
-            await db.update(buyGoldRequests)
-              .set({ 
-                status: 'Approved', 
-                reviewedAt: new Date(),
-                reviewerId: req.body.adminId || null,
-                goldGrams: goldGrams.toFixed(6),
-                goldPriceAtTime: goldPrice.toFixed(2),
-                amountUsd: usdAmount.toFixed(2),
-                creditedTransactionId: newTransaction.id
-              })
-              .where(eq(buyGoldRequests.id, req.params.id));
-            
-            return { newTransaction, generatedCertificates, newGoldBalance, holdingId };
-          });
-          
-          // Audit log
-          await storage.createAuditLog({
-            entityType: "buy_gold_request",
-            entityId: req.params.id,
-            actionType: "approve",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Buy Gold Bar approved - ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g = $${usdAmount.toFixed(2)}. Certificates issued: ${result.generatedCertificates.length}`,
-          });
-          
-          // Emit real-time updates
-          const io = getIO();
-          io.to(`user:${buyGoldReq.userId}`).emit('ledger:balance_update', {
-            goldGrams: result.newGoldBalance.toFixed(6)
-          });
-          io.to(`user:${buyGoldReq.userId}`).emit('ledger:vault_update', {
-            holdingId: result.holdingId
-          });
-          
-          return res.json({ 
-            message: 'Buy Gold Bar approved - wallet credited and certificates issued',
-            transaction: result.newTransaction,
-            certificates: result.generatedCertificates,
-            goldGrams: goldGrams,
-            usdAmount: usdAmount
-          });
-        } catch (e) {
-          console.error('Failed to approve buy gold request:', e);
-          return res.status(400).json({ message: e instanceof Error ? e.message : "Failed to approve buy gold request" });
-        }
-      }
-      
-      // Handle deposit requests from depositRequests table (bank transfer, card, crypto via depositRequests)
-      // GOLDEN RULE ENFORCEMENT: This legacy path is deprecated. All deposit approvals must go through
-      // Unified Payment Management (UFM) to ensure certificates are issued and UTT records are created.
-      if (sourceTable === 'depositRequests') {
-        return res.status(400).json({
-          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
-          code: "GOLDEN_RULE_ENFORCEMENT",
-          redirectTo: "/admin/unified-payments"
-        });
-      }
-      
-      // Handle withdrawal requests from withdrawalRequests table
-      if (sourceTable === 'withdrawalRequests') {
-        try {
-          const [withdrawalReq] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, req.params.id));
-          if (!withdrawalReq) {
-            return res.status(404).json({ message: "Withdrawal request not found" });
-          }
-          if (withdrawalReq.status !== 'Pending' && withdrawalReq.status !== 'Under Review' && withdrawalReq.status !== 'Processing') {
-            return res.status(400).json({ message: "Only pending requests can be approved" });
-          }
-          
-          await db.update(withdrawalRequests)
-            .set({ status: 'Completed', completedAt: new Date() })
-            .where(eq(withdrawalRequests.id, req.params.id));
-          
-          // Audit log
-          await storage.createAuditLog({
-            entityType: "withdrawal_request",
-            entityId: req.params.id,
-            actionType: "approve",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Withdrawal request approved`,
-          });
-          
-          return res.json({ message: 'Withdrawal request approved' });
-        } catch (e) {
-          console.error('Failed to approve withdrawal request:', e);
-          return res.status(400).json({ message: "Failed to approve withdrawal request" });
-        }
-      }
-      
-      // Handle crypto payment requests (dedicated crypto_payment_requests table)
-      // GOLDEN RULE ENFORCEMENT: This legacy path is deprecated. All crypto deposit approvals must go
-      // through Unified Payment Management (UFM) to ensure certificates are issued and UTT records are created.
-      if (sourceTable === 'cryptoPaymentRequests') {
-        return res.status(400).json({
-          message: "Golden Rule: Direct crypto deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
-          code: "GOLDEN_RULE_ENFORCEMENT",
-          redirectTo: "/admin/unified-payments"
-        });
-      }
-      
-      // Default: Handle regular transactions table
-      // Initial validation outside transaction
-      const transaction = await storage.getTransaction(req.params.id);
-      if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
-      }
-      if (transaction.status !== 'Pending') {
-        return res.status(400).json({ message: "Only pending transactions can be approved" });
-      }
-      
-      const goldAmount = parseFloat(transaction.amountGold || '0');
-      const usdAmount = parseFloat(transaction.amountUsd || '0');
-      const goldPrice = parseFloat(transaction.goldPriceUsdPerGram || '71.55');
-      
-      // Get user wallet for initial validation
-      const wallet = await storage.getWallet(transaction.userId);
-      if (!wallet) {
-        return res.status(404).json({ message: "User wallet not found" });
-      }
-      
-      const currentGold = parseFloat(wallet.goldGrams || '0');
-      const currentUsd = parseFloat(wallet.usdBalance || '0');
-      
-      // Execute all mutations inside a database transaction for atomicity
-      const result = await storage.withTransaction(async (txStorage) => {
-        let newGoldBalance = currentGold;
-        let newUsdBalance = currentUsd;
-        const generatedCertificates: any[] = [];
-        
-        // Helper: Generate Wingold storage reference
-        const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-        // Helper: Issue certificates for a user (requires valid holdingId and positive grams)
-        const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number, price: number) => {
-          // Validation: skip if invalid amounts
-          if (!holdingId || grams <= 0 || isNaN(grams)) {
-            return null;
-          }
-          
-          // Digital Ownership Certificate from Finatrades
-          const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-          const digitalCert = await txStorage.createCertificate({
-            certificateNumber: docCertNum,
-            userId,
-            transactionId: txId,
-            vaultHoldingId: holdingId,
-            type: 'Digital Ownership',
-            status: 'Active',
-            goldGrams: grams.toFixed(6),
-            goldPriceUsdPerGram: price.toFixed(2),
-            totalValueUsd: (grams * price).toFixed(2),
-            issuer: 'Finatrades Finance SA',
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            wingoldStorageRef: wingoldRef
-          });
-          generatedCertificates.push(digitalCert);
-          
-          // Physical Storage Certificate from Wingold & Metals DMCC
-          const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-          const storageCert = await txStorage.createCertificate({
-            certificateNumber: pscCertNum,
-            userId,
-            transactionId: txId,
-            vaultHoldingId: holdingId,
-            type: 'Physical Storage',
-            status: 'Active',
-            goldGrams: grams.toFixed(6),
-            goldPriceUsdPerGram: price.toFixed(2),
-            totalValueUsd: (grams * price).toFixed(2),
-            issuer: 'Wingold and Metals DMCC',
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            wingoldStorageRef: wingoldRef
-          });
-          generatedCertificates.push(storageCert);
-          
-          return wingoldRef;
-        };
-        
-        // Helper: Update existing holding and issue certificates
-        const updateHoldingAndIssueCerts = async (userId: string, holdingId: string, currentGrams: number, addGrams: number, txId: string) => {
-          const newTotal = currentGrams + addGrams;
-          const wingoldRef = generateWingoldRef();
-          
-          // Update holding FIRST with new Wingold ref
-          await txStorage.updateVaultHolding(holdingId, {
-            goldGrams: newTotal.toFixed(6),
-            wingoldStorageRef: wingoldRef
-          });
-          
-          // Then issue certificates for the added amount
-          if (addGrams > 0) {
-            await issueCertificates(userId, txId, holdingId, wingoldRef, addGrams, goldPrice);
-          }
-          
-          return { holdingId, wingoldRef, newTotal };
-        };
-        
-        // Helper: Create new holding and issue certificates
-        const createHoldingAndIssueCerts = async (userId: string, grams: number, txId: string, isPhysicalDeposit: boolean = false) => {
-          if (grams <= 0) return null;
-          
-          const wingoldRef = generateWingoldRef();
-          const newHolding = await txStorage.createVaultHolding({
-            userId,
-            goldGrams: grams.toFixed(6),
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            wingoldStorageRef: wingoldRef,
-            purchasePriceUsdPerGram: goldPrice.toFixed(2),
-            isPhysicallyDeposited: isPhysicalDeposit
-          });
-          
-          // Issue certificates for the new holding
-          await issueCertificates(userId, txId, newHolding.id, wingoldRef, grams, goldPrice);
-          
-          return newHolding;
-        };
-        
-        // Helper: Reduce holdings and update certificates
-        const reduceHoldingsAndUpdateCerts = async (userId: string, reduceGrams: number, txId: string) => {
-          const holdings = await txStorage.getUserVaultHoldings(userId);
-          if (holdings.length === 0) return;
-          
-          const holding = holdings[0];
-          const currentGrams = parseFloat(holding.goldGrams || '0');
-          const newTotalGrams = Math.max(0, currentGrams - reduceGrams);
-          
-          // Update holding balance
-          await txStorage.updateVaultHolding(holding.id, {
-            goldGrams: newTotalGrams.toFixed(6)
-          });
-          
-          // Mark old active certificates as Updated
-          const activeCerts = await txStorage.getUserActiveCertificates(userId);
-          for (const cert of activeCerts) {
-            await txStorage.updateCertificate(cert.id, { 
-              status: 'Updated',
-              cancelledAt: new Date()
-            });
-          }
-          
-          // Issue new consolidated certificates for remaining balance
-          if (newTotalGrams > 0) {
-            const wingoldRef = holding.wingoldStorageRef || generateWingoldRef();
-            await txStorage.updateVaultHolding(holding.id, { wingoldStorageRef: wingoldRef });
-            await issueCertificates(userId, txId, holding.id, wingoldRef, newTotalGrams, goldPrice);
-          }
-        };
-      
-      // Process based on transaction type
-      switch (transaction.type) {
-        case 'Buy':
-          // BUY: Credit gold to wallet, record in FinaVault, issue both certificates
-          newGoldBalance = currentGold + goldAmount;
-          if (currentUsd >= usdAmount) {
-            newUsdBalance = currentUsd - usdAmount;
-          }
-          break;
-          
-        case 'Sell': {
-          // SELL: Deduct gold, credit fiat, update/cancel certificates
-          // Validate sufficient holdings exist before processing
-          const sellHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
-          if (sellHoldings.length === 0) {
-            throw new Error('User has no vault holdings to sell');
-          }
-          const sellHoldingGold = parseFloat(sellHoldings[0].goldGrams || '0');
-          if (sellHoldingGold < goldAmount) {
-            throw new Error(`Insufficient holdings: ${sellHoldingGold}g available, ${goldAmount}g requested`);
-          }
-          if (currentGold < goldAmount) {
-            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
-          }
-          newGoldBalance = currentGold - goldAmount;
-          newUsdBalance = currentUsd + usdAmount;
-          break;
-        }
-          
-        case 'Send': {
-          // SEND: Deduct from sender, credit recipient, transfer ownership
-          // Both sender and recipient must update atomically
-          // Sender's certs get Transferred, recipient gets new certs
-          
-          // === VALIDATION PHASE - All checks before any state changes ===
-          if (!transaction.recipientEmail) {
-            throw new Error('Send transaction requires recipient email');
-          }
-          if (goldAmount <= 0) {
-            throw new Error('Send transaction requires positive gold amount');
-          }
-          
-          // Validate sender has sufficient wallet balance
-          if (currentGold < goldAmount) {
-            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
-          }
-          
-          // Validate sender has sufficient vault holdings
-          const senderHoldingsCheck = await txStorage.getUserVaultHoldings(transaction.userId);
-          if (senderHoldingsCheck.length === 0) {
-            throw new Error('Sender has no vault holdings to send');
-          }
-          const senderHoldingGold = parseFloat(senderHoldingsCheck[0].goldGrams || '0');
-          if (senderHoldingGold < goldAmount) {
-            throw new Error(`Insufficient holdings: ${senderHoldingGold}g available, ${goldAmount}g requested`);
-          }
-          
-          // Validate recipient exists
-          const recipientUser = await txStorage.getUserByEmail(transaction.recipientEmail);
-          if (!recipientUser) {
-            throw new Error(`Recipient not found: ${transaction.recipientEmail}`);
-          }
-          
-          const recipientWallet = await txStorage.getWallet(recipientUser.id);
-          if (!recipientWallet) {
-            throw new Error(`Recipient wallet not found for: ${transaction.recipientEmail}`);
-          }
-          
-          // === EXECUTION PHASE - All validations passed, now update state ===
-          newGoldBalance = currentGold - goldAmount;
-          
-          const recipientGold = parseFloat(recipientWallet.goldGrams || '0');
-          await txStorage.updateWallet(recipientWallet.id, {
-            goldGrams: (recipientGold + goldAmount).toFixed(6)
-          });
-          
-          // Create Receive transaction for recipient
-          const senderUser = await txStorage.getUser(transaction.userId);
-          const receiveTransaction = await txStorage.createTransaction({
-            userId: recipientUser.id,
-            type: 'Receive',
-            status: 'Completed',
-            amountGold: goldAmount.toFixed(6),
-            amountUsd: usdAmount.toFixed(2),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            senderEmail: senderUser?.email || '',
-            description: `Received from ${senderUser?.firstName} ${senderUser?.lastName}`,
-            completedAt: new Date()
-          });
-          
-          // Update recipient vault holding and issue new certs for recipient
-          const recipientHoldings = await txStorage.getUserVaultHoldings(recipientUser.id);
-          if (recipientHoldings.length > 0) {
-            const rHolding = recipientHoldings[0];
-            const rGold = parseFloat(rHolding.goldGrams || '0');
-            await updateHoldingAndIssueCerts(recipientUser.id, rHolding.id, rGold, goldAmount, receiveTransaction.id);
-          } else {
-            await createHoldingAndIssueCerts(recipientUser.id, goldAmount, receiveTransaction.id, false);
-          }
-          
-          // Update sender's holdings and mark sender's certs as Transferred
-          const senderHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
-          if (senderHoldings.length > 0) {
-            const sHolding = senderHoldings[0];
-            const sGold = parseFloat(sHolding.goldGrams || '0');
-            const newSenderGold = Math.max(0, sGold - goldAmount);
-            
-            await txStorage.updateVaultHolding(sHolding.id, {
-              goldGrams: newSenderGold.toFixed(6)
-            });
-            
-            // Mark sender's active certs as Transferred
-            const senderCerts = await txStorage.getUserActiveCertificates(transaction.userId);
-            for (const cert of senderCerts) {
-              await txStorage.updateCertificate(cert.id, { 
-                status: 'Transferred',
-                cancelledAt: new Date()
-              });
-            }
-            
-            // Issue new consolidated certs for sender's remaining balance
-            if (newSenderGold > 0) {
-              const wingoldRef = sHolding.wingoldStorageRef || generateWingoldRef();
-              await txStorage.updateVaultHolding(sHolding.id, { wingoldStorageRef: wingoldRef });
-              await issueCertificates(transaction.userId, transaction.id, sHolding.id, wingoldRef, newSenderGold, goldPrice);
-            }
-          }
-          break;
-        }
-          
-        case 'Receive':
-          newGoldBalance = currentGold + goldAmount;
-          break;
-          
-        case 'Deposit':
-          // Physical deposit: gold verified at Wingold, credited to wallet
-          newGoldBalance = currentGold + goldAmount;
-          break;
-          
-        case 'Withdrawal': {
-          // Physical withdrawal: deduct from wallet, release from Wingold
-          // Validate sufficient holdings exist before processing
-          const wdHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
-          if (wdHoldings.length === 0) {
-            throw new Error('User has no vault holdings for withdrawal');
-          }
-          const wdHoldingGold = parseFloat(wdHoldings[0].goldGrams || '0');
-          if (wdHoldingGold < goldAmount) {
-            throw new Error(`Insufficient holdings: ${wdHoldingGold}g available, ${goldAmount}g requested`);
-          }
-          if (currentGold < goldAmount) {
-            throw new Error(`Insufficient wallet balance: ${currentGold}g available, ${goldAmount}g requested`);
-          }
-          newGoldBalance = currentGold - goldAmount;
-          break;
-        }
-        }
-        
-        // Update user wallet
-        await txStorage.updateWallet(wallet.id, {
-          goldGrams: newGoldBalance.toFixed(6),
-          usdBalance: newUsdBalance.toFixed(2)
-        });
-        
-        // Update vault holding and handle certificates using new helper functions
-        // Note: Send transactions are fully handled in the switch above (both sender and recipient)
-        if (transaction.type !== 'Send' && goldAmount > 0) {
-          const existingHoldings = await txStorage.getUserVaultHoldings(transaction.userId);
-          
-          if (['Buy', 'Receive', 'Deposit'].includes(transaction.type)) {
-            // Adding gold: update holding first, then issue certificates
-            if (existingHoldings.length > 0) {
-              const holding = existingHoldings[0];
-              const holdingGold = parseFloat(holding.goldGrams || '0');
-              await updateHoldingAndIssueCerts(transaction.userId, holding.id, holdingGold, goldAmount, transaction.id);
-            } else {
-              await createHoldingAndIssueCerts(transaction.userId, goldAmount, transaction.id, transaction.type === 'Deposit');
-            }
-          } else if (['Sell', 'Withdrawal'].includes(transaction.type)) {
-            // Reducing gold: update holdings and certificates
-            await reduceHoldingsAndUpdateCerts(transaction.userId, goldAmount, transaction.id);
-          }
-        }
-        
-        // Mark transaction as completed
-        const updatedTransaction = await txStorage.updateTransaction(req.params.id, {
-          status: 'Completed',
-          completedAt: new Date()
-        });
-
-        // Record ledger entries for Buy/Sell/Deposit/Withdrawal transactions
-        const { vaultLedgerService } = await import('./vault-ledger-service');
-        if (transaction.type === 'Buy' || transaction.type === 'Deposit') {
-          await vaultLedgerService.recordLedgerEntry({
-            userId: transaction.userId,
-            action: 'Deposit',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'External',
-            toWallet: 'FinaPay',
-            toStatus: 'Available',
-            transactionId: transaction.id,
-            certificateId: generatedCertificates[0]?.id,
-            notes: transaction.type === 'Buy' 
-              ? `Purchased ${goldAmount.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g`
-              : `Deposited ${goldAmount.toFixed(4)}g physical gold`,
-            createdBy: req.body.adminId || 'admin',
-          });
-        } else if (transaction.type === 'Sell' || transaction.type === 'Withdrawal') {
-          await vaultLedgerService.recordLedgerEntry({
-            userId: transaction.userId,
-            action: 'Withdrawal',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'FinaPay',
-            toWallet: 'External',
-            fromStatus: 'Available',
-            transactionId: transaction.id,
-            notes: transaction.type === 'Sell'
-              ? `Sold ${goldAmount.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g`
-              : `Withdrew ${goldAmount.toFixed(4)}g physical gold`,
-            createdBy: req.body.adminId || 'admin',
-          });
-        }
-        
-        // Audit log
-        await txStorage.createAuditLog({
-          entityType: "transaction",
-          entityId: transaction.id,
-          actionType: "approve",
-          actor: req.body.adminId || 'admin',
-          actorRole: "admin",
-          details: `Transaction approved - Type: ${transaction.type}, Gold: ${goldAmount}g, USD: $${usdAmount}. Certificates issued: ${generatedCertificates.length}`,
-        });
-        
-        return { 
-          updatedTransaction, 
-          generatedCertificates
-        };
-      });
-      
-      // Send invoice and certificate emails (non-blocking, after transaction completes)
-      if (result.generatedCertificates.length > 0 && ['Buy', 'Deposit'].includes(transaction.type)) {
-        const transactionUser = await storage.getUser(transaction.userId);
-        if (transactionUser) {
-          const goldPricePerGram = parseFloat(transaction.goldPriceUsdPerGram || '0') || 95;
-          processTransactionDocuments(
-            result.updatedTransaction!,
-            result.generatedCertificates,
-            transactionUser,
-            goldPricePerGram
-          ).then(docResults => {
-            console.log(`[Routes] Document processing complete for transaction ${transaction.id}:`, 
-              `Invoice ${docResults.invoiceResult.success ? 'sent' : 'failed'}, ` +
-              `${docResults.certificateResults.filter(r => r.success).length}/${docResults.certificateResults.length} certificates sent`);
-          }).catch(err => {
-            console.error(`[Routes] Document processing error for transaction ${transaction.id}:`, err);
-          });
-        }
-      }
-      
-      // Send gold sale email and push notification for Sell transactions
-      if (transaction.type === 'Sell') {
-        const sellUser = await storage.getUser(transaction.userId);
-        if (sellUser?.email) {
-          const goldAmount = parseFloat(transaction.amountGold || '0');
-          const usdAmount = parseFloat(transaction.amountUsd || '0');
-          const goldPricePerGram = parseFloat(transaction.goldPriceUsdPerGram || '0') || 95;
-          sendEmail(sellUser.email, EMAIL_TEMPLATES.GOLD_SALE, {
-            user_name: `${sellUser.firstName} ${sellUser.lastName}`,
-            gold_grams: goldAmount.toFixed(4),
-            amount_usd: usdAmount.toFixed(2),
-            gold_price: goldPricePerGram.toFixed(2),
-          }).catch(err => console.error('[Email] Gold sale notification failed:', err));
-          const { sendFinancialPushNotification } = await import('./push-notifications');
-          sendFinancialPushNotification(transaction.userId, 'gold_sold', {
-            goldGrams: goldAmount.toFixed(4),
-            amountUsd: usdAmount.toFixed(2),
-          }).catch(err => console.error('[Push] Gold sale notification failed:', err));
-        }
-      }
-      
-      res.json({ 
-        transaction: result.updatedTransaction, 
-        certificates: result.generatedCertificates,
-        message: 'Transaction approved and processed with certificates issued' 
-      });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Approval failed" });
-    }
-  });
-  
-  // Admin: Reject transaction
-  app.post("/api/admin/transactions/:id/reject", ensureAdminAsync, requirePermission('manage_transactions'), async (req, res) => {
-    try {
-      const { sourceTable, reason } = req.body;
-      
-      // Handle Buy Gold Bar requests
-      if (sourceTable === 'buyGoldRequests') {
-        try {
-          await db.update(buyGoldRequests)
-            .set({ status: 'Rejected', reviewedAt: new Date() })
-            .where(eq(buyGoldRequests.id, req.params.id));
-          
-          await storage.createAuditLog({
-            entityType: "buy_gold_request",
-            entityId: req.params.id,
-            actionType: "reject",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Buy Gold Bar request rejected - Reason: ${reason || 'Not specified'}`,
-          });
-          
-          return res.json({ message: 'Buy Gold Bar request rejected' });
-        } catch (e) {
-          return res.status(400).json({ message: "Failed to reject buy gold request" });
-        }
-      }
-      
-      // Handle deposit requests
-      if (sourceTable === 'depositRequests') {
-        const depositReq = await storage.getDepositRequest(req.params.id);
-        await storage.updateDepositRequest(req.params.id, { status: 'Rejected', reviewedAt: new Date() });
-        
-        await storage.createAuditLog({
-          entityType: "deposit_request",
-          entityId: req.params.id,
-          actionType: "reject",
-          actor: req.body.adminId || 'admin',
-          actorRole: "admin",
-          details: `Deposit request rejected - Reason: ${reason || 'Not specified'}`,
-        });
-        
-        // Notify user about rejection
-        if (depositReq) {
-          await storage.createNotification({
-            userId: depositReq.userId,
-            title: 'Deposit Request Rejected',
-            message: `Your deposit request (${depositReq.referenceNumber}) has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
-            type: 'transaction',
-            link: '/finapay',
-            read: false,
-          });
-          
-          emitLedgerEvent(depositReq.userId, {
-            type: 'deposit_rejected',
-            module: 'finapay',
-            action: 'deposit_rejected',
-            data: { referenceNumber: depositReq.referenceNumber, reason },
-          });
-        }
-        
-        return res.json({ message: 'Deposit request rejected' });
-      }
-      
-      // Handle withdrawal requests
-      if (sourceTable === 'withdrawalRequests') {
-        try {
-          const [withdrawalReq] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, req.params.id)).limit(1);
-          
-          await db.update(withdrawalRequests)
-            .set({ status: 'Rejected' })
-            .where(eq(withdrawalRequests.id, req.params.id));
-          
-          await storage.createAuditLog({
-            entityType: "withdrawal_request",
-            entityId: req.params.id,
-            actionType: "reject",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Withdrawal request rejected - Reason: ${reason || 'Not specified'}`,
-          });
-          
-          // Notify user about rejection
-          if (withdrawalReq) {
-            await storage.createNotification({
-              userId: withdrawalReq.userId,
-              title: 'Withdrawal Request Rejected',
-              message: `Your withdrawal request (${withdrawalReq.referenceNumber}) has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
-              type: 'warning',
-              read: false,
-            });
-            
-            emitLedgerEvent(withdrawalReq.userId, {
-              type: 'withdrawal_rejected',
-              module: 'finapay',
-              action: 'withdrawal_rejected',
-              data: { referenceNumber: withdrawalReq.referenceNumber, reason },
-            });
-          }
-          
-          return res.json({ message: 'Withdrawal request rejected' });
-        } catch (e) {
-          return res.status(400).json({ message: "Failed to reject withdrawal request" });
-        }
-      }
-      
-      // Handle crypto payment requests
-      if (sourceTable === 'cryptoPaymentRequests') {
-        try {
-          const [cryptoReq] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, req.params.id)).limit(1);
-          
-          await db.update(cryptoPaymentRequests)
-            .set({ status: 'Rejected' })
-            .where(eq(cryptoPaymentRequests.id, req.params.id));
-          
-          await storage.createAuditLog({
-            entityType: "crypto_payment_request",
-            entityId: req.params.id,
-            actionType: "reject",
-            actor: req.body.adminId || 'admin',
-            actorRole: "admin",
-            details: `Crypto payment request rejected - Reason: ${reason || 'Not specified'}`,
-          });
-          
-          // Notify user about rejection
-          if (cryptoReq) {
-            await storage.createNotification({
-              userId: cryptoReq.userId,
-              title: 'Crypto Deposit Rejected',
-              message: `Your crypto deposit has been rejected. ${reason ? `Reason: ${reason}` : 'Please contact support for more information.'}`,
-              type: 'transaction',
-              link: '/finapay',
-              read: false,
-            });
-            
-            emitLedgerEvent(cryptoReq.userId, {
-              type: 'crypto_rejected',
-              module: 'finapay',
-              action: 'crypto_deposit_rejected',
-              data: { reason },
-            });
-          }
-          
-          return res.json({ message: 'Crypto payment request rejected' });
-        } catch (e) {
-          return res.status(400).json({ message: "Failed to reject crypto payment" });
-        }
-      }
-      
-      // Default: Handle regular transactions table
-      const transaction = await storage.getTransaction(req.params.id);
-      if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
-      }
-      if (transaction.status !== 'Pending') {
-        return res.status(400).json({ message: "Only pending transactions can be rejected" });
-      }
-      
-      const updatedTransaction = await storage.updateTransaction(req.params.id, {
-        status: 'Cancelled'
-      });
-      
-      // Audit log
-      await storage.createAuditLog({
-        entityType: "transaction",
-        entityId: transaction.id,
-        actionType: "reject",
-        actor: req.body.adminId || 'admin',
-        actorRole: "admin",
-        details: `Transaction rejected - Type: ${transaction.type}, Reason: ${reason || 'Not specified'}`,
-      });
-      
-      res.json({ transaction: updatedTransaction, message: 'Transaction rejected' });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Rejection failed" });
-    }
-  });
-  
-  // Admin: Get all transactions with user info (includes pending from all modules)
-  app.get("/api/admin/transactions", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
-    try {
-      const transactions = await storage.getAllTransactions().catch(() => []);
-      const allDepositRequests = await storage.getAllDepositRequests().catch(() => []);
-      
-      // Collect all items from various modules
-      const allItems: any[] = [];
-      
-      // Main transactions
-      allItems.push(...transactions.map(tx => ({
-        ...tx,
-        sourceTable: 'transactions'
-      })));
-      
-      // Pending deposit requests (not yet in transactions table)
-      const pendingDepositReqs = allDepositRequests.filter(d => 
-        d.status === 'Pending' || d.status === 'Under Review'
-      ).map(d => ({
-        id: d.id,
-        odooId: d.odooId,
-        userId: d.userId,
-        type: 'Deposit',
-        status: d.status,
-        amountGold: null,
-        amountUsd: d.amount,
-        amountEur: null,
-        goldPriceUsdPerGram: null,
-        description: `Bank deposit - ${d.bankName || 'Bank Transfer'}`,
-        sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-        createdAt: d.createdAt,
-        completedAt: null,
-        sourceTable: 'depositRequests'
-      }));
-      allItems.push(...pendingDepositReqs);
-      
-      // Pending withdrawal requests
-      try {
-        const allWithdrawals = await db.select().from(withdrawalRequests);
-        const pendingWithdrawReqs = allWithdrawals.filter((w: any) => 
-          w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
-        ).map((w: any) => ({
-          id: w.id,
-          odooId: w.odooId,
-          userId: w.userId,
-          type: 'Withdrawal',
-          status: w.status,
-          amountGold: w.amountGold,
-          amountUsd: w.amountUsd,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          description: `Withdrawal to ${w.bankName || 'bank account'}`,
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          createdAt: w.createdAt,
-          completedAt: null,
-          sourceTable: 'withdrawalRequests'
-        }));
-        allItems.push(...pendingWithdrawReqs);
-      } catch (e) { /* table may not exist */ }
-      
-      // Pending crypto payment requests
-      try {
-        const allCryptoReqs = await db.select().from(cryptoPaymentRequests);
-        const pendingCryptoReqs = allCryptoReqs.filter((c: any) => 
-          c.status === 'Pending' || c.status === 'Under Review' || c.status === 'pending'
-        ).map((c: any) => ({
-          id: c.id,
-          odooId: c.odooId,
-          userId: c.userId,
-          type: 'Crypto Deposit',
-          status: c.status,
-          amountGold: null,
-          amountUsd: c.amountUsd,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          description: `Crypto deposit - ${c.network || 'Crypto'}`,
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          createdAt: c.createdAt,
-          completedAt: null,
-          sourceTable: 'cryptoPaymentRequests'
-        }));
-        allItems.push(...pendingCryptoReqs);
-      } catch (e) { /* table may not exist */ }
-      
-      // Pending buy gold requests
-      try {
-        const allBuyGoldReqs = await db.select().from(buyGoldRequests);
-        const pendingBuyGoldReqs = allBuyGoldReqs.filter((b: any) => 
-          b.status === 'Pending' || b.status === 'Under Review'
-        ).map((b: any) => ({
-          id: b.id,
-          odooId: b.odooId,
-          userId: b.userId,
-          type: 'Buy Gold Bar',
-          status: b.status,
-          amountGold: null,
-          amountUsd: null,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          description: 'Wingold purchase request',
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          createdAt: b.createdAt,
-          completedAt: null,
-          sourceTable: 'buyGoldRequests'
-        }));
-        allItems.push(...pendingBuyGoldReqs);
-      } catch (e) { /* table may not exist */ }
-      
-      // Pending trade cases
-      try {
-        const allTrades = await db.select().from(tradeCases);
-        const pendingTrades = allTrades.filter((t: any) => 
-          t.status === 'pending_review' || t.status === 'draft'
-        ).map((t: any) => ({
-          id: t.id,
-          odooId: t.odooId,
-          userId: t.userId,
-          type: 'Trade Finance',
-          status: t.status === 'pending_review' ? 'Pending Review' : 'Draft',
-          amountGold: null,
-          amountUsd: t.amountUsd,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          description: `Trade case: ${t.productType || 'Trade finance request'}`,
-          sourceModule: 'finabridge',
-          createdAt: t.createdAt,
-          completedAt: null,
-          sourceTable: 'tradeCases'
-        }));
-        allItems.push(...pendingTrades);
-      } catch (e) { /* table may not exist */ }
-      
-      // Pending BNSL plans
-      try {
-        const allBnsl = await db.select().from(bnslPlans);
-        const pendingBnsl = allBnsl.filter((b: any) => 
-          b.status === 'Pending Termination' || b.status === 'Pending'
-        ).map((b: any) => ({
-          id: b.id,
-          odooId: b.odooId,
-          userId: b.userId,
-          type: 'BNSL',
-          status: b.status,
-          amountGold: b.goldGrams,
-          amountUsd: b.baseAmountUsd,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          description: b.status === 'Pending Termination' ? 'BNSL termination request' : 'BNSL activation pending',
-          sourceModule: 'bnsl',
-          createdAt: b.createdAt,
-          completedAt: null,
-          sourceTable: 'bnslPlans'
-        }));
-        allItems.push(...pendingBnsl);
-      } catch (e) { /* table may not exist */ }
-      
-      // Vault deposit requests (physical gold deposits)
-      try {
-        const allVaultDeposits = await db.select().from(vaultDepositRequests);
-        const pendingVaultDeposits = allVaultDeposits.filter((v: any) => 
-          v.status === 'Submitted' || v.status === 'Under Review' || v.status === 'Pending'
-        ).map((v: any) => ({
-          id: v.id,
-          odooId: null,
-          userId: v.userId,
-          type: 'Vault Deposit',
-          status: v.status === 'Submitted' ? 'Pending' : v.status,
-          amountGold: v.totalDeclaredWeightGrams,
-          amountUsd: null,
-          amountEur: null,
-          goldPriceUsdPerGram: null,
-          referenceId: v.referenceNumber,
-          description: `Vault deposit - ${v.totalDeclaredWeightGrams}g ${v.depositType}`,
-          sourceModule: 'finavault',
-          createdAt: v.createdAt,
-          completedAt: null,
-          sourceTable: 'vaultDepositRequests'
-        }));
-        allItems.push(...pendingVaultDeposits);
-      } catch (e) { /* table may not exist */ }
-      
-      // Enrich all items with user info
-      const enrichedTransactions = await Promise.all(
-        allItems.map(async (tx) => {
-          const user = await storage.getUser(tx.userId);
-          return {
-            ...tx,
-            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-            userEmail: user?.email || 'Unknown',
-            finatradesId: `FT-${tx.userId?.slice(0, 8).toUpperCase() || 'UNKNOWN'}`
-          };
-        })
-      );
-      
-      // Sort by date descending
-      enrichedTransactions.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-      res.json({ transactions: enrichedTransactions });
-    } catch (error) {
-      console.error("Failed to get all transactions:", error);
-      res.status(400).json({ message: "Failed to get all transactions" });
-    }
-  });
-  
-
-  
-  
-  
-  // ============================================
-  // CERTIFICATES
-  // ============================================
-  
-  // Get user certificates - PROTECTED: requires matching session
-  app.get("/api/certificates/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const allCertificates = await storage.getUserCertificates(req.params.userId);
-      const activeCertificates = await storage.getUserActiveCertificates(req.params.userId);
-
-      // Enrich BLC (BNSL Lock) certificates with plan data
-      const blcPlanIds = allCertificates
-        .filter(c => c.type === 'BNSL Lock' && c.bnslPlanId)
-        .map(c => c.bnslPlanId as string);
-
-      type BnslPlanRow = {
-        id: string;
-        templateName: string | null;
-        tenorMonths: number;
-        agreedMarginAnnualPercent: string;
-        maturityDate: string;
-        goldSoldGrams: string;
-        totalMarginComponentUsd: string;
-        status: string;
-      };
-      const bnslPlanMap: Record<string, BnslPlanRow> = {};
-      if (blcPlanIds.length > 0) {
-        const plans = await db.select({
-          id: bnslPlansTable.id,
-          templateName: bnslPlansTable.templateName,
-          tenorMonths: bnslPlansTable.tenorMonths,
-          agreedMarginAnnualPercent: bnslPlansTable.agreedMarginAnnualPercent,
-          maturityDate: bnslPlansTable.maturityDate,
-          goldSoldGrams: bnslPlansTable.goldSoldGrams,
-          totalMarginComponentUsd: bnslPlansTable.totalMarginComponentUsd,
-          status: bnslPlansTable.status,
-        }).from(bnslPlansTable).where(inArray(bnslPlansTable.id, blcPlanIds));
-        plans.forEach(p => { bnslPlanMap[p.id] = p as BnslPlanRow; });
-      }
-
-      // Enrich TLC (Trade Lock + Trade Release) certificates with trade case data
-      const tlcCaseIds = allCertificates
-        .filter(c => (c.type === 'Trade Lock' || c.type === 'Trade Release') && c.tradeCaseId)
-        .map(c => c.tradeCaseId as string);
-
-      type TradeCaseRow = {
-        id: string;
-        caseNumber: string;
-        commodityType: string;
-        companyName: string;
-        status: string;
-      };
-      const tradeCaseMap: Record<string, TradeCaseRow> = {};
-      if (tlcCaseIds.length > 0) {
-        const cases = await db.select({
-          id: tradeCases.id,
-          caseNumber: tradeCases.caseNumber,
-          commodityType: tradeCases.commodityType,
-          companyName: tradeCases.companyName,
-          status: tradeCases.status,
-        }).from(tradeCases).where(inArray(tradeCases.id, tlcCaseIds));
-        cases.forEach(c => { tradeCaseMap[c.id] = c as TradeCaseRow; });
-      }
-
-      // Merge enrichment data
-      const enrichedCertificates = allCertificates.map(cert => {
-        if (cert.type === 'BNSL Lock' && cert.bnslPlanId && bnslPlanMap[cert.bnslPlanId]) {
-          return { ...cert, bnslPlan: bnslPlanMap[cert.bnslPlanId] };
-        }
-        if ((cert.type === 'Trade Lock' || cert.type === 'Trade Release') && cert.tradeCaseId && tradeCaseMap[cert.tradeCaseId]) {
-          return { ...cert, tradeCase: tradeCaseMap[cert.tradeCaseId] };
-        }
-        return cert;
-      });
-
-      res.json({ certificates: enrichedCertificates, activeCertificates });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get certificates" });
-    }
-  });
-  
-  // Get single certificate
-  app.get("/api/certificate/:id", async (req, res) => {
-    try {
-      const certificate = await storage.getCertificate(req.params.id);
-      if (!certificate) {
-        return res.status(404).json({ message: "Certificate not found" });
-      }
-      res.json({ certificate });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get certificate" });
-    }
-  });
-  
-  // PUBLIC: Verify certificate authenticity (blockchain explorer style)
-  app.post("/api/certificates/verify", async (req, res) => {
-    try {
-      const { certificateNumber } = req.body;
-      const crypto = await import('crypto');
-      
-      // Helper to generate safe hash from UUID or any string
-      const safeHash = (input: string) => {
-        return '0x' + crypto.createHash('sha256').update(input).digest('hex').substring(0, 16) + '...';
-      };
-      
-      if (!certificateNumber || typeof certificateNumber !== 'string') {
-        return res.status(400).json({ 
-          message: "Certificate number is required",
-          verificationResult: "invalid"
-        });
-      }
-      
-      // Clean and normalize the certificate number
-      const cleanedNumber = certificateNumber.trim().toUpperCase();
-      
-      const certificate = await storage.getCertificateByNumber(cleanedNumber);
-      
-      if (!certificate) {
-        return res.json({
-          verificationResult: "invalid",
-          message: "Certificate not found in our system. This certificate may be counterfeit or the number may be incorrect.",
-          certificateNumber: cleanedNumber
-        });
-      }
-      
-      // Determine if certificate is expired
-      const now = new Date();
-      const isExpired = certificate.expiresAt ? new Date(certificate.expiresAt) < now : false;
-      const isStatusExpired = certificate.status === 'Expired' || certificate.status === 'Revoked';
-      
-      // Build response with sanitized certificate info (no PII)
-      const verificationResult = (isExpired || isStatusExpired) ? "genuine_expired" : "genuine_active";
-      
-      // Get Finatrades IDs for involved parties (no personal info)
-      const holderUser = await storage.getUser(certificate.userId);
-      const holderFinatradesId = holderUser?.finatradesId || 'UNKNOWN';
-      const holderAccountType = holderUser?.accountType || 'personal';
-      
-      // Build blockchain explorer-style transaction history from vault ledger
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      
-      const ledgerHistory: {
-        eventType: string;
-        timestamp: string;
-        goldGrams: string;
-        valueUsd: string | null;
-        fromFinatradesId: string | null;
-        fromAccountType: string | null;
-        toFinatradesId: string | null;
-        toAccountType: string | null;
-        action: string | null;
-        eventHash: string;
-      }[] = [];
-      
-      // Helper to convert userId to Finatrades ID (privacy-safe)
-      const userCache = new Map<string, { finatradesId: string; accountType: string }>();
-      const getFinatradesInfo = async (userId: string | null) => {
-        if (!userId) return { finatradesId: null, accountType: null };
-        if (userCache.has(userId)) return userCache.get(userId)!;
-        const user = await storage.getUser(userId);
-        const info = { 
-          finatradesId: user?.finatradesId || 'UNKNOWN', 
-          accountType: user?.accountType || 'personal' 
-        };
-        userCache.set(userId, info);
-        return info;
-      };
-      
-      // Helper to add ledger entry to history
-      const addLedgerEntry = async (entry: any, existingHashes: Set<string>) => {
-        const hash = safeHash(entry.id);
-        if (existingHashes.has(hash)) return;
-        existingHashes.add(hash);
-        
-        const userInfo = await getFinatradesInfo(entry.userId);
-        const counterpartyInfo = await getFinatradesInfo(entry.counterpartyUserId);
-        
-        let fromId = null, fromType = null, toId = null, toType = null;
-        
-        if (entry.action === 'Transfer_Send') {
-          fromId = userInfo.finatradesId;
-          fromType = userInfo.accountType;
-          toId = counterpartyInfo.finatradesId;
-          toType = counterpartyInfo.accountType;
-        } else if (entry.action === 'Transfer_Receive') {
-          fromId = counterpartyInfo.finatradesId;
-          fromType = counterpartyInfo.accountType;
-          toId = userInfo.finatradesId;
-          toType = userInfo.accountType;
-        } else if (entry.action === 'Deposit') {
-          toId = userInfo.finatradesId;
-          toType = userInfo.accountType;
-        } else if (entry.action === 'Withdrawal') {
-          fromId = userInfo.finatradesId;
-          fromType = userInfo.accountType;
-        } else {
-          toId = userInfo.finatradesId;
-          toType = userInfo.accountType;
-        }
-        
-        ledgerHistory.push({
-          eventType: entry.action.replace(/_/g, ' ').toUpperCase(),
-          timestamp: entry.createdAt?.toISOString() || new Date().toISOString(),
-          goldGrams: entry.goldGrams,
-          valueUsd: entry.valueUsd,
-          fromFinatradesId: fromId,
-          fromAccountType: fromType,
-          toFinatradesId: toId,
-          toAccountType: toType,
-          action: entry.action,
-          eventHash: hash
-        });
-      };
-      
-      const existingHashes = new Set<string>();
-      
-      // Traverse certificate lineage to get full history (both ancestors and descendants)
-      const visitedCertIds = new Set<string>();
-      const certificateQueue: string[] = [certificate.id];
-      
-      // Process all certificates in the chain using a proper queue
-      while (certificateQueue.length > 0) {
-        const certId = certificateQueue.shift()!;
-        if (visitedCertIds.has(certId)) continue;
-        visitedCertIds.add(certId);
-        
-        const cert = certId === certificate.id ? certificate : await storage.getCertificate(certId);
-        if (!cert) continue;
-        
-        // Get ledger entries from this certificate's transaction
-        if (cert.transactionId) {
-          const txLedgerEntries = await vaultLedgerService.getLedgerEntriesByTransactionId(cert.transactionId);
-          for (const entry of txLedgerEntries) {
-            await addLedgerEntry(entry, existingHashes);
-          }
-        }
-        
-        // Get ledger entries linked directly to this certificate
-        const certLedgerEntries = await vaultLedgerService.getLedgerEntriesByCertificateId(certId);
-        for (const entry of certLedgerEntries) {
-          await addLedgerEntry(entry, existingHashes);
-        }
-        
-        // Add parent certificate to queue (traverse backwards)
-        if (cert.relatedCertificateId && !visitedCertIds.has(cert.relatedCertificateId)) {
-          certificateQueue.push(cert.relatedCertificateId);
-        }
-        
-        // Add child certificates to queue (traverse forwards - find transfers FROM this certificate)
-        const childCerts = await storage.getCertificatesByRelatedId(certId);
-        for (const childCert of childCerts) {
-          if (!visitedCertIds.has(childCert.id)) {
-            certificateQueue.push(childCert.id);
-          }
-        }
-      }
-      
-      // Add certificate issuance event if we have no ledger entries (shows certificate creation)
-      if (ledgerHistory.length === 0) {
-        let senderFinatradesId: string | null = null;
-        let senderAccountType: string | null = null;
-        let recipientFinatradesId: string | null = null;
-        let recipientAccountType: string | null = null;
-        
-        if (certificate.fromUserId) {
-          const fromInfo = await getFinatradesInfo(certificate.fromUserId);
-          senderFinatradesId = fromInfo.finatradesId;
-          senderAccountType = fromInfo.accountType;
-        }
-        
-        if (certificate.toUserId) {
-          const toInfo = await getFinatradesInfo(certificate.toUserId);
-          recipientFinatradesId = toInfo.finatradesId;
-          recipientAccountType = toInfo.accountType;
-        }
-        
-        ledgerHistory.push({
-          eventType: certificate.type === 'Transfer' ? 'GOLD TRANSFER' : 'CERTIFICATE ISSUED',
-          timestamp: certificate.issuedAt?.toISOString() || new Date().toISOString(),
-          goldGrams: certificate.goldGrams,
-          remainingGrams: certificate.remainingGrams || certificate.goldGrams,
-          valueUsd: certificate.totalValueUsd,
-          fromFinatradesId: senderFinatradesId,
-          fromAccountType: senderAccountType,
-          toFinatradesId: certificate.type === 'Transfer' ? recipientFinatradesId : holderFinatradesId,
-          toAccountType: certificate.type === 'Transfer' ? recipientAccountType : holderAccountType,
-          action: certificate.type,
-          eventHash: safeHash(certificate.id)
-        });
-      }
-      
-      // If certificate is expired/revoked, add that event at the end
-      if (certificate.status === 'Expired' || certificate.status === 'Revoked') {
-        const statusHash = safeHash(certificate.id + '_status');
-        if (!existingHashes.has(statusHash)) {
-          ledgerHistory.push({
-            eventType: certificate.status === 'Expired' ? 'CERTIFICATE EXPIRED' : 'CERTIFICATE REVOKED',
-            timestamp: certificate.cancelledAt?.toISOString() || certificate.expiresAt?.toISOString() || new Date().toISOString(),
-            goldGrams: certificate.goldGrams,
-          remainingGrams: certificate.remainingGrams || certificate.goldGrams,
-            valueUsd: certificate.totalValueUsd,
-            fromFinatradesId: holderFinatradesId,
-            fromAccountType: holderAccountType,
-            toFinatradesId: null,
-            toAccountType: null,
-            action: certificate.status,
-            eventHash: statusHash
-          });
-        }
-      }
-      
-      // Sort by timestamp
-      ledgerHistory.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-      
-        return res.json({
-        verificationResult,
-        message: verificationResult === "genuine_active" 
-          ? "This certificate is genuine and currently active."
-          : "This certificate is genuine but has expired or been revoked.",
-        certificate: {
-          certificateNumber: certificate.certificateNumber,
-          type: certificate.type,
-          goldGrams: certificate.goldGrams,
-          remainingGrams: certificate.remainingGrams || certificate.goldGrams,
-          goldPriceUsdPerGram: certificate.goldPriceUsdPerGram,
-          totalValueUsd: certificate.totalValueUsd,
-          issuer: certificate.issuer,
-          vaultLocation: certificate.vaultLocation,
-          status: certificate.status,
-          issuedAt: certificate.issuedAt,
-          expiresAt: certificate.expiresAt,
-          // Privacy-safe holder info (Finatrades ID only, no personal data)
-          holderFinatradesId,
-          holderAccountType
-        },
-        // Blockchain explorer-style ledger history from real vault data
-        ledgerHistory,
-        summary: {
-          totalEvents: ledgerHistory.length,
-          lastEventAt: ledgerHistory[ledgerHistory.length - 1]?.timestamp || null,
-          isTransfer: certificate.type === 'Transfer'
-        }
-      });
-    } catch (error) {
-      console.error("Certificate verification error:", error);
-      res.status(500).json({ 
-        message: "Failed to verify certificate",
-        verificationResult: "error"
-      });
-    }
-  });
-  
-  // Create vault holding
-  app.post("/api/vault", ensureAuthenticated, async (req, res) => {
-    try {
-      const holdingData = insertVaultHoldingSchema.parse(req.body);
-      const holding = await storage.createVaultHolding(holdingData);
-      
-      // Create audit log
-      await storage.createAuditLog({
-        entityType: "vault",
-        entityId: holding.id,
-        actionType: "create",
-        actor: holdingData.userId,
-        actorRole: "user",
-        details: `Gold grams: ${holdingData.goldGrams}`,
-      });
-      
-      res.json({ holding });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create holding" });
-    }
-  });
-  
-  
-  // Admin: Get all vault holdings
-  app.get("/api/admin/vault", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
-    try {
-      const holdings = await storage.getAllVaultHoldings();
-      res.json({ holdings });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get all vault holdings" });
-    }
-  });
-
-  // ============================================================================
-  // FINAVAULT - DEPOSIT REQUESTS
-  // ============================================================================
-
-
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - WITHDRAWAL REQUESTS (Cash Out)
-  // ============================================================================
-
-
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - PHYSICAL DELIVERY REQUESTS
-  // ============================================================================
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - GOLD BAR INVENTORY
-  // ============================================================================
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - STORAGE FEES
-  // ============================================================================
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - VAULT LOCATIONS
-  // ============================================================================
-
-
-
-
-
-  // ============================================================================
-  // VAULT MANAGEMENT SYSTEM (New Architecture)
-  // ============================================================================
-
-
-  // Vault Management: Third-Party Vault Locations
-  app.get("/api/admin/vault-management/locations", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
-    try {
-      const locations = await storage.getVaultLocations();
-      res.json({ locations });
-    } catch (error) {
-      console.error("[Vault] Error getting locations:", error);
-      res.status(500).json({ message: "Failed to get vault locations" });
-    }
-  });
-
-  app.post("/api/admin/vault-management/locations", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
-    try {
-      const location = await storage.createVaultLocation(req.body);
-      res.json({ location, message: "Vault location created" });
-    } catch (error) {
-      console.error("[Vault] Error creating location:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create vault location" });
-    }
-  });
-
-  app.patch("/api/admin/vault-management/locations/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
-    try {
-      const location = await storage.updateVaultLocation(req.params.id, req.body);
-      if (!location) {
-        return res.status(404).json({ message: "Vault location not found" });
-      }
-      res.json({ location, message: "Vault location updated" });
-    } catch (error) {
-      console.error("[Vault] Error updating location:", error);
-      res.status(400).json({ message: "Failed to update vault location" });
-    }
-  });
-
-  app.delete("/api/admin/vault-management/locations/:id", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
-    try {
-      const deleted = await storage.deleteVaultLocation(req.params.id);
-      if (!deleted) {
-        return res.status(404).json({ message: "Vault location not found" });
-      }
-      res.json({ message: "Vault location deleted" });
-    } catch (error) {
-      console.error("[Vault] Error deleting location:", error);
-      res.status(400).json({ message: "Failed to delete vault location" });
-    }
-  });
-
-  // Vault Management: Country Routing Rules
-  app.get("/api/admin/vault-management/routing-rules", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), async (req, res) => {
-    try {
-      const rules = await storage.getVaultRoutingRules();
-      res.json({ rules });
-    } catch (error) {
-      console.error("[Vault] Error getting routing rules:", error);
-      res.status(500).json({ message: "Failed to get routing rules" });
-    }
-  });
-
-  app.post("/api/admin/vault-management/routing-rules", ensureAdminAsync, requirePermission('manage_vault'), async (req, res) => {
-    try {
-      const rule = await storage.createVaultRoutingRule(req.body);
-      res.json({ rule, message: "Routing rule created" });
-    } catch (error) {
-      console.error("[Vault] Error creating routing rule:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create routing rule" });
-    }
-  });
-
-
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - VAULT TRANSFERS
-  // ============================================================================
-
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - GOLD GIFTS
-  // ============================================================================
-
-
-
-  // ============================================================================
-  // FINAVAULT - INSURANCE CERTIFICATES
-  // ============================================================================
-
-
-
-
-  // ============================================================================
-  // FINAVAULT - RECONCILIATION REPORT
-  // ============================================================================
-
-  
-  // ============================================================================
-  // PLATFORM FEES - ADMIN MANAGEMENT
-  // ============================================================================
-  
-  // Get all platform fees (Admin)
   app.get("/api/admin/fees", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fees = await storage.getAllPlatformFees();
-      res.json({ fees });
+      return res.json({ fees });
     } catch (error) {
       console.error('Get fees error:', error);
-      res.status(400).json({ message: "Failed to get platform fees" });
+      return res.status(400).json({ message: "Failed to get platform fees" });
     }
   });
   
@@ -10220,10 +6899,10 @@ export async function registerRoutes(
   app.get("/api/admin/fees/module/:module", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fees = await storage.getModuleFees(req.params.module);
-      res.json({ fees });
+      return res.json({ fees });
     } catch (error) {
       console.error('Get module fees error:', error);
-      res.status(400).json({ message: "Failed to get module fees" });
+      return res.status(400).json({ message: "Failed to get module fees" });
     }
   });
   
@@ -10231,10 +6910,10 @@ export async function registerRoutes(
   app.post("/api/admin/fees", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const fee = await storage.createPlatformFee(req.body);
-      res.json({ fee });
+      return res.json({ fee });
     } catch (error) {
       console.error('Create fee error:', error);
-      res.status(400).json({ message: "Failed to create platform fee" });
+      return res.status(400).json({ message: "Failed to create platform fee" });
     }
   });
   
@@ -10245,10 +6924,10 @@ export async function registerRoutes(
       if (!fee) {
         return res.status(404).json({ message: "Fee not found" });
       }
-      res.json({ fee });
+      return res.json({ fee });
     } catch (error) {
       console.error('Update fee error:', error);
-      res.status(400).json({ message: "Failed to update platform fee" });
+      return res.status(400).json({ message: "Failed to update platform fee" });
     }
   });
   
@@ -10256,10 +6935,10 @@ export async function registerRoutes(
   app.delete("/api/admin/fees/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.deletePlatformFee(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error('Delete fee error:', error);
-      res.status(400).json({ message: "Failed to delete platform fee" });
+      return res.status(400).json({ message: "Failed to delete platform fee" });
     }
   });
   
@@ -10268,10 +6947,10 @@ export async function registerRoutes(
     try {
       await storage.seedDefaultFees();
       const fees = await storage.getAllPlatformFees();
-      res.json({ fees, message: "Default fees seeded successfully" });
+      return res.json({ fees, message: "Default fees seeded successfully" });
     } catch (error) {
       console.error('Seed fees error:', error);
-      res.status(400).json({ message: "Failed to seed default fees" });
+      return res.status(400).json({ message: "Failed to seed default fees" });
     }
   });
   
@@ -10289,10 +6968,10 @@ export async function registerRoutes(
           max: fee.maxAmount ? parseFloat(fee.maxAmount) : undefined
         };
       }
-      res.json({ fees, feeMap });
+      return res.json({ fees, feeMap });
     } catch (error) {
       console.error('Get public fees error:', error);
-      res.status(400).json({ message: "Failed to get platform fees" });
+      return res.status(400).json({ message: "Failed to get platform fees" });
     }
   });
   
@@ -10304,9 +6983,9 @@ export async function registerRoutes(
   app.get("/api/finabridge/agreements/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const agreements = await storage.getUserFinabridgeAgreements(req.params.userId);
-      res.json({ agreements });
+      return res.json({ agreements });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get user agreements" });
+      return res.status(400).json({ message: "Failed to get user agreements" });
     }
   });
   
@@ -10314,9 +6993,9 @@ export async function registerRoutes(
   app.get("/api/admin/finabridge/agreements", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const agreements = await storage.getAllFinabridgeAgreements();
-      res.json({ agreements });
+      return res.json({ agreements });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get agreements" });
+      return res.status(400).json({ message: "Failed to get agreements" });
     }
   });
   
@@ -10327,9 +7006,9 @@ export async function registerRoutes(
       if (!agreement) {
         return res.status(404).json({ message: "Agreement not found" });
       }
-      res.json({ agreement });
+      return res.json({ agreement });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get agreement" });
+      return res.status(400).json({ message: "Failed to get agreement" });
     }
   });
   
@@ -10338,9 +7017,9 @@ export async function registerRoutes(
     try {
       const agreementData = insertFinabridgeAgreementSchema.parse(req.body);
       const agreement = await storage.createFinabridgeAgreement(agreementData);
-      res.json({ agreement });
+      return res.json({ agreement });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create agreement" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create agreement" });
     }
   });
   
@@ -10352,9 +7031,9 @@ export async function registerRoutes(
   app.get("/api/admin/bank-accounts", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const accounts = await storage.getAllPlatformBankAccounts();
-      res.json({ accounts });
+      return res.json({ accounts });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get bank accounts" });
+      return res.status(400).json({ message: "Failed to get bank accounts" });
     }
   });
   
@@ -10374,9 +7053,9 @@ export async function registerRoutes(
           minAmount: f.minAmount,
           maxAmount: f.maxAmount
         }));
-      res.json({ fees: publicFees });
+      return res.json({ fees: publicFees });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get fees" });
+      return res.status(400).json({ message: "Failed to get fees" });
     }
   });
 
@@ -10418,9 +7097,9 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ accounts });
+      return res.json({ accounts });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get bank accounts" });
+      return res.status(400).json({ message: "Failed to get bank accounts" });
     }
   });
   
@@ -10429,9 +7108,9 @@ export async function registerRoutes(
     try {
       const accountData = insertPlatformBankAccountSchema.parse(req.body);
       const account = await storage.createPlatformBankAccount(accountData);
-      res.json({ account });
+      return res.json({ account });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create bank account" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create bank account" });
     }
   });
   
@@ -10442,9 +7121,9 @@ export async function registerRoutes(
       if (!account) {
         return res.status(404).json({ message: "Bank account not found" });
       }
-      res.json({ account });
+      return res.json({ account });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update bank account" });
+      return res.status(400).json({ message: "Failed to update bank account" });
     }
   });
   
@@ -10452,823 +7131,20 @@ export async function registerRoutes(
   app.delete("/api/admin/bank-accounts/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       await storage.deletePlatformBankAccount(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete bank account" });
+      return res.status(400).json({ message: "Failed to delete bank account" });
     }
   });
   
   // Get user deposit requests - PROTECTED: requires matching session
   // Get current user's pending deposit requests - for dashboard display
-  app.get("/api/deposit-requests/pending", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      const allRequests = await storage.getUserDepositRequests(userId);
-      const pendingRequests = allRequests.filter(r => r.status === 'Pending');
-      res.json({ 
-        requests: pendingRequests.map(r => ({
-          id: r.id,
-          status: r.status,
-          expectedGoldGrams: r.expectedGoldGrams || 0
-        }))
-      });
-    } catch (error) {
-      console.error('Failed to get pending deposit requests:', error);
-      res.json({ requests: [] });
-    }
-  });
-
-  app.get("/api/deposit-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const requests = await storage.getUserDepositRequests(req.params.userId);
-      res.json({ requests });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get deposit requests" });
-    }
-  });
-  
-  // Get all deposit requests (Admin) - PROTECTED
-  app.get("/api/admin/deposit-requests", ensureAdminAsync, requirePermission('manage_deposits', 'view_transactions'), async (req, res) => {
-    try {
-      const requests = await storage.getAllDepositRequests().catch(() => []);
-      res.json({ requests });
-    } catch (error) {
-      console.error('Failed to get deposit requests:', error);
-      res.json({ requests: [] });
-    }
-  });
-  
-  // Create deposit request (User) - PROTECTED - Requires KYC
-  app.post("/api/deposit-requests", ensureAuthenticated, requireKycApproved, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
-    try {
-      const { userId, amountUsd } = req.body;
-      
-      // Validate deposit limits
-      const depositUser = await storage.getUser(userId);
-      if (!depositUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const amount = parseFloat(amountUsd);
-      const limitResult = await platformLimits.validateFullTransactionLimits(
-        amount,
-        depositUser,
-        "Deposit"
-      );
-      
-      if (!limitResult.valid) {
-        return res.status(400).json({ 
-          message: limitResult.message,
-          limit: limitResult.limit,
-          current: limitResult.current
-        });
-      }
-      
-      // Generate reference number
-      const referenceNumber = `DEP-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const requestData = insertDepositRequestSchema.parse({
-        ...req.body,
-        referenceNumber,
-      });
-      const request = await storage.createDepositRequest(requestData);
-      
-      // Notify all admins of new deposit request (reusing depositUser from limit validation above)
-      notifyAllAdmins({
-        title: 'New Deposit Request',
-        message: `${depositUser?.firstName || 'User'} submitted a deposit request for $${parseFloat(req.body.amountUsd).toLocaleString()}`,
-        type: 'transaction',
-        link: '/admin/transactions',
-      });
-      
-      // Send deposit processing email to user
-      if (depositUser?.email) {
-        sendEmail(depositUser.email, EMAIL_TEMPLATES.DEPOSIT_PROCESSING, {
-          user_name: `${depositUser.firstName} ${depositUser.lastName}`,
-          amount: parseFloat(req.body.amountUsd).toFixed(2),
-          reference_number: referenceNumber,
-        }).catch(err => console.error('[Email] Deposit processing notification failed:', err));
-      }
-      
-      // Create bell notification for deposit request submission
-      await storage.createNotification({
-        userId: req.body.userId,
-        title: 'Deposit Request Submitted',
-        message: `Your deposit request of $${parseFloat(req.body.amountUsd).toFixed(2)} has been submitted and is being processed.`,
-        type: 'transaction',
-        link: '/dashboard',
-      });
-      
-      // Log platform activity
-      logActivity({
-        type: 'deposit',
-        title: 'Deposit Request',
-        description: `$${parseFloat(req.body.amountUsd).toFixed(2)} deposit request from ${depositUser?.firstName || 'User'} ${depositUser?.lastName || ''}`,
-        details: { referenceNumber, method: req.body.paymentMethod },
-        severity: 'info',
-      });
-      
-      res.json({ request });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create deposit request" });
-    }
-  });
-  
-  // Update deposit request (Admin - approve/reject) - PROTECTED
-  app.patch("/api/admin/deposit-requests/:id", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const request = await storage.getDepositRequest(req.params.id);
-      if (!request) {
-        return res.status(404).json({ message: "Deposit request not found" });
-      }
-      
-      const updates = req.body;
-      
-      // Prevent double-approval
-      if (updates.status === 'Confirmed' && request.status === 'Confirmed') {
-        return res.status(400).json({ 
-          message: "This deposit has already been confirmed. Please refresh the page to see the updated status." 
-        });
-      }
-      
-      // Prevent approving rejected deposits
-      if (updates.status === 'Confirmed' && request.status === 'Rejected') {
-        return res.status(400).json({ 
-          message: "Cannot approve a rejected deposit. Please create a new deposit request." 
-        });
-      }
-      
-      // GOLDEN RULE ENFORCEMENT: Direct wallet credit is disabled for ALL approval transitions.
-      // All deposit approvals must go through Unified Payment Management (UFM)
-      // to ensure physical gold allocation and storage certificate are provided.
-      // Block any attempt to set an approval status regardless of current request status.
-      const APPROVAL_STATUSES = ['Confirmed', 'Approved'];
-      if (updates.status && APPROVAL_STATUSES.includes(updates.status)) {
-        return res.status(400).json({ 
-          message: "Golden Rule: Direct deposit approval is disabled. Please use Unified Payment Management (Admin > Unified Payments) to approve deposits with proper gold allocation and storage certificate.",
-          code: "GOLDEN_RULE_ENFORCEMENT",
-          redirectTo: "/admin/unified-payments"
-        });
-      }
-        /* DISABLED - Legacy direct wallet credit code (Golden Rule enforcement)
-        if (false) {
-        const wallet = await storage.getWallet(request.userId);
-        if (wallet) {
-          // Fetch live gold price from metals-api BEFORE the transaction
-          let goldPricePerGram: number;
-          
-          try {
-            goldPricePerGram = await getGoldPricePerGram();
-          } catch (priceError) {
-            console.error('[Deposit Approval] Failed to fetch gold price:', priceError);
-            return res.status(400).json({ 
-              message: "Cannot approve deposit: Unable to fetch gold price. Please try again or configure Metals API."
-            });
-          }
-          
-          const depositAmountUsd = parseFloat(request.amountUsd.toString());
-          
-          // Calculate gold grams from USD amount
-          const goldGrams = depositAmountUsd / goldPricePerGram;
-          
-          // Wrap all database operations in a transaction for atomicity
-          await db.transaction(async (tx) => {
-            // Get current wallet balances
-            const currentGoldGrams = parseFloat(wallet.goldGrams.toString());
-            const newGoldBalance = currentGoldGrams + goldGrams;
-            
-            // Update wallet: add gold grams only (no USD cash balance)
-            await tx.update(wallets)
-              .set({
-                goldGrams: newGoldBalance.toFixed(6),
-                updatedAt: new Date(),
-              })
-              .where(eq(wallets.id, wallet.id));
-            
-            // Create transaction record with gold backing metadata (type: 'Buy' to match crypto)
-            const [transaction] = await tx.insert(transactions).values({
-              userId: request.userId,
-              type: 'Buy',
-              status: 'Completed',
-              amountUsd: depositAmountUsd.toString(),
-              amountGold: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              description: `Bank deposit confirmed - Ref: ${request.referenceNumber} | Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-              referenceId: request.referenceNumber,
-              sourceModule: 'finapay',
-              goldWalletType: 'LGPW', // P2P always uses LGPW
-              approvedBy: updates.processedBy,
-              approvedAt: new Date(),
-              completedAt: new Date(),
-              updatedAt: new Date(),
-            }).returning();
-            
-            // Create FinaVault ledger entry for audit trail
-            await tx.insert(vaultLedgerEntries).values({
-              userId: request.userId,
-              action: 'Deposit',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              valueUsd: depositAmountUsd.toString(),
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              toStatus: 'Available',
-              balanceAfterGrams: newGoldBalance.toFixed(6),
-              transactionId: transaction.id,
-              notes: `Bank deposit approved - Ref: ${request.referenceNumber}`,
-              createdBy: updates.processedBy || 'system',
-            });
-            
-            // Update or create vault ownership summary
-            const existingSummary = await tx.select().from(vaultOwnershipSummary)
-              .where(eq(vaultOwnershipSummary.userId, request.userId)).limit(1);
-            
-            if (existingSummary.length > 0) {
-              const currentTotal = parseFloat(existingSummary[0].totalGoldGrams || '0');
-              const currentAvailable = parseFloat(existingSummary[0].availableGrams || '0');
-              const currentFinaPay = parseFloat(existingSummary[0].finaPayGrams || '0');
-              
-              await tx.update(vaultOwnershipSummary)
-                .set({
-                  totalGoldGrams: (currentTotal + goldGrams).toFixed(6),
-                  availableGrams: (currentAvailable + goldGrams).toFixed(6),
-                  finaPayGrams: (currentFinaPay + goldGrams).toFixed(6),
-                  lastUpdated: new Date(),
-                })
-                .where(eq(vaultOwnershipSummary.userId, request.userId));
-            } else {
-              await tx.insert(vaultOwnershipSummary).values({
-                userId: request.userId,
-                totalGoldGrams: goldGrams.toFixed(6),
-                availableGrams: goldGrams.toFixed(6),
-                finaPayGrams: goldGrams.toFixed(6),
-              });
-            }
-            
-            // Create audit log within transaction
-            await tx.insert(auditLogs).values({
-              entityType: 'deposit_request',
-              entityId: request.id,
-              actionType: 'approve',
-              actor: updates.processedBy || 'system',
-              actorRole: 'admin',
-              details: `Deposit approved: $${depositAmountUsd.toFixed(2)} = ${goldGrams.toFixed(4)}g gold @ $${goldPricePerGram.toFixed(2)}/g`,
-            });
-            
-            // Get or create vault holding (matching crypto flow)
-            const existingHoldings = await tx.select().from(vaultHoldings)
-              .where(eq(vaultHoldings.userId, request.userId)).limit(1);
-            
-            let vaultHoldingId: string;
-            if (existingHoldings.length > 0) {
-              // Update existing holding
-              const existingHolding = existingHoldings[0];
-              const newTotalGrams = parseFloat(existingHolding.goldGrams) + goldGrams;
-              await tx.update(vaultHoldings)
-                .set({ goldGrams: newTotalGrams.toFixed(6), updatedAt: new Date() })
-                .where(eq(vaultHoldings.id, existingHolding.id));
-              vaultHoldingId = existingHolding.id;
-            } else {
-              // Create new vault holding
-              const [newHolding] = await tx.insert(vaultHoldings).values({
-                userId: request.userId,
-                goldGrams: goldGrams.toFixed(6),
-                vaultLocation: 'Dubai - Wingold & Metals DMCC',
-                wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-                purchasePriceUsdPerGram: goldPricePerGram.toFixed(2),
-              }).returning();
-              vaultHoldingId = newHolding.id;
-            }
-            
-            // Create Digital Ownership certificate (from Finatrades)
-            const docCertNumber = await storage.generateCertificateNumber('Digital Ownership');
-            const [digitalCert] = await tx.insert(certificates).values({
-              certificateNumber: docCertNumber,
-              userId: request.userId,
-              transactionId: transaction.id,
-              vaultHoldingId: vaultHoldingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              totalValueUsd: depositAmountUsd.toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              issuedAt: new Date(),
-            }).returning();
-            
-            // Create Physical Storage certificate (from Wingold & Metals DMCC) - matching crypto flow
-            const sscCertNumber = await storage.generateCertificateNumber('Physical Storage');
-            const [storageCert] = await tx.insert(certificates).values({
-              certificateNumber: sscCertNumber,
-              userId: request.userId,
-              transactionId: transaction.id,
-              vaultHoldingId: vaultHoldingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: goldGrams.toFixed(6),
-              goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              issuedAt: new Date(),
-            }).returning();
-            
-            return { digitalCert, storageCert, vaultHoldingId };
-          });
-          
-          // Send email notification for deposit confirmation with PDF attachments
-          const depositUser = await storage.getUser(request.userId);
-          
-          // Get both certificates (Digital Ownership + Physical Storage) for this transaction
-          const userCerts = await storage.getUserCertificates(request.userId);
-          const transactionCerts = userCerts
-            .sort((a, b) => new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime())
-            .slice(0, 2); // Get the 2 most recent certificates (DOC + SSC)
-          
-          // Create in-app notification (matching crypto flow)
-          await storage.createNotification({
-            userId: request.userId,
-            title: 'Deposit Confirmed',
-            message: `Your bank deposit of $${depositAmountUsd.toFixed(2)} has been confirmed. ${goldGrams.toFixed(4)}g gold has been credited to your wallet.`,
-            type: 'success',
-            read: false,
-          });
-          
-          // Notify all admins about the deposit approval
-          const depositUserName = depositUser ? `${depositUser.firstName || ''} ${depositUser.lastName || ''}`.trim() || 'User' : 'User';
-          notifyAllAdmins({
-            title: 'Deposit Approved',
-            message: `Deposit of $${depositAmountUsd.toFixed(2)} for ${depositUserName} has been confirmed. ${goldGrams.toFixed(4)}g gold credited.`,
-            type: 'success',
-            link: '/admin/transactions',
-          });
-          
-          // Emit real-time sync event for auto-update
-          emitLedgerEvent(request.userId, {
-            type: 'balance_update',
-            module: 'finapay',
-            action: 'bank_deposit_confirmed',
-            data: { goldGrams, amountUsd: depositAmountUsd },
-          });
-          
-          if (depositUser && depositUser.email) {
-            // Generate transaction receipt PDF
-            const receiptPdf = await generateTransactionReceiptPDF({
-              referenceNumber: request.referenceNumber,
-              transactionType: 'Bank Deposit',
-              amountUsd: depositAmountUsd,
-              goldGrams: goldGrams,
-              goldPricePerGram: goldPricePerGram,
-              userName: `${depositUser.firstName || ''} ${depositUser.lastName || ''}`.trim() || 'Customer',
-              userEmail: depositUser.email,
-              transactionDate: new Date(),
-              status: 'Completed',
-              description: `Bank deposit confirmed - Gold: ${goldGrams.toFixed(4)}g @ $${goldPricePerGram.toFixed(2)}/g`,
-            });
-            
-            const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
-              {
-                filename: `Transaction_Receipt_${request.referenceNumber}.pdf`,
-                content: receiptPdf,
-                contentType: 'application/pdf',
-              }
-            ];
-            
-            // Generate and add BOTH certificate PDFs (matching crypto flow)
-            for (const cert of transactionCerts) {
-              const certPdf = await generateCertificatePDF(cert, depositUser);
-              attachments.push({
-                filename: `Certificate_${cert.certificateNumber}.pdf`,
-                content: certPdf,
-                contentType: 'application/pdf',
-              });
-            }
-            
-            const htmlBody = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">Deposit Confirmed!</h1>
-                </div>
-                <div style="padding: 30px; background: #ffffff;">
-                  <p>Hello ${depositUser.firstName},</p>
-                  <p>Your bank deposit has been verified and gold has been credited to your wallet.</p>
-                  <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                    <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${depositAmountUsd.toFixed(2)}</p>
-                    <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Credited: ${goldGrams.toFixed(4)}g</p>
-                    <p style="color: #6b7280; margin: 5px 0;">Price: $${goldPricePerGram.toFixed(2)}/gram</p>
-                    <p style="color: #6b7280; margin: 5px 0;">Reference: ${request.referenceNumber}</p>
-                  </div>
-                  <p><strong>Attached Documents:</strong></p>
-                  <ul>
-                    <li>Transaction Receipt (PDF)</li>
-                    <li>Digital Ownership Certificate (PDF)</li>
-                    <li>Physical Storage Certificate (PDF)</li>
-                  </ul>
-                  <p style="text-align: center; margin-top: 30px;">
-                    <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
-                  </p>
-                </div>
-                <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-                  <p>Finatrades - Gold-Backed Digital Finance</p>
-                </div>
-              </div>
-            `;
-            
-            sendEmailWithAttachment(
-              depositUser.email,
-              `Deposit Confirmed - $${depositAmountUsd.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
-              htmlBody,
-              attachments
-            ).catch(err => console.error('[Email] Failed to send deposit confirmation with PDF:', err));
-          }
-          
-          // Update the deposit request with gold details
-          updates.amountGold = goldGrams.toFixed(6);
-          updates.goldPriceUsdPerGram = goldPricePerGram.toFixed(2);
-        }
-      }
-      } */
-      
-      const updatedRequest = await storage.updateDepositRequest(req.params.id, {
-        ...updates,
-        processedAt: new Date(),
-      });
-      
-      res.json({ 
-        request: updatedRequest,
-        goldPriceUsed: updates.goldPriceUsdPerGram,
-        goldGramsAllocated: updates.amountGold,
-      });
-    } catch (error) {
-      console.error('[Deposit Approval] Error:', error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Deposit Approval Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update deposit request" });
-    }
-  });
-  
-  // Get user withdrawal requests - PROTECTED: requires matching session
-  app.get("/api/withdrawal-requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const requests = await storage.getUserWithdrawalRequests(req.params.userId);
-      res.json({ requests });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get withdrawal requests" });
-    }
-  });
-  
-  // Get all withdrawal requests (Admin) - PROTECTED: requires admin authentication
-  app.get("/api/admin/withdrawal-requests", ensureAdminAsync, requirePermission('manage_withdrawals', 'view_transactions'), async (req, res) => {
-    try {
-      const requests = await storage.getAllWithdrawalRequests().catch(() => []);
-      res.json({ requests });
-    } catch (error) {
-      console.error('Failed to get withdrawal requests:', error);
-      res.json({ requests: [] });
-    }
-  });
-  
-  // Create withdrawal request (User) - PROTECTED: requires authentication + owner verification + KYC + PIN + rate limit
-  app.post("/api/withdrawal-requests", withdrawalRateLimiter, ensureAuthenticated, requireKycApproved, checkMaintenanceMode, requireMfaVerification(), requirePinVerification('withdraw_funds'), idempotencyMiddleware, async (req, res) => {
-    try {
-      const { userId, amountUsd, ...bankDetails } = req.body;
-      
-      // SECURITY: Verify user can only create withdrawal for themselves
-      if (req.session?.userId !== userId) {
-        return res.status(403).json({ message: "Not authorized to create withdrawal for another user" });
-      }
-      
-      // Get user for limit validation
-      const withdrawUser = await storage.getUser(userId);
-      if (!withdrawUser) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Validate withdrawal limits
-      const amount = parseFloat(amountUsd);
-      const limitResult = await platformLimits.validateFullTransactionLimits(
-        amount,
-        withdrawUser,
-        "Withdrawal"
-      );
-      
-      if (!limitResult.valid) {
-        return res.status(400).json({ 
-          message: limitResult.message,
-          limit: limitResult.limit,
-          current: limitResult.current
-        });
-      }
-      
-      // GOLD-ONLY COMPLIANCE: Check user has sufficient gold balance
-      // Convert requested USD to gold grams at current price
-      
-      // Get current gold price for conversion
-      const goldPricePerGram = await getGoldPricePerGram();
-      if (!goldPricePerGram || goldPricePerGram <= 0) {
-        return res.status(503).json({ message: "Unable to fetch gold price. Please try again." });
-      }
-      
-      const withdrawAmountUsd = parseFloat(amountUsd);
-      const goldGramsRequired = withdrawAmountUsd / goldPricePerGram;
-      
-      // Get the selected wallet type from request (LGPW or FGPW)
-      const selectedWalletType = (bankDetails.goldWalletType || 'LGPW') as GoldWalletType;
-      
-      // Use canonical spend-guard validation
-      const spendValidation = await validateSpend(userId, goldGramsRequired, selectedWalletType);
-      if (!spendValidation.valid) {
-        const availableUsd = spendValidation.availableGrams * goldPricePerGram;
-        return res.status(400).json({ 
-          message: spendValidation.error || `Insufficient balance. You have ${spendValidation.availableGrams.toFixed(4)}g gold (≈$${availableUsd.toFixed(2)}) available in ${selectedWalletType}.`,
-          availableGrams: spendValidation.availableGrams,
-          availableUsd,
-          requiredGrams: goldGramsRequired
-        });
-      }
-      
-      // Generate reference number
-      const referenceNumber = `WTH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      const requestData = insertWithdrawalRequestSchema.parse({
-        userId,
-        amountUsd,
-        referenceNumber,
-        ...bankDetails,
-        // Always store server-computed gold values for accurate refunds on rejection
-        goldGrams: goldGramsRequired.toFixed(6),
-        goldPriceAtRequest: goldPricePerGram.toFixed(2),
-      });
-      
-      // GOLD-ONLY: Deduct gold grams from the selected wallet type atomically with request creation
-      // SECURITY: Uses atomic conditional UPDATE (WHERE balance >= amount) inside the transaction
-      // to prevent TOCTOU race conditions on concurrent withdrawal requests.
-      const request = await storage.withTransaction(async (txStorage) => {
-        if (selectedWalletType === 'LGPW') {
-          // Atomic deduction: row is locked by UPDATE, balance verified in the WHERE clause.
-          // If concurrent requests race, only the first sufficient deduction succeeds.
-          // CAST(... AS NUMERIC) is required — Drizzle gte() on decimal columns
-          // does lexicographical string comparison, which is wrong for numbers.
-          const updated = await db.update(vaultOwnershipSummary).set({
-            mpgwAvailableGrams: sql`${vaultOwnershipSummary.mpgwAvailableGrams} - ${goldGramsRequired}`,
-            lastUpdated: new Date(),
-          }).where(and(
-            eq(vaultOwnershipSummary.userId, userId),
-            sql`CAST(${vaultOwnershipSummary.mpgwAvailableGrams} AS NUMERIC) >= ${goldGramsRequired}`,
-          )).returning({ id: vaultOwnershipSummary.userId });
-          if (updated.length === 0) {
-            throw new Error('Insufficient LGPW balance for withdrawal');
-          }
-        } else {
-          // For FGPW, need to consume from FGPW batches (already SAFE — uses FOR UPDATE)
-          const { consumeFpgwBatches } = await import("./fpgw-batch-service");
-          await consumeFpgwBatches(userId, goldGramsRequired, 'withdrawal_hold');
-        }
-
-        return await txStorage.createWithdrawalRequest(requestData);
-      });
-      
-      // Notify all admins of new withdrawal request (reusing withdrawUser from limit validation above)
-      notifyAllAdmins({
-        title: 'New Withdrawal Request',
-        message: `${withdrawUser?.firstName || 'User'} requested a withdrawal of $${parseFloat(amountUsd).toLocaleString()}`,
-        type: 'transaction',
-        link: '/admin/transactions',
-      });
-      
-      // Send withdrawal requested email to user
-      if (withdrawUser?.email) {
-        sendEmail(withdrawUser.email, EMAIL_TEMPLATES.WITHDRAWAL_REQUESTED, {
-          user_name: `${withdrawUser.firstName} ${withdrawUser.lastName}`,
-          amount: parseFloat(amountUsd).toFixed(2),
-          reference_number: referenceNumber,
-        }).catch(err => console.error('[Email] Withdrawal requested notification failed:', err));
-      }
-      
-      // Create bell notification for withdrawal request submission
-      await storage.createNotification({
-        userId,
-        title: 'Withdrawal Request Submitted',
-        message: `Your withdrawal request of $${parseFloat(amountUsd).toFixed(2)} has been submitted and is being processed.`,
-        type: 'transaction',
-        link: '/dashboard',
-      });
-      
-      // Log platform activity
-      logActivity({
-        type: 'withdrawal',
-        title: 'Withdrawal Request',
-        description: `$${parseFloat(amountUsd).toFixed(2)} withdrawal request from ${withdrawUser?.firstName || 'User'} ${withdrawUser?.lastName || ''}`,
-        details: { referenceNumber, bankName },
-        severity: 'info',
-      });
-      
-      res.json({ request });
-
-      // Low balance alert: check if LGPW balance dropped below threshold after hold
-      if (selectedWalletType === 'LGPW' && withdrawUser?.email) {
-        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
-        checkAndSendLowBalanceAlert(
-          storage, userId, withdrawUser.email,
-          withdrawUser.firstName, withdrawUser.lastName,
-          getGoldPricePerGram,
-        ).catch(err => console.error('[Email] Low balance check (withdrawal) failed:', err));
-      }
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create withdrawal request" });
-    }
-  });
-  
-  // Update withdrawal request (Admin - process/reject) - PROTECTED
-  app.patch("/api/admin/withdrawal-requests/:id", ensureAdminAsync, requirePermission('manage_withdrawals'), async (req, res) => {
-    try {
-      const request = await storage.getWithdrawalRequest(req.params.id);
-      if (!request) {
-        return res.status(404).json({ message: "Withdrawal request not found" });
-      }
-
-      // SECURITY: Prevent self-approval — admin cannot approve/reject their own withdrawal request
-      const adminSessionUserId = req.session?.userId;
-      if (adminSessionUserId && adminSessionUserId === request.userId) {
-        return res.status(403).json({
-          message: 'Self-approval not allowed. An admin cannot approve or reject their own withdrawal request.',
-          code: 'SELF_APPROVAL_BLOCKED',
-        });
-      }
-      
-      const updates = req.body;
-      
-      // If completing withdrawal, create transaction record
-      if (updates.status === 'Completed' && request.status !== 'Completed') {
-        await storage.createTransaction({
-          userId: request.userId,
-          type: 'Withdrawal',
-          status: 'Completed',
-          amountUsd: request.amountUsd.toString(),
-          description: `Withdrawal completed - Ref: ${request.referenceNumber}`,
-          referenceId: request.referenceNumber,
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          approvedBy: updates.processedBy,
-          approvedAt: new Date(),
-          updatedAt: new Date(),
-        });
-        
-        // Send email notification for withdrawal completion
-        const withdrawalUser = await storage.getUser(request.userId);
-        if (withdrawalUser && withdrawalUser.email) {
-          sendEmailDirect(
-            withdrawalUser.email,
-            `Withdrawal Completed - $${parseFloat(request.amountUsd.toString()).toFixed(2)}`,
-            `
-            <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-              <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-                <h1 style="color: white; margin: 0;">Withdrawal Completed!</h1>
-              </div>
-              <div style="padding: 30px; background: #ffffff;">
-                <p>Hello ${withdrawalUser.firstName},</p>
-                <p>Your withdrawal request has been processed and the funds have been sent to your bank account.</p>
-                <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0;">
-                  <table style="width: 100%; border-collapse: collapse;">
-                    <tr><td style="padding: 8px 0;">Amount:</td><td style="text-align: right; font-weight: bold; color: #f97316;">$${parseFloat(request.amountUsd.toString()).toFixed(2)}</td></tr>
-                    <tr><td style="padding: 8px 0;">Reference:</td><td style="text-align: right;">${request.referenceNumber}</td></tr>
-                    <tr><td style="padding: 8px 0;">Bank:</td><td style="text-align: right;">${request.bankName || 'N/A'}</td></tr>
-                    <tr><td style="padding: 8px 0;">Account:</td><td style="text-align: right;">****${(request.accountNumber || '').slice(-4)}</td></tr>
-                  </table>
-                </div>
-                <p>Please allow 1-3 business days for the funds to appear in your bank account.</p>
-                <p style="text-align: center; margin-top: 30px;">
-                  <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Transaction History</a>
-                </p>
-              </div>
-              <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-                <p>Finatrades - Gold-Backed Digital Finance</p>
-              </div>
-            </div>
-            `
-          ).catch(err => console.error('[Email] Failed to send withdrawal completion:', err));
-        }
-        
-        // Create bell notification for withdrawal completion
-        await storage.createNotification({
-          userId: request.userId,
-          title: 'Withdrawal Completed',
-          message: `Your withdrawal of $${parseFloat(request.amountUsd.toString()).toFixed(2)} has been processed and sent to your bank account.`,
-          type: 'transaction',
-          link: '/dashboard',
-        });
-      }
-      
-      // If rejecting from Pending or Processing, refund the held gold grams back to the vault ownership summary
-      if (updates.status === 'Rejected' && (request.status === 'Pending' || request.status === 'Processing')) {
-        // GOLD-DENOMINATED REFUND: Return gold grams to the wallet that was originally debited.
-        // Do NOT update usdBalance — this platform is gold-denominated.
-        const goldGramsToRefund = request.goldGrams ? parseFloat(request.goldGrams.toString()) : null;
-        const walletType = (request.goldWalletType as 'LGPW' | 'FGPW') || 'LGPW';
-
-        // Derive gold grams to refund: use stored value first, then compute from amountUsd / goldPriceAtRequest.
-        // If neither is available, block rejection to prevent lost gold — admin must investigate.
-        let resolvedGoldGrams = goldGramsToRefund;
-        if (!resolvedGoldGrams || resolvedGoldGrams <= 0) {
-          const storedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
-          const storedUsd = request.amountUsd ? parseFloat(request.amountUsd.toString()) : 0;
-          if (storedPrice > 0 && storedUsd > 0) {
-            resolvedGoldGrams = storedUsd / storedPrice;
-          }
-        }
-
-        if (!resolvedGoldGrams || resolvedGoldGrams <= 0) {
-          // Cannot determine how much gold to refund — block rejection to prevent lost value
-          return res.status(400).json({
-            message: 'Cannot reject this withdrawal: gold amount cannot be determined (goldGrams and goldPriceAtRequest are both missing). Please resolve this request manually by reviewing the transaction history and restoring the held gold directly in the user\'s vault.',
-            code: 'REFUND_DATA_MISSING',
-            requestId: request.id,
-            referenceNumber: request.referenceNumber,
-          });
-        }
-
-        const [existingSummary] = await db.select()
-          .from(vaultOwnershipSummary)
-          .where(eq(vaultOwnershipSummary.userId, request.userId));
-
-        if (walletType === 'LGPW') {
-          if (existingSummary) {
-            await db.update(vaultOwnershipSummary).set({
-              mpgwAvailableGrams: (parseFloat(existingSummary.mpgwAvailableGrams || '0') + resolvedGoldGrams).toFixed(6),
-              lastUpdated: new Date(),
-            }).where(eq(vaultOwnershipSummary.userId, request.userId));
-          }
-        } else {
-          // FGPW: restore by creating a new batch at the original locked price
-          const lockedPrice = request.goldPriceAtRequest ? parseFloat(request.goldPriceAtRequest.toString()) : 0;
-          if (lockedPrice <= 0) {
-            // Block FGPW rejection if locked price is missing — FGPW batches require the original locked price
-            return res.status(400).json({
-              message: 'Cannot reject this FGPW withdrawal: goldPriceAtRequest is missing and cannot restore fixed-price batch. Please resolve this request manually.',
-              code: 'FGPW_REFUND_PRICE_MISSING',
-              requestId: request.id,
-              referenceNumber: request.referenceNumber,
-            });
-          }
-          const { createFpgwBatch } = await import('./fpgw-batch-service');
-          await createFpgwBatch({
-            userId: request.userId,
-            goldGrams: resolvedGoldGrams,
-            lockedPriceUsd: lockedPrice,
-            sourceType: 'deposit',
-            notes: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
-          });
-        }
-
-        // Create refund transaction record (gold denomination)
-        await storage.createTransaction({
-          userId: request.userId,
-          type: 'Deposit',
-          status: 'Completed',
-          amountGold: resolvedGoldGrams.toString(),
-          amountUsd: request.amountUsd.toString(),
-          description: `Withdrawal refund (rejected) - Ref: ${request.referenceNumber}`,
-          referenceId: `${request.referenceNumber}-REFUND`,
-          sourceModule: 'finapay',
-          goldWalletType: walletType,
-          approvedBy: updates.processedBy,
-          approvedAt: new Date(),
-          updatedAt: new Date(),
-        });
-        
-        // Create bell notification for withdrawal rejection
-        await storage.createNotification({
-          userId: request.userId,
-          title: 'Withdrawal Rejected',
-          message: `Your withdrawal request of $${parseFloat(request.amountUsd.toString()).toFixed(2)} was rejected. Any held gold has been returned to your wallet.`,
-          type: 'transaction',
-          link: '/dashboard',
-        });
-      }
-      
-      const updatedRequest = await storage.updateWithdrawalRequest(req.params.id, {
-        ...updates,
-        processedAt: new Date(),
-      });
-      
-      res.json({ request: updatedRequest });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to update withdrawal request" });
-    }
-  });
-  
-  // ============================================================================
-  // FINABRIDGE - TRADE FINANCE
-  // ============================================================================
-  
-  // Get user trade cases - PROTECTED
   app.get("/api/trade/cases/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const cases = await storage.getUserTradeCases(req.params.userId);
-      res.json({ cases });
+      return res.json({ cases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get trade cases" });
+      return res.status(400).json({ message: "Failed to get trade cases" });
     }
   });
   
@@ -11276,9 +7152,9 @@ export async function registerRoutes(
   app.get("/api/admin/trade/cases", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const cases = await storage.getAllTradeCases();
-      res.json({ cases });
+      return res.json({ cases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get trade cases" });
+      return res.status(400).json({ message: "Failed to get trade cases" });
     }
   });
   
@@ -11317,9 +7193,9 @@ export async function registerRoutes(
         }).catch(err => console.error('[Email] Trade case created notification failed:', err));
       }
       
-      res.json({ tradeCase });
+      return res.json({ tradeCase });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade case" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade case" });
     }
   });
   
@@ -11335,27 +7211,27 @@ export async function registerRoutes(
 
       // Fire status-specific email triggers after response is sent
       try {
-        const caseUser = await storage.getUser(tradeCase.userId);
-        const statusChanged = previousCase && previousCase.status !== tradeCase.status;
+        const caseUser = await storage.getUser(tradeCase!.userId);
+        const statusChanged = (previousCase as any) && previousCase!.status !== tradeCase!.status;
         const notes = req.body.notes || req.body.adminNotes || '';
-        const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(',')[0]}` : 'https://finatrades.com');
+        const appBaseUrl = process.env.APP_URL || (process.env.REPLIT_DOMAINS ? `https://${(process.env.REPLIT_DOMAINS as string).split(',')[0]}` : 'https://finatrades.com');
 
         const requestDocuments = req.body.requestDocuments === true;
-        const caseRef = tradeCase.caseNumber || tradeCase.id;
+        const caseRef = tradeCase!.caseNumber || tradeCase!.id;
 
         if (caseUser?.email) {
-          const userName = `${caseUser.firstName || ''} ${caseUser.lastName || ''}`.trim() || 'Valued Client';
+          const userName = `${caseUser!.firstName || ''} ${caseUser!.lastName || ''}`.trim() || 'Valued Client';
 
           // Admin explicitly requests additional documents (body flag, independent of status change)
           if (requestDocuments) {
-            sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_DOCUMENT_REQUEST, {
+            sendEmail(caseUser!.email, EMAIL_TEMPLATES.TRADE_DOCUMENT_REQUEST, {
               user_name: userName,
               case_id: caseRef,
               required_documents: notes || 'Please log in to view the required documents.',
               upload_url: `${appBaseUrl}/trade-finance`,
-            }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade document request email failed:', e));
+            }, { userId: caseUser!.id }).catch(e => console.error('[Email] Trade document request email failed:', e));
             await storage.createNotification({
-              userId: caseUser.id,
+              userId: caseUser!.id,
               title: 'Documents Required',
               message: `Additional documents are required for your trade finance case ${caseRef}. Please upload them promptly.`,
               type: 'trade',
@@ -11365,43 +7241,44 @@ export async function registerRoutes(
           }
 
           if (statusChanged) {
-            if (tradeCase.status === 'Approved') {
-              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
+            if (tradeCase!.status === 'Approved') {
+              sendEmail(caseUser!.email, EMAIL_TEMPLATES.TRADE_CASE_APPROVED, {
                 user_name: userName,
                 case_id: caseRef,
-                credit_limit: tradeCase.tradeValueUsd || '0',
+                credit_limit: tradeCase!.tradeValueUsd || '0',
                 valid_until: 'As per agreement',
-              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
-            } else if (tradeCase.status === 'Rejected' || tradeCase.status === 'Cancelled') {
-              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
+              }, { userId: caseUser!.id }).catch(e => console.error('[Email] Trade case approved email failed:', e));
+            } else if (tradeCase!.status === 'Rejected' || tradeCase!.status === 'Cancelled') {
+              sendEmail(caseUser!.email, EMAIL_TEMPLATES.TRADE_CASE_REJECTED, {
                 user_name: userName,
                 trade_ref: caseRef,
                 rejection_reason: notes || 'Does not meet current eligibility requirements.',
                 rejection_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
-            } else if (tradeCase.status === 'Settled') {
+              }, { userId: caseUser!.id }).catch(e => console.error('[Email] Trade case rejected email failed:', e));
+            } else if (tradeCase!.status === 'Settled') {
               // Settled = trade case successfully completed
-              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
+              sendEmail(caseUser!.email, EMAIL_TEMPLATES.TRADE_CASE_COMPLETED, {
                 user_name: userName,
                 case_id: caseRef,
-                total_value: tradeCase.tradeValueUsd || '0',
+                total_value: tradeCase!.tradeValueUsd || '0',
                 completion_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
-              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
+              }, { userId: caseUser!.id }).catch(e => console.error('[Email] Trade case completed email failed:', e));
             } else {
               // Generic status change (Submitted, Under Review, Active, etc.)
-              sendEmail(caseUser.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
+              sendEmail(caseUser!.email, EMAIL_TEMPLATES.TRADE_CASE_STATUS_UPDATE, {
                 user_name: userName,
                 case_id: caseRef,
-                new_status: tradeCase.status || 'Updated',
+                new_status: tradeCase!.status || 'Updated',
                 update_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
                 status_notes: notes || 'Please log in to your account for more details.',
-              }, { userId: caseUser.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
+              }, { userId: caseUser!.id }).catch(e => console.error('[Email] Trade case status email failed:', e));
             }
           }
         }
       } catch (emailErr) { console.error('[Email] Trade case status email trigger failed:', emailErr); }
+      return undefined;
     } catch (error) {
-      res.status(400).json({ message: "Failed to update trade case" });
+      return res.status(400).json({ message: "Failed to update trade case" });
     }
   });
   
@@ -11409,9 +7286,9 @@ export async function registerRoutes(
   app.get("/api/trade/documents/:caseId", ensureAuthenticated, async (req, res) => {
     try {
       const documents = await storage.getCaseDocuments(req.params.caseId);
-      res.json({ documents });
+      return res.json({ documents });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get documents" });
+      return res.status(400).json({ message: "Failed to get documents" });
     }
   });
   
@@ -11445,13 +7322,13 @@ export async function registerRoutes(
       try {
         const tradeCase = await storage.getTradeCase(document.caseId);
         if (tradeCase) {
-          const uploaderUser = await storage.getUser(tradeCase.userId);
-          const uploaderName = uploaderUser ? `${uploaderUser.firstName || ''} ${uploaderUser.lastName || ''}`.trim() || uploaderUser.email : 'User';
+          const uploaderUser = await storage.getUser(tradeCase!.userId);
+          const uploaderName = uploaderUser ? `${uploaderUser!.firstName || ''} ${uploaderUser!.lastName || ''}`.trim() || uploaderUser!.email : 'User';
           const adminEmails = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
           for (const adminEmail of adminEmails) {
             sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
               user_name: uploaderName,
-              trade_ref: tradeCase.caseNumber,
+              trade_ref: tradeCase!.caseNumber,
               document_type: document.documentType || 'Document',
               uploaded_by: uploaderName,
               upload_date: new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }),
@@ -11459,8 +7336,9 @@ export async function registerRoutes(
           }
         }
       } catch (notifyErr) { console.error('[Email] Trade document upload notification failed:', notifyErr); }
+      return undefined;
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
     }
   });
   
@@ -11471,9 +7349,9 @@ export async function registerRoutes(
       if (!document) {
         return res.status(404).json({ message: "Document not found" });
       }
-      res.json({ document });
+      return res.json({ document });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update document" });
+      return res.status(400).json({ message: "Failed to update document" });
     }
   });
   
@@ -11518,13 +7396,13 @@ export async function registerRoutes(
         details: `FinaBridge disclaimer accepted as ${role}`,
       });
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         acceptedAt: updatedUser?.finabridgeDisclaimerAcceptedAt,
         role: updatedUser?.finabridgeRole 
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to record disclaimer acceptance" });
+      return res.status(400).json({ message: "Failed to record disclaimer acceptance" });
     }
   });
   
@@ -11534,10 +7412,10 @@ export async function registerRoutes(
   app.get("/api/finabridge/importer/requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const requests = await storage.getUserTradeRequests(req.params.userId);
-      res.json({ requests });
+      return res.json({ requests });
     } catch (error) {
       console.error('[FinaBridge] Error fetching trade requests:', error);
-      res.status(400).json({ message: "Failed to get trade requests" });
+      return res.status(400).json({ message: "Failed to get trade requests" });
     }
   });
   
@@ -11560,10 +7438,8 @@ export async function registerRoutes(
       
       // SECURITY: Enforce importerId from session - non-admins can only create for themselves
       if (!isAdmin) {
-        requestData.importerId = sessionUserId;
         requestData.importerUserId = sessionUserId;
-      } else if (!requestData.importerId) {
-        requestData.importerId = sessionUserId;
+      } else if (!requestData.importerUserId) {
         requestData.importerUserId = sessionUserId;
       }
 
@@ -11606,7 +7482,7 @@ export async function registerRoutes(
       }
       
       // Balance check: when submitting as Open, verify FinaBridge wallet has enough gold
-      if (requestData.status === 'Open') {
+      if ((requestData.status as any) === 'Open') {
         const settlementGrams = parseFloat(requestData.settlementGoldGrams || '0');
         if (settlementGrams > 0) {
           const fbWallet = await storage.getOrCreateFinabridgeWallet(requestData.importerUserId);
@@ -11632,9 +7508,9 @@ export async function registerRoutes(
         details: `Trade request created: ${requestData.tradeValueUsd} USD`,
       });
       
-      res.json({ tradeRequest });
+      return res.json({ tradeRequest });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade request" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create trade request" });
     }
   });
   
@@ -11760,9 +7636,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Email] Failed to send FinaBridge submission emails:', e); }
       
-      res.json({ tradeRequest: updated });
+      return res.json({ tradeRequest: updated });
     } catch (error) {
-      res.status(400).json({ message: "Failed to submit trade request" });
+      return res.status(400).json({ message: "Failed to submit trade request" });
     }
   });
   
@@ -11797,9 +7673,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ proposals: proposalsWithExporter });
+      return res.json({ proposals: proposalsWithExporter });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get forwarded proposals" });
+      return res.status(400).json({ message: "Failed to get forwarded proposals" });
     }
   });
   
@@ -12020,9 +7896,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] Failed to create proposal accepted notification:', e); }
       
-      res.json({ settlementHold, dealRoom, message: "Proposal accepted, gold locked, and deal room created" });
+      return res.json({ settlementHold, dealRoom, message: "Proposal accepted, gold locked, and deal room created" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to accept proposal" });
     }
   });
 
@@ -12082,9 +7958,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] Failed to create importer decline notification:', e); }
       
-      res.json({ message: "Proposal declined successfully" });
+      return res.json({ message: "Proposal declined successfully" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to decline proposal" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to decline proposal" });
     }
   });
   
@@ -12122,9 +7998,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ requests: sanitizedRequests });
+      return res.json({ requests: sanitizedRequests });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get open trade requests" });
+      return res.status(400).json({ message: "Failed to get open trade requests" });
     }
   });
   
@@ -12149,9 +8025,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ proposals: proposalsWithRequest });
+      return res.json({ proposals: proposalsWithRequest });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get proposals" });
+      return res.status(400).json({ message: "Failed to get proposals" });
     }
   });
   
@@ -12171,7 +8047,7 @@ export async function registerRoutes(
         contactPhone: kyc?.tradingContactPhone || user?.phoneNumber || '',
       });
     } catch (err: unknown) {
-      res.status(400).json({ message: "Failed to load KYC profile" });
+      return res.status(400).json({ message: "Failed to load KYC profile" });
     }
   });
 
@@ -12206,10 +8082,10 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ proposals: allForwardedProposals });
+      return res.json({ proposals: allForwardedProposals });
     } catch (err) {
       console.error("Error fetching forwarded proposals:", err);
-      res.status(500).json({ message: "Failed to fetch forwarded proposals" });
+      return res.status(500).json({ message: "Failed to fetch forwarded proposals" });
     }
   });
   
@@ -12266,9 +8142,9 @@ export async function registerRoutes(
         }, { userId: request.importerUserId, recipientName: importerUser.firstName || undefined }).catch(err => console.error('[Email] FinaBridge new proposal email failed:', err));
       }
       
-      res.json({ proposal });
+      return res.json({ proposal });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create proposal" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create proposal" });
     }
   });
 
@@ -12293,9 +8169,9 @@ export async function registerRoutes(
       
       const updated = await storage.updateTradeProposal(req.params.id, updateData);
       
-      res.json({ proposal });
+      return res.json({ proposal });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit proposal" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit proposal" });
     }
   });
   
@@ -12317,9 +8193,9 @@ export async function registerRoutes(
         finabridgeRole: u.finabridgeRole,
       }));
       
-      res.json({ users: usersWithAcceptanceStatus });
+      return res.json({ users: usersWithAcceptanceStatus });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get disclaimer acceptances" });
+      return res.status(400).json({ message: "Failed to get disclaimer acceptances" });
     }
   });
   
@@ -12347,9 +8223,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ requests: requestsWithImporter });
+      return res.json({ requests: requestsWithImporter });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get trade requests" });
+      return res.status(400).json({ message: "Failed to get trade requests" });
     }
   });
   
@@ -12382,9 +8258,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ proposals: proposalsWithExporter });
+      return res.json({ proposals: proposalsWithExporter });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get proposals" });
+      return res.status(400).json({ message: "Failed to get proposals" });
     }
   });
   
@@ -12400,9 +8276,9 @@ export async function registerRoutes(
       }
       
       const updated = await storage.updateTradeProposal(req.params.id, { status: 'Shortlisted' });
-      res.json({ proposal: updated });
+      return res.json({ proposal: updated });
     } catch (error) {
-      res.status(400).json({ message: "Failed to shortlist proposal" });
+      return res.status(400).json({ message: "Failed to shortlist proposal" });
     }
   });
   
@@ -12431,9 +8307,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] Failed to create proposal rejected notification:', e); }
       
-      res.json({ proposal: updated });
+      return res.json({ proposal: updated });
     } catch (error) {
-      res.status(400).json({ message: "Failed to reject proposal" });
+      return res.status(400).json({ message: "Failed to reject proposal" });
     }
   });
   
@@ -12459,9 +8335,9 @@ export async function registerRoutes(
         customDocumentNotes: customDocumentNotes?.trim() || '',
         uploadedRevisionDocuments: '[]', // Reset uploaded documents on new request
       });
-      res.json({ proposal: updated });
+      return res.json({ proposal: updated });
     } catch (error) {
-      res.status(400).json({ message: "Failed to request modification" });
+      return res.status(400).json({ message: "Failed to request modification" });
     }
   });
   
@@ -12515,9 +8391,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] Failed to create proposal forwarded notification:', e); }
       
-      res.json({ message: `${proposalIds.length} proposals forwarded to importer` });
+      return res.json({ message: `${proposalIds.length} proposals forwarded to importer` });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to forward proposals" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to forward proposals" });
     }
   });
   
@@ -12630,9 +8506,9 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ message: `AI callback processed — status updated to ${aiStatus === 'Pass' ? 'Tier 1 Review' : 'AI Rejected'}` });
+      return res.json({ message: `AI callback processed — status updated to ${aiStatus === 'Pass' ? 'Tier 1 Review' : 'AI Rejected'}` });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process AI callback" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process AI callback" });
     }
   });
 
@@ -12664,11 +8540,11 @@ export async function registerRoutes(
         };
       }));
 
-      res.json({ requests: enriched });
+      return res.json({ requests: enriched });
     } catch (error) {
       console.error('[FinaBridge] GET tier-review failed:', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier Review Fetch Failed', route: 'GET /api/admin/finabridge/tier-review' });
-      res.status(400).json({ message: "Failed to get tier review requests" });
+      return res.status(400).json({ message: "Failed to get tier review requests" });
     }
   });
 
@@ -12722,11 +8598,11 @@ export async function registerRoutes(
         }).catch(err => console.error(`[Email] Tier1 approve CC to ${cc.name} failed:`, err));
       }
 
-      res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
+      return res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
     } catch (error) {
       console.error('[FinaBridge] tier1-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 1 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-approve` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
     }
   });
 
@@ -12759,11 +8635,11 @@ export async function registerRoutes(
         }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier1 rejection importer email failed:', err));
       }
 
-      res.json({ message: "Tier 1 rejected — importer notified" });
+      return res.json({ message: "Tier 1 rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier1-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 1 Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-reject` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 1" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 1" });
     }
   });
 
@@ -12823,11 +8699,11 @@ export async function registerRoutes(
         }).catch(err => console.error(`[Email] Tier2 approve CC to ${cc.name} failed:`, err));
       }
 
-      res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
+      return res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
     } catch (error) {
       console.error('[FinaBridge] tier2-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-approve` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
     }
   });
 
@@ -12859,11 +8735,11 @@ export async function registerRoutes(
         }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier2 rejection importer email failed:', err));
       }
 
-      res.json({ message: "Tier 2 rejected — importer notified" });
+      return res.json({ message: "Tier 2 rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier2-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-reject` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
     }
   });
 
@@ -12915,11 +8791,11 @@ export async function registerRoutes(
         }).catch(err => console.error('[Email] Trade live team FYI email failed:', err));
       }
 
-      res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
+      return res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
     } catch (error) {
       console.error('[FinaBridge] tier3-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-approve` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
     }
   });
 
@@ -12951,11 +8827,11 @@ export async function registerRoutes(
         }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier3 rejection importer email failed:', err));
       }
 
-      res.json({ message: "Director rejected — importer notified" });
+      return res.json({ message: "Director rejected — importer notified" });
     } catch (error) {
       console.error('[FinaBridge] tier3-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-reject` });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
     }
   });
 
@@ -13026,7 +8902,7 @@ export async function registerRoutes(
           goldGrams: entry.goldGrams,
           valueUsd: entry.valueUsd,
           balanceAfterGrams: '0',
-          notes: entry.notes || (entry.action === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
+          notes: entry.notes || ((entry.action as any) === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
           createdAt: entry.createdAt,
         });
       }
@@ -13046,10 +8922,10 @@ export async function registerRoutes(
       entries.reverse();
       const sortedEntries = entries.slice(0, limit);
       
-      res.json({ entries: sortedEntries });
+      return res.json({ entries: sortedEntries });
     } catch (error) {
       console.error("Failed to get FinaBridge ledger:", error);
-      res.status(400).json({ message: "Failed to get FinaBridge ledger history" });
+      return res.status(400).json({ message: "Failed to get FinaBridge ledger history" });
     }
   });
   
@@ -13059,9 +8935,9 @@ export async function registerRoutes(
   app.get("/api/finabridge/settlement-holds/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const holds = await storage.getUserSettlementHolds(req.params.userId);
-      res.json({ holds });
+      return res.json({ holds });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get settlement holds" });
+      return res.status(400).json({ message: "Failed to get settlement holds" });
     }
   });
   
@@ -13069,9 +8945,9 @@ export async function registerRoutes(
   app.get("/api/admin/finabridge/settlement-holds", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const holds = await storage.getAllSettlementHolds();
-      res.json({ holds });
+      return res.json({ holds });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get settlement holds" });
+      return res.status(400).json({ message: "Failed to get settlement holds" });
     }
   });
   
@@ -13183,9 +9059,9 @@ export async function registerRoutes(
         })
         .catch(err => console.error('[Routes] Trade Release certificate error:', err));
       
-      res.json({ message: "Settlement released and gold transferred to exporter" });
+      return res.json({ message: "Settlement released and gold transferred to exporter" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release settlement" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release settlement" });
     }
   });
 
@@ -13248,13 +9124,13 @@ export async function registerRoutes(
       const { vaultLedgerService } = await import('./vault-ledger-service');
       await vaultLedgerService.recordLedgerEntry({
         userId: hold.importerUserId,
-        action: 'Unlock',
+        action: 'Unlock' as any,
         goldGrams: lockedAmount,
         goldPriceUsdPerGram: 0,
-        fromWallet: 'FinaBridge',
-        toWallet: 'FinaBridge',
-        fromStatus: 'Locked',
-        toStatus: 'Available',
+        fromWallet: 'FinaBridge' as any,
+        toWallet: 'FinaBridge' as any,
+        fromStatus: 'Locked' as any,
+        toStatus: 'Available' as any,
         notes: `Settlement cancelled: ${reason || 'Trade cancelled'}`,
         createdBy: adminUser.id,
       });
@@ -13269,9 +9145,9 @@ export async function registerRoutes(
         details: `Settlement cancelled, ${lockedAmount}g returned to importer. Reason: ${reason}`,
       });
       
-      res.json({ message: "Settlement cancelled and gold returned to importer" });
+      return res.json({ message: "Settlement cancelled and gold returned to importer" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to cancel settlement" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to cancel settlement" });
     }
   });
 
@@ -13356,8 +9232,8 @@ export async function registerRoutes(
         action: 'Transfer_Receive',
         goldGrams: releaseGrams,
         goldPriceUsdPerGram: releaseGrams > 0 ? tradeValue / releaseGrams : 0,
-        fromWallet: 'FinaBridge',
-        toWallet: 'FinaBridge',
+        fromWallet: 'FinaBridge' as any,
+        toWallet: 'FinaBridge' as any,
         toStatus: 'Available',
         transactionId: tx.id,
         counterpartyUserId: hold.importerUserId,
@@ -13382,14 +9258,14 @@ export async function registerRoutes(
         await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Completed' });
       }
       
-      res.json({ 
+      return res.json({ 
         message: `Released ${releaseGrams.toFixed(4)}g (${percentage}%) to exporter`,
         released: releaseGrams,
         remaining: remaining - releaseGrams,
         totalReleased: newTotalReleased,
       });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release partial settlement" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to release partial settlement" });
     }
   });
 
@@ -13397,9 +9273,9 @@ export async function registerRoutes(
   app.get("/api/admin/finabridge/settlement-holds/:id/partial-releases", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const releases = await db.select().from(partialSettlements).where(eq(partialSettlements.settlementHoldId, req.params.id)).orderBy(desc(partialSettlements.createdAt));
-      res.json({ releases });
+      return res.json({ releases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get partial releases" });
+      return res.status(400).json({ message: "Failed to get partial releases" });
     }
   });
 
@@ -13482,9 +9358,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] Failed to create dispute raised notification:', e); }
       
-      res.json({ dispute, message: "Dispute submitted successfully" });
+      return res.json({ dispute, message: "Dispute submitted successfully" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to raise dispute" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to raise dispute" });
     }
   });
 
@@ -13492,9 +9368,9 @@ export async function registerRoutes(
   app.get("/api/finabridge/disputes/user/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const disputes = await db.select().from(tradeDisputes).where(eq(tradeDisputes.raisedByUserId, req.params.userId)).orderBy(desc(tradeDisputes.createdAt));
-      res.json({ disputes });
+      return res.json({ disputes });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get disputes" });
+      return res.status(400).json({ message: "Failed to get disputes" });
     }
   });
 
@@ -13513,7 +9389,7 @@ export async function registerRoutes(
       
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
+      const isAdmin = sessionUser?.role === 'admin' && ((sessionUser as any).permissions?.includes('view_finabridge') || (sessionUser as any).permissions?.includes('manage_finabridge'));
       
       if (!isAdmin) {
         // Verify user is party to the trade or is the dispute raiser
@@ -13534,9 +9410,9 @@ export async function registerRoutes(
       
       const comments = await db.select().from(tradeDisputeComments).where(eq(tradeDisputeComments.disputeId, dispute.id)).orderBy(tradeDisputeComments.createdAt);
       
-      res.json({ dispute, comments });
+      return res.json({ dispute, comments });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get dispute" });
+      return res.status(400).json({ message: "Failed to get dispute" });
     }
   });
 
@@ -13557,7 +9433,7 @@ export async function registerRoutes(
       
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && sessionUser.permissions?.includes('manage_finabridge');
+      const isAdmin = sessionUser?.role === 'admin' && (sessionUser as any).permissions?.includes('manage_finabridge');
       
       let userRole = '';
       if (isAdmin) {
@@ -13592,9 +9468,9 @@ export async function registerRoutes(
         isInternal: isAdmin ? (isInternal || false) : false,
       }).returning();
       
-      res.json({ comment });
+      return res.json({ comment });
     } catch (error) {
-      res.status(400).json({ message: "Failed to add comment" });
+      return res.status(400).json({ message: "Failed to add comment" });
     }
   });
 
@@ -13613,9 +9489,9 @@ export async function registerRoutes(
         };
       }));
       
-      res.json({ disputes: disputesWithDetails });
+      return res.json({ disputes: disputesWithDetails });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get disputes" });
+      return res.status(400).json({ message: "Failed to get disputes" });
     }
   });
 
@@ -13645,9 +9521,9 @@ export async function registerRoutes(
         details: `Status changed to ${status}`,
       });
       
-      res.json({ message: "Dispute status updated" });
+      return res.json({ message: "Dispute status updated" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update dispute" });
+      return res.status(400).json({ message: "Failed to update dispute" });
     }
   });
 
@@ -13679,9 +9555,9 @@ export async function registerRoutes(
         details: `Dispute resolved: ${resolution}`,
       });
       
-      res.json({ message: "Dispute resolved successfully" });
+      return res.json({ message: "Dispute resolved successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to resolve dispute" });
+      return res.status(400).json({ message: "Failed to resolve dispute" });
     }
   });
 
@@ -13703,9 +9579,9 @@ export async function registerRoutes(
         .where(eq(shipmentMilestones.shipmentId, shipment.id))
         .orderBy(shipmentMilestones.createdAt);
       
-      res.json({ shipment: { ...shipment, milestones } });
+      return res.json({ shipment: { ...shipment, milestones } });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get shipment" });
+      return res.status(400).json({ message: "Failed to get shipment" });
     }
   });
 
@@ -13773,7 +9649,7 @@ export async function registerRoutes(
           }
         } catch (e) { console.error('[Notification] Failed to create shipment update notification:', e); }
         
-        res.json({ shipment: updated });
+        return res.json({ shipment: updated });
       } else {
         const [shipment] = await db.insert(tradeShipments).values({
           id: crypto.randomUUID(), tradeRequestId, dealRoomId, trackingNumber, courierName, status: status || 'Pending',
@@ -13824,10 +9700,10 @@ export async function registerRoutes(
           }
         } catch (e) { console.error('[Notification] Failed to create new shipment notification:', e); }
         
-        res.json({ shipment });
+        return res.json({ shipment });
       }
     } catch (error) {
-      res.status(400).json({ message: "Failed to update shipment" });
+      return res.status(400).json({ message: "Failed to update shipment" });
     }
   });
 
@@ -13839,9 +9715,9 @@ export async function registerRoutes(
         id: crypto.randomUUID(), shipmentId: req.params.shipmentId, milestone, status: status || 'completed',
         location, description, completedAt: status === 'completed' ? new Date() : null
       }).returning();
-      res.json({ milestone: created });
+      return res.json({ milestone: created });
     } catch (error) {
-      res.status(400).json({ message: "Failed to add milestone" });
+      return res.status(400).json({ message: "Failed to add milestone" });
     }
   });
 
@@ -13855,9 +9731,9 @@ export async function registerRoutes(
       const certificates = await db.select().from(tradeCertificates)
         .where(eq(tradeCertificates.tradeRequestId, req.params.tradeRequestId))
         .orderBy(desc(tradeCertificates.createdAt));
-      res.json({ certificates });
+      return res.json({ certificates });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get certificates" });
+      return res.status(400).json({ message: "Failed to get certificates" });
     }
   });
 
@@ -13877,9 +9753,9 @@ export async function registerRoutes(
         settlementGoldGrams: tradeRequest.settlementGoldGrams, goodsDescription: tradeRequest.goodsName,
         incoterms: tradeRequest.incoterms, signedBy: 'Finatrades Admin'
       }).returning();
-      res.json({ certificate });
+      return res.json({ certificate });
     } catch (error) {
-      res.status(400).json({ message: "Failed to generate certificate" });
+      return res.status(400).json({ message: "Failed to generate certificate" });
     }
   });
 
@@ -13898,9 +9774,9 @@ export async function registerRoutes(
           id: crypto.randomUUID(), exporterUserId: req.params.userId, trustScore: 50, verificationLevel: 'Unverified'
         }).returning();
       }
-      res.json({ trustScore });
+      return res.json({ trustScore });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get trust score" });
+      return res.status(400).json({ message: "Failed to get trust score" });
     }
   });
 
@@ -13926,9 +9802,9 @@ export async function registerRoutes(
         averageRating: avgRating.toFixed(2), totalRatings: ratings.length, trustScore: trustScoreValue, updatedAt: new Date()
       }).where(eq(exporterTrustScores.exporterUserId, exporterUserId));
       
-      res.json({ rating, message: "Rating submitted successfully" });
+      return res.json({ rating, message: "Rating submitted successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to submit rating" });
+      return res.status(400).json({ message: "Failed to submit rating" });
     }
   });
 
@@ -13938,9 +9814,9 @@ export async function registerRoutes(
       const ratings = await db.select().from(exporterRatings)
         .where(eq(exporterRatings.exporterUserId, req.params.userId))
         .orderBy(desc(exporterRatings.createdAt));
-      res.json({ ratings });
+      return res.json({ ratings });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get ratings" });
+      return res.status(400).json({ message: "Failed to get ratings" });
     }
   });
 
@@ -13953,9 +9829,9 @@ export async function registerRoutes(
     try {
       const [assessment] = await db.select().from(tradeRiskAssessments)
         .where(eq(tradeRiskAssessments.tradeRequestId, req.params.tradeRequestId));
-      res.json({ assessment });
+      return res.json({ assessment });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get risk assessment" });
+      return res.status(400).json({ message: "Failed to get risk assessment" });
     }
   });
 
@@ -13971,15 +9847,15 @@ export async function registerRoutes(
         const [updated] = await db.update(tradeRiskAssessments).set({
           riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason, assessedBy: adminUser.id, assessedAt: new Date()
         }).where(eq(tradeRiskAssessments.id, existing.id)).returning();
-        res.json({ assessment: updated });
+        return res.json({ assessment: updated });
       } else {
         const [assessment] = await db.insert(tradeRiskAssessments).values({
           id: crypto.randomUUID(), tradeRequestId, riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason, assessedBy: adminUser.id
         }).returning();
-        res.json({ assessment });
+        return res.json({ assessment });
       }
     } catch (error) {
-      res.status(400).json({ message: "Failed to update risk assessment" });
+      return res.status(400).json({ message: "Failed to update risk assessment" });
     }
   });
 
@@ -14001,9 +9877,9 @@ export async function registerRoutes(
         })
       );
       const filteredCases = casesWithDocs.filter(tc => tc.documents && tc.documents.length > 0);
-      res.json({ cases: filteredCases });
+      return res.json({ cases: filteredCases });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get AI cases" });
+      return res.status(400).json({ message: "Failed to get AI cases" });
     }
   });
 
@@ -14014,7 +9890,7 @@ export async function registerRoutes(
       if (!doc) {
         return res.status(404).json({ message: "Document not found" });
       }
-      res.json({
+      return res.json({
         documentId: doc.id,
         documentType: doc.documentType,
         fileName: doc.fileName,
@@ -14028,7 +9904,7 @@ export async function registerRoutes(
         aiRetryCount: doc.aiRetryCount,
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get AI report" });
+      return res.status(400).json({ message: "Failed to get AI report" });
     }
   });
 
@@ -14036,9 +9912,9 @@ export async function registerRoutes(
   app.get("/api/admin/finabridge/cases/:caseId/documents", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const docs = await storage.getCaseDocuments(req.params.caseId);
-      res.json({ documents: docs });
+      return res.json({ documents: docs });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get case documents" });
+      return res.status(400).json({ message: "Failed to get case documents" });
     }
   });
 
@@ -14050,8 +9926,8 @@ export async function registerRoutes(
       const disputes = await db.select().from(tradeDisputes);
       
       const totalTrades = tradeRequestsList.length;
-      const activeTrades = tradeRequestsList.filter(t => t.status === 'Submitted' || t.status === 'In Deal Room').length;
-      const completedTrades = tradeRequestsList.filter(t => t.status === 'Completed' || t.status === 'Settled').length;
+      const activeTrades = tradeRequestsList.filter(t => (t.status as any) === 'Submitted' || (t.status as any) === 'In Deal Room').length;
+      const completedTrades = tradeRequestsList.filter(t => (t.status as any) === 'Completed' || (t.status as any) === 'Settled').length;
       const totalValueUsd = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.tradeValueUsd || '0'), 0);
       const totalGoldGrams = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.settlementGoldGrams || '0'), 0);
       const avgTradeValue = totalTrades > 0 ? totalValueUsd / totalTrades : 0;
@@ -14061,12 +9937,12 @@ export async function registerRoutes(
         return res.json({
         analytics: {
           totalTrades, activeTrades, completedTrades, totalValueUsd, totalGoldGrams, avgTradeValue, successRate,
-          totalProposals: proposals.length, activeSettlements: settlements.filter(s => s.status === 'Locked').length,
+          totalProposals: proposals.length, activeSettlements: settlements.filter(s => (s.status as any) === 'Locked').length,
           openDisputes, monthlyTrends: []
         }
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get analytics" });
+      return res.status(400).json({ message: "Failed to get analytics" });
     }
   });
 
@@ -14156,9 +10032,9 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] doc upload notify failed:', e); }
       
-      res.json({ document, message: "Document uploaded successfully" });
+      return res.json({ document, message: "Document uploaded successfully" });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to upload document" });
     }
   });
 
@@ -14178,7 +10054,7 @@ export async function registerRoutes(
       
       // Check if admin with FinaBridge permissions
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && (sessionUser.permissions?.includes('view_finabridge') || sessionUser.permissions?.includes('manage_finabridge'));
+      const isAdmin = sessionUser?.role === 'admin' && ((sessionUser as any).permissions?.includes('view_finabridge') || (sessionUser as any).permissions?.includes('manage_finabridge'));
       
       // Verify user is party to the deal room or is admin
       if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
@@ -14186,9 +10062,9 @@ export async function registerRoutes(
       }
       
       const documents = await db.select().from(dealRoomDocuments).where(eq(dealRoomDocuments.dealRoomId, req.params.dealRoomId)).orderBy(desc(dealRoomDocuments.createdAt));
-      res.json({ documents });
+      return res.json({ documents });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get documents" });
+      return res.status(400).json({ message: "Failed to get documents" });
     }
   });
 
@@ -14210,9 +10086,9 @@ export async function registerRoutes(
         updatedAt: new Date(),
       }).where(eq(dealRoomDocuments.id, req.params.id));
       
-      res.json({ message: `Document ${status.toLowerCase()}` });
+      return res.json({ message: `Document ${status.toLowerCase()}` });
     } catch (error) {
-      res.status(400).json({ message: "Failed to verify document" });
+      return res.status(400).json({ message: "Failed to verify document" });
     }
   });
 
@@ -14308,7 +10184,7 @@ export async function registerRoutes(
                 const isPdf = updated.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25;
                 if (isPdf) {
                   try {
-                    const pdfParse = (await import('pdf-parse')).default;
+                    const pdfParse: any = (await import('pdf-parse' as any) as any).default || (await import('pdf-parse' as any));
                     extractedText = (await pdfParse(fileBuffer)).text || '';
                   } catch {
                     extractedText = fileBuffer.toString('utf-8').replace(/[^\x20-\x7E\n\r\t]/g, ' ');
@@ -14361,10 +10237,10 @@ export async function registerRoutes(
         }
       }
 
-      res.json({ document: updated, message: `Document ${status.toLowerCase()}` });
+      return res.json({ document: updated, message: `Document ${status.toLowerCase()}` });
     } catch (error) {
       console.error('[DealRoom] Document review error:', error);
-      res.status(400).json({ message: "Failed to review document" });
+      return res.status(400).json({ message: "Failed to review document" });
     }
   });
 
@@ -14396,13 +10272,13 @@ export async function registerRoutes(
       const rawStage = dealRoom.lcLifecycleStatus || 'Draft';
       const normalizedStage = LC_LEGACY_STAGE_MAP[rawStage] || rawStage;
 
-      res.json({
+      return res.json({
         lcLifecycleStatus: normalizedStage,
         dealRoomId: dealRoom.id,
         isClosed: dealRoom.isClosed,
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch LC lifecycle status" });
+      return res.status(400).json({ message: "Failed to fetch LC lifecycle status" });
     }
   });
 
@@ -14562,10 +10438,10 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Notification] LC stage notify failed:', e); }
 
-      res.json({ message: "LC lifecycle status updated", lcLifecycleStatus });
+      return res.json({ message: "LC lifecycle status updated", lcLifecycleStatus });
     } catch (error) {
       console.error('[DealRoom] LC status update error:', error);
-      res.status(400).json({ message: "Failed to update LC lifecycle status" });
+      return res.status(400).json({ message: "Failed to update LC lifecycle status" });
     }
   };
 
@@ -14608,9 +10484,9 @@ export async function registerRoutes(
         completedByUser: m.completedByUserId ? (completedByUsers[m.completedByUserId] ?? null) : null,
       }));
 
-      res.json({ milestones });
+      return res.json({ milestones });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch milestones" });
+      return res.status(400).json({ message: "Failed to fetch milestones" });
     }
   });
 
@@ -14639,9 +10515,9 @@ export async function registerRoutes(
         notes: notes || null,
       }).returning();
 
-      res.json({ milestone, message: "Milestone added" });
+      return res.json({ milestone, message: "Milestone added" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to add milestone" });
+      return res.status(400).json({ message: "Failed to add milestone" });
     }
   });
 
@@ -14667,9 +10543,9 @@ export async function registerRoutes(
         .where(eq(dealDiscrepancies.dealRoomId, req.params.dealRoomId))
         .orderBy(desc(dealDiscrepancies.createdAt));
 
-      res.json({ discrepancies });
+      return res.json({ discrepancies });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch discrepancies" });
+      return res.status(400).json({ message: "Failed to fetch discrepancies" });
     }
   });
 
@@ -14709,10 +10585,10 @@ export async function registerRoutes(
         await storage.createNotification({ userId: dealRoom.exporterUserId, title: 'Discrepancy Raised', message: notifMsg, type: 'trade', link: notifLink, read: false });
       } catch (e) { console.error('[Notification] discrepancy notify failed:', e); }
 
-      res.json({ discrepancy, message: "Discrepancy raised" });
+      return res.json({ discrepancy, message: "Discrepancy raised" });
     } catch (error) {
       console.error('[DealRoom] Discrepancy creation error:', error);
-      res.status(400).json({ message: "Failed to raise discrepancy" });
+      return res.status(400).json({ message: "Failed to raise discrepancy" });
     }
   });
 
@@ -14749,9 +10625,9 @@ export async function registerRoutes(
       ).returning();
 
       if (!resolved) return res.status(404).json({ message: "Discrepancy not found" });
-      res.json({ discrepancy: resolved, message: "Discrepancy resolved" });
+      return res.json({ discrepancy: resolved, message: "Discrepancy resolved" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to resolve discrepancy" });
+      return res.status(400).json({ message: "Failed to resolve discrepancy" });
     }
   });
 
@@ -14771,9 +10647,9 @@ export async function registerRoutes(
         return res.status(403).json({ message: "Not authorized" });
       }
       const [terms] = await db.select().from(lcTerms).where(eq(lcTerms.dealRoomId, req.params.dealRoomId));
-      res.json({ lcTerms: terms || null });
+      return res.json({ lcTerms: terms || null });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch LC terms" });
+      return res.status(400).json({ message: "Failed to fetch LC terms" });
     }
   });
 
@@ -14810,10 +10686,10 @@ export async function registerRoutes(
           requiredDocuments: requiredDocuments || null,
         }).returning();
       }
-      res.json({ lcTerms: result, message: "LC terms saved" });
+      return res.json({ lcTerms: result, message: "LC terms saved" });
     } catch (error) {
       console.error('[DealRoom] LC terms error:', error);
-      res.status(400).json({ message: "Failed to save LC terms" });
+      return res.status(400).json({ message: "Failed to save LC terms" });
     }
   });
 
@@ -14896,10 +10772,10 @@ export async function registerRoutes(
         fetchPartyRisk(dealRoom.exporterUserId),
       ]);
 
-      res.json({ importerRisk, exporterRisk });
+      return res.json({ importerRisk, exporterRisk });
     } catch (error) {
       console.error('[DealRoom] Counterparty risk error:', error);
-      res.status(400).json({ message: "Failed to fetch counterparty risk" });
+      return res.status(400).json({ message: "Failed to fetch counterparty risk" });
     }
   });
 
@@ -14954,10 +10830,10 @@ export async function registerRoutes(
           carrierName, blNumber, portOfLoading, portOfDischarge, estimatedDeparture, estimatedArrival,
         }).returning();
       }
-      res.json({ metadata: result, message: "Document metadata saved" });
+      return res.json({ metadata: result, message: "Document metadata saved" });
     } catch (error) {
       console.error('[DealRoom] Document metadata error:', error);
-      res.status(400).json({ message: "Failed to save document metadata" });
+      return res.status(400).json({ message: "Failed to save document metadata" });
     }
   });
 
@@ -14981,9 +10857,9 @@ export async function registerRoutes(
 
       const [metadata] = await db.select().from(dealRoomDocumentMetadata)
         .where(eq(dealRoomDocumentMetadata.documentId, req.params.documentId));
-      res.json({ metadata: metadata || null });
+      return res.json({ metadata: metadata || null });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch document metadata" });
+      return res.status(400).json({ message: "Failed to fetch document metadata" });
     }
   });
 
@@ -15007,9 +10883,9 @@ export async function registerRoutes(
         deliveryDeadline: deliveryDeadline ? new Date(deliveryDeadline) : null,
       });
       
-      res.json({ message: "Deadlines updated successfully" });
+      return res.json({ message: "Deadlines updated successfully" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update deadlines" });
+      return res.status(400).json({ message: "Failed to update deadlines" });
     }
   });
 
@@ -15031,9 +10907,9 @@ export async function registerRoutes(
                (deliveryDeadline && deliveryDeadline < now);
       });
       
-      res.json({ overdueTrades });
+      return res.json({ overdueTrades });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get overdue trades" });
+      return res.status(400).json({ message: "Failed to get overdue trades" });
     }
   });
   
@@ -15073,10 +10949,10 @@ export async function registerRoutes(
         };
       }));
       
-      res.json({ rooms: roomsWithDetails });
+      return res.json({ rooms: roomsWithDetails });
     } catch (error) {
       console.error('Failed to get all deal rooms:', error);
-      res.status(400).json({ message: "Failed to get deal rooms" });
+      return res.status(400).json({ message: "Failed to get deal rooms" });
     }
   });
   
@@ -15103,9 +10979,9 @@ export async function registerRoutes(
         };
       }));
       
-      res.json({ rooms: roomsWithDetails });
+      return res.json({ rooms: roomsWithDetails });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get deal rooms" });
+      return res.status(400).json({ message: "Failed to get deal rooms" });
     }
   });
   
@@ -15158,7 +11034,7 @@ export async function registerRoutes(
         },
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get deal room" });
+      return res.status(400).json({ message: "Failed to get deal room" });
     }
   });
   
@@ -15169,9 +11045,9 @@ export async function registerRoutes(
       if (!room) {
         return res.status(404).json({ message: "Deal room not found for this trade request" });
       }
-      res.json({ room });
+      return res.json({ room });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get deal room" });
+      return res.status(400).json({ message: "Failed to get deal room" });
     }
   });
   
@@ -15207,9 +11083,9 @@ export async function registerRoutes(
         };
       }));
       
-      res.json({ messages: messagesWithSenders });
+      return res.json({ messages: messagesWithSenders });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get messages" });
+      return res.status(400).json({ message: "Failed to get messages" });
     }
   });
   
@@ -15253,14 +11129,14 @@ export async function registerRoutes(
       
       const sender = await storage.getUser(senderUserId);
       
-      res.json({ 
+      return res.json({ 
         message: {
           ...message,
           sender: sender ? { id: sender.id, finatradesId: sender.finatradesId, email: sender.email } : null,
         }
       });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
     }
   });
   
@@ -15273,9 +11149,9 @@ export async function registerRoutes(
       }
       
       await storage.markDealRoomMessagesAsRead(req.params.id, userId);
-      res.json({ message: "Messages marked as read" });
+      return res.json({ message: "Messages marked as read" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to mark messages as read" });
+      return res.status(400).json({ message: "Failed to mark messages as read" });
     }
   });
   
@@ -15298,9 +11174,9 @@ export async function registerRoutes(
           await storage.createNotification({ userId: updatedRoom.exporterUserId, title: 'Deal Manager Assigned', message: msg, type: 'trade', link, read: false });
         }
       } catch (e) { console.error('[Notification] deal manager assign failed:', e); }
-      res.json({ room });
+      return res.json({ room });
     } catch (error) {
-      res.status(400).json({ message: "Failed to assign admin" });
+      return res.status(400).json({ message: "Failed to assign admin" });
     }
   });
 
@@ -15318,9 +11194,9 @@ export async function registerRoutes(
         const author = await storage.getUser(n.adminUserId);
         return { ...n, authorName: author ? `${author.firstName || ''} ${author.lastName || ''}`.trim() || author.email : 'Admin' };
       }));
-      res.json({ notes: enriched });
+      return res.json({ notes: enriched });
     } catch (error) {
-      res.status(400).json({ message: "Failed to fetch internal notes" });
+      return res.status(400).json({ message: "Failed to fetch internal notes" });
     }
   });
 
@@ -15336,9 +11212,9 @@ export async function registerRoutes(
         note: note.trim(),
         isEscalated: !!isEscalated,
       }).returning();
-      res.json({ note: created });
+      return res.json({ note: created });
     } catch (error) {
-      res.status(400).json({ message: "Failed to create internal note" });
+      return res.status(400).json({ message: "Failed to create internal note" });
     }
   });
 
@@ -15355,9 +11231,9 @@ export async function registerRoutes(
         note: reason ? `ESCALATED: ${reason}` : 'Deal escalated by admin',
         isEscalated: true,
       });
-      res.json({ message: "Deal escalated" });
+      return res.json({ message: "Deal escalated" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to escalate deal" });
+      return res.status(400).json({ message: "Failed to escalate deal" });
     }
   });
 
@@ -15383,10 +11259,10 @@ export async function registerRoutes(
       if (room.exporterUserId) {
         await storage.createNotification({ userId: room.exporterUserId, title: 'Deal Manager Assigned', message: partyMsg, type: 'trade', link: `/finabridge`, read: false }).catch(() => {});
       }
-      res.json({ message: "Deal manager assigned", room: updated });
+      return res.json({ message: "Deal manager assigned", room: updated });
     } catch (error) {
       console.error("assign-manager error:", error);
-      res.status(500).json({ message: "Failed to assign deal manager" });
+      return res.status(500).json({ message: "Failed to assign deal manager" });
     }
   });
 
@@ -15581,9 +11457,10 @@ export async function registerRoutes(
         );
 
       doc.end();
+      return undefined;
     } catch (error) {
       console.error('[DealRoom] PDF export error:', error);
-      res.status(500).json({ message: "Failed to generate deal summary" });
+      return res.status(500).json({ message: "Failed to generate deal summary" });
     }
   });
 
@@ -15658,7 +11535,7 @@ export async function registerRoutes(
             const isPdf = doc.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25; // '%PDF'
             if (isPdf) {
               try {
-                const pdfParse = (await import('pdf-parse')).default;
+                const pdfParse: any = (await import('pdf-parse' as any) as any).default || (await import('pdf-parse' as any));
                 const pdfData = await pdfParse(fileBuffer);
                 extractedText = pdfData.text || '';
                 extractionSource += '-pdf-parse';
@@ -15725,10 +11602,10 @@ export async function registerRoutes(
         updatedAt: new Date(),
       }).where(eq(dealRoomDocuments.id, doc.id));
 
-      res.json({ validationResult });
+      return res.json({ validationResult });
     } catch (error) {
       console.error('[MT700] Validation error:', error);
-      res.status(500).json({ message: "Failed to validate MT700 fields" });
+      return res.status(500).json({ message: "Failed to validate MT700 fields" });
     }
   });
 
@@ -15810,7 +11687,7 @@ export async function registerRoutes(
         return { month, avgDays: days && days.length > 0 ? Math.round(days.reduce((a, b) => a + b, 0) / days.length) : 0 };
       });
 
-      res.json({
+      return res.json({
         activeVsClosed,
         docRejectionRates,
         discrepancyReasons,
@@ -15825,7 +11702,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error('[Analytics] Error:', error);
-      res.status(500).json({ message: "Failed to fetch analytics" });
+      return res.status(500).json({ message: "Failed to fetch analytics" });
     }
   });
 
@@ -15852,7 +11729,7 @@ export async function registerRoutes(
         agreementVersion: "1.0"
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get agreement status" });
+      return res.status(400).json({ message: "Failed to get agreement status" });
     }
   });
 
@@ -15906,15 +11783,16 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "deal_room",
         entityId: req.params.id,
-        action: "agreement_accepted",
-        performedBy: userId,
-        details: { role, agreementVersion: "1.0" }
+        actionType: "agreement_accepted",
+        actor: userId,
+        actorRole: "user",
+        details: JSON.stringify({ role, agreementVersion: "1.0" })
       });
 
-      res.json({ acceptance, message: "Terms accepted successfully" });
+      return res.json({ acceptance, message: "Terms accepted successfully" });
     } catch (error) {
       console.error("Failed to accept agreement:", error);
-      res.status(400).json({ message: "Failed to accept agreement" });
+      return res.status(400).json({ message: "Failed to accept agreement" });
     }
   });
 
@@ -15949,9 +11827,10 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "deal_room",
         entityId: req.params.id,
-        action: "deal_room_closed",
-        performedBy: adminId,
-        details: { closureNotes, tradeStatus: tradeRequest.status }
+        actionType: "deal_room_closed",
+        actor: adminId,
+        actorRole: "admin",
+        details: JSON.stringify({ closureNotes, tradeStatus: tradeRequest.status })
       });
 
       // Email #13 — deal room closed → both importer and exporter
@@ -15974,10 +11853,10 @@ export async function registerRoutes(
         }
       } catch (e) { console.error('[Email] Failed to send deal room closed emails:', e); }
 
-      res.json({ room: closedRoom, message: "Deal room closed successfully" });
+      return res.json({ room: closedRoom, message: "Deal room closed successfully" });
     } catch (error) {
       console.error("Failed to close deal room:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to close deal room" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to close deal room" });
     }
   });
 
@@ -16002,15 +11881,16 @@ export async function registerRoutes(
       await storage.createAuditLog({
         entityType: "deal_room",
         entityId: req.params.id,
-        action: "disclaimer_updated",
-        performedBy: adminId,
-        details: { disclaimer }
+        actionType: "disclaimer_updated",
+        actor: adminId,
+        actorRole: "admin",
+        details: JSON.stringify({ disclaimer })
       });
 
-      res.json({ room: updatedRoom, message: "Disclaimer saved successfully" });
+      return res.json({ room: updatedRoom, message: "Disclaimer saved successfully" });
     } catch (error) {
       console.error("Failed to update disclaimer:", error);
-      res.status(400).json({ message: "Failed to update disclaimer" });
+      return res.status(400).json({ message: "Failed to update disclaimer" });
     }
   });
   
@@ -16032,9 +11912,9 @@ export async function registerRoutes(
         });
       }
       
-      res.json({ session });
+      return res.json({ session });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get chat session" });
+      return res.status(400).json({ message: "Failed to get chat session" });
     }
   });
   
@@ -16064,9 +11944,9 @@ export async function registerRoutes(
         })
       );
       
-      res.json({ sessions: enrichedSessions });
+      return res.json({ sessions: enrichedSessions });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get chat sessions" });
+      return res.status(400).json({ message: "Failed to get chat sessions" });
     }
   });
   
@@ -16074,9 +11954,9 @@ export async function registerRoutes(
   app.get("/api/chat/messages/:sessionId", ensureAuthenticated, async (req, res) => {
     try {
       const messages = await storage.getSessionMessages(req.params.sessionId);
-      res.json({ messages });
+      return res.json({ messages });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get messages" });
+      return res.status(400).json({ message: "Failed to get messages" });
     }
   });
   
@@ -16091,9 +11971,9 @@ export async function registerRoutes(
         lastMessageAt: new Date(),
       });
       
-      res.json({ message });
+      return res.json({ message });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
     }
   });
   
@@ -16101,9 +11981,9 @@ export async function registerRoutes(
   app.patch("/api/chat/messages/:sessionId/read", ensureAuthenticated, async (req, res) => {
     try {
       await storage.markMessagesAsRead(req.params.sessionId);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to mark messages as read" });
+      return res.status(400).json({ message: "Failed to mark messages as read" });
     }
   });
   
@@ -16114,9 +11994,9 @@ export async function registerRoutes(
       if (!session) {
         return res.status(404).json({ message: "Chat session not found" });
       }
-      res.json({ session });
+      return res.json({ session });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update chat session" });
+      return res.status(400).json({ message: "Failed to update chat session" });
     }
   });
   
@@ -16149,10 +12029,10 @@ export async function registerRoutes(
         });
       }
 
-      res.status(201).json({ session: { ...session, topic } });
+      return res.status(201).json({ session: { ...session, topic } });
     } catch (error) {
       console.error('[Chat] Failed to create session:', error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create chat session" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create chat session" });
     }
   });
 
@@ -16174,10 +12054,10 @@ export async function registerRoutes(
         return { ...session, topic };
       });
 
-      res.json({ sessions: sessionsWithTopic });
+      return res.json({ sessions: sessionsWithTopic });
     } catch (error) {
       console.error('[Chat] Failed to list sessions:', error);
-      res.status(400).json({ message: "Failed to get chat sessions" });
+      return res.status(400).json({ message: "Failed to get chat sessions" });
     }
   });
 
@@ -16208,10 +12088,10 @@ export async function registerRoutes(
         } catch {}
       }
 
-      res.json({ session: { ...session, topic }, messages });
+      return res.json({ session: { ...session, topic }, messages });
     } catch (error) {
       console.error('[Chat] Failed to get session:', error);
-      res.status(400).json({ message: "Failed to get chat session" });
+      return res.status(400).json({ message: "Failed to get chat session" });
     }
   });
 
@@ -16268,10 +12148,10 @@ export async function registerRoutes(
         });
       }
 
-      res.status(201).json({ message });
+      return res.status(201).json({ message });
     } catch (error) {
       console.error('[Chat] Failed to send message:', error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to send message" });
     }
   });
 
@@ -16307,10 +12187,10 @@ export async function registerRoutes(
         });
       }
 
-      res.json({ session: updatedSession });
+      return res.json({ session: updatedSession });
     } catch (error) {
       console.error('[Chat] Failed to close session:', error);
-      res.status(400).json({ message: "Failed to close chat session" });
+      return res.status(400).json({ message: "Failed to close chat session" });
     }
   });
 
@@ -16321,9 +12201,9 @@ export async function registerRoutes(
   app.get("/api/chat-agents", async (req, res) => {
     try {
       const agents = await storage.getActiveChatAgents();
-      res.json({ agents });
+      return res.json({ agents });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch chat agents" });
+      return res.status(500).json({ message: "Failed to fetch chat agents" });
     }
   });
   
@@ -16334,9 +12214,9 @@ export async function registerRoutes(
       if (!agent) {
         return res.status(404).json({ message: "Agent not found" });
       }
-      res.json({ agent });
+      return res.json({ agent });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch chat agent" });
+      return res.status(500).json({ message: "Failed to fetch chat agent" });
     }
   });
   
@@ -16344,9 +12224,9 @@ export async function registerRoutes(
   app.get("/api/chat-agents/default", async (req, res) => {
     try {
       const agent = await storage.getDefaultChatAgent();
-      res.json({ agent });
+      return res.json({ agent });
     } catch (error) {
-      res.status(500).json({ message: "Failed to fetch default agent" });
+      return res.status(500).json({ message: "Failed to fetch default agent" });
     }
   });
 
@@ -16368,10 +12248,10 @@ export async function registerRoutes(
       if (status !== undefined) updates.status = status;
       
       const updatedAgent = await storage.updateChatAgent(agentId, updates);
-      res.json({ agent: updatedAgent });
+      return res.json({ agent: updatedAgent });
     } catch (error) {
       console.error("Failed to update chat agent:", error);
-      res.status(500).json({ message: "Failed to update chat agent" });
+      return res.status(500).json({ message: "Failed to update chat agent" });
     }
   });
   
@@ -16383,10 +12263,10 @@ export async function registerRoutes(
   app.get("/api/knowledge/categories", async (req, res) => {
     try {
       const categories = await storage.getAllKnowledgeCategories();
-      res.json({ categories });
+      return res.json({ categories });
     } catch (error) {
       console.error("Failed to fetch knowledge categories:", error);
-      res.status(500).json({ message: "Failed to fetch categories" });
+      return res.status(500).json({ message: "Failed to fetch categories" });
     }
   });
 
@@ -16398,10 +12278,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Category name is required" });
       }
       const category = await storage.createKnowledgeCategory({ name, description, icon, sortOrder: sortOrder || 0 });
-      res.json({ category });
+      return res.json({ category });
     } catch (error) {
       console.error("Failed to create knowledge category:", error);
-      res.status(500).json({ message: "Failed to create category" });
+      return res.status(500).json({ message: "Failed to create category" });
     }
   });
 
@@ -16419,10 +12299,10 @@ export async function registerRoutes(
       if (!category) {
         return res.status(404).json({ message: "Category not found" });
       }
-      res.json({ category });
+      return res.json({ category });
     } catch (error) {
       console.error("Failed to update knowledge category:", error);
-      res.status(500).json({ message: "Failed to update category" });
+      return res.status(500).json({ message: "Failed to update category" });
     }
   });
 
@@ -16430,10 +12310,10 @@ export async function registerRoutes(
   app.delete("/api/knowledge/categories/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteKnowledgeCategory(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete knowledge category:", error);
-      res.status(500).json({ message: "Failed to delete category" });
+      return res.status(500).json({ message: "Failed to delete category" });
     }
   });
 
@@ -16441,10 +12321,10 @@ export async function registerRoutes(
   app.get("/api/knowledge/articles", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const articles = await storage.getAllKnowledgeArticles();
-      res.json({ articles });
+      return res.json({ articles });
     } catch (error) {
       console.error("Failed to fetch knowledge articles:", error);
-      res.status(500).json({ message: "Failed to fetch articles" });
+      return res.status(500).json({ message: "Failed to fetch articles" });
     }
   });
 
@@ -16452,10 +12332,10 @@ export async function registerRoutes(
   app.get("/api/knowledge/articles/published", async (req, res) => {
     try {
       const articles = await storage.getPublishedKnowledgeArticles();
-      res.json({ articles });
+      return res.json({ articles });
     } catch (error) {
       console.error("Failed to fetch published articles:", error);
-      res.status(500).json({ message: "Failed to fetch articles" });
+      return res.status(500).json({ message: "Failed to fetch articles" });
     }
   });
 
@@ -16467,10 +12347,10 @@ export async function registerRoutes(
         return res.status(400).json({ message: "Search query is required" });
       }
       const articles = await storage.searchKnowledgeArticles(q, agentType as string | undefined);
-      res.json({ articles });
+      return res.json({ articles });
     } catch (error) {
       console.error("Failed to search knowledge base:", error);
-      res.status(500).json({ message: "Failed to search" });
+      return res.status(500).json({ message: "Failed to search" });
     }
   });
 
@@ -16482,10 +12362,10 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Article not found" });
       }
       await storage.incrementArticleViewCount(req.params.id);
-      res.json({ article });
+      return res.json({ article });
     } catch (error) {
       console.error("Failed to fetch knowledge article:", error);
-      res.status(500).json({ message: "Failed to fetch article" });
+      return res.status(500).json({ message: "Failed to fetch article" });
     }
   });
 
@@ -16508,10 +12388,10 @@ export async function registerRoutes(
         createdBy: adminUser?.id,
         updatedBy: adminUser?.id,
       });
-      res.json({ article });
+      return res.json({ article });
     } catch (error) {
       console.error("Failed to create knowledge article:", error);
-      res.status(500).json({ message: "Failed to create article" });
+      return res.status(500).json({ message: "Failed to create article" });
     }
   });
 
@@ -16534,10 +12414,10 @@ export async function registerRoutes(
       if (!article) {
         return res.status(404).json({ message: "Article not found" });
       }
-      res.json({ article });
+      return res.json({ article });
     } catch (error) {
       console.error("Failed to update knowledge article:", error);
-      res.status(500).json({ message: "Failed to update article" });
+      return res.status(500).json({ message: "Failed to update article" });
     }
   });
 
@@ -16545,10 +12425,10 @@ export async function registerRoutes(
   app.delete("/api/knowledge/articles/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteKnowledgeArticle(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete knowledge article:", error);
-      res.status(500).json({ message: "Failed to delete article" });
+      return res.status(500).json({ message: "Failed to delete article" });
     }
   });
 
@@ -16556,10 +12436,10 @@ export async function registerRoutes(
   app.post("/api/knowledge/articles/:id/helpful", async (req, res) => {
     try {
       await storage.incrementArticleHelpfulCount(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error("Failed to mark article as helpful:", error);
-      res.status(500).json({ message: "Failed to update article" });
+      return res.status(500).json({ message: "Failed to update article" });
     }
   });
   
@@ -16572,9 +12452,9 @@ export async function registerRoutes(
   app.get("/api/audit/:entityType/:entityId", async (req, res) => {
     try {
       const logs = await storage.getEntityAuditLogs(req.params.entityType, req.params.entityId);
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get audit logs" });
+      return res.status(400).json({ message: "Failed to get audit logs" });
     }
   });
 
@@ -16602,9 +12482,9 @@ export async function registerRoutes(
         content[block.section][block.key] = block.content || block.defaultContent || null;
       }
       
-      res.json({ page, content });
+      return res.json({ page, content });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get page content" });
+      return res.status(400).json({ message: "Failed to get page content" });
     }
   });
   
@@ -16634,9 +12514,9 @@ export async function registerRoutes(
         pagesWithContent[page.slug] = { page, content };
       }
       
-      res.json({ pages: pagesWithContent });
+      return res.json({ pages: pagesWithContent });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get pages" });
+      return res.status(400).json({ message: "Failed to get pages" });
     }
   });
   
@@ -16650,9 +12530,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/pages", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const pages = await storage.getAllContentPages();
-      res.json({ pages });
+      return res.json({ pages });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get content pages" });
+      return res.status(400).json({ message: "Failed to get content pages" });
     }
   });
   
@@ -16664,9 +12544,9 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Content page not found" });
       }
       const blocks = await storage.getPageContentBlocks(page.id);
-      res.json({ page, blocks });
+      return res.json({ page, blocks });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get content page" });
+      return res.status(400).json({ message: "Failed to get content page" });
     }
   });
   
@@ -16675,9 +12555,9 @@ export async function registerRoutes(
     try {
       const pageData = insertContentPageSchema.parse(req.body);
       const page = await storage.createContentPage(pageData);
-      res.json({ page });
+      return res.json({ page });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content page" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content page" });
     }
   });
   
@@ -16688,9 +12568,9 @@ export async function registerRoutes(
       if (!page) {
         return res.status(404).json({ message: "Content page not found" });
       }
-      res.json({ page });
+      return res.json({ page });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update content page" });
+      return res.status(400).json({ message: "Failed to update content page" });
     }
   });
   
@@ -16698,9 +12578,9 @@ export async function registerRoutes(
   app.delete("/api/admin/cms/pages/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteContentPage(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete content page" });
+      return res.status(400).json({ message: "Failed to delete content page" });
     }
   });
   
@@ -16710,9 +12590,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/blocks", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const blocks = await storage.getAllContentBlocks();
-      res.json({ blocks });
+      return res.json({ blocks });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get content blocks" });
+      return res.status(400).json({ message: "Failed to get content blocks" });
     }
   });
   
@@ -16723,9 +12603,9 @@ export async function registerRoutes(
       if (!block) {
         return res.status(404).json({ message: "Content block not found" });
       }
-      res.json({ block });
+      return res.json({ block });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get content block" });
+      return res.status(400).json({ message: "Failed to get content block" });
     }
   });
   
@@ -16734,9 +12614,9 @@ export async function registerRoutes(
     try {
       const blockData = insertContentBlockSchema.parse(req.body);
       const block = await storage.createContentBlock(blockData);
-      res.json({ block });
+      return res.json({ block });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content block" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create content block" });
     }
   });
   
@@ -16747,9 +12627,9 @@ export async function registerRoutes(
       if (!block) {
         return res.status(404).json({ message: "Content block not found" });
       }
-      res.json({ block });
+      return res.json({ block });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update content block" });
+      return res.status(400).json({ message: "Failed to update content block" });
     }
   });
   
@@ -16757,9 +12637,9 @@ export async function registerRoutes(
   app.delete("/api/admin/cms/blocks/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteContentBlock(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete content block" });
+      return res.status(400).json({ message: "Failed to delete content block" });
     }
   });
   
@@ -16769,9 +12649,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/templates", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const templates = await storage.getAllTemplates();
-      res.json({ templates });
+      return res.json({ templates });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get templates" });
+      return res.status(400).json({ message: "Failed to get templates" });
     }
   });
   
@@ -16779,9 +12659,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/templates/type/:type", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const templates = await storage.getTemplatesByType(req.params.type);
-      res.json({ templates });
+      return res.json({ templates });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get templates" });
+      return res.status(400).json({ message: "Failed to get templates" });
     }
   });
   
@@ -16792,9 +12672,9 @@ export async function registerRoutes(
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
-      res.json({ template });
+      return res.json({ template });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get template" });
+      return res.status(400).json({ message: "Failed to get template" });
     }
   });
   
@@ -16803,9 +12683,9 @@ export async function registerRoutes(
     try {
       const templateData = insertTemplateSchema.parse(req.body);
       const template = await storage.createTemplate(templateData);
-      res.json({ template });
+      return res.json({ template });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create template" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create template" });
     }
   });
   
@@ -16816,9 +12696,9 @@ export async function registerRoutes(
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
-      res.json({ template });
+      return res.json({ template });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update template" });
+      return res.status(400).json({ message: "Failed to update template" });
     }
   });
   
@@ -16826,9 +12706,9 @@ export async function registerRoutes(
   app.delete("/api/admin/cms/templates/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteTemplate(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete template" });
+      return res.status(400).json({ message: "Failed to delete template" });
     }
   });
   
@@ -16838,9 +12718,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/labels", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const labels = await storage.getAllCmsLabels();
-      res.json({ labels });
+      return res.json({ labels });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get labels" });
+      return res.status(400).json({ message: "Failed to get labels" });
     }
   });
   
@@ -16849,9 +12729,9 @@ export async function registerRoutes(
     try {
       const { key, value, category, description } = req.body;
       const label = await storage.upsertCmsLabel({ key, value, category, description, defaultValue: value });
-      res.json({ label });
+      return res.json({ label });
     } catch (error) {
-      res.status(400).json({ message: "Failed to save label" });
+      return res.status(400).json({ message: "Failed to save label" });
     }
   });
   
@@ -16861,17 +12741,17 @@ export async function registerRoutes(
   app.post("/api/admin/cms/export", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       
-      const { exportCMSToFile } = await import('../scripts/cms-seed');
-      const filePath = await exportCMSToFile();
+      throw new Error('CMS seed scripts have been removed');
+      const filePath = '';
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'CMS data exported successfully',
         filePath 
       });
     } catch (error) {
       console.error('[CMS Export] Error:', error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
+      return res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
     }
   });
   
@@ -16879,15 +12759,15 @@ export async function registerRoutes(
   app.get("/api/admin/cms/export/json", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       
-      const { exportCMSData } = await import('../scripts/cms-seed');
-      const data = await exportCMSData();
+      throw new Error('CMS seed scripts have been removed');
+      const data: any = {};
       
       res.setHeader('Content-Type', 'application/json');
       res.setHeader('Content-Disposition', `attachment; filename="cms-seed-data-${new Date().toISOString().split('T')[0]}.json"`);
-      res.json(data);
+      return res.json(data);
     } catch (error) {
       console.error('[CMS Export] Error:', error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
+      return res.status(500).json({ message: error instanceof Error ? error.message : "Failed to export CMS data" });
     }
   });
   
@@ -16895,17 +12775,17 @@ export async function registerRoutes(
   app.post("/api/admin/cms/import", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       
-      const { importCMSFromFile } = await import('../scripts/cms-seed');
-      const result = await importCMSFromFile();
+      throw new Error('CMS seed scripts have been removed');
+      const result: any = { counts: {} };
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'CMS data imported successfully',
         counts: result.counts
       });
     } catch (error) {
       console.error('[CMS Import] Error:', error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
+      return res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
     }
   });
   
@@ -16913,17 +12793,17 @@ export async function registerRoutes(
   app.post("/api/admin/cms/import/json", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       
-      const { seedCMSData } = await import('../scripts/cms-seed');
-      const result = await seedCMSData(req.body);
+      throw new Error('CMS seed scripts have been removed');
+      const result: any = { counts: {} };
       
-      res.json({ 
+      return res.json({ 
         success: true, 
         message: 'CMS data imported successfully',
         counts: result.counts
       });
     } catch (error) {
       console.error('[CMS Import] Error:', error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
+      return res.status(500).json({ message: error instanceof Error ? error.message : "Failed to import CMS data" });
     }
   });
   
@@ -16933,9 +12813,9 @@ export async function registerRoutes(
   app.get("/api/admin/cms/media", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const assets = await storage.getAllMediaAssets();
-      res.json({ assets });
+      return res.json({ assets });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get media assets" });
+      return res.status(400).json({ message: "Failed to get media assets" });
     }
   });
   
@@ -16944,9 +12824,9 @@ export async function registerRoutes(
     try {
       const assetData = insertMediaAssetSchema.parse(req.body);
       const asset = await storage.createMediaAsset(assetData);
-      res.json({ asset });
+      return res.json({ asset });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create media asset" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create media asset" });
     }
   });
   
@@ -16954,9 +12834,9 @@ export async function registerRoutes(
   app.delete("/api/admin/cms/media/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       await storage.deleteMediaAsset(req.params.id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(400).json({ message: "Failed to delete media asset" });
+      return res.status(400).json({ message: "Failed to delete media asset" });
     }
   });
   
@@ -16966,9 +12846,9 @@ export async function registerRoutes(
   app.get("/api/branding", async (req, res) => {
     try {
       const settings = await storage.getOrCreateBrandingSettings();
-      res.json({ settings });
+      return res.json({ settings });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get branding settings" });
+      return res.status(400).json({ message: "Failed to get branding settings" });
     }
   });
   
@@ -16980,9 +12860,9 @@ export async function registerRoutes(
         ...updates,
         updatedBy: req.session.userId
       });
-      res.json({ settings });
+      return res.json({ settings });
     } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update branding settings" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update branding settings" });
     }
   });
 
@@ -17007,14 +12887,14 @@ export async function registerRoutes(
         logoUrl = `/uploads/${(req.file as any).filename}`;
       }
       
-      res.json({ 
+      return res.json({ 
         url: logoUrl,
         filename: req.file.originalname,
         size: req.file.size
       });
     } catch (error) {
       console.error('Logo upload error:', error);
-      res.status(500).json({ message: 'Failed to upload logo' });
+      return res.status(500).json({ message: 'Failed to upload logo' });
     }
   });
   
@@ -17040,9 +12920,9 @@ export async function registerRoutes(
         }
       }
       
-      res.json({ page: { slug: page.slug, title: page.title }, content });
+      return res.json({ page: { slug: page.slug, title: page.title }, content });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get content" });
+      return res.status(400).json({ message: "Failed to get content" });
     }
   });
   
@@ -17094,9 +12974,9 @@ export async function registerRoutes(
       };
       
       const defaults = defaultTerms[type] || { title: 'Terms & Conditions', terms: 'Please review the terms and conditions before proceeding.' };
-      res.json({ ...defaults, enabled: isEnabled });
+      return res.json({ ...defaults, enabled: isEnabled });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get terms" });
+      return res.status(400).json({ message: "Failed to get terms" });
     }
   });
   
@@ -17107,9 +12987,9 @@ export async function registerRoutes(
       if (!template || template.status !== 'published') {
         return res.status(404).json({ message: "Template not found" });
       }
-      res.json({ template: { slug: template.slug, name: template.name, body: template.body, variables: template.variables } });
+      return res.json({ template: { slug: template.slug, name: template.name, body: template.body, variables: template.variables } });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get template" });
+      return res.status(400).json({ message: "Failed to get template" });
     }
   });
 
@@ -17118,2301 +12998,6 @@ export async function registerRoutes(
   // ============================================================================
 
   // Search user by email or Finatrades ID - PROTECTED: requires authentication
-  app.get("/api/finapay/search-user", ensureAuthenticated, async (req, res) => {
-    try {
-      const { identifier } = req.query;
-      if (!identifier || typeof identifier !== 'string') {
-        return res.status(400).json({ message: "Identifier required" });
-      }
-      
-      const users = await storage.searchUsersByIdentifier(identifier);
-      if (users.length === 0) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Return basic info only (not sensitive data)
-      const user = users[0];
-      res.json({ 
-        user: { 
-          id: user.id, 
-          finatradesId: user.finatradesId,
-          firstName: user.firstName, 
-          lastName: user.lastName, 
-          email: user.email,
-          profilePhotoUrl: user.profilePhoto
-        } 
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Search failed" });
-    }
-  });
-
-  // Send gold to another user - PROTECTED: requires authentication + sender verification + PIN
-  // NOTE: Platform is gold-only. All transfers are in gold grams, USD is display-only.
-  app.post("/api/finapay/send", ensureAuthenticated, checkMaintenanceMode, idempotencyMiddleware, requirePinVerification('send_funds'), async (req, res) => {
-    try {
-      const { senderId, recipientIdentifier, amountGold, channel, memo, goldWalletType } = req.body;
-      
-      // SECURITY: Verify sender matches authenticated session
-      if (req.session?.userId !== senderId) {
-        return res.status(403).json({ message: "Not authorized to send from this account" });
-      }
-      // P2P RULE: FGPW transfers auto-unlock to LGPW first
-      // Receiver ALWAYS gets LGPW at live price
-      const sourceWalletType = goldWalletType || 'LGPW';
-      
-      // Import FGPW batch service for FGPW transfers
-      const { previewFpgwBatches, getFpgwBalanceSummary } = await import('./fpgw-batch-service');
-      // Validate gold amount is provided (platform is gold-only)
-      if (!amountGold || parseFloat(amountGold) <= 0) {
-        return res.status(400).json({ message: "Gold amount is required for transfers" });
-      }
-      
-      // Get live gold price from API
-      let goldPrice: number;
-      try {
-        goldPrice = await getGoldPricePerGram();
-      } catch {
-        goldPrice = 139.44; // Fallback price if API fails
-      }
-      
-      // Find sender
-      const sender = await storage.getUser(senderId);
-      if (!sender) {
-        return res.status(404).json({ message: "Sender not found" });
-      }
-      
-      // Calculate USD equivalent for limit validation
-      const goldAmount = parseFloat(amountGold);
-      const usdEquivalentForLimits = goldAmount * goldPrice;
-      
-      // Validate P2P transfer limits
-      const limitResult = await platformLimits.validateFullTransactionLimits(
-        usdEquivalentForLimits,
-        sender,
-        "Send"
-      );
-      
-      if (!limitResult.valid) {
-        return res.status(400).json({ 
-          message: limitResult.message,
-          limit: limitResult.limit,
-          current: limitResult.current
-        });
-      }
-      
-      // SECURITY: Check if gold is BNSL-locked before allowing transfer
-      const bnslPlans = await storage.getUserBnslPlans(senderId);
-      const activePlans = bnslPlans.filter((p: any) => p.status === 'Active' || p.status === 'Pending');
-      const totalLockedGrams = activePlans.reduce((sum: number, p: any) => sum + parseFloat(p.goldGrams || '0'), 0);
-      
-      const senderWalletCheck = await storage.getWallet(senderId);
-      const availableGold = parseFloat(senderWalletCheck?.goldGrams?.toString() || '0');
-      const requestedGold = parseFloat(amountGold);
-      
-      // For FGPW transfers, check FGPW balance instead
-      let fgpwConversionResult: any = null;
-      let receiverGoldGrams = requestedGold; // Default for LGPW (1:1)
-      let fgpwUsdValue = 0;
-      
-      if (sourceWalletType === 'FGPW') {
-        // Get FGPW balance summary
-        const balanceSummary = await getFpgwBalanceSummary(senderId);
-        const fgpwAvailable = balanceSummary.availableGrams;
-        
-        if (fgpwAvailable < requestedGold) {
-          return res.status(400).json({ 
-            message: `Insufficient FGPW balance. You have ${fgpwAvailable.toFixed(4)}g available in FGPW.`,
-            fgpwAvailable: fgpwAvailable.toFixed(4),
-            requestedGrams: requestedGold.toFixed(4)
-          });
-        }
-        
-        // Preview FGPW consumption to calculate USD value and receiver's LGPW grams
-        // This will be done again in the actual transfer, but we need to calculate now
-        fgpwConversionResult = await previewFpgwBatches(senderId, requestedGold, 'Available');
-        if (!fgpwConversionResult.success) {
-          return res.status(400).json({ 
-            message: fgpwConversionResult.error || 'Failed to process FGPW transfer'
-          });
-        }
-        
-        // Calculate receiver's LGPW grams: USD value / live price
-        fgpwUsdValue = fgpwConversionResult.weightedValueUsd;
-        receiverGoldGrams = fgpwUsdValue / goldPrice;
-        
-        console.log(`[P2P-FGPW] Sender sends ${requestedGold}g FGPW (USD ${fgpwUsdValue.toFixed(2)}) -> Receiver gets ${receiverGoldGrams.toFixed(6)}g LGPW at ${goldPrice.toFixed(2)}/g`);
-      } else {
-        // LGPW balance check
-        if (availableGold - totalLockedGrams < requestedGold) {
-          return res.status(400).json({ 
-            message: `Insufficient available gold. ${totalLockedGrams.toFixed(4)}g is locked in BNSL plans.`,
-            lockedGrams: totalLockedGrams.toFixed(4),
-            availableGrams: (availableGold - totalLockedGrams).toFixed(4)
-          });
-        }
-      }
-      
-      // Find recipient by email or Finatrades ID
-      let recipient;
-      if (channel === 'email') {
-        recipient = await storage.getUserByEmail(recipientIdentifier);
-      } else if (channel === 'finatrades_id') {
-        recipient = await storage.getUserByFinatradesId(recipientIdentifier);
-      } else if (channel === 'qr_code') {
-        recipient = await storage.getUserByFinatradesId(recipientIdentifier);
-      }
-      
-      // Check sender wallet first (needed for both registered and invitation transfers)
-      const senderWallet = await storage.getWallet(sender.id);
-      if (!senderWallet) {
-        return res.status(400).json({ message: "Sender wallet not found" });
-      }
-      
-      // Platform is gold-only - calculate USD equivalent
-      // For FGPW: use the previewed USD value; For LGPW: use live price
-      const usdEquivalent = sourceWalletType === 'FGPW' && fgpwConversionResult
-        ? fgpwConversionResult.weightedValueUsd 
-        : goldAmount * goldPrice;
-      
-      // Validate gold balance before creating pending transfer
-      // Skip for FGPW - already validated in FGPW-specific block above
-      const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-      if (sourceWalletType === 'LGPW' && senderGoldBalance < goldAmount) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${senderGoldBalance.toFixed(4)}g` });
-      }
-      
-      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Handle invitation transfer for non-registered email recipients
-      if (!recipient && channel === 'email') {
-        // Generate invitation token
-        const crypto = await import('crypto');
-        const invitationToken = crypto.randomUUID();
-        
-        // Get sender's referral code if they have one
-        let senderReferralCode: string | undefined;
-        const senderReferrals = await storage.getUserReferrals(sender.id);
-        if (senderReferrals.length > 0) {
-          senderReferralCode = senderReferrals[0].referralCode;
-        }
-        
-        // 24-hour expiry for invitation transfers
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
-        
-        // Debit sender immediately (held until claimed or expired)
-        await storage.updateWallet(senderWallet.id, {
-          goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
-        });
-        
-        // Create sender transaction (pending)
-        const senderTx = await storage.createTransaction({
-          userId: sender.id,
-          type: 'Send',
-          status: 'Pending',
-          amountGold: goldAmount.toFixed(6),
-          amountUsd: usdEquivalent.toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          recipientEmail: recipientIdentifier,
-          description: memo || `Invitation transfer to ${recipientIdentifier} (awaiting registration)`,
-          referenceId: referenceNumber,
-          sourceModule: 'finapay',
-          goldWalletType: 'LGPW',
-        });
-        
-        const { deductFromCerts: deductInvite } = await import('./cert-ledger-service');
-        await deductInvite(storage, {
-          userId: sender.id,
-          gramsToDeduct: goldAmount,
-          reason: 'P2P_SEND',
-          transactionId: senderTx.id,
-          notes: `P2P invitation send: ${goldAmount.toFixed(4)}g to ${recipientIdentifier}`,
-        });
-        
-        // Record ledger entry
-        const { vaultLedgerService } = await import('./vault-ledger-service');
-        await vaultLedgerService.recordLedgerEntry({
-          userId: sender.id,
-          action: 'Transfer_Send',
-          goldGrams: goldAmount,
-          goldPriceUsdPerGram: goldPrice,
-          fromWallet: 'FinaPay',
-          toWallet: 'External',
-          fromStatus: 'Available',
-          toStatus: 'Pending_Deposit',
-          transactionId: senderTx.id,
-          notes: `Invitation transfer to ${recipientIdentifier} (awaiting registration - expires in 24h)`,
-          createdBy: 'system',
-        });
-        
-        // Create pending invite transfer (no recipientId)
-        // Store invitation data in memo as JSON since AWS RDS may not have new columns yet
-        const inviteMetadata = JSON.stringify({
-          isInvite: true,
-          invitationToken,
-          senderReferralCode: senderReferralCode || null,
-          originalMemo: memo || null,
-        });
-        
-        // Use sender's ID as placeholder for recipientId (AWS RDS has NOT NULL constraint)
-        // We detect invitation transfers by checking memo JSON for isInvite: true
-        const inviteTransfer = await storage.createPeerTransfer({
-          referenceNumber,
-          senderId: sender.id,
-          recipientId: sender.id, // Self-reference as placeholder for pending invite
-          amountUsd: usdEquivalent.toFixed(2),
-          amountGold: goldAmount.toFixed(6),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          channel,
-          recipientIdentifier,
-          memo: inviteMetadata,
-          status: 'Pending',
-          requiresApproval: true,
-          expiresAt,
-          senderTransactionId: senderTx.id,
-        });
-        
-        // Emit real-time sync event
-        emitLedgerEvent(sender.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'gold_pending_invite',
-          data: { goldGrams: goldAmount, recipientEmail: recipientIdentifier },
-        });
-        
-        // Build registration URL with referral code and invitation token
-        const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-          ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-          : 'https://finatrades.com';
-        let registerUrl = `${baseUrl}/register?invite=${invitationToken}`;
-        if (senderReferralCode) {
-          registerUrl += `&ref=${encodeURIComponent(senderReferralCode)}`;
-        }
-        
-        // Send invitation email
-        const emailResult = await sendEmail(recipientIdentifier, EMAIL_TEMPLATES.INVITATION, {
-          sender_name: `${sender.firstName} ${sender.lastName}`,
-          amount: `${goldAmount.toFixed(4)}g`,
-          register_url: registerUrl,
-        });
-        console.log(`[Email] Invitation email to ${recipientIdentifier}: ${emailResult.success ? 'sent' : 'failed'} - ${emailResult.messageId || emailResult.error}`);
-        
-        // Create bell notification for sender
-        await storage.createNotification({
-          userId: sender.id,
-          title: 'Invitation Sent',
-          message: `You sent ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. They have 24 hours to register and claim it.`,
-          type: 'transaction',
-          link: '/finapay',
-        });
-        
-        // Create audit log
-        await storage.createAuditLog({
-          entityType: 'peer_transfer',
-          entityId: inviteTransfer.id,
-          actionType: 'create',
-          actor: sender.id,
-          actorRole: 'user',
-          details: `Invitation transfer created: ${goldAmount.toFixed(4)}g gold to ${recipientIdentifier}. Token: ${invitationToken.substring(0, 8)}...`,
-        });
-        
-        // Send transfer_sent email to sender for invite transfer confirmation
-        if (sender.email) {
-          sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
-            user_name: `${sender.firstName} ${sender.lastName}`,
-            recipient_name: recipientIdentifier,
-            gold_amount: goldAmount.toFixed(4),
-            usd_value: usdEquivalent.toFixed(2),
-            reference_id: referenceNumber,
-          }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Invite transfer_sent failed:', err));
-        }
-
-        // Low balance alert for invite path
-        if (sender.email) {
-          const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
-          checkAndSendLowBalanceAlert(
-            storage, sender.id, sender.email,
-            sender.firstName, sender.lastName,
-            getGoldPricePerGram,
-          ).catch(err => console.error('[Email] Low balance check (invite) failed:', err));
-        }
-
-        return res.json({
-          transfer: inviteTransfer,
-          pending: true,
-          isInvite: true,
-          message: `Invitation sent! ${recipientIdentifier} has 24 hours to register and claim ${goldAmount.toFixed(4)}g gold.`,
-          expiresAt: expiresAt.toISOString(),
-        });
-      }
-      
-      if (!recipient) {
-        return res.status(404).json({ message: "Recipient not found. For email transfers to non-registered users, use the email channel." });
-      }
-      
-      if (sender.id === recipient.id) {
-        return res.status(400).json({ message: "Cannot send money to yourself" });
-      }
-      
-      // Get recipient wallet
-      const recipientWallet = await storage.getWallet(recipient.id);
-      if (!recipientWallet) {
-        return res.status(400).json({ message: "Recipient wallet not found" });
-      }
-      
-      // Transfer approval is always required for security
-      const recipientPreferences = await storage.getUserPreferences(recipient.id);
-      const timeoutHours = recipientPreferences?.transferApprovalTimeout || 24;
-      const expiresAt = timeoutHours > 0 ? new Date(Date.now() + timeoutHours * 60 * 60 * 1000) : null;
-      
-      // Debit sender immediately (held until accepted/rejected)
-      // For FGPW: Don't debit wallet - FGPW batches will be consumed at approval time
-      // For LGPW: Debit wallet now (funds held in escrow)
-      if (sourceWalletType === 'LGPW') {
-        await storage.updateWallet(senderWallet.id, {
-          goldGrams: (senderGoldBalance - goldAmount).toFixed(6)
-        });
-      }
-      // Note: For FGPW, we store the preview info and consume batches at approval time
-      
-      // Create sender transaction (pending)
-      // For FGPW: amountGold = FGPW grams sent, description includes receiver LGPW grams
-      const txDescription = sourceWalletType === 'FGPW' && fgpwConversionResult
-        ? `Pending FGPW transfer to ${recipient!.firstName} ${recipient!.lastName} (${goldAmount.toFixed(4)}g FGPW @ ${(fgpwConversionResult.weightedValueUsd / goldAmount).toFixed(2)}/g = ${fgpwConversionResult.weightedValueUsd.toFixed(2)} -> ${receiverGoldGrams.toFixed(4)}g LGPW @ ${goldPrice.toFixed(2)}/g)`
-        : memo || `Pending transfer to ${recipient!.firstName} ${recipient!.lastName}`;
-      
-      const senderTx = await storage.createTransaction({
-        userId: sender.id,
-        type: 'Send',
-        status: 'Pending',
-        amountGold: goldAmount.toFixed(6),
-        amountUsd: usdEquivalent.toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        recipientEmail: recipient.email,
-        recipientUserId: recipient.id,
-        description: txDescription,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-        goldWalletType: sourceWalletType,
-      });
-      
-      // Record ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: sender.id,
-        action: 'Transfer_Send',
-        goldGrams: goldAmount,
-        goldPriceUsdPerGram: goldPrice,
-        fromWallet: 'FinaPay',
-        toWallet: 'External',
-        fromStatus: 'Available',
-        toStatus: 'Pending_Deposit',
-        transactionId: senderTx.id,
-        counterpartyUserId: recipient.id,
-        notes: `Pending gold transfer to ${recipient!.firstName} ${recipient!.lastName} (awaiting acceptance)`,
-        createdBy: 'system',
-      });
-      
-      if (sourceWalletType === 'LGPW') {
-        const { deductFromCerts: deductP2P } = await import('./cert-ledger-service');
-        await deductP2P(storage, {
-          userId: sender.id,
-          gramsToDeduct: goldAmount,
-          reason: 'P2P_SEND',
-          transactionId: senderTx.id,
-          notes: `P2P send: ${goldAmount.toFixed(4)}g to ${recipient!.firstName} ${recipient!.lastName}`,
-        });
-      }
-      
-      // Create pending peer transfer
-      const pendingTransfer = await storage.createPeerTransfer({
-        referenceNumber,
-        senderId: sender.id,
-        recipientId: recipient.id,
-        amountUsd: usdEquivalent.toFixed(2),
-        amountGold: goldAmount.toFixed(6),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        channel,
-        recipientIdentifier,
-        memo,
-        status: 'Pending',
-        requiresApproval: true,
-        expiresAt,
-        senderTransactionId: senderTx.id,
-      });
-      
-      // Emit real-time sync event
-      emitLedgerEvent(sender.id, {
-        type: 'balance_update',
-        module: 'finapay',
-        action: 'gold_pending',
-        data: { goldGrams: goldAmount, recipientId: recipient.id },
-      });
-      emitLedgerEvent(recipient.id, {
-        type: 'pending_transfer',
-        module: 'finapay',
-        action: 'incoming_transfer',
-        data: { goldGrams: goldAmount, senderId: sender.id, transferId: pendingTransfer.id },
-      });
-      
-      // Create bell notification for recipient
-      await storage.createNotification({
-        userId: recipient.id,
-        title: 'Incoming Gold Transfer',
-        message: `${sender.firstName} ${sender.lastName} sent you ${goldAmount.toFixed(4)}g gold ($${usdEquivalent.toFixed(2)}). Please accept or decline.`,
-        type: 'transaction',
-        link: '/finapay',
-      });
-      
-      // Send pending transfer email to recipient
-      if (recipient.email) {
-        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_PENDING, {
-          user_name: `${recipient.firstName} ${recipient.lastName}`,
-          sender_name: `${sender.firstName} ${sender.lastName}`,
-          amount: `${goldAmount.toFixed(4)}g gold`,
-          amount_usd: usdEquivalent.toFixed(2),
-          reference_number: referenceNumber,
-          memo: memo || '',
-          expires_at: expiresAt ? expiresAt.toLocaleDateString() : '',
-        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Pending transfer notification failed:', err));
-      }
-
-      // Send transfer_sent confirmation to sender
-      if (sender.email) {
-        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_SENT, {
-          user_name: `${sender.firstName} ${sender.lastName}`,
-          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-          gold_amount: goldAmount.toFixed(4),
-          usd_value: usdEquivalent.toFixed(2),
-          reference_id: referenceNumber,
-        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer sent confirmation failed:', err));
-      }
-
-      // Low balance alert for registered recipient P2P path
-      if (sender.email) {
-        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
-        checkAndSendLowBalanceAlert(
-          storage, sender.id, sender.email,
-          sender.firstName, sender.lastName,
-          getGoldPricePerGram,
-        ).catch(err => console.error('[Email] Low balance check (P2P) failed:', err));
-      }
-
-      return res.json({
-        transfer: pendingTransfer,
-        pending: true,
-        message: `Transfer of ${goldAmount.toFixed(4)}g gold sent to ${recipient.firstName} ${recipient.lastName}. Awaiting their approval.`
-      });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Transfer failed" });
-    }
-  });
-
-  // Get user's sent transfers - PROTECTED
-  app.get("/api/finapay/transfers/sent/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const transfers = await storage.getUserSentTransfers(req.params.userId);
-      res.json({ transfers });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get sent transfers" });
-    }
-  });
-
-  // Get user's received transfers - PROTECTED
-  app.get("/api/finapay/transfers/received/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const transfers = await storage.getUserReceivedTransfers(req.params.userId);
-      res.json({ transfers });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get received transfers" });
-    }
-  });
-
-  // Paginated P2P transfers endpoint for better performance
-  app.get("/api/finapay/transfers/:userId/paginated", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { status, limit = '20', offset = '0' } = req.query;
-      const result = await storage.getPeerTransfersPaginated(req.params.userId, {
-        status: status as string | undefined,
-        limit: parseInt(limit as string, 10),
-        offset: parseInt(offset as string, 10),
-      });
-      res.json(result);
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get transfers" });
-    }
-  });
-
-  // Create money request - PROTECTED
-  app.post("/api/finapay/request", ensureAuthenticated, async (req, res) => {
-    try {
-      const { requesterId, targetIdentifier, amountUsd, channel, memo, attachmentData, attachmentName, attachmentMime, attachmentSize, goldWalletType } = req.body;
-      
-      const requester = await storage.getUser(requesterId);
-      if (!requester) {
-        return res.status(404).json({ message: "Requester not found" });
-      }
-      
-      // Validate attachment if provided
-      if (attachmentData) {
-        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
-        const allowedMimes = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
-        if (attachmentSize > MAX_SIZE) {
-          return res.status(400).json({ message: "Attachment size must be less than 5MB" });
-        }
-        if (!allowedMimes.includes(attachmentMime)) {
-          return res.status(400).json({ message: "Attachment must be PDF, PNG, or JPG" });
-        }
-      }
-      
-      // Fetch current gold price and calculate gold grams (Gold-First Principle)
-      const goldPrice = await getGoldPricePerGram();
-      if (!goldPrice || goldPrice <= 0) {
-        return res.status(400).json({ message: "Unable to fetch current gold price" });
-      }
-      const parsedAmountUsd = parseFloat(amountUsd);
-      const goldGrams = parsedAmountUsd / goldPrice;
-      
-      // Generate reference and QR payload
-      const referenceNumber = `REQ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const qrPayload = `FTREQ:${referenceNumber}:${amountUsd}:${requester.finatradesId}`;
-      
-      // Find target if identifier provided
-      let targetId = null;
-      let targetUser = null;
-      if (targetIdentifier) {
-        const targetUsers = await storage.searchUsersByIdentifier(targetIdentifier);
-        if (targetUsers.length > 0) {
-          targetId = targetUsers[0].id;
-          targetUser = targetUsers[0];
-        }
-      }
-      
-      // Set expiry to 7 days
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      
-      const request = await storage.createPeerRequest({
-        referenceNumber,
-        requesterId,
-        targetId,
-        targetIdentifier,
-        channel,
-        amountUsd: parsedAmountUsd.toFixed(2),
-        amountGold: goldGrams.toFixed(6),
-        memo,
-        qrPayload,
-        status: 'Pending',
-        expiresAt,
-        attachmentUrl: attachmentData || null,
-        attachmentName: attachmentName || null,
-        attachmentMime: attachmentMime || null,
-        attachmentSize: attachmentSize || null,
-        goldWalletType: goldWalletType || 'LGPW',
-      });
-      
-      // Generate QR code as data URL
-      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
-      
-      // Send email notification to target user if found
-      if (targetUser && targetUser.email) {
-        const requesterName = `${requester.firstName} ${requester.lastName}`;
-        try {
-          const emailSubject = `Payment Request from ${requesterName} - ${parseFloat(amountUsd).toFixed(2)}`;
-          const emailHtml = `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                <div style="background: linear-gradient(135deg, #8A2BE2 0%, #4B0082 100%); padding: 20px; text-align: center;">
-                  <h1 style="color: white; margin: 0;">Finatrades</h1>
-                </div>
-                <div style="padding: 30px; background: #f9fafb;">
-                  <h2 style="color: #1f2937;">You've Received a Payment Request</h2>
-                  <p style="color: #4b5563; font-size: 16px;">
-                    <strong>${requesterName}</strong> has requested a payment from you.
-                  </p>
-                  <div style="background: white; border-radius: 12px; padding: 20px; margin: 20px 0; border: 1px solid #e5e7eb;">
-                    <p style="margin: 0 0 10px 0; color: #6b7280;">Amount Requested:</p>
-                    <p style="margin: 0; font-size: 28px; font-weight: bold; color: #8A2BE2;">${parseFloat(amountUsd).toFixed(2)}</p>
-                    ${memo ? `<p style="margin: 15px 0 0 0; color: #6b7280; font-style: italic;">"${memo}"</p>` : ''}
-                  </div>
-                  <p style="color: #4b5563;">Reference: <strong>${referenceNumber}</strong></p>
-                  <p style="color: #4b5563;">This request expires on: <strong>${expiresAt.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</strong></p>
-                  <div style="margin-top: 25px; text-align: center;">
-                    <a href="${process.env.PRODUCTION_DOMAIN ? 'https://' + process.env.PRODUCTION_DOMAIN : (process.env.REPLIT_DOMAINS?.split(',')[0] ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0] : 'https://finatrades.com')}/finapay" 
-                       style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">
-                      View Request in FinaPay
-                    </a>
-                  </div>
-                  <p style="color: #9ca3af; font-size: 14px; margin-top: 25px;">
-                    Log in to your Finatrades account to pay or decline this request.
-                  </p>
-                </div>
-                <div style="padding: 20px; text-align: center; color: #9ca3af; font-size: 12px;">
-                  <p>&copy; ${new Date().getFullYear()} Finatrades. All rights reserved.</p>
-                </div>
-              </div>
-            `;
-          await sendEmailDirect(targetUser.email, emailSubject, emailHtml);
-        } catch (emailError) {
-          console.error('[PaymentRequest] Failed to send email notification:', emailError);
-        }
-      }
-      
-      res.json({ request, qrCodeDataUrl });
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to create request" });
-    }
-  });
-
-  // Get user's money requests (created by user) - PROTECTED
-  app.get("/api/finapay/requests/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const requests = await storage.getUserPeerRequests(req.params.userId);
-      res.json({ requests });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get requests" });
-    }
-  });
-
-  // Get money requests received by user - PROTECTED
-  app.get("/api/finapay/requests/received/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      // Get user details to match by email or Finatrades ID as well
-      const targetUser = await storage.getUser(req.params.userId);
-      const userEmail = targetUser?.email;
-      const userFinatradesId = targetUser?.finatradesId;
-      
-      const requests = await storage.getUserReceivedPeerRequests(req.params.userId, userEmail, userFinatradesId);
-      
-      // Map amountGold to goldGrams for frontend compatibility
-      const mappedRequests = requests.map(r => ({
-        ...r,
-        goldGrams: r.amountGold,
-      }));
-      
-      res.json({ requests: mappedRequests });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get received requests" });
-    }
-  });
-
-  // Download attachment for a payment request - PROTECTED
-  app.get("/api/finapay/requests/:id/attachment", ensureAuthenticated, async (req, res) => {
-    try {
-      const request = await storage.getPeerRequest(req.params.id);
-      
-      if (!request) {
-        return res.status(404).json({ message: "Request not found" });
-      }
-      
-      // Only requester or recipient can download attachment
-      const userId = req.session.userId;
-      const currentUser = userId ? await storage.getUser(userId) : null;
-      const userEmail = currentUser?.email;
-      const userFinatradesId = currentUser?.finatradesId;
-      
-      // Check if user is the requester
-      const isRequester = request.requesterId === userId;
-      
-      // Check if user is the target by ID
-      const isTargetById = request.targetId && request.targetId === userId;
-      
-      // Check if user matches the target identifier (email or finatrades ID)
-      const isTargetByIdentifier = request.targetIdentifier && (
-        request.targetIdentifier.toLowerCase() === userEmail?.toLowerCase() ||
-        request.targetIdentifier.toUpperCase() === userFinatradesId?.toUpperCase()
-      );
-      
-      if (!isRequester && !isTargetById && !isTargetByIdentifier) {
-        return res.status(403).json({ message: "Not authorized to download this attachment" });
-      }
-      
-      if (!request.attachmentUrl) {
-        return res.status(404).json({ message: "No attachment found" });
-      }
-      
-        return res.json({
-        attachmentUrl: request.attachmentUrl,
-        attachmentName: request.attachmentName,
-        attachmentMime: request.attachmentMime,
-        attachmentSize: request.attachmentSize,
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get attachment" });
-    }
-  });
-
-  // Pay a money request - PROTECTED
-  app.post("/api/finapay/requests/:id/pay", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
-    try {
-      const { payerId } = req.body;
-      const request = await storage.getPeerRequest(req.params.id);
-      
-      if (!request) {
-        return res.status(404).json({ message: "Request not found" });
-      }
-      
-      if (request.status !== 'Pending') {
-        return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
-      // Check if expired
-      if (request.expiresAt && new Date(request.expiresAt) < new Date()) {
-        await storage.updatePeerRequest(request.id, { status: 'Expired' });
-        return res.status(400).json({ message: "Request has expired" });
-      }
-      
-      // Get payer and requester
-      const payer = await storage.getUser(payerId);
-      const requester = await storage.getUser(request.requesterId);
-      
-      if (!payer || !requester) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (payer.id === requester.id) {
-        return res.status(400).json({ message: "Cannot pay your own request" });
-      }
-      
-      // Check payer balance - use gold balance as the underlying asset
-      const payerWallet = await storage.getWallet(payer.id);
-      if (!payerWallet) {
-        return res.status(400).json({ message: "Wallet not found" });
-      }
-      
-      // Get current gold price to convert USD to gold grams
-      const pricePerGram = await getGoldPricePerGram();
-      const amountUsd = parseFloat(request.amountUsd.toString());
-      const goldGrams = amountUsd / pricePerGram;
-      const payerGoldBalance = parseFloat(payerWallet.goldGrams.toString());
-      
-      if (payerGoldBalance < goldGrams) {
-        return res.status(400).json({ message: "Insufficient gold balance" });
-      }
-      
-      // Get requester wallet - auto-create if missing (safety net for legacy users)
-      let requesterWallet = await storage.getWallet(requester.id);
-      if (!requesterWallet) {
-        console.log(`[FinaPay] Auto-creating wallet for requester ${requester.id} (legacy user without wallet)`);
-        requesterWallet = await storage.createWallet({
-          userId: requester.id,
-          goldGrams: "0",
-          usdBalance: "0",
-          eurBalance: "0",
-        });
-      }
-      
-      // Generate reference
-      const referenceNumber = `TRF-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Debit payer gold from legacy wallet
-      await storage.updateWallet(payerWallet.id, {
-        goldGrams: (payerGoldBalance - goldGrams).toFixed(6),
-      });
-      
-      // Credit requester gold to legacy wallet
-      const requesterGoldBalance = parseFloat(requesterWallet.goldGrams.toString());
-      await storage.updateWallet(requesterWallet.id, {
-        goldGrams: (requesterGoldBalance + goldGrams).toFixed(6),
-      });
-      
-      // Update dual-wallet LGPW balances (vaultOwnershipSummary) - ALWAYS LGPW for P2P
-      const walletType = 'LGPW'; // P2P is always LGPW to LGPW
-      
-      // Debit payer's LGPW (create if missing)
-      const [payerVaultSummary] = await db.select().from(vaultOwnershipSummary)
-        .where(eq(vaultOwnershipSummary.userId, payer.id));
-      if (payerVaultSummary) {
-        const payerMpgw = parseFloat(payerVaultSummary.mpgwAvailableGrams || '0');
-        await db.update(vaultOwnershipSummary)
-          .set({ mpgwAvailableGrams: Math.max(0, payerMpgw - goldGrams).toFixed(6) })
-          .where(eq(vaultOwnershipSummary.userId, payer.id));
-      } else {
-        // Payer should have vault summary - create with 0 balance (already debited from legacy)
-        console.log(`[FinaPay] Auto-creating vault summary for payer ${payer.id}`);
-        await db.insert(vaultOwnershipSummary).values({
-          userId: payer.id,
-          mpgwAvailableGrams: '0.000000',
-        });
-      }
-      
-      // Credit requester's LGPW (create if missing)
-      const [requesterVaultSummary] = await db.select().from(vaultOwnershipSummary)
-        .where(eq(vaultOwnershipSummary.userId, requester.id));
-      if (requesterVaultSummary) {
-        const requesterMpgw = parseFloat(requesterVaultSummary.mpgwAvailableGrams || '0');
-        await db.update(vaultOwnershipSummary)
-          .set({ mpgwAvailableGrams: (requesterMpgw + goldGrams).toFixed(6) })
-          .where(eq(vaultOwnershipSummary.userId, requester.id));
-      } else {
-        // Create vault ownership summary for requester with credited gold
-        console.log(`[FinaPay] Auto-creating vault summary for requester ${requester.id}`);
-        await db.insert(vaultOwnershipSummary).values({
-          userId: requester.id,
-          mpgwAvailableGrams: goldGrams.toFixed(6),
-        });
-      }
-      
-      // Create transactions with gold grams
-      const senderTx = await storage.createTransaction({
-        userId: payer.id,
-        type: 'Send',
-        status: 'Completed',
-        amountGold: goldGrams.toFixed(6),
-        amountUsd: amountUsd.toFixed(2),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        recipientEmail: requester.email,
-        recipientUserId: requester.id,
-        description: request.memo || `Paid request from ${requester.firstName} ${requester.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-        goldWalletType: 'LGPW', // P2P always uses LGPW
-        completedAt: new Date(),
-      });
-      
-      const recipientTx = await storage.createTransaction({
-        userId: requester.id,
-        type: 'Receive',
-        status: 'Completed',
-        amountGold: goldGrams.toFixed(6),
-        amountUsd: amountUsd.toFixed(2),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        senderEmail: payer.email,
-        description: request.memo || `Received payment from ${payer.firstName} ${payer.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-        goldWalletType: 'LGPW', // P2P always uses LGPW
-        completedAt: new Date(),
-      });
-      
-      // Create transfer record
-      const transfer = await storage.createPeerTransfer({
-        referenceNumber,
-        senderId: payer.id,
-        recipientId: requester.id,
-        amountUsd: amountUsd.toFixed(2),
-        goldGrams: goldGrams.toFixed(6),
-        channel: request.channel,
-        recipientIdentifier: requester.email,
-        memo: request.memo,
-        status: 'Completed',
-        senderTransactionId: senderTx.id,
-        recipientTransactionId: recipientTx.id,
-      });
-      // Generate P2P certificates for both parties
-      // walletType already declared above
-      const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const wingoldRef = generateWingoldRef();
-      
-      // Helper to generate certificate number
-      const genCertNum = (prefix: string) => `${prefix}-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // 1. Digital Ownership Certificate for requester (gold recipient)
-      await storage.createCertificate({
-        certificateNumber: genCertNum('DOC'),
-        userId: requester.id,
-        transactionId: recipientTx.id,
-        type: 'Digital Ownership',
-        status: 'Active',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
-        issuer: 'Finatrades Finance SA',
-        vaultLocation: 'Dubai - Wingold & Metals DMCC',
-        wingoldStorageRef: wingoldRef,
-        goldWalletType: walletType,
-      });
-      
-      // 2. Physical Storage Certificate for requester (gold recipient)
-      await storage.createCertificate({
-        certificateNumber: genCertNum('PSC'),
-        userId: requester.id,
-        transactionId: recipientTx.id,
-        type: 'Physical Storage',
-        status: 'Active',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
-        issuer: 'Wingold and Metals DMCC',
-        vaultLocation: 'Dubai - Wingold & Metals DMCC',
-        wingoldStorageRef: wingoldRef,
-        goldWalletType: 'LGPW', // Physical storage always LGPW
-      });
-      
-      // 3. Transfer Certificate for payer (gold sender) - shows Finatrades ID transfer
-      await storage.createCertificate({
-        certificateNumber: genCertNum('TRC'),
-        userId: payer.id,
-        transactionId: senderTx.id,
-        type: 'Transfer',
-        status: 'Active',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
-        issuer: 'Finatrades Finance SA',
-        fromUserId: payer.id,
-        toUserId: requester.id,
-        fromUserName: `${payer.firstName} ${payer.lastName} (FT-${payer.finatradesId})`,
-        toUserName: `${requester.firstName} ${requester.lastName} (FT-${requester.finatradesId})`,
-        goldWalletType: walletType,
-      });
-      
-      // 3a. Updated Digital Ownership Certificate for payer (showing reduced balance)
-      const payerNewBalance = payerGoldBalance - goldGrams;
-      if (payerNewBalance > 0) {
-        await storage.createCertificate({
-          certificateNumber: genCertNum('DOC'),
-          userId: payer.id,
-          transactionId: senderTx.id,
-          type: 'Digital Ownership',
-          status: 'Active',
-          goldGrams: payerNewBalance.toFixed(6),
-          goldPriceUsdPerGram: pricePerGram.toFixed(2),
-          totalValueUsd: (payerNewBalance * pricePerGram).toFixed(2),
-          issuer: 'Finatrades Finance SA',
-          vaultLocation: 'Dubai - Wingold & Metals DMCC',
-          wingoldStorageRef: wingoldRef,
-          goldWalletType: walletType,
-        });
-        
-        // 3b. Updated Physical Storage Certificate for payer
-        await storage.createCertificate({
-          certificateNumber: genCertNum('PSC'),
-          userId: payer.id,
-          transactionId: senderTx.id,
-          type: 'Physical Storage',
-          status: 'Active',
-          goldGrams: payerNewBalance.toFixed(6),
-          goldPriceUsdPerGram: pricePerGram.toFixed(2),
-          totalValueUsd: (payerNewBalance * pricePerGram).toFixed(2),
-          issuer: 'Wingold and Metals DMCC',
-          vaultLocation: 'Dubai - Wingold & Metals DMCC',
-          wingoldStorageRef: wingoldRef,
-          goldWalletType: 'LGPW',
-        });
-      }
-      
-      // 4. Transfer Certificate for requester (gold recipient) - shows Finatrades ID transfer
-      await storage.createCertificate({
-        certificateNumber: genCertNum('TRC'),
-        userId: requester.id,
-        transactionId: recipientTx.id,
-        type: 'Transfer',
-        status: 'Active',
-        goldGrams: goldGrams.toFixed(6),
-        goldPriceUsdPerGram: pricePerGram.toFixed(2),
-        totalValueUsd: (goldGrams * pricePerGram).toFixed(2),
-        issuer: 'Finatrades Finance SA',
-        fromUserId: payer.id,
-        toUserId: requester.id,
-        fromUserName: `${payer.firstName} ${payer.lastName} (FT-${payer.finatradesId})`,
-        toUserName: `${requester.firstName} ${requester.lastName} (FT-${requester.finatradesId})`,
-        goldWalletType: walletType,
-      });
-      
-      // Record ledger entries
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: payer.id,
-        action: 'Transfer_Send',
-        goldGrams: goldGrams,
-        goldPriceUsdPerGram: pricePerGram,
-        fromWallet: 'FinaPay',
-        toWallet: 'External',
-        fromStatus: 'Available',
-        toStatus: 'Available',
-        transactionId: senderTx.id,
-        counterpartyUserId: requester.id,
-        notes: `Paid payment request to ${requester.firstName} ${requester.lastName}`,
-        createdBy: 'system',
-      });
-      
-      await vaultLedgerService.recordLedgerEntry({
-        userId: requester.id,
-        action: 'Transfer_Receive',
-        goldGrams: goldGrams,
-        goldPriceUsdPerGram: pricePerGram,
-        fromWallet: 'FinaPay',
-        toWallet: 'FinaPay',
-        fromStatus: 'Available',
-        toStatus: 'Available',
-        transactionId: recipientTx.id,
-        counterpartyUserId: payer.id,
-        notes: `Received payment from ${payer.firstName} ${payer.lastName}`,
-        createdBy: 'system',
-      });
-
-      await storage.updatePeerRequest(request.id, {
-        status: 'Fulfilled',
-        fulfilledTransferId: transfer.id,
-        respondedAt: new Date(),
-      });
-      
-      res.json({ transfer, message: "Payment successful" });
-
-      // Low balance alert for payer (LGPW debit on QR payment)
-      if (payer.email) {
-        const { checkAndSendLowBalanceAlert } = await import('./jobs/low-balance-alert');
-        checkAndSendLowBalanceAlert(
-          storage, payer.id, payer.email,
-          payer.firstName, payer.lastName,
-          getGoldPricePerGram,
-        ).catch(err => console.error('[Email] Low balance check (QR payment) failed:', err));
-      }
-    } catch (error) {
-      res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
-    }
-  });
-
-  // Decline a money request - PROTECTED: requires authentication + ownership check
-  app.post("/api/finapay/requests/:id/decline", ensureAuthenticated, async (req, res) => {
-    try {
-      const request = await storage.getPeerRequest(req.params.id);
-      
-      if (!request) {
-        return res.status(404).json({ message: "Request not found" });
-      }
-      
-      // SECURITY: Only the target (person being asked to pay) can decline
-      if (request.targetId !== req.session?.userId) {
-        return res.status(403).json({ message: "Not authorized to decline this request" });
-      }
-      
-      if (request.status !== 'Pending') {
-        return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
-      await storage.updatePeerRequest(request.id, {
-        status: 'Declined',
-        respondedAt: new Date(),
-      });
-      
-      res.json({ message: "Request declined" });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to decline request" });
-    }
-  });
-
-  // Cancel a money request (by requester) - PROTECTED: requires authentication
-  app.post("/api/finapay/requests/:id/cancel", ensureAuthenticated, async (req, res) => {
-    try {
-      const request = await storage.getPeerRequest(req.params.id);
-      
-      if (!request) {
-        return res.status(404).json({ message: "Request not found" });
-      }
-      
-      // SECURITY: Only the requester can cancel their own request (use session, not body)
-      if (request.requesterId !== req.session?.userId) {
-        return res.status(403).json({ message: "Not authorized to cancel this request" });
-      }
-      
-      if (request.status !== 'Pending') {
-        return res.status(400).json({ message: "Request is no longer pending" });
-      }
-      
-      await storage.updatePeerRequest(request.id, {
-        status: 'Cancelled',
-        respondedAt: new Date(),
-      });
-      
-      res.json({ message: "Request cancelled" });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to cancel request" });
-    }
-  });
-
-  // Get QR code for receiving money (user's profile QR) - PROTECTED: requires owner or admin
-  app.get("/api/finapay/qr/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const user = await storage.getUser(req.params.userId);
-      if (!user || !user.finatradesId) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const qrPayload = `FTPAY:${user.finatradesId}`;
-      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
-      
-      const displayId = user.customFinatradesId || user.finatradesId;
-      res.json({ qrCodeDataUrl, finatradesId: displayId });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to generate QR code" });
-    }
-  });
-
-  // Admin: Get all peer transfers
-  app.get("/api/admin/finapay/peer-transfers", ensureAdminAsync, requirePermission('manage_deposits', 'manage_withdrawals', 'view_transactions', 'manage_transactions'), async (req, res) => {
-    try {
-      const transfers = await storage.getAllPeerTransfers().catch(() => []);
-      res.json({ transfers });
-    } catch (error) {
-      console.error('Failed to get peer transfers:', error);
-      res.json({ transfers: [] });
-    }
-  });
-
-  // Admin: Get all peer requests
-  app.get("/api/admin/finapay/peer-requests", ensureAdminAsync, requirePermission('manage_deposits', 'manage_withdrawals', 'view_transactions', 'manage_transactions'), async (req, res) => {
-    try {
-      const requests = await storage.getAllPeerRequests().catch(() => []);
-      res.json({ requests });
-    } catch (error) {
-      console.error('Failed to get peer requests:', error);
-      res.json({ requests: [] });
-    }
-  });
-
-  // ============================================================================
-  // FINAPAY - PENDING TRANSFERS (Accept/Reject incoming transfers)
-  // ============================================================================
-
-  // Get pending incoming transfers for a user - PROTECTED: requires owner or admin
-  app.get("/api/finapay/pending/incoming/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const transfers = await storage.getPendingIncomingTransfers(req.params.userId);
-      res.json({ transfers });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get pending transfers" });
-    }
-  });
-
-  // Get pending outgoing transfers for a user - PROTECTED: requires owner or admin
-  app.get("/api/finapay/pending/outgoing/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const transfers = await storage.getPendingOutgoingTransfers(req.params.userId);
-      res.json({ transfers });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get pending transfers" });
-    }
-  });
-
-  // Accept a pending transfer - PROTECTED: requires authentication
-  app.post("/api/finapay/pending/:id/accept", ensureAuthenticated, idempotencyMiddleware, async (req, res) => {
-    try {
-      const transfer = await storage.getPeerTransfer(req.params.id);
-      
-      if (!transfer) {
-        return res.status(404).json({ message: "Transfer not found" });
-      }
-      
-      // SECURITY: Only the recipient can accept
-      if (transfer.recipientId !== req.session?.userId) {
-        return res.status(403).json({ message: "Not authorized to accept this transfer" });
-      }
-      
-      if (transfer.status !== 'Pending') {
-        return res.status(400).json({ message: "Transfer is no longer pending" });
-      }
-      
-      // Check if transfer has expired
-      if (transfer.expiresAt && new Date() > new Date(transfer.expiresAt)) {
-        await storage.updatePeerTransfer(transfer.id, {
-          status: 'Expired',
-          respondedAt: new Date(),
-        });
-        return res.status(400).json({ message: "Transfer has expired" });
-      }
-      
-      // Get sender and recipient info
-      const sender = await storage.getUser(transfer.senderId);
-      const recipient = await storage.getUser(transfer.recipientId);
-      if (!sender || !recipient) {
-        return res.status(404).json({ message: "Users not found" });
-      }
-      
-      // Get wallets
-      const recipientWallet = await storage.getWallet(recipient.id);
-      if (!recipientWallet) {
-        return res.status(400).json({ message: "Recipient wallet not found" });
-      }
-      
-      // Platform is gold-only - all transfers are gold
-      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
-      let goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
-      
-      if (goldAmount <= 0) {
-        return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
-      }
-      
-      // Get the source wallet type from sender's transaction
-      let senderTxInfo: any = null;
-      if (transfer.senderTransactionId) {
-        senderTxInfo = await storage.getTransaction(transfer.senderTransactionId);
-      }
-      const sourceWalletType = senderTxInfo?.goldWalletType || 'LGPW';
-      
-      // For FGPW transfers: Consume FGPW batches now and calculate receiver's LGPW grams
-      let receiverGoldGrams = goldAmount; // Default for LGPW (1:1)
-      let fgpwConversionResult: any = null;
-      
-      if (sourceWalletType === 'FGPW') {
-        // Use STORED price from send time (auto-unlock guarantee per PDF documentation)
-        // goldPrice is already set from transfer.goldPriceUsdPerGram above
-        
-        // Preview FGPW consumption to validate and calculate receiver grams
-        // Actual consumption will happen inside the transaction block for atomicity
-        const { previewFpgwBatches } = await import('./fpgw-batch-service');
-        const fgpwPreview = await previewFpgwBatches(sender.id, goldAmount, 'Available');
-        
-        if (!fgpwPreview.success) {
-          return res.status(400).json({ 
-            message: fgpwPreview.error || 'Insufficient FGPW balance to complete transfer'
-          });
-        }
-        
-        // Calculate receiver's LGPW grams = USD value / stored price
-        fgpwConversionResult = fgpwPreview;
-        receiverGoldGrams = fgpwPreview.weightedValueUsd / goldPrice;
-        
-        console.log(`[P2P-FGPW Accept] Will convert ${goldAmount}g FGPW (USD ${fgpwPreview.weightedValueUsd.toFixed(2)}) -> ${receiverGoldGrams.toFixed(6)}g LGPW at ${goldPrice.toFixed(2)}/g`);
-      }
-      
-      // Process gold transfer - Credit recipient
-      const result = await storage.withTransaction(async (txStorage) => {
-        const generatedCertificates: any[] = [];
-        const generateWingoldRef = () => `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        
-        // For FGPW transfers: Consume batches inside transaction for atomicity
-        if (sourceWalletType === 'FGPW') {
-          const { consumeFpgwBatches, updateFpgwOwnershipSummary } = await import('./fpgw-batch-service');
-          const txDb = txStorage.getDbClient();
-          const consumeResult = await consumeFpgwBatches(sender.id, goldAmount, 'Available', txDb);
-          
-          if (!consumeResult.success) {
-            throw new Error(consumeResult.error || 'Failed to consume FGPW batches');
-          }
-          
-          // Use actual consumption result for receiver grams (not preview)
-          receiverGoldGrams = consumeResult.weightedValueUsd / goldPrice;
-          fgpwConversionResult = consumeResult;
-          
-          // Update sender's FGPW ownership summary inside transaction
-          await updateFpgwOwnershipSummary(sender.id, txDb);
-          
-          console.log(`[P2P-FGPW Accept TX] Consumed ${goldAmount}g FGPW (USD ${consumeResult.weightedValueUsd.toFixed(2)}) -> ${receiverGoldGrams.toFixed(6)}g LGPW from sender ${sender.id}`);
-        }
-          
-          // Helper to issue certificates
-          const issueCertificates = async (userId: string, txId: string, holdingId: string, wingoldRef: string, grams: number) => {
-            if (!holdingId || grams <= 0) return null;
-            
-            const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-            const digitalCert = await txStorage.createCertificate({
-              certificateNumber: docCertNum,
-              userId,
-              transactionId: txId,
-              vaultHoldingId: holdingId,
-              type: 'Digital Ownership',
-              status: 'Active',
-              goldGrams: grams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(digitalCert);
-            
-            const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-            const storageCert = await txStorage.createCertificate({
-              certificateNumber: pscCertNum,
-              userId,
-              transactionId: txId,
-              vaultHoldingId: holdingId,
-              type: 'Physical Storage',
-              status: 'Active',
-              goldGrams: grams.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: (grams * goldPrice).toFixed(2),
-              issuer: 'Wingold and Metals DMCC',
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: wingoldRef
-            });
-            generatedCertificates.push(storageCert);
-            
-            return wingoldRef;
-          };
-          
-          // 1. Credit recipient wallet gold
-          // For FGPW transfers: use converted LGPW grams; For LGPW: use original amount
-          const recipientGoldBalance = parseFloat(recipientWallet.goldGrams?.toString() || '0');
-          const creditGrams = sourceWalletType === 'FGPW' ? receiverGoldGrams : goldAmount;
-          await txStorage.updateWallet(recipientWallet.id, {
-            goldGrams: (recipientGoldBalance + creditGrams).toFixed(6)
-          });
-          
-          // 2. Create recipient transaction
-          // For FGPW: receiver gets LGPW, so record the converted grams
-          const recipientDescription = sourceWalletType === 'FGPW' && fgpwConversionResult
-            ? `Received ${creditGrams.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName} (converted from ${goldAmount.toFixed(4)}g FGPW at ${goldPrice.toFixed(2)}/g)`
-            : transfer.memo || `Received ${creditGrams.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`;
-            
-          const recipientTx = await txStorage.createTransaction({
-            userId: recipient.id,
-            type: 'Receive',
-            status: 'Completed',
-            amountGold: creditGrams.toFixed(6),
-            amountUsd: (creditGrams * goldPrice).toFixed(2),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            senderEmail: sender.email,
-            description: recipientDescription,
-            referenceId: transfer.referenceNumber,
-            sourceModule: 'finapay',
-            goldWalletType: 'LGPW', // Receiver ALWAYS gets LGPW
-            completedAt: new Date(),
-          });
-          
-          // 3. Update or create recipient vault holding
-          const recipientHoldings = await txStorage.getUserVaultHoldings(recipient.id);
-          let recipientHoldingId: string;
-          let recipientWingoldRef: string;
-          
-          if (recipientHoldings.length > 0) {
-            const rHolding = recipientHoldings[0];
-            const rGold = parseFloat(rHolding.goldGrams?.toString() || '0');
-            recipientWingoldRef = generateWingoldRef();
-            await txStorage.updateVaultHolding(rHolding.id, {
-              goldGrams: (rGold + creditGrams).toFixed(6),
-              wingoldStorageRef: recipientWingoldRef
-            });
-            recipientHoldingId = rHolding.id;
-          } else {
-            recipientWingoldRef = generateWingoldRef();
-            const newHolding = await txStorage.createVaultHolding({
-              userId: recipient.id,
-              goldGrams: creditGrams.toFixed(6),
-              vaultLocation: 'Dubai - Wingold & Metals DMCC',
-              wingoldStorageRef: recipientWingoldRef,
-              purchasePriceUsdPerGram: goldPrice.toFixed(2),
-              isPhysicallyDeposited: false
-            });
-            recipientHoldingId = newHolding.id;
-          }
-          
-          // 4. Issue certificates for recipient
-          await issueCertificates(recipient.id, recipientTx.id, recipientHoldingId, recipientWingoldRef, creditGrams);
-          
-          // 5. Update transfer status
-          await txStorage.updatePeerTransfer(transfer.id, {
-            status: 'Completed',
-            respondedAt: new Date(),
-            recipientTransactionId: recipientTx.id,
-          });
-          
-          // 5b. Update sender's transaction to Completed
-          if (transfer.senderTransactionId) {
-            await txStorage.updateTransaction(transfer.senderTransactionId, {
-              status: 'Completed',
-              description: `Sent ${goldAmount.toFixed(4)}g gold to ${recipient.firstName} ${recipient.lastName}`,
-              completedAt: new Date(),
-            });
-            
-            // 5c. Create Transfer Certificate for sender
-            const senderCertNum = await txStorage.generateCertificateNumber('Transfer');
-            await txStorage.createCertificate({
-              certificateNumber: senderCertNum,
-              userId: sender.id,
-              transactionId: transfer.senderTransactionId,
-              type: 'Transfer',
-              status: 'Active',
-              goldGrams: goldAmount.toFixed(6),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              totalValueUsd: (goldAmount * goldPrice).toFixed(2),
-              issuer: 'Finatrades Finance SA',
-              fromUserId: sender.id,
-              toUserId: recipient.id,
-              issuedAt: new Date(),
-            });
-          }
-          
-          // 5d. Create Transfer Certificate for recipient
-          const recipientCertNum = await txStorage.generateCertificateNumber('Transfer');
-          await txStorage.createCertificate({
-            certificateNumber: recipientCertNum,
-            userId: recipient.id,
-            transactionId: recipientTx.id,
-            type: 'Transfer',
-            status: 'Active',
-            goldGrams: goldAmount.toFixed(6),
-            goldPriceUsdPerGram: goldPrice.toFixed(2),
-            totalValueUsd: (goldAmount * goldPrice).toFixed(2),
-            issuer: 'Finatrades Finance SA',
-            fromUserId: sender.id,
-            toUserId: recipient.id,
-            issuedAt: new Date(),
-          });
-          
-          // 6. Record ledger entry for recipient
-          const { vaultLedgerService } = await import('./vault-ledger-service');
-          await vaultLedgerService.recordLedgerEntry({
-            userId: recipient.id,
-            action: 'Transfer_Receive',
-            goldGrams: goldAmount,
-            goldPriceUsdPerGram: goldPrice,
-            fromWallet: 'FinaPay',
-            toWallet: 'FinaPay',
-            fromStatus: 'Available',
-            toStatus: 'Available',
-            transactionId: recipientTx.id,
-            counterpartyUserId: sender.id,
-            notes: `Accepted ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-            createdBy: 'system',
-          });
-          
-          return { recipientTx, certificates: generatedCertificates };
-        });
-        
-        // Emit real-time sync event
-        emitLedgerEvent(recipient.id, {
-          type: 'balance_update',
-          module: 'finapay',
-          action: 'gold_received',
-          data: { goldGrams: goldAmount, senderId: sender.id },
-        });
-        emitLedgerEvent(sender.id, {
-          type: 'transfer_accepted',
-          module: 'finapay',
-          action: 'transfer_completed',
-          data: { transferId: transfer.id, recipientId: recipient.id },
-        });
-        
-      // Send transfer_completed email to sender (their gold was successfully delivered)
-      if (sender.email) {
-        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
-          user_name: `${sender.firstName} ${sender.lastName}`,
-          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-          gold_amount: goldAmount.toFixed(4),
-        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer completed (sender) failed:', err));
-      }
-
-      // Send transfer_completed email to recipient (they received gold)
-      if (recipient.email) {
-        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
-          user_name: `${recipient.firstName} ${recipient.lastName}`,
-          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-          gold_amount: goldAmount.toFixed(4),
-        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Transfer completed (recipient) failed:', err));
-      }
-
-      // Create bell notifications for both parties
-      await storage.createNotification({
-        userId: recipient.id,
-        title: 'Transfer Received',
-        message: `You received ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}.`,
-        type: 'transaction',
-        link: '/finapay',
-      });
-      
-      await storage.createNotification({
-        userId: sender.id,
-        title: 'Transfer Accepted',
-        message: `${recipient.firstName} ${recipient.lastName} accepted your transfer of ${goldAmount.toFixed(4)}g gold.`,
-        type: 'transaction',
-        link: '/finapay',
-      });
-      
-      res.json({ 
-        message: `Accepted ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName}`,
-        transaction: result.recipientTx,
-        certificates: result.certificates
-      });
-      
-    } catch (error) {
-      console.error('[Routes] Error accepting transfer:', error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Transfer Accept Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(400).json({ message: "Failed to accept transfer" });
-    }
-  });
-
-  // Reject a pending transfer - PROTECTED: requires authentication
-  app.post("/api/finapay/pending/:id/reject", ensureAuthenticated, async (req, res) => {
-    try {
-      const { reason } = req.body;
-      const transfer = await storage.getPeerTransfer(req.params.id);
-      
-      if (!transfer) {
-        return res.status(404).json({ message: "Transfer not found" });
-      }
-      
-      // SECURITY: Only the recipient can reject
-      if (transfer.recipientId !== req.session?.userId) {
-        return res.status(403).json({ message: "Not authorized to reject this transfer" });
-      }
-      
-      if (transfer.status !== 'Pending') {
-        return res.status(400).json({ message: "Transfer is no longer pending" });
-      }
-      
-      // Get sender and recipient info
-      const sender = await storage.getUser(transfer.senderId);
-      const recipient = await storage.getUser(transfer.recipientId);
-      if (!sender) {
-        return res.status(404).json({ message: "Sender not found" });
-      }
-      
-      // Refund the sender
-      const senderWallet = await storage.getWallet(sender.id);
-      if (!senderWallet) {
-        return res.status(400).json({ message: "Sender wallet not found" });
-      }
-      
-      // Platform is gold-only - all transfers are gold
-      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
-      const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
-      
-      if (goldAmount <= 0) {
-        return res.status(400).json({ message: "Invalid transfer: no gold amount found" });
-      }
-      
-      // Refund gold to sender's wallet only (Send deducted from wallet, not vault)
-        const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-        await storage.updateWallet(senderWallet.id, {
-          goldGrams: (senderGoldBalance + goldAmount).toFixed(6)
-        });
-        
-        // NOTE: We do NOT update vault holding because Send only deducted from wallet
-        // Updating vault would create a double credit (wallet + vault = 2x the gold)
-        
-        // Create refund transaction for sender
-        await storage.createTransaction({
-          userId: sender.id,
-          type: 'Refund',
-          status: 'Completed',
-          amountGold: goldAmount.toFixed(6),
-          amountUsd: (goldAmount * goldPrice).toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          description: `Transfer to ${recipient?.firstName || 'user'} was rejected${reason ? `: ${reason}` : ''}`,
-          referenceId: transfer.referenceNumber,
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          completedAt: new Date(),
-        });
-        
-      // Record ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: sender.id,
-        action: 'Transfer_Refund',
-        goldGrams: goldAmount,
-        goldPriceUsdPerGram: goldPrice,
-        fromWallet: 'External',
-        toWallet: 'FinaPay',
-        toStatus: 'Available',
-        notes: `Transfer rejected by ${recipient?.firstName || 'recipient'}${reason ? `: ${reason}` : ''}`,
-        createdBy: 'system',
-      });
-
-      try {
-        const { restoreToCert } = await import('./cert-ledger-service');
-        await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer rejected by ${recipient?.firstName || 'recipient'}`);
-      } catch (certErr) {
-        console.error('[CertLedger] Failed to restore certs on transfer rejection:', certErr);
-      }
-      
-      // Update transfer status
-      await storage.updatePeerTransfer(transfer.id, {
-        status: 'Rejected',
-        respondedAt: new Date(),
-        rejectionReason: reason || null,
-      });
-      
-      // Emit real-time sync events
-      emitLedgerEvent(sender.id, {
-        type: 'balance_update',
-        module: 'finapay',
-        action: 'transfer_rejected',
-        data: { transferId: transfer.id, refunded: true },
-      });
-      
-      // Send email notification to sender
-      if (sender.email) {
-        sendEmailDirect(
-          sender.email,
-          `Your transfer to ${recipient?.firstName || 'user'} was rejected`,
-          `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #dc2626, #b91c1c); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Transfer Rejected</h1>
-            </div>
-            <div style="padding: 30px; background: #ffffff;">
-              <p>Hello ${sender.firstName},</p>
-              <p>${recipient?.firstName || 'The recipient'} has rejected your transfer. The funds have been returned to your wallet.</p>
-              <div style="background: #fef2f2; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <p style="font-size: 28px; font-weight: bold; color: #dc2626; margin: 0;">
-                  ${goldAmount.toFixed(4)}g Gold Refunded
-                </p>
-                ${reason ? `<p style="color: #6b7280; margin: 10px 0; font-style: italic;">"${reason}"</p>` : ''}
-              </div>
-              <p style="text-align: center; margin-top: 30px;">
-                <a href="https://finatrades.com/dashboard" style="background: #8A2BE2; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Dashboard</a>
-              </p>
-            </div>
-          </div>
-          `
-        ).catch(err => console.error('[Email] Failed to send transfer rejected notification:', err));
-      }
-      
-      // Create bell notification for sender
-      await storage.createNotification({
-        userId: sender.id,
-        title: 'Transfer Rejected',
-        message: `${recipient?.firstName || 'Recipient'} rejected your transfer of ${goldAmount.toFixed(4)}g gold. Funds refunded to your wallet.`,
-        type: 'transaction',
-        link: '/finapay',
-      });
-      
-      res.json({ message: "Transfer rejected. Funds have been returned to sender." });
-    } catch (error) {
-      console.error('[Routes] Error rejecting transfer:', error);
-      res.status(400).json({ message: "Failed to reject transfer" });
-    }
-  });
-
-  // Cancel a pending outgoing transfer (by sender) - PROTECTED: requires authentication
-  app.post("/api/finapay/pending/:id/cancel", ensureAuthenticated, async (req, res) => {
-    try {
-      const { reason } = req.body;
-      const transfer = await storage.getPeerTransfer(req.params.id);
-
-      if (!transfer) {
-        return res.status(404).json({ message: "Transfer not found" });
-      }
-
-      // SECURITY: Only the sender can cancel their own outgoing transfer
-      if (transfer.senderId !== req.session?.userId) {
-        return res.status(403).json({ message: "Not authorized to cancel this transfer" });
-      }
-
-      if (transfer.status !== 'Pending') {
-        return res.status(400).json({ message: "Transfer is no longer pending and cannot be cancelled" });
-      }
-
-      const sender = await storage.getUser(transfer.senderId);
-      if (!sender) {
-        return res.status(404).json({ message: "Sender not found" });
-      }
-
-      // For registered P2P transfers: recipientId is the actual recipient user
-      // For invitation (unregistered) transfers: recipientId may be a placeholder — use recipientIdentifier (email)
-      const isInviteTransfer = !!(transfer.recipientIdentifier && transfer.recipientIdentifier.includes('@') && transfer.recipientId === transfer.senderId);
-      const recipient = isInviteTransfer ? null : await storage.getUser(transfer.recipientId);
-      // The display name for the cancelled transfer recipient
-      const recipientDisplayName = recipient
-        ? `${recipient.firstName} ${recipient.lastName}`.trim()
-        : (transfer.recipientIdentifier || 'the intended recipient');
-
-      const goldAmount = parseFloat(transfer.amountGold?.toString() || '0');
-      const goldPrice = transfer.goldPriceUsdPerGram ? parseFloat(transfer.goldPriceUsdPerGram.toString()) : 139.44;
-
-      // Determine which wallet type was used by inspecting the sender's transaction record
-      // LGPW: deducted from wallet at send time — must be refunded on cancel
-      // FGPW: NOT deducted at send time (batches consumed only at accept time) — no wallet refund needed
-      let sourceWalletType: 'LGPW' | 'FGPW' = 'LGPW'; // default to LGPW (safe)
-      if (transfer.senderTransactionId) {
-        const senderTxRecord = await storage.getTransaction(transfer.senderTransactionId).catch(() => null);
-        if (senderTxRecord?.goldWalletType === 'FGPW') {
-          sourceWalletType = 'FGPW';
-        }
-      }
-
-      if (sourceWalletType === 'LGPW') {
-        // LGPW: refund gold to sender's LGPW wallet (it was debited at send time)
-        const senderWallet = await storage.getWallet(sender.id);
-        if (senderWallet) {
-          const senderGoldBalance = parseFloat(senderWallet.goldGrams?.toString() || '0');
-          await storage.updateWallet(senderWallet.id, {
-            goldGrams: (senderGoldBalance + goldAmount).toFixed(6),
-          });
-          // Restore cert ledger
-          try {
-            const { restoreToCert } = await import('./cert-ledger-service');
-            await restoreToCert(storage, sender.id, goldAmount, 'FINAPAY_REFUND', transfer.id, null, `Transfer cancelled by sender${reason ? `: ${reason}` : ''}`);
-          } catch (certErr) {
-            console.error('[CertLedger] Failed to restore certs on transfer cancellation:', certErr);
-          }
-        }
-
-        // Create refund transaction for sender (LGPW only)
-        await storage.createTransaction({
-          userId: sender.id,
-          type: 'Refund',
-          status: 'Completed',
-          amountGold: goldAmount.toFixed(6),
-          amountUsd: (goldAmount * goldPrice).toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          description: `Transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
-          referenceId: transfer.referenceNumber,
-          sourceModule: 'finapay',
-          goldWalletType: 'LGPW',
-          completedAt: new Date(),
-        });
-      } else {
-        // FGPW: nothing was debited yet — just void the pending transaction record
-        if (transfer.senderTransactionId) {
-          await storage.updateTransaction(transfer.senderTransactionId, {
-            status: 'Cancelled',
-            description: `FGPW transfer to ${recipientDisplayName} was cancelled${reason ? `: ${reason}` : ''}`,
-          }).catch(err => console.error('[Routes] Failed to void FGPW sender tx on cancel:', err));
-        }
-        console.log(`[Routes] FGPW pending transfer ${transfer.id} cancelled — no wallet refund needed (batches not yet consumed)`);
-      }
-
-      // Update transfer status
-      await storage.updatePeerTransfer(transfer.id, {
-        status: 'Cancelled',
-        respondedAt: new Date(),
-        rejectionReason: reason || 'Cancelled by sender',
-      });
-
-      // Emit real-time sync event
-      emitLedgerEvent(sender.id, {
-        type: 'balance_update',
-        module: 'finapay',
-        action: 'transfer_cancelled',
-        data: { transferId: transfer.id, refunded: true },
-      });
-
-      // Send transfer_cancelled email to sender (confirming gold returned)
-      if (sender.email) {
-        sendEmail(sender.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
-          user_name: `${sender.firstName} ${sender.lastName}`,
-          recipient_name: recipientDisplayName,
-          gold_amount: goldAmount.toFixed(4),
-          cancellation_reason: reason || 'Cancelled by sender',
-        }, { userId: sender.id, recipientName: sender.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (sender) failed:', err));
-      }
-
-      // Send transfer_cancelled email to the intended recipient:
-      // - Registered recipients: email them directly using their user record
-      // - Unregistered (invitation) transfers: email the recipientIdentifier address directly
-      if (recipient?.email) {
-        sendEmail(recipient.email, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
-          user_name: `${recipient.firstName} ${recipient.lastName}`,
-          recipient_name: `${recipient.firstName} ${recipient.lastName}`,
-          gold_amount: goldAmount.toFixed(4),
-          cancellation_reason: reason || 'Transfer was cancelled by the sender',
-        }, { userId: recipient.id, recipientName: recipient.firstName || undefined }).catch(err => console.error('[Email] Transfer cancelled (recipient) failed:', err));
-      } else if (isInviteTransfer && transfer.recipientIdentifier && transfer.recipientIdentifier.includes('@')) {
-        // Send to unregistered email — no userId tracking since they haven't registered yet
-        sendEmail(transfer.recipientIdentifier, EMAIL_TEMPLATES.TRANSFER_CANCELLED, {
-          user_name: transfer.recipientIdentifier,
-          recipient_name: transfer.recipientIdentifier,
-          gold_amount: goldAmount.toFixed(4),
-          cancellation_reason: reason || 'The sender has cancelled this pending transfer',
-        }).catch(err => console.error('[Email] Transfer cancelled (unregistered recipient) failed:', err));
-      }
-
-      // Bell notification for sender
-      await storage.createNotification({
-        userId: sender.id,
-        title: 'Transfer Cancelled',
-        message: `Your transfer of ${goldAmount.toFixed(4)}g gold has been cancelled. Funds returned to your wallet.`,
-        type: 'transaction',
-        link: '/finapay',
-      }).catch(() => {});
-
-      // Bell notification for recipient if they exist
-      if (recipient) {
-        await storage.createNotification({
-          userId: recipient.id,
-          title: 'Pending Transfer Cancelled',
-          message: `A pending transfer of ${goldAmount.toFixed(4)}g gold from ${sender.firstName} ${sender.lastName} was cancelled.`,
-          type: 'transaction',
-          link: '/finapay',
-        }).catch(() => {});
-      }
-
-      res.json({ message: "Transfer cancelled. Funds have been returned to your wallet." });
-    } catch (error) {
-      console.error('[Routes] Error cancelling transfer:', error);
-      res.status(400).json({ message: "Failed to cancel transfer" });
-    }
-  });
-
-  // Get user's transfer approval preference - PROTECTED: requires owner or admin
-  // Note: requireTransferApproval is always true for security
-  app.get("/api/finapay/preferences/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const preferences = await storage.getUserPreferences(req.params.userId);
-      res.json({ 
-        requireTransferApproval: true, // Always enabled for security
-        transferApprovalTimeout: preferences?.transferApprovalTimeout || 24
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get preferences" });
-    }
-  });
-
-  // Update user's transfer approval preference - PROTECTED: requires owner or admin
-  // Note: requireTransferApproval is always true and cannot be changed
-  app.patch("/api/finapay/preferences/:userId", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { transferApprovalTimeout } = req.body;
-      
-      let preferences = await storage.getUserPreferences(req.params.userId);
-      if (!preferences) {
-        // Create preferences if they don't exist
-        preferences = await storage.createUserPreferences({
-          userId: req.params.userId,
-          requireTransferApproval: true, // Always true
-          transferApprovalTimeout: transferApprovalTimeout ?? 24,
-        });
-      } else {
-        preferences = await storage.updateUserPreferences(preferences.id, {
-          requireTransferApproval: true, // Always true
-          transferApprovalTimeout: transferApprovalTimeout ?? preferences.transferApprovalTimeout,
-        });
-      }
-      
-      // Log settings change activity
-      logUserActivity(req, req.params.userId, "settings_change", "User preferences were updated").catch(err => console.error("[Activity Log] Settings change log failed:", err));
-
-
-
-      res.json({ 
-        message: "Preferences updated",
-        requireTransferApproval: true, // Always enabled
-        transferApprovalTimeout: preferences?.transferApprovalTimeout
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to update preferences" });
-    }
-  });
-
-  // ============================================================================
-  // FINAPAY - QR PAYMENT INVOICES
-  // ============================================================================
-
-  // Create QR payment invoice (for receiving specific amount)
-  app.post("/api/finapay/qr-invoice", ensureAuthenticated, async (req, res) => {
-    try {
-      const { goldGrams, amountUsd, description } = req.body;
-      
-      // Use authenticated session user as merchant (security fix)
-      const sessionUserId = (req.session as any)?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const merchant = await storage.getUser(sessionUserId);
-      if (!merchant) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Check if account is frozen
-      const [accountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
-      if (accountStatus?.isFrozen) {
-        return res.status(403).json({ message: "Account is frozen. Cannot create invoices." });
-      }
-      
-      // Get current gold price
-      let goldPrice: number;
-      try {
-        goldPrice = await getGoldPricePerGram();
-      } catch {
-        goldPrice = 139.44;
-      }
-      
-      // Generate unique invoice code
-      const invoiceCode = `QR${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Calculate gold grams if amount is in USD
-      let calculatedGoldGrams = goldGrams ? parseFloat(goldGrams) : null;
-      let calculatedAmountUsd = amountUsd ? parseFloat(amountUsd) : null;
-      
-      if (calculatedAmountUsd && !calculatedGoldGrams) {
-        calculatedGoldGrams = calculatedAmountUsd / goldPrice;
-      } else if (calculatedGoldGrams && !calculatedAmountUsd) {
-        calculatedAmountUsd = calculatedGoldGrams * goldPrice;
-      }
-      
-      // Set expiry to 30 minutes
-      const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-      
-      // Create invoice in database
-      const invoiceId = crypto.randomUUID();
-      await db.insert(qrPaymentInvoices).values({
-        id: invoiceId,
-        invoiceCode,
-        merchantId: merchant.id,
-        goldGrams: calculatedGoldGrams?.toFixed(6) || null,
-        amountUsd: calculatedAmountUsd?.toFixed(2) || null,
-        goldPriceAtCreation: goldPrice.toFixed(2),
-        description,
-        status: 'Active',
-        expiresAt,
-      });
-      
-      // Generate QR code
-      const qrPayload = `FTQR:${invoiceCode}`;
-      const qrCodeDataUrl = await QRCode.toDataURL(qrPayload);
-      
-
-
-      res.json({ 
-        invoice: {
-          id: invoiceId,
-          invoiceCode,
-          goldGrams: calculatedGoldGrams,
-          amountUsd: calculatedAmountUsd,
-          goldPrice,
-          description,
-          expiresAt,
-        },
-        qrCodeDataUrl 
-      });
-    } catch (error) {
-      console.error('[QR Invoice] Create error:', error);
-      res.status(400).json({ message: "Failed to create QR invoice" });
-    }
-  });
-
-  // Get QR invoice by code
-  app.get("/api/finapay/qr-invoice/:code", async (req, res) => {
-    try {
-      const [invoice] = await db.select().from(qrPaymentInvoices).where(eq(qrPaymentInvoices.invoiceCode, req.params.code));
-      
-      if (!invoice) {
-        return res.status(404).json({ message: "Invoice not found" });
-      }
-      
-      // Check if expired
-      if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date() && invoice.status === 'Active') {
-        await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
-        return res.status(400).json({ message: "Invoice has expired" });
-      }
-      
-      // Get merchant info
-      const merchant = await storage.getUser(invoice.merchantId);
-      
-
-
-      res.json({ 
-        invoice: {
-          ...invoice,
-          merchant: merchant ? {
-            id: merchant.id,
-            firstName: merchant.firstName,
-            lastName: merchant.lastName,
-            finatradesId: merchant.finatradesId,
-          } : null
-        }
-      });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get invoice" });
-    }
-  });
-
-  // Pay QR invoice
-  app.post("/api/finapay/qr-invoice/:code/pay", ensureAuthenticated, async (req, res) => {
-    try {
-      // Use authenticated session user as payer (security fix)
-      const sessionUserId = (req.session as any)?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Not authenticated" });
-      }
-      
-      const [invoice] = await db.select().from(qrPaymentInvoices).where(eq(qrPaymentInvoices.invoiceCode, req.params.code));
-      
-      if (!invoice) {
-        return res.status(404).json({ message: "Invoice not found" });
-      }
-      
-      if (invoice.status !== 'Active') {
-        return res.status(400).json({ message: `Invoice is ${invoice.status.toLowerCase()}` });
-      }
-      
-      if (invoice.expiresAt && new Date(invoice.expiresAt) < new Date()) {
-        await db.update(qrPaymentInvoices).set({ status: 'Expired' }).where(eq(qrPaymentInvoices.id, invoice.id));
-        return res.status(400).json({ message: "Invoice has expired" });
-      }
-      
-      // Check if payer account is frozen
-      const [payerAccountStatus] = await db.select().from(userAccountStatus).where(eq(userAccountStatus.userId, sessionUserId));
-      if (payerAccountStatus?.isFrozen) {
-        return res.status(403).json({ message: "Your account is frozen. Cannot make payments." });
-      }
-      
-      const payer = await storage.getUser(sessionUserId);
-      const merchant = await storage.getUser(invoice.merchantId);
-      
-      if (!payer || !merchant) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (payer.id === merchant.id) {
-        return res.status(400).json({ message: "Cannot pay your own invoice" });
-      }
-      
-      // Check payer wallet
-      const payerWallet = await storage.getWallet(payer.id);
-      const merchantWallet = await storage.getWallet(merchant.id);
-      
-      if (!payerWallet || !merchantWallet) {
-        return res.status(400).json({ message: "Wallet not found" });
-      }
-      
-      // Get current gold price
-      let goldPrice: number;
-      try {
-        goldPrice = await getGoldPricePerGram();
-      } catch {
-        goldPrice = parseFloat(invoice.goldPriceAtCreation || '139.44');
-      }
-      
-      // Calculate gold amount
-      const goldGrams = parseFloat(invoice.goldGrams || '0') || (parseFloat(invoice.amountUsd || '0') / goldPrice);
-      const payerGoldBalance = parseFloat(payerWallet.goldGrams?.toString() || '0');
-      
-      if (payerGoldBalance < goldGrams) {
-        return res.status(400).json({ message: `Insufficient gold balance. You have ${payerGoldBalance.toFixed(4)}g, need ${goldGrams.toFixed(4)}g` });
-      }
-      
-      // Execute transfer
-      const referenceNumber = `QRPAY-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      
-      // Debit payer gold
-      await storage.updateWallet(payerWallet.id, {
-        goldGrams: (payerGoldBalance - goldGrams).toFixed(6)
-      });
-      
-      // Credit merchant gold
-      const merchantGoldBalance = parseFloat(merchantWallet.goldGrams?.toString() || '0');
-      await storage.updateWallet(merchantWallet.id, {
-        goldGrams: (merchantGoldBalance + goldGrams).toFixed(6)
-      });
-      
-      // Create transactions
-      const payerTx = await storage.createTransaction({
-        userId: payer.id,
-        type: 'Send',
-        status: 'Completed',
-        amountGold: goldGrams.toFixed(6),
-        amountUsd: (goldGrams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        recipientEmail: merchant.email,
-        recipientUserId: merchant.id,
-        description: invoice.description || `QR Payment to ${merchant.firstName} ${merchant.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-        completedAt: new Date(),
-      });
-      
-      const merchantTx = await storage.createTransaction({
-        userId: merchant.id,
-        type: 'Receive',
-        status: 'Completed',
-        amountGold: goldGrams.toFixed(6),
-        amountUsd: (goldGrams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        senderEmail: payer.email,
-        description: invoice.description || `QR Payment from ${payer.firstName} ${payer.lastName}`,
-        referenceId: referenceNumber,
-        sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-        completedAt: new Date(),
-      });
-      
-      // Update invoice
-      await db.update(qrPaymentInvoices).set({
-        status: 'Paid',
-        payerId: payer.id,
-        paidAt: new Date(),
-        paidTransactionId: merchantTx.id,
-        updatedAt: new Date(),
-      }).where(eq(qrPaymentInvoices.id, invoice.id));
-      
-      // Record ledger entries
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: payer.id,
-        action: 'Transfer_Send',
-        goldGrams,
-        goldPriceUsdPerGram: goldPrice,
-        fromWallet: 'FinaPay',
-        toWallet: 'External',
-        transactionId: payerTx.id,
-        counterpartyUserId: merchant.id,
-        notes: `QR Payment: ${goldGrams.toFixed(4)}g to ${merchant.firstName} ${merchant.lastName}`,
-        createdBy: 'system',
-      });
-      
-      await vaultLedgerService.recordLedgerEntry({
-        userId: merchant.id,
-        action: 'Transfer_Receive',
-        goldGrams,
-        goldPriceUsdPerGram: goldPrice,
-        fromWallet: 'FinaPay',
-        toWallet: 'FinaPay',
-        toStatus: 'Available',
-        transactionId: merchantTx.id,
-        counterpartyUserId: payer.id,
-        notes: `QR Payment: ${goldGrams.toFixed(4)}g from ${payer.firstName} ${payer.lastName}`,
-        createdBy: 'system',
-      });
-      
-      // Emit sync events
-      emitLedgerEvent(payer.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_sent', data: { goldGrams } });
-      emitLedgerEvent(merchant.id, { type: 'balance_update', module: 'finapay', action: 'qr_payment_received', data: { goldGrams } });
-      
-
-
-      res.json({ 
-        transaction: payerTx,
-        message: `Successfully paid ${goldGrams.toFixed(4)}g gold to ${merchant.firstName} ${merchant.lastName}` 
-      });
-    } catch (error) {
-      console.error('[QR Payment] Error:', error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'QR Payment Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Payment failed" });
-    }
-  });
-
-  // ============================================================================
-  // ADMIN - WALLET ADJUSTMENTS & ACCOUNT CONTROLS
-  // ============================================================================
-
-  // Admin: Adjust user wallet (credit/debit gold)
-  app.post("/api/admin/finapay/wallet-adjustment", ensureAdminAsync, requirePermission('manage_transactions'), async (req, res) => {
-    try {
-      const { userId, adjustmentType, goldGrams, amountUsd, reason, internalNotes } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const wallet = await storage.getWallet(userId);
-      if (!wallet) {
-        return res.status(400).json({ message: "Wallet not found" });
-      }
-      
-      // Get gold price
-      let goldPrice: number;
-      try {
-        goldPrice = await getGoldPricePerGram();
-      } catch {
-        goldPrice = 139.44;
-      }
-      
-      const referenceNumber = `ADJ-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const adjustGrams = parseFloat(goldGrams || '0');
-      const adjustUsd = parseFloat(amountUsd || '0');
-      
-      let newGoldBalance = parseFloat(wallet.goldGrams?.toString() || '0');
-      let newUsdBalance = parseFloat(wallet.usdBalance?.toString() || '0');
-      let transactionType: 'Deposit' | 'Withdrawal' = 'Deposit';
-      
-      if (adjustmentType === 'Credit') {
-        newGoldBalance += adjustGrams;
-        newUsdBalance += adjustUsd;
-        transactionType = 'Deposit';
-      } else if (adjustmentType === 'Debit') {
-        if (adjustGrams > newGoldBalance) {
-          return res.status(400).json({ message: `Cannot debit ${adjustGrams}g gold. User only has ${newGoldBalance.toFixed(4)}g` });
-        }
-        if (adjustUsd > newUsdBalance) {
-          return res.status(400).json({ message: `Cannot debit $${adjustUsd}. User only has $${newUsdBalance.toFixed(2)}` });
-        }
-        newGoldBalance -= adjustGrams;
-        newUsdBalance -= adjustUsd;
-        transactionType = 'Withdrawal';
-      } else if (adjustmentType === 'Correction') {
-        // Correction sets the balance directly
-        newGoldBalance = adjustGrams;
-        newUsdBalance = adjustUsd;
-      }
-      
-      // Update wallet
-      await storage.updateWallet(wallet.id, {
-        goldGrams: newGoldBalance.toFixed(6),
-        usdBalance: newUsdBalance.toFixed(2),
-      });
-      
-      // Create transaction record
-      const transaction = await storage.createTransaction({
-        userId,
-        type: transactionType,
-        status: 'Completed',
-        amountGold: adjustGrams.toFixed(6),
-        amountUsd: adjustUsd > 0 ? adjustUsd.toFixed(2) : (adjustGrams * goldPrice).toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        description: `Admin ${adjustmentType}: ${reason}`,
-        referenceId: referenceNumber,
-        sourceModule: 'admin',
-        completedAt: new Date(),
-      });
-      
-      // Record wallet adjustment
-      await db.insert(walletAdjustments).values({
-        id: crypto.randomUUID(),
-        referenceNumber,
-        userId,
-        adjustmentType,
-        goldGrams: adjustGrams.toFixed(6),
-        amountUsd: adjustUsd.toFixed(2),
-        goldPriceUsdPerGram: goldPrice.toFixed(2),
-        reason,
-        internalNotes,
-        executedBy: adminUser.id,
-        transactionId: transaction.id,
-      });
-      
-      // Record ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      if (adjustGrams > 0) {
-        await vaultLedgerService.recordLedgerEntry({
-          userId,
-          action: adjustmentType === 'Credit' ? 'Deposit' : 'Withdrawal',
-          goldGrams: adjustGrams,
-          goldPriceUsdPerGram: goldPrice,
-          fromWallet: adjustmentType === 'Credit' ? 'External' : 'FinaPay',
-          toWallet: adjustmentType === 'Credit' ? 'FinaPay' : 'External',
-          transactionId: transaction.id,
-          notes: `Admin ${adjustmentType}: ${reason}`,
-          createdBy: adminUser.id,
-        });
-      }
-      
-      // Audit log
-      await storage.createAuditLog({
-        entityType: "wallet_adjustment",
-        entityId: referenceNumber,
-        actionType: adjustmentType.toLowerCase(),
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `${adjustmentType} adjustment for user ${user.firstName} ${user.lastName}: ${adjustGrams}g gold, $${adjustUsd}. Reason: ${reason}`,
-      });
-      
-      // Emit sync event
-      emitLedgerEvent(userId, { type: 'balance_update', module: 'finapay', action: 'admin_adjustment', data: { adjustmentType, goldGrams: adjustGrams } });
-      
-
-
-      res.json({ 
-        adjustment: { referenceNumber, adjustmentType, goldGrams: adjustGrams, amountUsd: adjustUsd },
-        transaction,
-        message: `Successfully applied ${adjustmentType} adjustment` 
-      });
-    } catch (error) {
-      console.error('[Wallet Adjustment] Error:', error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Adjustment failed" });
-    }
-  });
-
-  // Admin: Get wallet adjustments history
-  app.get("/api/admin/finapay/wallet-adjustments", ensureAdminAsync, requirePermission('view_transactions', 'manage_transactions'), async (req, res) => {
-    try {
-      const adjustments = await db.select().from(walletAdjustments).orderBy(desc(walletAdjustments.createdAt)).limit(100);
-
-
-      res.json({ adjustments });
-    } catch (error) {
-      res.status(400).json({ message: "Failed to get adjustments" });
-    }
-  });
-
-  // Admin: Freeze/unfreeze user account
   app.post("/api/admin/users/:userId/freeze", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const { userId } = req.params;
@@ -19457,13 +13042,13 @@ export async function registerRoutes(
       
 
 
-      res.json({ 
+      return res.json({ 
         success: true,
         message: freeze ? "Account frozen successfully" : "Account unfrozen successfully"
       });
     } catch (error) {
       console.error('[Account Freeze] Error:', error);
-      res.status(400).json({ message: "Failed to update account status" });
+      return res.status(400).json({ message: "Failed to update account status" });
     }
   });
 
@@ -19475,7 +13060,7 @@ export async function registerRoutes(
       
 
 
-      res.json({ 
+      return res.json({ 
         status: status || { 
           userId, 
           isFrozen: false, 
@@ -19484,7 +13069,7 @@ export async function registerRoutes(
         } 
       });
     } catch (error) {
-      res.status(400).json({ message: "Failed to get account status" });
+      return res.status(400).json({ message: "Failed to get account status" });
     }
   });
 
@@ -19528,9 +13113,9 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true, message: "Transfer limits updated" });
+      return res.json({ success: true, message: "Transfer limits updated" });
     } catch (error) {
-      res.status(400).json({ message: "Failed to update limits" });
+      return res.status(400).json({ message: "Failed to update limits" });
     }
   });
 
@@ -19541,435 +13126,6 @@ export async function registerRoutes(
 
   // Financial Overview - total revenue, AUM, liabilities, net position
   // GOLD-FIRST ARCHITECTURE: All balances are gold grams, USD computed dynamically
-  app.get("/api/admin/financial/overview", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
-    try {
-      // Get live gold price for USD calculations
-      const goldPriceData = await getGoldPrice();
-      const GOLD_PRICE_USD = goldPriceData.pricePerGram;
-
-      // Get LGPW/FGPW breakdown from Gold Backing Report for accurate dual-wallet data
-      const goldBackingReport = await storage.getGoldBackingReportEnhanced();
-
-      // Get platform config for accurate fee calculations
-      const platformConfigs = await storage.getAllPlatformConfigs();
-      const configMap = new Map<string, string>();
-      for (const config of platformConfigs) {
-        configMap.set(config.configKey, config.configValue);
-      }
-      
-      // Get fee percentages from platform config (no fallbacks - must be configured)
-      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
-      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
-      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
-      const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
-
-      // LGPW/FGPW gold holdings from vault ownership summary (authoritative source)
-      const mpgwTotalGrams = goldBackingReport.customerLiabilities.mpgw.totalGrams;
-      const fpgwTotalGrams = goldBackingReport.customerLiabilities.fpgw.totalGrams;
-      const totalGoldGrams = mpgwTotalGrams + fpgwTotalGrams;
-
-      // Physical gold backing
-      const physicalGoldGrams = goldBackingReport.physicalGold.totalGrams;
-
-      // Get all BNSL plans for BNSL-specific metrics
-      const bnslPlans = await storage.getAllBnslPlans();
-      let bnslPrincipalGrams = 0;
-      let bnslInterestUsd = 0;
-      let pendingPayoutsUsd = 0;
-      for (const plan of bnslPlans) {
-        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
-          bnslPrincipalGrams += parseFloat(plan.goldGrams || '0');
-          // Estimate interest earned (simplified) using agreed margin
-          const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
-          const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
-          bnslInterestUsd += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
-        }
-        if (plan.status === 'Active') {
-          pendingPayoutsUsd += parseFloat(plan.totalSaleProceedsUsd || '0');
-        }
-      }
-
-      // Get all transactions to estimate revenue using platform config spreads
-      const allTransactions = await storage.getAllTransactions();
-      let totalRevenue = 0;
-      for (const tx of allTransactions) {
-        if (tx.status === 'Completed') {
-          const txValue = parseFloat(tx.amountUsd || '0') || 
-            (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
-          
-          // Use appropriate spread based on transaction type
-          let feePercent = avgSpreadPercent / 100; // Convert from percent to decimal
-          if (tx.type === 'Buy') {
-            feePercent = buySpreadPercent / 100;
-          } else if (tx.type === 'Sell') {
-            feePercent = sellSpreadPercent / 100;
-          }
-          totalRevenue += Math.abs(txValue) * feePercent;
-        }
-      }
-
-      // Add BNSL interest to revenue
-      totalRevenue += bnslInterestUsd;
-      
-      // Add storage fees from platform config (annual % on vault holdings)
-      const storageFeeRevenue = physicalGoldGrams * GOLD_PRICE_USD * (storageFeePercent / 100);
-      totalRevenue += storageFeeRevenue;
-
-      // Calculate USD values dynamically from gold grams
-      const mpgwValueUsd = mpgwTotalGrams * GOLD_PRICE_USD;
-      // FGPW uses weighted average price from batches, not live price
-      const fpgwValueUsd = fpgwTotalGrams * (goldBackingReport.customerLiabilities.fpgw.weightedAvgPriceUsd || GOLD_PRICE_USD);
-      const totalGoldValueUsd = mpgwValueUsd + fpgwValueUsd;
-      const physicalGoldValueUsd = physicalGoldGrams * GOLD_PRICE_USD;
-      const totalAUM = totalGoldValueUsd;
-      
-      // Liabilities = gold owed to users + pending BNSL payouts
-      const totalLiabilities = totalGoldValueUsd + pendingPayoutsUsd;
-
-      // Expenses estimate (30% of revenue for simplicity)
-      const totalExpenses = totalRevenue * 0.30;
-      const netProfit = totalRevenue - totalExpenses;
-
-
-
-        return res.json({
-        // Gold-first: primary metrics in grams
-        goldHoldingsGrams: totalGoldGrams,
-        physicalGoldGrams,
-        goldPriceUsd: GOLD_PRICE_USD,
-        
-        // LGPW/FGPW breakdown (gold grams are primary, USD is derived)
-        mpgw: {
-          totalGrams: mpgwTotalGrams,
-          availableGrams: goldBackingReport.customerLiabilities.mpgw.available,
-          pendingGrams: goldBackingReport.customerLiabilities.mpgw.pending,
-          lockedBnslGrams: goldBackingReport.customerLiabilities.mpgw.lockedBnsl,
-          reservedTradeGrams: goldBackingReport.customerLiabilities.mpgw.reservedTrade,
-          valueUsd: mpgwValueUsd, // ≈ equivalent at current price
-          userCount: goldBackingReport.customerLiabilities.mpgw.count,
-        },
-        fpgw: {
-          totalGrams: fpgwTotalGrams,
-          availableGrams: goldBackingReport.customerLiabilities.fpgw.available,
-          pendingGrams: goldBackingReport.customerLiabilities.fpgw.pending,
-          lockedBnslGrams: goldBackingReport.customerLiabilities.fpgw.lockedBnsl,
-          reservedTradeGrams: goldBackingReport.customerLiabilities.fpgw.reservedTrade,
-          valueUsd: fpgwValueUsd, // ≈ equivalent at weighted avg price
-          weightedAvgPriceUsd: goldBackingReport.customerLiabilities.fpgw.weightedAvgPriceUsd,
-          userCount: goldBackingReport.customerLiabilities.fpgw.count,
-        },
-        
-        // Backing ratio from Gold Backing Report
-        backingRatio: goldBackingReport.backing.overallRatio,
-        backingSurplusGrams: goldBackingReport.backing.overallSurplus,
-        
-        // Financial metrics (derived from gold)
-        totalRevenue,
-        totalExpenses,
-        netProfit,
-        totalAUM,
-        goldValueUsd: totalGoldValueUsd,
-        physicalGoldValueUsd,
-        totalLiabilities,
-        goldLiabilityGrams: totalGoldGrams,
-        pendingPayoutsUsd,
-        
-        // Disclaimer for UI
-        disclaimer: "USD values are ≈ equivalents. Your real balance is gold grams.",
-      });
-    } catch (error) {
-      console.error("Failed to get financial overview:", error);
-      res.status(400).json({ message: "Failed to get financial overview" });
-    }
-  });
-
-  // Product Metrics - FinaPay, FinaVault, BNSL performance
-  app.get("/api/admin/financial/metrics", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
-    try {
-      const GOLD_PRICE_USD = 93.50;
-
-      // Get platform config for accurate fee calculations
-      const platformConfigs = await storage.getAllPlatformConfigs();
-      const configMap = new Map<string, string>();
-      for (const config of platformConfigs) {
-        configMap.set(config.configKey, config.configValue);
-      }
-      
-      // Get fee percentages from platform config (no fallbacks - must be configured)
-      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
-      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
-      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
-      const avgSpreadPercent = (buySpreadPercent + sellSpreadPercent) / 2;
-
-      // FinaPay Metrics
-      const allUsers = await storage.getAllUsers();
-      const allWallets = await Promise.all(
-        allUsers.map(user => storage.getWallet(user.id))
-      );
-      const activeWallets = allWallets.filter(w => w && (parseFloat(w.goldGrams || '0') > 0 || parseFloat(w.usdBalance || '0') > 0)).length;
-
-      const allTransactions = await storage.getAllTransactions();
-      let volumeUsd = 0;
-      let feesCollectedUsd = 0;
-      for (const tx of allTransactions) {
-        const txValue = parseFloat(tx.amountUsd || '0') || 
-          (parseFloat(tx.amountGold || '0') * parseFloat(tx.goldPriceUsdPerGram || GOLD_PRICE_USD.toString()));
-        volumeUsd += Math.abs(txValue);
-        
-        // Calculate fees based on transaction type using platform config
-        if (tx.status === 'Completed') {
-          let feePercent = avgSpreadPercent / 100;
-          if (tx.type === 'Buy') {
-            feePercent = buySpreadPercent / 100;
-          } else if (tx.type === 'Sell') {
-            feePercent = sellSpreadPercent / 100;
-          }
-          feesCollectedUsd += Math.abs(txValue) * feePercent;
-        }
-      }
-
-      // FinaVault Metrics
-      const vaultHoldings = await storage.getAllVaultHoldings();
-      let goldStoredGrams = 0;
-      const vaultUserIds = new Set<string>();
-      for (const holding of vaultHoldings) {
-        goldStoredGrams += parseFloat(holding.goldGrams || '0');
-        vaultUserIds.add(holding.userId);
-      }
-      const storageFeesUsd = goldStoredGrams * GOLD_PRICE_USD * (storageFeePercent / 100); // From platform config
-
-      // BNSL Metrics
-      const bnslPlans = await storage.getAllBnslPlans();
-      const activePlans = bnslPlans.filter(p => p.status === 'Active' || p.status === 'Pending Activation');
-      const delinquentPlans = bnslPlans.filter(p => p.status === 'Defaulted').length;
-      
-      let totalPrincipalUsd = 0;
-      let interestEarnedUsd = 0;
-      let expectedPayoutsUsd = 0;
-      
-      for (const plan of activePlans) {
-        totalPrincipalUsd += parseFloat(plan.basePriceComponentUsd || '0');
-        expectedPayoutsUsd += parseFloat(plan.totalSaleProceedsUsd || '0');
-        
-        // Calculate accrued interest using agreed margin
-        const monthsElapsed = Math.floor((Date.now() - new Date(plan.createdAt!).getTime()) / (30 * 24 * 60 * 60 * 1000));
-        const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
-        interestEarnedUsd += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsElapsed;
-      }
-
-
-
-        return res.json({
-        finapay: {
-          activeWallets,
-          transactionCount: allTransactions.length,
-          volumeUsd,
-          feesCollectedUsd
-        },
-        finavault: {
-          totalHoldings: vaultHoldings.length,
-          goldStoredGrams,
-          storageFeesUsd,
-          activeUsers: vaultUserIds.size
-        },
-        bnsl: {
-          activePlans: activePlans.length,
-          totalPrincipalUsd,
-          interestEarnedUsd,
-          expectedPayoutsUsd,
-          delinquentPlans
-        }
-      });
-    } catch (error) {
-      console.error("Failed to get product metrics:", error);
-      res.status(400).json({ message: "Failed to get product metrics" });
-    }
-  });
-
-  // User Financial Data - wallet balance, holdings, plans per user
-  app.get("/api/admin/financial/users", ensureAdminAsync, requirePermission('view_reports', 'generate_reports'), async (req, res) => {
-    try {
-      const GOLD_PRICE_USD = 93.50;
-      const allUsers = await storage.getAllUsers();
-
-      const userFinancials = await Promise.all(allUsers.map(async (user) => {
-        const wallet = await storage.getWallet(user.id);
-        const transactions = await storage.getUserTransactions(user.id);
-        const bnslPlans = await storage.getUserBnslPlans(user.id);
-        const vaultHoldings = await storage.getUserVaultHoldings(user.id);
-
-        // Calculate wallet balance in USD
-        const usdBalance = parseFloat(wallet?.usdBalance || '0');
-        const eurBalance = parseFloat(wallet?.eurBalance || '0') * 1.08;
-        const goldValue = parseFloat(wallet?.goldGrams || '0') * GOLD_PRICE_USD;
-        const walletBalanceUsd = usdBalance + eurBalance + goldValue;
-
-        // Calculate vault holdings
-        let goldHoldingsGrams = parseFloat(wallet?.goldGrams || '0');
-        for (const holding of vaultHoldings) {
-          goldHoldingsGrams += parseFloat(holding.goldGrams || '0');
-        }
-
-        // Get last activity from transactions
-        const sortedTransactions = transactions.sort((a, b) => 
-          new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-        );
-        const lastActivity = sortedTransactions[0]?.createdAt || user.createdAt;
-
-        return {
-          id: user.id,
-          name: `${user.firstName} ${user.lastName}`,
-          email: user.email,
-          accountType: user.accountType,
-          walletBalanceUsd,
-          goldHoldingsGrams,
-          bnslPlansCount: bnslPlans.filter(p => p.status === 'Active' || p.status === 'Pending Activation').length,
-          totalTransactions: transactions.length,
-          lastActivity
-        };
-      }));
-
-      // Sort by wallet balance descending
-      userFinancials.sort((a, b) => b.walletBalanceUsd - a.walletBalanceUsd);
-
-      res.json(userFinancials);
-    } catch (error) {
-      console.error("Failed to get user financials:", error);
-      res.status(400).json({ message: "Failed to get user financials" });
-    }
-  });
-
-  // Gold Holdings Summary - Free vs locked gold breakdown
-  app.get("/api/admin/financial/gold-holdings", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const GOLD_PRICE_USD = 93.50;
-      
-      const allUsers = await storage.getAllUsers();
-      const allWallets = await Promise.all(
-        allUsers.map(user => storage.getWallet(user.id))
-      );
-      
-      // Calculate wallet gold
-      let walletGoldGrams = 0;
-      for (const wallet of allWallets) {
-        if (wallet) {
-          walletGoldGrams += parseFloat(wallet.goldGrams || '0');
-        }
-      }
-      
-      // Calculate vault gold - only count physically deposited holdings to avoid double-counting with wallet gold
-      const vaultHoldings = await storage.getAllVaultHoldings();
-      let vaultGoldGrams = 0;
-      for (const holding of vaultHoldings) {
-        // Only count if physically deposited (actual physical gold in vault, not digital representation)
-        if (holding.isPhysicallyDeposited) {
-          vaultGoldGrams += parseFloat(holding.goldGrams || '0');
-        }
-      }
-      
-      // Calculate BNSL locked gold
-      const bnslPlans = await storage.getAllBnslPlans();
-      let bnslLockedGrams = 0;
-      for (const plan of bnslPlans) {
-        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
-          bnslLockedGrams += parseFloat(plan.goldGrams || '0');
-        }
-      }
-      
-      // Calculate FinaBridge locked gold (from trade cases if any)
-      const tradeCases = await storage.getAllTradeCases();
-      let finabridgeLockedGrams = 0;
-      for (const tc of tradeCases) {
-        if (tc.status === 'Active' || tc.status === 'Pending') {
-          finabridgeLockedGrams += parseFloat(tc.goldAmountGrams || '0');
-        }
-      }
-      
-      const totalGoldGrams = walletGoldGrams + vaultGoldGrams;
-      const lockedGoldGrams = bnslLockedGrams + finabridgeLockedGrams;
-      const freeGoldGrams = totalGoldGrams - lockedGoldGrams;
-      
-
-
-        return res.json({
-        totalGoldGrams,
-        freeGoldGrams: Math.max(0, freeGoldGrams),
-        lockedGoldGrams,
-        walletGoldGrams,
-        vaultGoldGrams,
-        bnslLockedGrams,
-        finabridgeLockedGrams,
-        goldValueUsd: totalGoldGrams * GOLD_PRICE_USD,
-        goldPricePerGram: GOLD_PRICE_USD
-      });
-    } catch (error) {
-      console.error("Failed to get gold holdings:", error);
-      res.status(400).json({ message: "Failed to get gold holdings" });
-    }
-  });
-
-  // Certificates Summary - All certificates across users
-  app.get("/api/admin/financial/certificates", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const allUsers = await storage.getAllUsers();
-      const userMap = new Map(allUsers.map(u => [u.id, `${u.firstName} ${u.lastName}`]));
-      
-      // Get all certificates (using vault certificates table)
-      const allCertificates = await storage.getAllCertificates();
-      
-      let digitalOwnership = 0;
-      let physicalStorage = 0;
-      let transferCertificates = 0;
-      let bnslCertificates = 0;
-      let activeCertificates = 0;
-      let totalGoldGrams = 0;
-      
-      const certificatesWithUser = allCertificates.map(cert => {
-        const goldGrams = parseFloat(cert.goldGrams || '0');
-        totalGoldGrams += goldGrams;
-        
-        if (cert.status === 'Active') activeCertificates++;
-        
-        if (cert.type === 'Digital Ownership') digitalOwnership++;
-        else if (cert.type === 'Physical Storage') physicalStorage++;
-        else if (cert.type === 'Transfer') transferCertificates++;
-        else if (cert.type === 'BNSL') bnslCertificates++;
-        
-        return {
-          id: cert.id,
-          certificateNumber: cert.certificateNumber,
-          type: cert.type,
-          status: cert.status,
-          goldGrams,
-          issuedAt: cert.issuedAt,
-          userName: userMap.get(cert.userId) || 'Unknown'
-        };
-      });
-      
-      // Sort by most recent
-      certificatesWithUser.sort((a, b) => 
-        new Date(b.issuedAt || 0).getTime() - new Date(a.issuedAt || 0).getTime()
-      );
-      
-
-
-        return res.json({
-        totalCertificates: allCertificates.length,
-        activeCertificates,
-        digitalOwnership,
-        physicalStorage,
-        transferCertificates,
-        bnslCertificates,
-        totalGoldGrams,
-        certificates: certificatesWithUser
-      });
-    } catch (error) {
-      console.error("Failed to get certificates:", error);
-      res.status(400).json({ message: "Failed to get certificates" });
-    }
-  });
-
-  // FinaBridge Summary - Trade finance cases
   app.get("/api/admin/financial/finabridge", ensureAdminAsync, requirePermission('view_reports', 'view_finabridge'), async (req, res) => {
     try {
       const GOLD_PRICE_USD = 93.50;
@@ -19983,7 +13139,8 @@ export async function registerRoutes(
       let completedTrades = 0;
       let tradeVolumeUsd = 0;
       
-      const casesData = tradeCases.map(tc => {
+      const casesData = tradeCases.map((tcAny: any) => {
+        const tc = tcAny as any;
         const goldGrams = parseFloat(tc.goldAmountGrams || '0');
         
         if (tc.status === 'Active') {
@@ -20020,941 +13177,18 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to get FinaBridge data:", error);
-      res.status(400).json({ message: "Failed to get FinaBridge data" });
+      return res.status(400).json({ message: "Failed to get FinaBridge data" });
     }
   });
 
   // Fees Summary - Platform revenue from fees
-  app.get("/api/admin/financial/fees", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const GOLD_PRICE_USD = 93.50;
-      const range = (req.query.range as string) || 'all';
-      
-      // Calculate date range
-      const now = new Date();
-      let fromDate: Date | null = null;
-      
-      switch (range) {
-        case '7d':
-          fromDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case '30d':
-          fromDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-        case '90d':
-          fromDate = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-          break;
-        case 'ytd':
-          fromDate = new Date(now.getFullYear(), 0, 1);
-          break;
-        default:
-          fromDate = null;
-      }
-      
-      // Get platform config for fee rates
-      const platformConfigs = await storage.getAllPlatformConfigs();
-      const configMap = new Map<string, string>();
-      for (const config of platformConfigs) {
-        configMap.set(config.configKey, config.configValue);
-      }
-      
-      const buySpreadPercent = parseFloat(configMap.get('buy_spread_percent') || '0');
-      const sellSpreadPercent = parseFloat(configMap.get('sell_spread_percent') || '0');
-      const storageFeePercent = parseFloat(configMap.get('storage_fee_percent') || '0');
-      const withdrawalFeePercent = parseFloat(configMap.get('withdrawal_fee_percent') || '0');
-      
-      // Get all transactions and filter by date range
-      const allTransactions = await storage.getAllTransactions();
-      const filteredTransactions = fromDate 
-        ? allTransactions.filter(tx => new Date(tx.createdAt!) >= fromDate!)
-        : allTransactions;
-      
-      let transactionFees = 0;
-      let spreadRevenue = 0;
-      let withdrawalFees = 0;
-      let buyCount = 0;
-      let sellCount = 0;
-      let withdrawalCount = 0;
-      
-      for (const tx of filteredTransactions) {
-        if (tx.status !== 'Completed') continue;
-        
-        const txValue = parseFloat(tx.amountUsd || '0') || 
-          (parseFloat(tx.amountGold || '0') * GOLD_PRICE_USD);
-        
-        if (tx.type === 'Buy') {
-          spreadRevenue += txValue * (buySpreadPercent / 100);
-          buyCount++;
-        } else if (tx.type === 'Sell') {
-          spreadRevenue += txValue * (sellSpreadPercent / 100);
-          sellCount++;
-        } else if (tx.type === 'Withdrawal') {
-          withdrawalFees += txValue * (withdrawalFeePercent / 100);
-          withdrawalCount++;
-        }
-      }
-      
-      transactionFees = spreadRevenue;
-      
-      // Calculate storage fees - prorated to the actual overlap with selected period
-      const vaultHoldings = await storage.getAllVaultHoldings();
-      let storageFees = 0;
-      let vaultHoldingsCount = 0;
-      for (const holding of vaultHoldings) {
-        const holdingCreated = new Date(holding.createdAt!);
-        
-        // Calculate the actual overlap between holding lifetime and the selected period
-        const periodStart = fromDate || new Date(0); // Start of time if no range
-        const periodEnd = now;
-        
-        // Skip if holding was created after the period ends
-        if (holdingCreated > periodEnd) continue;
-        
-        // The start of when we should charge is the later of period start or holding creation
-        const chargeStart = holdingCreated > periodStart ? holdingCreated : periodStart;
-        
-        // Calculate days actually chargeable
-        const daysChargeable = Math.max(0, Math.ceil((periodEnd.getTime() - chargeStart.getTime()) / (24 * 60 * 60 * 1000)));
-        
-        if (daysChargeable === 0) continue;
-        
-        const goldGrams = parseFloat(holding.goldGrams || '0');
-        // Annual storage fee prorated by actual days in period
-        const holdingPeriodFraction = daysChargeable / 365;
-        storageFees += goldGrams * GOLD_PRICE_USD * (storageFeePercent / 100) * holdingPeriodFraction;
-        vaultHoldingsCount++;
-      }
-      
-      // BNSL Interest - only for interest accrued during the period
-      const bnslPlans = await storage.getAllBnslPlans();
-      let bnslInterest = 0;
-      let activeBnslCount = 0;
-      for (const plan of bnslPlans) {
-        if (plan.status === 'Active' || plan.status === 'Pending Activation') {
-          const planCreated = new Date(plan.createdAt!);
-          
-          // Calculate interest only for the period
-          const periodStart = fromDate && fromDate > planCreated ? fromDate : planCreated;
-          const periodEnd = now;
-          
-          // Skip if plan was created after the period ends
-          if (fromDate && planCreated > now) continue;
-          
-          const daysInPeriod = Math.max(0, Math.ceil((periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)));
-          const monthsInPeriod = daysInPeriod / 30;
-          
-          const monthlyRate = parseFloat(plan.agreedMarginAnnualPercent || '0') / 100 / 12;
-          bnslInterest += parseFloat(plan.basePriceComponentUsd || '0') * monthlyRate * monthsInPeriod;
-          activeBnslCount++;
-        }
-      }
-      
-      const totalFeesCollected = transactionFees + storageFees + bnslInterest + withdrawalFees;
-      
-      const feeBreakdown = [
-        { type: 'Buy/Sell Spread', amount: spreadRevenue, count: buyCount + sellCount, percentage: totalFeesCollected > 0 ? (spreadRevenue / totalFeesCollected) * 100 : 0 },
-        { type: 'Storage Fees', amount: storageFees, count: vaultHoldingsCount, percentage: totalFeesCollected > 0 ? (storageFees / totalFeesCollected) * 100 : 0 },
-        { type: 'BNSL Interest', amount: bnslInterest, count: activeBnslCount, percentage: totalFeesCollected > 0 ? (bnslInterest / totalFeesCollected) * 100 : 0 },
-        { type: 'Withdrawal Fees', amount: withdrawalFees, count: withdrawalCount, percentage: totalFeesCollected > 0 ? (withdrawalFees / totalFeesCollected) * 100 : 0 }
-      ].filter(f => f.amount > 0);
-      
-
-
-        return res.json({
-        totalFeesCollected,
-        transactionFees,
-        storageFees,
-        bnslInterest,
-        spreadRevenue,
-        withdrawalFees,
-        feeBreakdown
-      });
-    } catch (error) {
-      console.error("Failed to get fees summary:", error);
-      res.status(400).json({ message: "Failed to get fees summary" });
-    }
-  });
-
-  // ============================================================================
-  // ACCOUNT STATEMENTS (Admin)
-  // ============================================================================
-
-  // Get account statement data for a user
-  app.get("/api/admin/account-statement/:userId", ensureAdminAsync, requirePermission('view_users', 'view_reports'), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { from, to } = req.query;
-      
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required (from, to)" });
-      }
-      
-      const fromDate = new Date(from as string);
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const wallet = await storage.getWallet(userId);
-      const allTransactions = await storage.getUserTransactions(userId);
-      
-      // Filter transactions by date range
-      const periodTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
-      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
-      
-      // GOLD-CENTRIC STATEMENT: Gold is the only real asset, USD is for reference only
-      // Calculate opening gold balance (sum of all transactions before fromDate)
-      const priorTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate < fromDate && tx.status === 'Completed';
-      });
-      
-      let openingGold = 0;
-      
-      for (const tx of priorTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        
-        // All transaction types affect gold balance
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          // Credits: gold comes in (including refunds from rejected transfers)
-          openingGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          // Debits: gold goes out
-          openingGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          // Swaps can be positive or negative
-          openingGold += amountGold;
-        }
-      }
-      
-      // Calculate running gold balance and categorize debits/credits
-      let runningGold = openingGold;
-      let totalCreditsGold = 0;
-      let totalDebitsGold = 0;
-      
-      console.log('[Statement] Period transactions count:', periodTransactions.length);
-      const statementTransactions = periodTransactions.map(tx => {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        const goldPrice = parseFloat(tx.goldPriceUsdPerGram || '0');
-        console.log(`[Statement] TX ${tx.type}: Gold=${amountGold}g, USD=${amountUsd} (reference), Price=${goldPrice}`);
-        
-        let debitGold: number | null = null;
-        let creditGold: number | null = null;
-        
-        // All transactions affect GOLD balance only
-        // USD is shown for reference (the value at time of transaction)
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          // Credits: gold comes in (including refunds from rejected transfers)
-          creditGold = amountGold > 0 ? amountGold : null;
-          runningGold += amountGold;
-          totalCreditsGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          // Debits: gold goes out
-          debitGold = amountGold > 0 ? amountGold : null;
-          runningGold -= amountGold;
-          totalDebitsGold += amountGold;
-        } else if (tx.type === 'Swap') {
-          // Swaps: can be credit or debit depending on sign
-          if (amountGold > 0) {
-            creditGold = amountGold;
-            totalCreditsGold += amountGold;
-          } else if (amountGold < 0) {
-            debitGold = Math.abs(amountGold);
-            totalDebitsGold += Math.abs(amountGold);
-          }
-          runningGold += amountGold;
-        }
-        
-        return {
-          id: tx.id,
-          date: tx.createdAt,
-          reference: `TXN-${tx.id.slice(0, 8).toUpperCase()}`,
-          description: tx.description || `${tx.type} Transaction`,
-          debitGold,
-          creditGold,
-          balanceGold: runningGold,
-          usdValue: amountUsd,
-          goldPriceAtTime: goldPrice,
-          type: tx.type,
-          status: tx.status
-        };
-      });
-      
-      console.log(`[Statement] Final: runningGold=${runningGold}, totalCreditsGold=${totalCreditsGold}, totalDebitsGold=${totalDebitsGold}`);
-      const reportId = `STMT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${userId.slice(0, 6).toUpperCase()}`;
-      
-      // Fetch current gold price for USD equivalent calculation
-      const { getGoldPricePerGram } = await import('./gold-price-service');
-      let currentGoldPrice = 139.50; // Default fallback
-      try {
-        currentGoldPrice = await getGoldPricePerGram();
-      } catch (e) {
-        console.error('[Statement] Failed to fetch gold price, using fallback:', e);
-      }
-      
-      // Calculate USD equivalent of gold balances at current price
-      const openingGoldUsdValue = openingGold * currentGoldPrice;
-      const closingGoldUsdValue = runningGold * currentGoldPrice;
-      
-
-
-        return res.json({
-        user: {
-          id: user.id,
-          finatradesId: user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`,
-          fullName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'User',
-          email: user.email,
-          accountType: user.accountType || 'Personal'
-        },
-        period: {
-          from: fromDate.toISOString(),
-          to: toDate.toISOString()
-        },
-        reportId,
-        generatedAt: new Date().toISOString(),
-        currentGoldPrice,
-        balances: {
-          openingGold,
-          openingGoldUsdValue,
-          totalCreditsGold,
-          totalDebitsGold,
-          closingGold: runningGold,
-          closingGoldUsdValue
-        },
-        transactions: statementTransactions
-      });
-    } catch (error) {
-      console.error("Failed to get account statement:", error);
-      res.status(400).json({ message: "Failed to get account statement" });
-    }
-  });
-
-  // Generate PDF account statement
-  app.get("/api/admin/account-statement/:userId/pdf", ensureAdminAsync, requirePermission('view_users', 'generate_reports'), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { from, to } = req.query;
-      
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required" });
-      }
-      
-      const fromDate = new Date(from as string);
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const allTransactions = await storage.getUserTransactions(userId);
-      
-      // Filter and process transactions
-      const periodTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
-      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
-      
-      // GOLD-CENTRIC STATEMENT: Gold is the only real asset
-      const priorTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate < fromDate && tx.status === 'Completed';
-      });
-      
-      let openingGold = 0;
-      
-      for (const tx of priorTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          openingGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          openingGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          openingGold += amountGold;
-        }
-      }
-      
-      // Fetch current gold price for USD equivalent calculation
-      const { getGoldPricePerGram } = await import('./gold-price-service');
-      let currentGoldPrice = 139.50; // Default fallback
-      try {
-        currentGoldPrice = await getGoldPricePerGram();
-      } catch (e) {
-        console.error('[PDF Statement] Failed to fetch gold price, using fallback:', e);
-      }
-      
-      // Calculate running gold balance
-      let runningGold = openingGold;
-      let totalCreditsGold = 0;
-      let totalDebitsGold = 0;
-      
-      for (const tx of periodTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          runningGold += amountGold;
-          totalCreditsGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          runningGold -= amountGold;
-          totalDebitsGold += amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            totalCreditsGold += amountGold;
-          } else {
-            totalDebitsGold += Math.abs(amountGold);
-          }
-          runningGold += amountGold;
-        }
-      }
-      
-      // Generate PDF
-      const doc = new PDFDocument({ margin: 50 });
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.pdf`);
-      
-      doc.pipe(res);
-      
-      // Header
-      // Add logo image
-      const logoPath = path.join(import.meta.dirname, 'assets', 'finatrades-logo.png');
-      if (fs.existsSync(logoPath)) {
-        doc.image(logoPath, (doc.page.width - 180) / 2, doc.y, { width: 180 });
-        doc.moveDown(3);
-      } else {
-        doc.fillColor('#8B5CF6').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
-      }
-      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
-      doc.moveDown(1.5);
-      
-      // Account details box
-      doc.rect(50, doc.y, 515, 80).stroke('#e5e7eb');
-      const boxY = doc.y + 10;
-      doc.fontSize(10).fillColor('#6b7280');
-      doc.text('Account Holder:', 60, boxY);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${user.firstName || ''} ${user.lastName || ''}`.trim(), 150, boxY);
-      doc.fillColor('#6b7280').font('Helvetica').text('Account ID:', 60, boxY + 15);
-      doc.fillColor('#f97316').font('Helvetica-Bold').text(user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`, 150, boxY + 15);
-      doc.fillColor('#6b7280').font('Helvetica').text('Account Type:', 60, boxY + 30);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(user.accountType || 'Personal', 150, boxY + 30);
-      doc.fillColor('#6b7280').font('Helvetica').text('Statement Period:', 300, boxY);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
-      doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
-      doc.fillColor('#6b7280').font('Helvetica').text('Gold Price:', 300, boxY + 30);
-      doc.fillColor('#f97316').font('Helvetica-Bold').text(`$${currentGoldPrice.toFixed(2)}/g`, 400, boxY + 30);
-      
-      doc.y = boxY + 85;
-      
-      // Balance summary - GOLD ONLY
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('GOLD BALANCE SUMMARY', { align: 'center' });
-      doc.moveDown(0.5);
-      
-      // Summary table
-      const summaryY = doc.y;
-      doc.rect(50, summaryY, 515, 70).fill('#f9fafb').stroke('#e5e7eb');
-      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text('Opening Balance', 60, summaryY + 10);
-      doc.text('Total Credits (+)', 180, summaryY + 10);
-      doc.text('Total Debits (-)', 300, summaryY + 10);
-      doc.text('Closing Balance', 420, summaryY + 10);
-      
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold');
-      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 28);
-      doc.fillColor('#16a34a').text(`${totalCreditsGold.toFixed(4)}g`, 180, summaryY + 28);
-      doc.fillColor('#dc2626').text(`${totalDebitsGold.toFixed(4)}g`, 300, summaryY + 28);
-      doc.fillColor('#1f2937').text(`${runningGold.toFixed(4)}g`, 420, summaryY + 28);
-      
-      // USD equivalent row
-      doc.fillColor('#6b7280').fontSize(8).font('Helvetica');
-      doc.text(`≈ $${(openingGold * currentGoldPrice).toFixed(2)}`, 60, summaryY + 48);
-      doc.text(`≈ $${(totalCreditsGold * currentGoldPrice).toFixed(2)}`, 180, summaryY + 48);
-      doc.text(`≈ $${(totalDebitsGold * currentGoldPrice).toFixed(2)}`, 300, summaryY + 48);
-      doc.fillColor('#f97316').font('Helvetica-Bold');
-      doc.text(`≈ $${(runningGold * currentGoldPrice).toFixed(2)}`, 420, summaryY + 48);
-      
-      doc.y = summaryY + 85;
-      
-      // Transactions table header - GOLD CENTRIC
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
-      doc.moveDown(0.5);
-      
-      const tableTop = doc.y;
-      doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
-      doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
-      doc.text('Date', 55, tableTop + 6);
-      doc.text('Reference', 105, tableTop + 6);
-      doc.text('Description', 165, tableTop + 6);
-      doc.text('Debit (g)', 310, tableTop + 6, { width: 55, align: 'right' });
-      doc.text('Credit (g)', 370, tableTop + 6, { width: 55, align: 'right' });
-      doc.text('Balance (g)', 430, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('USD Value', 495, tableTop + 6, { width: 55, align: 'right' });
-      
-      let y = tableTop + 25;
-      runningGold = openingGold;
-      
-      doc.font('Helvetica').fontSize(8);
-      
-      for (const tx of periodTransactions) {
-        if (y > 720) {
-          doc.addPage();
-          y = 50;
-        }
-        
-        const amountGold = parseFloat(tx.amountGold || '0');
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        let debit = '';
-        let credit = '';
-        
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          credit = amountGold.toFixed(4);
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          debit = amountGold.toFixed(4);
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            credit = amountGold.toFixed(4);
-          } else {
-            debit = Math.abs(amountGold).toFixed(4);
-          }
-          runningGold += amountGold;
-        }
-        
-        const txDate = new Date(tx.createdAt!);
-        doc.fillColor('#374151');
-        doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
-        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 105, y);
-        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 25), 165, y);
-        doc.fillColor('#dc2626').text(debit, 310, y, { width: 55, align: 'right' });
-        doc.fillColor('#16a34a').text(credit, 370, y, { width: 55, align: 'right' });
-        doc.fillColor('#1f2937').font('Helvetica-Bold').text(runningGold.toFixed(4), 430, y, { width: 60, align: 'right' });
-        doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
-        
-        y += 15;
-      }
-      
-      if (periodTransactions.length === 0) {
-        doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
-      }
-      
-      // Footer
-      doc.y = 750;
-      doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
-      doc.text('This statement is generated by Finatrades. Gold is the primary asset held in your account.', 50, doc.y, { align: 'center', width: 515 });
-      doc.text(`USD values shown for reference at current gold price ($${currentGoldPrice.toFixed(2)}/g). For questions, contact support@finatrades.com`, 50, doc.y + 10, { align: 'center', width: 515 });
-      
-      doc.end();
-    } catch (error) {
-      console.error("Failed to generate PDF statement:", error);
-      res.status(400).json({ message: "Failed to generate PDF statement" });
-    }
-  });
-
-  // Generate CSV account statement - GOLD CENTRIC
-  app.get("/api/admin/account-statement/:userId/csv", ensureAdminAsync, requirePermission('view_users', 'generate_reports'), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { from, to } = req.query;
-      
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required" });
-      }
-      
-      const fromDate = new Date(from as string);
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const allTransactions = await storage.getUserTransactions(userId);
-      
-      const periodTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
-      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
-      
-      const priorTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate < fromDate && tx.status === 'Completed';
-      });
-      
-      let runningGold = 0;
-      
-      for (const tx of priorTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          runningGold += amountGold;
-        }
-      }
-      
-      let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
-      
-      for (const tx of periodTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        let debitGold = '';
-        let creditGold = '';
-        
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          creditGold = amountGold.toFixed(4);
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          debitGold = amountGold.toFixed(4);
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            creditGold = amountGold.toFixed(4);
-          } else {
-            debitGold = Math.abs(amountGold).toFixed(4);
-          }
-          runningGold += amountGold;
-        }
-        
-        const txDate = new Date(tx.createdAt!);
-        const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
-        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
-      }
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
-      res.send(csv);
-    } catch (error) {
-      console.error("Failed to generate CSV statement:", error);
-      res.status(400).json({ message: "Failed to generate CSV statement" });
-    }
-  });
-
-  // ============================================================================
-  // USER ACCOUNT STATEMENTS (Authenticated User)
-  // ============================================================================
-
-  // User downloads their own PDF statement - GOLD CENTRIC
-  app.get("/api/my-statement/pdf", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const { from, to } = req.query;
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required" });
-      }
-      
-      const fromDate = new Date(from as string);
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const allTransactions = await storage.getUserTransactions(userId);
-      
-      const periodTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
-      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
-      
-      const priorTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate < fromDate && tx.status === 'Completed';
-      });
-      
-      let openingGold = 0;
-      
-      for (const tx of priorTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          openingGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          openingGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          openingGold += amountGold;
-        }
-      }
-      
-      // Fetch current gold price for USD equivalent calculation
-      const { getGoldPricePerGram } = await import('./gold-price-service');
-      let currentGoldPrice = 139.50;
-      try {
-        currentGoldPrice = await getGoldPricePerGram();
-      } catch (e) {
-        console.error('[User Statement PDF] Failed to fetch gold price, using fallback:', e);
-      }
-      
-      // Calculate running gold balance
-      let runningGold = openingGold;
-      let totalCreditsGold = 0;
-      let totalDebitsGold = 0;
-      
-      for (const tx of periodTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          runningGold += amountGold;
-          totalCreditsGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          runningGold -= amountGold;
-          totalDebitsGold += amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            totalCreditsGold += amountGold;
-          } else {
-            totalDebitsGold += Math.abs(amountGold);
-          }
-          runningGold += amountGold;
-        }
-      }
-      
-      const doc = new PDFDocument({ margin: 50 });
-      
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.pdf`);
-      
-      doc.pipe(res);
-      
-      // Add logo image
-      const logoPath2 = path.join(import.meta.dirname, 'assets', 'finatrades-logo.png');
-      if (fs.existsSync(logoPath2)) {
-        doc.image(logoPath2, (doc.page.width - 180) / 2, doc.y, { width: 180 });
-        doc.moveDown(3);
-      } else {
-        doc.fillColor('#8B5CF6').fontSize(24).font('Helvetica-Bold').text('FINATRADES', { align: 'center' });
-      }
-      doc.fillColor('#374151').fontSize(14).font('Helvetica').text('Gold Account Statement', { align: 'center' });
-      doc.moveDown(1.5);
-      
-      doc.rect(50, doc.y, 515, 80).stroke('#e5e7eb');
-      const boxY = doc.y + 10;
-      doc.fontSize(10).fillColor('#6b7280');
-      doc.text('Account Holder:', 60, boxY);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${user.firstName || ''} ${user.lastName || ''}`.trim(), 150, boxY);
-      doc.fillColor('#6b7280').font('Helvetica').text('Account ID:', 60, boxY + 15);
-      doc.fillColor('#f97316').font('Helvetica-Bold').text(user.finatradesId || `FT-${user.id.slice(0, 8).toUpperCase()}`, 150, boxY + 15);
-      doc.fillColor('#6b7280').font('Helvetica').text('Account Type:', 60, boxY + 30);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(user.accountType || 'Personal', 150, boxY + 30);
-      doc.fillColor('#6b7280').font('Helvetica').text('Statement Period:', 300, boxY);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(`${fromDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })} – ${toDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`, 400, boxY);
-      doc.fillColor('#6b7280').font('Helvetica').text('Generated:', 300, boxY + 15);
-      doc.fillColor('#1f2937').font('Helvetica-Bold').text(new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' (GST)', 400, boxY + 15);
-      doc.fillColor('#6b7280').font('Helvetica').text('Gold Price:', 300, boxY + 30);
-      doc.fillColor('#f97316').font('Helvetica-Bold').text(`$${currentGoldPrice.toFixed(2)}/g`, 400, boxY + 30);
-      
-      doc.y = boxY + 85;
-      
-      // Balance summary - GOLD ONLY
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('GOLD BALANCE SUMMARY', { align: 'center' });
-      doc.moveDown(0.5);
-      
-      const summaryY = doc.y;
-      doc.rect(50, summaryY, 515, 70).fill('#f9fafb').stroke('#e5e7eb');
-      doc.fillColor('#6b7280').fontSize(9).font('Helvetica');
-      doc.text('Opening Balance', 60, summaryY + 10);
-      doc.text('Total Credits (+)', 180, summaryY + 10);
-      doc.text('Total Debits (-)', 300, summaryY + 10);
-      doc.text('Closing Balance', 420, summaryY + 10);
-      
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold');
-      doc.text(`${openingGold.toFixed(4)}g`, 60, summaryY + 28);
-      doc.fillColor('#16a34a').text(`${totalCreditsGold.toFixed(4)}g`, 180, summaryY + 28);
-      doc.fillColor('#dc2626').text(`${totalDebitsGold.toFixed(4)}g`, 300, summaryY + 28);
-      doc.fillColor('#1f2937').text(`${runningGold.toFixed(4)}g`, 420, summaryY + 28);
-      
-      // USD equivalent row
-      doc.fillColor('#6b7280').fontSize(8).font('Helvetica');
-      doc.text(`≈ $${(openingGold * currentGoldPrice).toFixed(2)}`, 60, summaryY + 48);
-      doc.text(`≈ $${(totalCreditsGold * currentGoldPrice).toFixed(2)}`, 180, summaryY + 48);
-      doc.text(`≈ $${(totalDebitsGold * currentGoldPrice).toFixed(2)}`, 300, summaryY + 48);
-      doc.fillColor('#f97316').font('Helvetica-Bold');
-      doc.text(`≈ $${(runningGold * currentGoldPrice).toFixed(2)}`, 420, summaryY + 48);
-      
-      doc.y = summaryY + 85;
-      
-      doc.fillColor('#1f2937').fontSize(12).font('Helvetica-Bold').text('TRANSACTION DETAILS');
-      doc.moveDown(0.5);
-      
-      const tableTop = doc.y;
-      doc.rect(50, tableTop, 515, 20).fill('#f3f4f6');
-      doc.fillColor('#374151').fontSize(8).font('Helvetica-Bold');
-      doc.text('Date', 55, tableTop + 6);
-      doc.text('Reference', 105, tableTop + 6);
-      doc.text('Description', 165, tableTop + 6);
-      doc.text('Debit (g)', 310, tableTop + 6, { width: 55, align: 'right' });
-      doc.text('Credit (g)', 370, tableTop + 6, { width: 55, align: 'right' });
-      doc.text('Balance (g)', 430, tableTop + 6, { width: 60, align: 'right' });
-      doc.text('USD Value', 495, tableTop + 6, { width: 55, align: 'right' });
-      
-      let y = tableTop + 25;
-      runningGold = openingGold;
-      
-      doc.font('Helvetica').fontSize(8);
-      
-      for (const tx of periodTransactions) {
-        if (y > 720) {
-          doc.addPage();
-          y = 50;
-        }
-        
-        const amountGold = parseFloat(tx.amountGold || '0');
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        let debit = '';
-        let credit = '';
-        
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          credit = amountGold.toFixed(4);
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          debit = amountGold.toFixed(4);
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            credit = amountGold.toFixed(4);
-          } else {
-            debit = Math.abs(amountGold).toFixed(4);
-          }
-          runningGold += amountGold;
-        }
-        
-        const txDate = new Date(tx.createdAt!);
-        doc.fillColor('#374151');
-        doc.text(txDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: '2-digit' }), 55, y);
-        doc.text(`TXN-${tx.id.slice(0, 8).toUpperCase()}`, 105, y);
-        doc.text((tx.description || `${tx.type} Transaction`).slice(0, 25), 165, y);
-        doc.fillColor('#dc2626').text(debit, 310, y, { width: 55, align: 'right' });
-        doc.fillColor('#16a34a').text(credit, 370, y, { width: 55, align: 'right' });
-        doc.fillColor('#1f2937').font('Helvetica-Bold').text(runningGold.toFixed(4), 430, y, { width: 60, align: 'right' });
-        doc.font('Helvetica').fillColor('#6b7280').text(`$${amountUsd.toFixed(2)}`, 495, y, { width: 55, align: 'right' });
-        
-        y += 15;
-      }
-      
-      if (periodTransactions.length === 0) {
-        doc.fillColor('#6b7280').text('No transactions in this period', 50, y + 20, { align: 'center', width: 515 });
-      }
-      
-      doc.y = 750;
-      doc.fontSize(7).fillColor('#9ca3af').font('Helvetica');
-      doc.text('This statement is generated by Finatrades. Gold is the primary asset held in your account.', 50, doc.y, { align: 'center', width: 515 });
-      doc.text(`USD values shown for reference at current gold price ($${currentGoldPrice.toFixed(2)}/g). For questions, contact support@finatrades.com`, 50, doc.y + 10, { align: 'center', width: 515 });
-      
-      doc.end();
-    } catch (error) {
-      console.error("Failed to generate user PDF statement:", error);
-      res.status(400).json({ message: "Failed to generate statement" });
-    }
-  });
-
-  // User downloads their own CSV statement - GOLD CENTRIC
-  app.get("/api/my-statement/csv", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session?.userId;
-      if (!userId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-      
-      const { from, to } = req.query;
-      if (!from || !to) {
-        return res.status(400).json({ message: "Date range required" });
-      }
-      
-      const fromDate = new Date(from as string);
-      const toDate = new Date(to as string);
-      toDate.setHours(23, 59, 59, 999);
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const allTransactions = await storage.getUserTransactions(userId);
-      
-      const periodTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate >= fromDate && txDate <= toDate && tx.status === 'Completed';
-      }).sort((a, b) => new Date(a.createdAt!).getTime() - new Date(b.createdAt!).getTime());
-      
-      const priorTransactions = allTransactions.filter(tx => {
-        const txDate = new Date(tx.createdAt!);
-        return txDate < fromDate && tx.status === 'Completed';
-      });
-      
-      let runningGold = 0;
-      
-      for (const tx of priorTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          runningGold += amountGold;
-        }
-      }
-      
-      let csv = 'Date,Reference,Type,Description,Debit (Gold),Credit (Gold),Balance (Gold),USD Value (Reference)\n';
-      
-      for (const tx of periodTransactions) {
-        const amountGold = parseFloat(tx.amountGold || '0');
-        const amountUsd = parseFloat(tx.amountUsd || '0');
-        let debitGold = '';
-        let creditGold = '';
-        
-        if (['Deposit', 'Receive', 'Buy', 'Refund'].includes(tx.type)) {
-          creditGold = amountGold.toFixed(4);
-          runningGold += amountGold;
-        } else if (['Withdrawal', 'Send', 'Sell'].includes(tx.type)) {
-          debitGold = amountGold.toFixed(4);
-          runningGold -= amountGold;
-        } else if (tx.type === 'Swap') {
-          if (amountGold > 0) {
-            creditGold = amountGold.toFixed(4);
-          } else {
-            debitGold = Math.abs(amountGold).toFixed(4);
-          }
-          runningGold += amountGold;
-        }
-        
-        const txDate = new Date(tx.createdAt!);
-        const description = (tx.description || `${tx.type} Transaction`).replace(/,/g, ';');
-        csv += `${txDate.toISOString().slice(0, 10)},TXN-${tx.id.slice(0, 8).toUpperCase()},${tx.type},"${description}",${debitGold},${creditGold},${runningGold.toFixed(4)},${amountUsd.toFixed(2)}\n`;
-      }
-      
-      res.setHeader('Content-Type', 'text/csv');
-      res.setHeader('Content-Disposition', `attachment; filename=account-statement-${user.finatradesId || userId}.csv`);
-      res.send(csv);
-    } catch (error) {
-      console.error("Failed to generate user CSV statement:", error);
-      res.status(400).json({ message: "Failed to generate statement" });
-    }
-  });
-
-  // ============================================================================
-  // PAYMENT GATEWAY SETTINGS (Admin)
-  // ============================================================================
-
-  // Get payment gateway settings (Admin)
   app.get("/api/admin/payment-gateways", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const settings = await db.select().from(paymentGatewaySettings).limit(1);
-      res.json(settings[0] || null);
+      return res.json(settings[0] || null);
     } catch (error) {
       console.error("Failed to get payment gateway settings:", error);
-      res.status(400).json({ message: "Failed to get payment gateway settings" });
+      return res.status(400).json({ message: "Failed to get payment gateway settings" });
     }
   });
 
@@ -20972,7 +13206,7 @@ export async function registerRoutes(
           updatedAt: new Date()
         }).returning();
         console.log("[PaymentGateway] Created new settings");
-        res.json(newSettings[0]);
+        return res.json(newSettings[0]);
       } else {
         // Update existing settings
         const updatedSettings = await db.update(paymentGatewaySettings)
@@ -20980,11 +13214,11 @@ export async function registerRoutes(
           .where(eq(paymentGatewaySettings.id, settings[0].id))
           .returning();
         console.log("[PaymentGateway] Updated settings");
-        res.json(updatedSettings[0]);
+        return res.json(updatedSettings[0]);
       }
     } catch (error) {
       console.error("Failed to update payment gateway settings:", error);
-      res.status(400).json({ message: "Failed to update payment gateway settings", error: String(error) });
+      return res.status(400).json({ message: "Failed to update payment gateway settings", error: String(error) });
     }
   });
 
@@ -21021,7 +13255,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to get payment methods:", error);
-      res.status(400).json({ message: "Failed to get payment methods" });
+      return res.status(400).json({ message: "Failed to get payment methods" });
     }
   });
 
@@ -21033,10 +13267,10 @@ export async function registerRoutes(
   app.get("/api/admin/security-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const settings = await storage.getOrCreateSecuritySettings();
-      res.json(settings);
+      return res.json(settings);
     } catch (error) {
       console.error("Failed to get security settings:", error);
-      res.status(400).json({ message: "Failed to get security settings" });
+      return res.status(400).json({ message: "Failed to get security settings" });
     }
   });
 
@@ -21068,10 +13302,10 @@ export async function registerRoutes(
         details: `Security settings updated: ${Object.keys(validatedUpdates).join(", ")}`,
       });
       
-      res.json(settings);
+      return res.json(settings);
     } catch (error) {
       console.error("Failed to update security settings:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update security settings" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update security settings" });
     }
   });
 
@@ -21092,7 +13326,7 @@ export async function registerRoutes(
       const isLocked = pin.lockedUntil ? new Date(pin.lockedUntil) > new Date() : false;
 
 
-      res.json({ 
+      return res.json({ 
         hasPin: true, 
         isLocked,
         lockedUntil: isLocked ? pin.lockedUntil : null,
@@ -21100,7 +13334,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to get transaction PIN status:", error);
-      res.status(400).json({ message: "Failed to get PIN status" });
+      return res.status(400).json({ message: "Failed to get PIN status" });
     }
   });
 
@@ -21157,10 +13391,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true, message: "Transaction PIN set up successfully" });
+      return res.json({ success: true, message: "Transaction PIN set up successfully" });
     } catch (error) {
       console.error("Failed to set up transaction PIN:", error);
-      res.status(400).json({ message: "Failed to set up transaction PIN" });
+      return res.status(400).json({ message: "Failed to set up transaction PIN" });
     }
   });
 
@@ -21239,7 +13473,7 @@ export async function registerRoutes(
       
 
 
-      res.json({ 
+      return res.json({ 
         success: true, 
         token,
         expiresAt,
@@ -21247,7 +13481,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to verify transaction PIN:", error);
-      res.status(400).json({ message: "Failed to verify transaction PIN" });
+      return res.status(400).json({ message: "Failed to verify transaction PIN" });
     }
   });
 
@@ -21310,10 +13544,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true, message: "Transaction PIN has been reset successfully" });
+      return res.json({ success: true, message: "Transaction PIN has been reset successfully" });
     } catch (error) {
       console.error("Failed to reset transaction PIN:", error);
-      res.status(400).json({ message: "Failed to reset transaction PIN" });
+      return res.status(400).json({ message: "Failed to reset transaction PIN" });
     }
   });
 
@@ -21329,29 +13563,23 @@ export async function registerRoutes(
       const pinToken = await storage.getPinVerificationToken(token);
       
       if (!pinToken) {
-
-
-      res.json({ valid: false, message: "Invalid or expired token" });
+        return res.json({ valid: false, message: "Invalid or expired token" });
       }
       
       if (new Date(pinToken.expiresAt) < new Date()) {
-
-
-      res.json({ valid: false, message: "Token has expired" });
+        return res.json({ valid: false, message: "Token has expired" });
       }
       
       if (pinToken.action !== action) {
-
-
-      res.json({ valid: false, message: "Token action mismatch" });
+        return res.json({ valid: false, message: "Token action mismatch" });
       }
       
 
 
-      res.json({ valid: true, userId: pinToken.userId });
+      return res.json({ valid: true, userId: pinToken.userId });
     } catch (error) {
       console.error("Failed to validate PIN token:", error);
-      res.status(400).json({ valid: false, message: "Failed to validate token" });
+      return res.status(400).json({ valid: false, message: "Failed to validate token" });
     }
   });
 
@@ -21383,10 +13611,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true, userId: pinToken.userId });
+      return res.json({ success: true, userId: pinToken.userId });
     } catch (error) {
       console.error("Failed to use PIN token:", error);
-      res.status(400).json({ success: false, message: "Failed to use token" });
+      return res.status(400).json({ success: false, message: "Failed to use token" });
     }
   });
 
@@ -21418,10 +13646,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true, message: "Transaction PIN unlocked successfully" });
+      return res.json({ success: true, message: "Transaction PIN unlocked successfully" });
     } catch (error) {
       console.error("Failed to unlock transaction PIN:", error);
-      res.status(400).json({ message: "Failed to unlock transaction PIN" });
+      return res.status(400).json({ message: "Failed to unlock transaction PIN" });
     }
   });
 
@@ -21433,10 +13661,10 @@ export async function registerRoutes(
   app.get("/api/admin/compliance-settings", ensureAdminAsync, requirePermission('manage_settings', 'manage_kyc'), async (req, res) => {
     try {
       const settings = await storage.getOrCreateComplianceSettings();
-      res.json(settings);
+      return res.json(settings);
     } catch (error) {
       console.error("Failed to get compliance settings:", error);
-      res.status(400).json({ message: "Failed to get compliance settings" });
+      return res.status(400).json({ message: "Failed to get compliance settings" });
     }
   });
 
@@ -21464,10 +13692,10 @@ export async function registerRoutes(
         details: `KYC mode changed to: ${settings.activeKycMode}`,
       });
       
-      res.json(settings);
+      return res.json(settings);
     } catch (error) {
       console.error("Failed to update compliance settings:", error);
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update compliance settings" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to update compliance settings" });
     }
   });
 
@@ -21477,7 +13705,7 @@ export async function registerRoutes(
       const settings = await storage.getOrCreateComplianceSettings();
 
 
-      res.json({ 
+      return res.json({ 
         activeKycMode: settings.activeKycMode,
         finatradesPersonalConfig: settings.finatradesPersonalConfig,
         finanatradesCorporateConfig: settings.finanatradesCorporateConfig,
@@ -21485,7 +13713,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to get KYC mode:", error);
-      res.status(400).json({ message: "Failed to get KYC mode" });
+      return res.status(400).json({ message: "Failed to get KYC mode" });
     }
   });
 
@@ -21579,9 +13807,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'personal').catch(() => null);
 
-        const refUpdated = `FT-KYC-${updated.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const refUpdated = `FT-KYC-${updated!.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
         const slaUpdated = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
-        res.json({ success: true, submission: updated, referenceNumber: refUpdated, slaDeadline: slaUpdated });
+        return res.json({ success: true, submission: updated, referenceNumber: refUpdated, slaDeadline: slaUpdated });
 
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr = kycData.passportUrl || kycData.idFrontUrl;
@@ -21592,14 +13820,14 @@ export async function registerRoutes(
           // would fully eliminate any race.
           const priorOcrFlag = updated?.ocrMismatchFlag as { nameMismatch?: boolean; dobMismatch?: boolean } | null;
           const priorOcrDelta = (priorOcrFlag?.nameMismatch || priorOcrFlag?.dobMismatch) ? 10 : 0;
-          const priorRiskScore = typeof updated?.riskScore === 'number' ? updated.riskScore : 0;
+          const priorRiskScore: number = typeof updated?.riskScore === 'number' ? ((updated as any).riskScore as number) : 0;
           checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
             .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
               const newOcrDelta = mismatch ? 10 : 0;
               // Additive idempotent: remove prior OCR contribution, add new OCR contribution
               const newRiskScore = Math.max(0, priorRiskScore - priorOcrDelta) + newOcrDelta;
-              await storage.updateFinatradesPersonalKyc(updated!.id, {
+              await storage.updateFinatradesPersonalKyc((updated as any).id, {
                 ocrMismatchFlag: ocrResult,
                 riskScore: newRiskScore,
               });
@@ -21645,7 +13873,7 @@ export async function registerRoutes(
 
         const refNew = `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
         const slaNew = new Date(Date.now() + 1 * 24 * 60 * 60 * 1000).toISOString();
-        res.json({ success: true, submission, referenceNumber: refNew, slaDeadline: slaNew });
+        return res.json({ success: true, submission, referenceNumber: refNew, slaDeadline: slaNew });
 
         // Async OCR mismatch check (fire-and-forget, does not block response)
         const docUrlForOcr2 = kycData.passportUrl || kycData.idFrontUrl;
@@ -21666,7 +13894,7 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Failed to submit Finatrades personal KYC:", error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Personal KYC Submission Failed', route: 'POST /api/finatrades-kyc/personal', userId: req.session?.userId || undefined });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
     }
   });
 
@@ -21676,10 +13904,10 @@ export async function registerRoutes(
       const submission = await storage.getFinatradesPersonalKyc(userId);
       const referenceNumber = submission?.id ? `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}` : null;
       const slaDeadline = submission?.updatedAt ? new Date(new Date(submission.updatedAt).getTime() + 1 * 24 * 60 * 60 * 1000).toISOString() : null;
-      res.json({ submission, referenceNumber, slaDeadline });
+      return res.json({ submission, referenceNumber, slaDeadline });
     } catch (error) {
       console.error("Failed to get Finatrades personal KYC:", error);
-      res.status(400).json({ message: "Failed to get KYC status" });
+      return res.status(400).json({ message: "Failed to get KYC status" });
     }
   });
 
@@ -21804,9 +14032,9 @@ export async function registerRoutes(
         // Delete server-side draft now that submission is complete
         storage.deleteKycDraft(userId, 'corporate').catch(() => null);
 
-        const refCorpUpdated = `FT-KYC-${updated.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
+        const refCorpUpdated = `FT-KYC-${updated!.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
         const slaCorpUpdated = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-        res.json({ success: true, submission: updated, referenceNumber: refCorpUpdated, slaDeadline: slaCorpUpdated });
+        return res.json({ success: true, submission: updated, referenceNumber: refCorpUpdated, slaDeadline: slaCorpUpdated });
       } else {
         const submission = await storage.createFinatradesCorporateKyc({
           userId,
@@ -21848,12 +14076,12 @@ export async function registerRoutes(
 
         const refCorpNew = `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}`;
         const slaCorpNew = new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString();
-        res.json({ success: true, submission, referenceNumber: refCorpNew, slaDeadline: slaCorpNew });
+        return res.json({ success: true, submission, referenceNumber: refCorpNew, slaDeadline: slaCorpNew });
       }
     } catch (error) {
       console.error("Failed to submit Finatrades corporate KYC:", error);
       notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Corporate KYC Submission Failed', route: 'POST /api/finatrades-kyc/corporate', userId: req.session?.userId || undefined });
-      res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to submit KYC" });
     }
   });
 
@@ -21864,10 +14092,10 @@ export async function registerRoutes(
       const submission = await storage.getFinatradesCorporateKyc(userId);
       const referenceNumber = submission?.id ? `FT-KYC-${submission.id.replace(/-/g, '').substring(0, 8).toUpperCase()}` : null;
       const slaDeadline = submission?.updatedAt ? new Date(new Date(submission.updatedAt).getTime() + 5 * 24 * 60 * 60 * 1000).toISOString() : null;
-      res.json({ submission, referenceNumber, slaDeadline });
+      return res.json({ submission, referenceNumber, slaDeadline });
     } catch (error) {
       console.error("Failed to get Finatrades corporate KYC:", error);
-      res.status(400).json({ message: "Failed to get KYC status" });
+      return res.status(400).json({ message: "Failed to get KYC status" });
     }
   });
 
@@ -21893,7 +14121,7 @@ export async function registerRoutes(
       if (!settings.emailOtpEnabled) {
 
 
-      res.json({ otpRequired: false, message: "Email OTP is not enabled" });
+      return res.json({ otpRequired: false, message: "Email OTP is not enabled" });
       }
       
       // Check if OTP is required for this action
@@ -21915,7 +14143,7 @@ export async function registerRoutes(
       if (!settingKey || !settings[settingKey]) {
 
 
-      res.json({ otpRequired: false, message: `OTP not required for ${action}` });
+      return res.json({ otpRequired: false, message: `OTP not required for ${action}` });
       }
       
       // Check cooldown - get most recent OTP for this user and action
@@ -21958,7 +14186,7 @@ export async function registerRoutes(
       
 
 
-      res.json({ 
+      return res.json({ 
         otpRequired: true,
         otpId: otpVerification.id,
         expiresAt: otpVerification.expiresAt,
@@ -21966,7 +14194,7 @@ export async function registerRoutes(
       });
     } catch (error) {
       console.error("Failed to request OTP:", error);
-      res.status(400).json({ message: "Failed to request OTP" });
+      return res.status(400).json({ message: "Failed to request OTP" });
     }
   });
 
@@ -22030,14 +14258,14 @@ export async function registerRoutes(
       
 
 
-      res.json({ 
+      return res.json({ 
         verified: true, 
         message: "Verification successful",
         metadata: otpVerification.metadata
       });
     } catch (error) {
       console.error("Failed to verify OTP:", error);
-      res.status(400).json({ message: "Failed to verify OTP" });
+      return res.status(400).json({ message: "Failed to verify OTP" });
     }
   });
 
@@ -22051,7 +14279,7 @@ export async function registerRoutes(
       if (!settings.emailOtpEnabled) {
 
 
-      res.json({ otpRequired: false });
+      return res.json({ otpRequired: false });
       }
       
       const otpActionMap: Record<string, keyof typeof settings> = {
@@ -22073,10 +14301,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ otpRequired });
+      return res.json({ otpRequired });
     } catch (error) {
       console.error("Failed to check OTP requirement:", error);
-      res.status(400).json({ message: "Failed to check OTP requirement" });
+      return res.status(400).json({ message: "Failed to check OTP requirement" });
     }
   });
 
@@ -22085,490 +14313,15 @@ export async function registerRoutes(
   // ============================================================================
 
   // Get all invoices with user info
-  app.get("/api/admin/documents/invoices", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const invoices = await storage.getAllInvoices();
-      const enrichedInvoices = await Promise.all(
-        invoices.map(async (invoice) => {
-          const user = await storage.getUser(invoice.userId);
-          return {
-            ...invoice,
-            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-            userEmail: user?.email || invoice.customerEmail,
-          };
-        })
-      );
-
-
-      res.json({ invoices: enrichedInvoices });
-    } catch (error) {
-      console.error("Failed to get invoices:", error);
-      res.status(400).json({ message: "Failed to get invoices" });
-    }
-  });
-
-  // Get all certificate deliveries with certificate and user info
-  app.get("/api/admin/documents/certificate-deliveries", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const deliveries = await storage.getAllCertificateDeliveries();
-      const enrichedDeliveries = await Promise.all(
-        deliveries.map(async (delivery) => {
-          const user = await storage.getUser(delivery.userId);
-          const certificate = await storage.getCertificate(delivery.certificateId);
-          return {
-            ...delivery,
-            userName: user ? `${user.firstName} ${user.lastName}` : 'Unknown',
-            userEmail: user?.email || delivery.recipientEmail,
-            certificateNumber: certificate?.certificateNumber || 'Unknown',
-            certificateType: certificate?.type || 'Unknown',
-            goldGrams: certificate?.goldGrams || '0',
-          };
-        })
-      );
-
-
-      res.json({ deliveries: enrichedDeliveries });
-    } catch (error) {
-      console.error("Failed to get certificate deliveries:", error);
-      res.status(400).json({ message: "Failed to get certificate deliveries" });
-    }
-  });
-
-  // Download invoice PDF (supports ?inline=1 for in-browser viewing)
-  app.get("/api/admin/documents/invoices/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const result = await downloadInvoicePDF(req.params.id);
-      if (result.error) {
-        return res.status(404).json({ message: result.error });
-      }
-      const isInline = req.query.inline === '1' || req.query.inline === 'true';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${result.filename}"`);
-      res.send(result.buffer);
-    } catch (error) {
-      console.error("Failed to download invoice:", error);
-      res.status(400).json({ message: "Failed to download invoice" });
-    }
-  });
-
-  // Download certificate PDF (supports ?inline=1 for in-browser viewing)
-  app.get("/api/admin/documents/certificates/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const result = await downloadCertificatePDF(req.params.id);
-      if (result.error) {
-        return res.status(404).json({ message: result.error });
-      }
-      const isInline = req.query.inline === '1' || req.query.inline === 'true';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${result.filename}"`);
-      res.send(result.buffer);
-    } catch (error) {
-      console.error("Failed to download certificate:", error);
-      res.status(400).json({ message: "Failed to download certificate" });
-    }
-  });
-
-  // Resend invoice email
-  app.post("/api/admin/documents/invoices/:id/resend", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
-    try {
-      const result = await resendInvoice(req.params.id);
-      if (!result.success) {
-        return res.status(400).json({ message: result.error || "Failed to resend invoice" });
-      }
-      
-      await storage.createAuditLog({
-        entityType: "invoice",
-        entityId: req.params.id,
-        actionType: "resend",
-        actor: (req as any).adminUser?.id || 'admin',
-        actorRole: "admin",
-        details: "Invoice email resent",
-      });
-      
-
-
-      res.json({ message: "Invoice resent successfully" });
-    } catch (error) {
-      console.error("Failed to resend invoice:", error);
-      res.status(400).json({ message: "Failed to resend invoice" });
-    }
-  });
-
-  // Resend certificate email
-  app.post("/api/admin/documents/certificates/:id/resend", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
-    try {
-      const result = await resendCertificate(req.params.id);
-      if (!result.success) {
-        return res.status(400).json({ message: result.error || "Failed to resend certificate" });
-      }
-      
-      await storage.createAuditLog({
-        entityType: "certificate",
-        entityId: req.params.id,
-        actionType: "resend",
-        actor: (req as any).adminUser?.id || 'admin',
-        actorRole: "admin",
-        details: "Certificate email resent",
-      });
-      
-
-
-      res.json({ message: "Certificate resent successfully" });
-    } catch (error) {
-      console.error("Failed to resend certificate:", error);
-      res.status(400).json({ message: "Failed to resend certificate" });
-    }
-  });
-
-  // Get all transaction receipts for evidence/auditing
-  app.get("/api/admin/documents/transaction-receipts", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const allTransactions = await storage.getAllTransactions();
-      
-      // Enrich with user info
-      const transactionsWithUsers = await Promise.all(
-        allTransactions.map(async (tx) => {
-          const user = await storage.getUser(tx.userId);
-          return {
-            ...tx,
-            userName: user ? `${user.firstName} ${user.lastName}` : null,
-            userEmail: user?.email || null,
-          };
-        })
-      );
-      
-      // Sort by date descending
-      transactionsWithUsers.sort((a, b) => 
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
-      
-
-
-      res.json({ transactions: transactionsWithUsers });
-    } catch (error) {
-      console.error("Failed to get transaction receipts:", error);
-      res.status(400).json({ message: "Failed to get transaction receipts" });
-    }
-  });
-
-  // Download transaction receipt PDF
-  app.get("/api/admin/documents/receipts/:id/download", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const transactionId = req.params.id;
-      const transaction = await storage.getTransaction(transactionId);
-      
-      if (!transaction) {
-        return res.status(404).json({ message: "Transaction not found" });
-      }
-      
-      const user = await storage.getUser(transaction.userId);
-      const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown User';
-      const userEmail = user?.email || 'Unknown';
-      
-      // Generate PDF using PDFKit
-      const PDFDocument = (await import('pdfkit')).default;
-      const doc = new PDFDocument({ size: 'A4', margin: 50 });
-      const chunks: Buffer[] = [];
-      
-      doc.on('data', (chunk: Buffer) => chunks.push(chunk));
-      
-      const pdfPromise = new Promise<Buffer>((resolve) => {
-        doc.on('end', () => resolve(Buffer.concat(chunks)));
-      });
-      
-      // Header
-      doc.fontSize(24).fillColor('#4B0082').text('FINATRADES', { align: 'center' });
-      doc.fontSize(12).fillColor('#666').text('Gold-Backed Digital Finance', { align: 'center' });
-      doc.moveDown(2);
-      
-      // Receipt Title
-      doc.fontSize(18).fillColor('#000').text('TRANSACTION RECEIPT', { align: 'center' });
-      doc.moveDown();
-      
-      // Receipt details box
-      doc.fontSize(10).fillColor('#666').text('Receipt ID:', 50);
-      doc.fontSize(12).fillColor('#000').text(transaction.odooId || `TXN-${transaction.id}`, 150, doc.y - 12);
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#666').text('Date:', 50);
-      doc.fontSize(12).fillColor('#000').text(new Date(transaction.createdAt).toLocaleString(), 150, doc.y - 12);
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#666').text('Status:', 50);
-      doc.fontSize(12).fillColor(transaction.status === 'Completed' || transaction.status === 'Approved' ? '#22c55e' : '#f59e0b')
-        .text(transaction.status, 150, doc.y - 12);
-      doc.moveDown(2);
-      
-      // Customer Details
-      doc.fontSize(14).fillColor('#4B0082').text('Customer Details');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#666').text('Name:', 50);
-      doc.fontSize(12).fillColor('#000').text(userName, 150, doc.y - 12);
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#666').text('Email:', 50);
-      doc.fontSize(12).fillColor('#000').text(userEmail, 150, doc.y - 12);
-      doc.moveDown(0.5);
-      
-      if (user?.finatradesId) {
-        doc.fontSize(10).fillColor('#666').text('Finatrades ID:', 50);
-        doc.fontSize(12).fillColor('#000').text(user.finatradesId, 150, doc.y - 12);
-        doc.moveDown(0.5);
-      }
-      doc.moveDown();
-      
-      // Transaction Details
-      doc.fontSize(14).fillColor('#4B0082').text('Transaction Details');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#666').text('Type:', 50);
-      doc.fontSize(12).fillColor('#000').text(transaction.type || 'N/A', 150, doc.y - 12);
-      doc.moveDown(0.5);
-      
-      if (transaction.sourceModule) {
-        doc.fontSize(10).fillColor('#666').text('Module:', 50);
-        doc.fontSize(12).fillColor('#000').text(transaction.sourceModule, 150, doc.y - 12);
-        doc.moveDown(0.5);
-      }
-      
-      if (transaction.description) {
-        doc.fontSize(10).fillColor('#666').text('Description:', 50);
-        doc.fontSize(12).fillColor('#000').text(transaction.description, 150, doc.y - 12);
-        doc.moveDown(0.5);
-      }
-      doc.moveDown();
-      
-      // Financial Details
-      doc.fontSize(14).fillColor('#4B0082').text('Financial Details');
-      doc.moveTo(50, doc.y).lineTo(545, doc.y).stroke('#ddd');
-      doc.moveDown(0.5);
-      
-      if (transaction.amountGold) {
-        doc.fontSize(10).fillColor('#666').text('Gold Amount:', 50);
-        doc.fontSize(14).fillColor('#000').text(`${parseFloat(transaction.amountGold).toFixed(4)} grams`, 150, doc.y - 14);
-        doc.moveDown(0.5);
-      }
-      
-      if (transaction.amountUsd) {
-        doc.fontSize(10).fillColor('#666').text('USD Value:', 50);
-        doc.fontSize(14).fillColor('#000').text(`$${parseFloat(transaction.amountUsd).toLocaleString()}`, 150, doc.y - 14);
-        doc.moveDown(0.5);
-        
-        // AED value
-        const aedValue = parseFloat(transaction.amountUsd) * 3.67;
-        doc.fontSize(10).fillColor('#666').text('AED Value:', 50);
-        doc.fontSize(14).fillColor('#000').text(`Dh ${aedValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 150, doc.y - 14);
-        doc.moveDown(0.5);
-      }
-      
-      if (transaction.goldPriceAtTransaction) {
-        doc.fontSize(10).fillColor('#666').text('Gold Price:', 50);
-        doc.fontSize(12).fillColor('#000').text(`$${parseFloat(transaction.goldPriceAtTransaction).toFixed(2)} per gram`, 150, doc.y - 12);
-        doc.moveDown(0.5);
-      }
-      
-      // Footer
-      doc.moveDown(3);
-      doc.fontSize(10).fillColor('#666').text('This is an official transaction receipt generated by Finatrades.', { align: 'center' });
-      doc.text('For any queries, please contact support@finatrades.com', { align: 'center' });
-      doc.moveDown();
-      doc.fontSize(8).text(`Generated on: ${new Date().toISOString()}`, { align: 'center' });
-      
-      doc.end();
-      
-      const pdfBuffer = await pdfPromise;
-      
-      const filename = `finatrades-receipt-${transaction.odooId || transaction.id}-${new Date().toISOString().split('T')[0]}.pdf`;
-      const isInline = req.query.inline === '1' || req.query.inline === 'true';
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `${isInline ? 'inline' : 'attachment'}; filename="${filename}"`);
-      res.send(pdfBuffer);
-      
-      // Log the download
-      await storage.createAuditLog({
-        entityType: "transaction_receipt",
-        entityId: String(transaction.id),
-        actionType: "download",
-        actor: (req as any).adminUser?.id || 'admin',
-        actorRole: "admin",
-        details: `Downloaded receipt for transaction ${transaction.odooId || transaction.id}`,
-      });
-      
-    } catch (error) {
-      console.error("Failed to download transaction receipt:", error);
-      res.status(400).json({ message: "Failed to download transaction receipt" });
-    }
-  });
-
-  // Get all platform attachments (from vault deposits, KYC, etc.)
-  app.get("/api/admin/attachments", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const allAttachments: any[] = [];
-      
-      // Vault deposit attachments
-      const vaultDeposits = await db.select().from(vaultDepositRequests);
-      for (const deposit of vaultDeposits) {
-        const user = await storage.getUser(deposit.userId);
-        const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
-        
-        if (deposit.documents && Array.isArray(deposit.documents)) {
-          deposit.documents.forEach((doc: any, idx: number) => {
-            allAttachments.push({
-              id: `vault-${deposit.id}-${idx}`,
-              source: 'Vault Deposit',
-              sourceId: deposit.referenceNumber,
-              userId: deposit.userId,
-              userName,
-              userEmail: user?.email || 'Unknown',
-              fileName: typeof doc === 'string' ? `Document ${idx + 1}` : (doc.name || `Document ${idx + 1}`),
-              fileType: typeof doc === 'string' && doc.startsWith('data:image') ? 'image' : 'document',
-              fileUrl: typeof doc === 'string' ? doc : (doc.url || doc),
-              uploadedAt: deposit.createdAt,
-              status: deposit.status,
-            });
-          });
-        }
-      }
-      
-      // KYC submission attachments
-      const kycSubmissions = await storage.getAllKycSubmissions();
-      for (const kyc of kycSubmissions) {
-        const user = await storage.getUser(kyc.userId);
-        const userName = user ? `${user.firstName} ${user.lastName}` : 'Unknown';
-        
-        // ID Document
-        if (kyc.idDocumentUrl) {
-          allAttachments.push({
-            id: `kyc-id-${kyc.id}`,
-            source: 'KYC - ID Document',
-            sourceId: `KYC-${kyc.id}`,
-            userId: kyc.userId,
-            userName,
-            userEmail: user?.email || 'Unknown',
-            fileName: 'ID Document',
-            fileType: kyc.idDocumentUrl.startsWith('data:image') ? 'image' : 'document',
-            fileUrl: kyc.idDocumentUrl,
-            uploadedAt: kyc.createdAt,
-            status: kyc.status,
-          });
-        }
-        
-        // Selfie
-        if (kyc.selfieUrl) {
-          allAttachments.push({
-            id: `kyc-selfie-${kyc.id}`,
-            source: 'KYC - Selfie',
-            sourceId: `KYC-${kyc.id}`,
-            userId: kyc.userId,
-            userName,
-            userEmail: user?.email || 'Unknown',
-            fileName: 'Selfie',
-            fileType: 'image',
-            fileUrl: kyc.selfieUrl,
-            uploadedAt: kyc.createdAt,
-            status: kyc.status,
-          });
-        }
-        
-        // Address Proof
-        if (kyc.addressProofUrl) {
-          allAttachments.push({
-            id: `kyc-address-${kyc.id}`,
-            source: 'KYC - Address Proof',
-            sourceId: `KYC-${kyc.id}`,
-            userId: kyc.userId,
-            userName,
-            userEmail: user?.email || 'Unknown',
-            fileName: 'Address Proof',
-            fileType: kyc.addressProofUrl.startsWith('data:image') ? 'image' : 'document',
-            fileUrl: kyc.addressProofUrl,
-            uploadedAt: kyc.createdAt,
-            status: kyc.status,
-          });
-        }
-      }
-      
-      // Sort by upload date descending
-      allAttachments.sort((a, b) => 
-        new Date(b.uploadedAt).getTime() - new Date(a.uploadedAt).getTime()
-      );
-      
-
-
-      res.json({ attachments: allAttachments });
-    } catch (error) {
-      console.error("Failed to get attachments:", error);
-      res.status(400).json({ message: "Failed to get attachments" });
-    }
-  });
-
-  // User endpoints for downloading their own documents
-  app.get("/api/documents/invoices/:id/download", async (req, res) => {
-    try {
-      const invoice = await storage.getInvoice(req.params.id);
-      if (!invoice) {
-        return res.status(404).json({ message: "Invoice not found" });
-      }
-      
-      const result = await downloadInvoicePDF(req.params.id);
-      if (result.error) {
-        return res.status(404).json({ message: result.error });
-      }
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
-      res.send(result.buffer);
-    } catch (error) {
-      console.error("Failed to download invoice:", error);
-      res.status(400).json({ message: "Failed to download invoice" });
-    }
-  });
-
-  app.get("/api/documents/certificates/:id/download", async (req, res) => {
-    try {
-      const certificate = await storage.getCertificate(req.params.id);
-      if (!certificate) {
-        return res.status(404).json({ message: "Certificate not found" });
-      }
-      
-      const result = await downloadCertificatePDF(req.params.id);
-      if (result.error) {
-        return res.status(404).json({ message: result.error });
-      }
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
-      res.send(result.buffer);
-    } catch (error) {
-      console.error("Failed to download certificate:", error);
-      res.status(400).json({ message: "Failed to download certificate" });
-    }
-  });
-
-  // Get user's invoices
-  app.get("/api/documents/invoices/user/:userId", async (req, res) => {
-    try {
-      const invoices = await storage.getUserInvoices(req.params.userId);
-
-
-      res.json({ invoices });
-    } catch (error) {
-      console.error("Failed to get user invoices:", error);
-      res.status(400).json({ message: "Failed to get invoices" });
-    }
-  });
-
-  // User Manual PDF download
   app.get("/api/documents/user-manual", async (req, res) => {
     try {
       const pdfBuffer = await generateUserManualPDF();
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="Finatrades-User-Manual.pdf"');
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
     } catch (error) {
       console.error('Error generating user manual:', error);
-      res.status(500).json({ message: "Failed to generate user manual" });
+      return res.status(500).json({ message: "Failed to generate user manual" });
     }
   });
 
@@ -22578,10 +14331,10 @@ export async function registerRoutes(
       const pdfBuffer = await generateAdminManualPDF();
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="Finatrades-Admin-Manual.pdf"');
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
     } catch (error) {
       console.error('Error generating admin manual:', error);
-      res.status(500).json({ message: "Failed to generate admin manual" });
+      return res.status(500).json({ message: "Failed to generate admin manual" });
     }
   });
 
@@ -22590,1082 +14343,16 @@ export async function registerRoutes(
   // ============================================================================
 
   // Check if OTP is required for a specific action type
-  app.get("/api/admin/action-otp/required/:actionType", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { actionType } = req.params;
-      const settings = await storage.getSecuritySettings();
-      
-      if (!settings || !settings.adminOtpEnabled) {
-        return res.json({ required: false });
-      }
-      
-      // Map action types to security settings
-      const actionToSetting: Record<string, boolean> = {
-        'kyc_approval': settings.adminOtpOnKycApproval,
-        'kyc_rejection': settings.adminOtpOnKycApproval,
-        'deposit_approval': settings.adminOtpOnDepositApproval,
-        'deposit_rejection': settings.adminOtpOnDepositApproval,
-        'withdrawal_approval': settings.adminOtpOnWithdrawalApproval,
-        'withdrawal_rejection': settings.adminOtpOnWithdrawalApproval,
-        'bnsl_approval': settings.adminOtpOnBnslApproval,
-        'bnsl_rejection': settings.adminOtpOnBnslApproval,
-        'trade_case_approval': settings.adminOtpOnTradeCaseApproval,
-        'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
-        'user_suspension': settings.adminOtpOnUserSuspension,
-        'user_activation': settings.adminOtpOnUserSuspension,
-        'vault_deposit_approval': settings.adminOtpOnVaultDepositApproval ?? true,
-        'vault_deposit_rejection': settings.adminOtpOnVaultDepositApproval ?? true,
-        'vault_withdrawal_approval': settings.adminOtpOnVaultWithdrawalApproval ?? true,
-        'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
-        'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
-        'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
-        'database_sync': true, // Always require OTP for database sync
-      };
-      
-      const required = actionToSetting[actionType] ?? false;
-
-
-      res.json({ required });
-    } catch (error) {
-      console.error("Failed to check OTP requirement:", error);
-      res.status(500).json({ message: "Failed to check OTP requirement" });
-    }
-  });
-
-  // Helper to mask email for privacy (e.g., john.doe@finatrades.com -> j***e@finatrades.com)
-  function maskEmail(email: string): string {
-    const [local, domain] = email.split('@');
-    if (!local || !domain) return email;
-    if (local.length <= 2) return `${local[0]}***@${domain}`;
-    return `${local[0]}***${local[local.length - 1]}@${domain}`;
-  }
-
-  // Helper to get OTP context details based on target type
-  async function getOtpContext(targetType: string, targetId: string, actionData?: Record<string, any>): Promise<{
-    amountUsd?: string;
-    amountGold?: string;
-    method?: string;
-    userMasked?: string;
-    userId?: string;
-    txId?: string;
-    entityDetails?: string;
-  }> {
-    const context: any = {};
-    
-    try {
-      switch (targetType) {
-        case 'transaction':
-        case 'deposit_request':
-        case 'withdrawal_request': {
-          const tx = await storage.getTransaction(targetId);
-          if (tx) {
-            context.amountUsd = tx.amountUsd ? `$${parseFloat(tx.amountUsd).toLocaleString()}` : undefined;
-            context.amountGold = tx.amountGold ? `${parseFloat(tx.amountGold).toFixed(4)}g` : undefined;
-            context.method = tx.paymentMethod || tx.type;
-            context.txId = `TX-${targetId.slice(0, 8).toUpperCase()}`;
-            context.userId = tx.userId;
-            const user = await storage.getUser(tx.userId);
-            if (user) context.userMasked = maskEmail(user.email);
-          }
-          break;
-        }
-        case 'kyc_submission': {
-          const kyc = await storage.getKycSubmission(targetId);
-          if (kyc) {
-            context.userId = kyc.userId;
-            const user = await storage.getUser(kyc.userId);
-            if (user) {
-              context.userMasked = maskEmail(user.email);
-              context.entityDetails = `${user.firstName} ${user.lastName}`;
-            }
-          }
-          break;
-        }
-        case 'user': {
-          const user = await storage.getUser(targetId);
-          if (user) {
-            context.userId = user.id;
-            context.userMasked = maskEmail(user.email);
-            context.entityDetails = `${user.firstName} ${user.lastName}`;
-          }
-          break;
-        }
-        case 'bnsl_plan': {
-          const plans = await storage.getAllBnslPlans();
-          const plan = plans.find(p => p.id === targetId);
-          if (plan) {
-            context.amountUsd = plan.totalAmountUsd ? `$${parseFloat(plan.totalAmountUsd).toLocaleString()}` : undefined;
-            context.amountGold = plan.goldAmount ? `${parseFloat(plan.goldAmount).toFixed(4)}g` : undefined;
-            context.userId = plan.userId;
-            const user = await storage.getUser(plan.userId);
-            if (user) context.userMasked = maskEmail(user.email);
-          }
-          break;
-        }
-        case 'trade_case': {
-          const cases = await storage.getAllTradeCases();
-          const tc = cases.find(c => c.id === targetId);
-          if (tc) {
-            context.amountUsd = tc.transactionValue ? `$${parseFloat(tc.transactionValue).toLocaleString()}` : undefined;
-            context.entityDetails = tc.clientName || undefined;
-            context.userId = tc.userId;
-            const user = await storage.getUser(tc.userId);
-            if (user) context.userMasked = maskEmail(user.email);
-          }
-          break;
-        }
-        case 'vault_holding': {
-          const holding = await storage.getVaultHolding(targetId);
-          if (holding) {
-            context.amountGold = `${parseFloat(holding.goldGrams).toFixed(4)}g`;
-            context.userId = holding.userId;
-            const user = await storage.getUser(holding.userId);
-            if (user) context.userMasked = maskEmail(user.email);
-          }
-          break;
-        }
-      }
-      
-      // Merge with actionData if provided
-      if (actionData) {
-        if (actionData.amount) context.amountUsd = `$${parseFloat(actionData.amount).toLocaleString()}`;
-        if (actionData.method) context.method = actionData.method;
-        if (actionData.reason) context.entityDetails = actionData.reason;
-      }
-    } catch (e) {
-      console.error('[OTP Context] Failed to get context:', e);
-    }
-    
-    return context;
-  }
-
-  // Send OTP for admin action
-  app.post("/api/admin/action-otp/send", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { actionType, targetId, targetType, actionData } = req.body;
-      const admin = (req as any).adminUser;
-      const requestId = `REQ-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-      
-      // Structured log: OTP requested
-      console.log(JSON.stringify({
-        ts: new Date().toISOString(),
-        level: 'info',
-        requestId,
-        action: 'otp.requested',
-        actorType: 'admin',
-        actorId: admin.id,
-        emailMasked: maskEmail(admin.email),
-        entityType: targetType,
-        entityId: targetId,
-        actionType,
-      }));
-      
-      if (!actionType || !targetId || !targetType) {
-        return res.status(400).json({ message: "Missing required fields: actionType, targetId, targetType" });
-      }
-      
-      // Check if OTP is required for this action
-      const settings = await storage.getSecuritySettings();
-      if (!settings || !settings.adminOtpEnabled) {
-        return res.json({ required: false, message: "OTP not required" });
-      }
-      
-      // Map action types to security settings
-      const actionToSetting: Record<string, boolean> = {
-        'kyc_approval': settings.adminOtpOnKycApproval,
-        'kyc_rejection': settings.adminOtpOnKycApproval,
-        'deposit_approval': settings.adminOtpOnDepositApproval,
-        'deposit_rejection': settings.adminOtpOnDepositApproval,
-        'withdrawal_approval': settings.adminOtpOnWithdrawalApproval,
-        'withdrawal_rejection': settings.adminOtpOnWithdrawalApproval,
-        'bnsl_approval': settings.adminOtpOnBnslApproval,
-        'bnsl_rejection': settings.adminOtpOnBnslApproval,
-        'trade_case_approval': settings.adminOtpOnTradeCaseApproval,
-        'trade_case_rejection': settings.adminOtpOnTradeCaseApproval,
-        'user_suspension': settings.adminOtpOnUserSuspension,
-        'user_activation': settings.adminOtpOnUserSuspension,
-        'vault_deposit_approval': settings.adminOtpOnVaultDepositApproval ?? true,
-        'vault_deposit_rejection': settings.adminOtpOnVaultDepositApproval ?? true,
-        'vault_withdrawal_approval': settings.adminOtpOnVaultWithdrawalApproval ?? true,
-        'vault_withdrawal_rejection': settings.adminOtpOnVaultWithdrawalApproval ?? true,
-        'transaction_approval': settings.adminOtpOnTransactionApproval ?? true,
-        'transaction_rejection': settings.adminOtpOnTransactionApproval ?? true,
-        'database_sync': true, // Always require OTP for database sync
-      };
-      
-      if (!actionToSetting[actionType]) {
-        return res.json({ required: false, message: "OTP not required for this action" });
-      }
-      
-      // Get OTP context for informative messages
-      const otpContext = await getOtpContext(targetType, targetId, actionData);
-      
-      // Generate 6-digit OTP code
-      const code = Math.floor(100000 + Math.random() * 900000).toString();
-      const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
-      
-      // Enrich actionData with context
-      const enrichedActionData = {
-        ...(actionData || {}),
-        otpContext,
-        requestId,
-      };
-      
-      // Create OTP record
-      const otp = await storage.createAdminActionOtp({
-        adminId: admin.id,
-        actionType: actionType as any,
-        targetId,
-        targetType,
-        code,
-        expiresAt,
-        attempts: 0,
-        verified: false,
-        actionData: enrichedActionData,
-      });
-      
-      // Send email with OTP - informative version with context
-      const actionLabels: Record<string, string> = {
-        'kyc_approval': 'KYC Approval',
-        'kyc_rejection': 'KYC Rejection',
-        'deposit_approval': 'Deposit Approval',
-        'deposit_rejection': 'Deposit Rejection',
-        'withdrawal_approval': 'Withdrawal Approval',
-        'database_sync': 'Database Sync',
-        'withdrawal_rejection': 'Withdrawal Rejection',
-        'bnsl_approval': 'BNSL Plan Approval',
-        'bnsl_rejection': 'BNSL Plan Rejection',
-        'trade_case_approval': 'Trade Case Approval',
-        'trade_case_rejection': 'Trade Case Rejection',
-        'user_suspension': 'User Suspension',
-        'user_activation': 'User Activation',
-        'vault_deposit_approval': 'Vault Deposit Approval',
-        'vault_deposit_rejection': 'Vault Deposit Rejection',
-        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
-        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
-        'transaction_approval': 'Transaction Approval',
-        'transaction_rejection': 'Transaction Rejection',
-      };
-      
-      // Build context details for email
-      const contextDetails: string[] = [];
-      if (otpContext.amountUsd) contextDetails.push(`<strong>Amount:</strong> ${otpContext.amountUsd}`);
-      if (otpContext.amountGold) contextDetails.push(`<strong>Gold:</strong> ${otpContext.amountGold}`);
-      if (otpContext.method) contextDetails.push(`<strong>Method:</strong> ${otpContext.method}`);
-      if (otpContext.userMasked) contextDetails.push(`<strong>User:</strong> ${otpContext.userMasked}`);
-      if (otpContext.txId) contextDetails.push(`<strong>Reference:</strong> ${otpContext.txId}`);
-      if (otpContext.entityDetails) contextDetails.push(`<strong>Details:</strong> ${otpContext.entityDetails}`);
-      
-      const contextHtml = contextDetails.length > 0 
-        ? `<div style="background: #fef3c7; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid #f59e0b;">
-            <p style="margin: 0 0 10px 0; font-weight: 600; color: #92400e;">Action Details:</p>
-            ${contextDetails.map(d => `<p style="margin: 5px 0; font-size: 14px;">${d}</p>`).join('')}
-           </div>`
-        : '';
-      
-      const adminFullName = `${admin.firstName} ${admin.lastName}`.trim();
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Admin OTP — ${actionLabels[actionType] || actionType}</h1>
-          </div>
-          <div style="padding: 30px; background: #ffffff;">
-            <p>Hello ${adminFullName},</p>
-            <p>You are attempting to perform: <strong>${actionLabels[actionType] || actionType}</strong></p>
-            ${contextHtml}
-            <p>Your verification code is:</p>
-            <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">${code}</span>
-            </div>
-            <p>This code expires in <strong>10 minutes</strong>.</p>
-            <div style="background: #fef2f2; padding: 12px; border-radius: 6px; margin-top: 20px;">
-              <p style="margin: 0; color: #dc2626; font-size: 13px;">
-                <strong>⚠️ Security Warning:</strong> Do not share this code with anyone. Finatrades will never ask for your OTP.
-              </p>
-            </div>
-          </div>
-          <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-            <p>Finatrades Admin Portal - Secure Action Verification</p>
-            <p style="font-size: 11px;">Request ID: ${requestId}</p>
-          </div>
-        </div>
-      `;
-      
-      await sendEmailDirect(admin.email, `Admin OTP — ${actionLabels[actionType] || actionType}`, htmlBody);
-      
-      // Structured log: OTP sent
-      console.log(JSON.stringify({
-        ts: new Date().toISOString(),
-        level: 'info',
-        requestId,
-        action: 'otp.sent',
-        actorType: 'admin',
-        actorId: admin.id,
-        emailMasked: maskEmail(admin.email),
-        entityType: targetType,
-        entityId: targetId,
-        actionType,
-        otpId: otp.id,
-        amountUsd: otpContext.amountUsd,
-        status: 'success',
-      }));
-      
-      // Create in-app notification for the admin
-      await storage.createNotification({
-        userId: admin.id,
-        title: 'OTP Sent',
-        message: `Verification code sent for ${actionLabels[actionType] || actionType}${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
-        type: 'info',
-        link: null,
-        read: false,
-      });
-      
-      // Create audit log with enriched context
-      await storage.createAuditLog({
-        entityType: "admin_action_otp",
-        entityId: otp.id,
-        actionType: "create",
-        actor: admin.id,
-        actorRole: "admin",
-        details: `OTP sent for ${actionType} on ${targetType}:${targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
-      });
-      
-
-
-      res.json({ 
-        otpId: otp.id,
-        message: "Verification code sent to your email",
-        expiresAt: otp.expiresAt,
-        requestId,
-      });
-    } catch (error) {
-      console.error("Failed to send admin action OTP:", error);
-      // Structured log: OTP failed
-      console.log(JSON.stringify({
-        ts: new Date().toISOString(),
-        level: 'error',
-        action: 'otp.send.failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-      res.status(500).json({ message: "Failed to send verification code" });
-    }
-  });
-
-  // Verify OTP for admin action
-  app.post("/api/admin/action-otp/verify", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { otpId, code } = req.body;
-      const admin = (req as any).adminUser;
-      const requestId = (req.body.requestId) || `VERIFY-${Date.now()}`;
-      
-      if (!otpId || !code) {
-        return res.status(400).json({ message: "Missing required fields: otpId, code" });
-      }
-      
-      const otp = await storage.getAdminActionOtp(otpId);
-      
-      if (!otp) {
-        console.log(JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          requestId,
-          action: 'otp.verify.fail',
-          reason: 'not_found',
-          otpId,
-        }));
-        return res.status(404).json({ message: "Verification request not found" });
-      }
-      
-      // Check if OTP belongs to the current admin
-      if (otp.adminId !== admin.id) {
-        console.log(JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          requestId,
-          action: 'otp.verify.fail',
-          reason: 'wrong_admin',
-          otpId,
-          actorId: admin.id,
-        }));
-        return res.status(403).json({ message: "This verification code is not for your account" });
-      }
-      
-      // Check if already verified
-      if (otp.verified) {
-        return res.status(400).json({ message: "This verification code has already been used" });
-      }
-      
-      // Check expiry
-      if (new Date() > otp.expiresAt) {
-        console.log(JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          requestId,
-          action: 'otp.verify.fail',
-          reason: 'expired',
-          otpId,
-          actorId: admin.id,
-        }));
-        return res.status(400).json({ message: "Verification code has expired. Please request a new one." });
-      }
-      
-      // Check attempts (max 5)
-      if (otp.attempts >= 5) {
-        console.log(JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          requestId,
-          action: 'otp.verify.fail',
-          reason: 'max_attempts',
-          otpId,
-          actorId: admin.id,
-        }));
-        return res.status(429).json({ message: "Too many failed attempts. Please request a new code." });
-      }
-      
-      // Verify code
-      if (otp.code !== code) {
-        await storage.updateAdminActionOtp(otpId, { attempts: otp.attempts + 1 });
-        console.log(JSON.stringify({
-          ts: new Date().toISOString(),
-          level: 'warn',
-          requestId,
-          action: 'otp.verify.fail',
-          reason: 'wrong_code',
-          otpId,
-          actorId: admin.id,
-          attemptsRemaining: 4 - otp.attempts,
-        }));
-        return res.status(400).json({ message: "Invalid verification code", attemptsRemaining: 4 - otp.attempts });
-      }
-      
-      // Mark as verified
-      await storage.updateAdminActionOtp(otpId, { 
-        verified: true, 
-        verifiedAt: new Date() 
-      });
-      
-      // Extract context from actionData
-      const otpContext = (otp.actionData as any)?.otpContext || {};
-      
-      // Structured log: OTP verified successfully
-      console.log(JSON.stringify({
-        ts: new Date().toISOString(),
-        level: 'info',
-        requestId,
-        action: 'otp.verify.success',
-        actorType: 'admin',
-        actorId: admin.id,
-        emailMasked: maskEmail(admin.email),
-        entityType: otp.targetType,
-        entityId: otp.targetId,
-        actionType: otp.actionType,
-        otpId: otp.id,
-        amountUsd: otpContext.amountUsd,
-        status: 'success',
-      }));
-      
-      // Create in-app notification for the admin
-      const actionLabels: Record<string, string> = {
-        'kyc_approval': 'KYC Approval',
-        'kyc_rejection': 'KYC Rejection',
-        'deposit_approval': 'Deposit Approval',
-        'deposit_rejection': 'Deposit Rejection',
-        'withdrawal_approval': 'Withdrawal Approval',
-        'database_sync': 'Database Sync',
-        'withdrawal_rejection': 'Withdrawal Rejection',
-        'bnsl_approval': 'BNSL Plan Approval',
-        'bnsl_rejection': 'BNSL Plan Rejection',
-        'trade_case_approval': 'Trade Case Approval',
-        'trade_case_rejection': 'Trade Case Rejection',
-        'user_suspension': 'User Suspension',
-        'user_activation': 'User Activation',
-        'vault_deposit_approval': 'Vault Deposit Approval',
-        'vault_deposit_rejection': 'Vault Deposit Rejection',
-        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
-        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
-        'transaction_approval': 'Transaction Approval',
-        'transaction_rejection': 'Transaction Rejection',
-      };
-      
-      await storage.createNotification({
-        userId: admin.id,
-        title: 'Action Verified',
-        message: `${actionLabels[otp.actionType] || otp.actionType} verified successfully${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
-        type: 'success',
-        link: null,
-        read: false,
-      });
-      
-      // If there's a target user, notify them about the pending action
-      if (otpContext.userId && otpContext.userId !== admin.id) {
-        const actionDescriptions: Record<string, string> = {
-          'deposit_approval': 'Your deposit is being processed',
-          'withdrawal_approval': 'Your withdrawal is being processed',
-          'kyc_approval': 'Your KYC verification is being reviewed',
-          'bnsl_approval': 'Your BNSL plan is being reviewed',
-          'trade_case_approval': 'Your trade case is being reviewed',
-        };
-        const description = actionDescriptions[otp.actionType];
-        if (description) {
-          await storage.createNotification({
-            userId: otpContext.userId,
-            title: 'Action in Progress',
-            message: `${description}${otpContext.amountUsd ? ` (${otpContext.amountUsd})` : ''}`,
-            type: 'info',
-            link: null,
-            read: false,
-          });
-        }
-      }
-      
-      // Create audit log with context
-      await storage.createAuditLog({
-        entityType: "admin_action_otp",
-        entityId: otp.id,
-        actionType: "verify",
-        actor: admin.id,
-        actorRole: "admin",
-        details: `OTP verified for ${otp.actionType} on ${otp.targetType}:${otp.targetId}${otpContext.amountUsd ? ` - ${otpContext.amountUsd}` : ''}${otpContext.userMasked ? ` (User: ${otpContext.userMasked})` : ''}`,
-      });
-      
-
-
-      res.json({ 
-        success: true,
-        message: "Verification successful",
-        actionType: otp.actionType,
-        targetId: otp.targetId,
-        targetType: otp.targetType,
-        actionData: otp.actionData,
-      });
-    } catch (error) {
-      console.error("Failed to verify admin action OTP:", error);
-      console.log(JSON.stringify({
-        ts: new Date().toISOString(),
-        level: 'error',
-        action: 'otp.verify.failed',
-        error: error instanceof Error ? error.message : 'Unknown error',
-      }));
-      res.status(500).json({ message: "Failed to verify code" });
-    }
-  });
-
-  // Resend OTP for admin action
-  app.post("/api/admin/action-otp/resend", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { otpId } = req.body;
-      const admin = (req as any).adminUser;
-      
-      if (!otpId) {
-        return res.status(400).json({ message: "Missing required field: otpId" });
-      }
-      
-      const existingOtp = await storage.getAdminActionOtp(otpId);
-      
-      if (!existingOtp) {
-        return res.status(404).json({ message: "Verification request not found" });
-      }
-      
-      // Check if OTP belongs to the current admin
-      if (existingOtp.adminId !== admin.id) {
-        return res.status(403).json({ message: "This verification code is not for your account" });
-      }
-      
-      // Check if already verified
-      if (existingOtp.verified) {
-        return res.status(400).json({ message: "This verification has already been completed" });
-      }
-      
-      // Generate new code and update
-      const newCode = Math.floor(100000 + Math.random() * 900000).toString();
-      const newExpiresAt = new Date(Date.now() + 10 * 60 * 1000);
-      
-      await storage.updateAdminActionOtp(otpId, {
-        code: newCode,
-        expiresAt: newExpiresAt,
-        attempts: 0,
-      });
-      
-      // Send new email with OTP
-      const actionLabels: Record<string, string> = {
-        'kyc_approval': 'KYC Approval',
-        'kyc_rejection': 'KYC Rejection',
-        'deposit_approval': 'Deposit Approval',
-        'deposit_rejection': 'Deposit Rejection',
-        'withdrawal_approval': 'Withdrawal Approval',
-        'database_sync': 'Database Sync',
-        'withdrawal_rejection': 'Withdrawal Rejection',
-        'bnsl_approval': 'BNSL Plan Approval',
-        'bnsl_rejection': 'BNSL Plan Rejection',
-        'trade_case_approval': 'Trade Case Approval',
-        'trade_case_rejection': 'Trade Case Rejection',
-        'user_suspension': 'User Suspension',
-        'user_activation': 'User Activation',
-        'vault_deposit_approval': 'Vault Deposit Approval',
-        'vault_deposit_rejection': 'Vault Deposit Rejection',
-        'vault_withdrawal_approval': 'Vault Withdrawal Approval',
-        'vault_withdrawal_rejection': 'Vault Withdrawal Rejection',
-        'transaction_approval': 'Transaction Approval',
-        'transaction_rejection': 'Transaction Rejection',
-      };
-      
-      const htmlBody = `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-            <h1 style="color: white; margin: 0;">Admin Action Verification</h1>
-          </div>
-          <div style="padding: 30px; background: #ffffff;">
-            <p>Hello ${admin.firstName} ${admin.lastName},</p>
-            <p>You requested a new verification code for: <strong>${actionLabels[existingOtp.actionType] || existingOtp.actionType}</strong></p>
-            <p>Your new verification code is:</p>
-            <div style="background: #f3f4f6; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px;">
-              <span style="font-size: 32px; font-weight: bold; letter-spacing: 8px; color: #f97316;">${newCode}</span>
-            </div>
-            <p>This code expires in <strong>10 minutes</strong>.</p>
-            <p style="color: #6b7280; font-size: 14px;">If you did not initiate this action, please contact security immediately.</p>
-          </div>
-          <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-            <p>Finatrades Admin Portal - Secure Action Verification</p>
-          </div>
-        </div>
-      `;
-      
-      await sendEmailDirect(admin.email, `Finatrades Admin Verification Code - ${actionLabels[existingOtp.actionType] || existingOtp.actionType}`, htmlBody);
-      
-
-
-      res.json({ 
-        message: "New verification code sent to your email",
-        expiresAt: newExpiresAt,
-      });
-    } catch (error) {
-      console.error("Failed to resend admin action OTP:", error);
-      res.status(500).json({ message: "Failed to resend verification code" });
-    }
-  });
-
-  // ============================================
-  // REFERRALS
-  // ============================================
-
-  // Get all referrals (Admin) - PROTECTED
-  app.get("/api/admin/referrals", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
-    try {
-      const referrals = await storage.getAllReferrals();
-
-
-      res.json({ referrals });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get referrals" });
-    }
-  });
-
-  // Get single referral - PROTECTED
-  app.get("/api/admin/referrals/:id", ensureAdminAsync, requirePermission('view_users', 'manage_users'), async (req, res) => {
-    try {
-      const referral = await storage.getReferral(req.params.id);
-      if (!referral) {
-        return res.status(404).json({ message: "Referral not found" });
-      }
-
-
-      res.json({ referral });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get referral" });
-    }
-  });
-
-  // Update referral (Admin) - PROTECTED
-  app.patch("/api/admin/referrals/:id", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
-    try {
-      const referral = await storage.updateReferral(req.params.id, req.body);
-      if (!referral) {
-        return res.status(404).json({ message: "Referral not found" });
-      }
-
-
-      res.json({ referral });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to update referral" });
-    }
-  });
-
-
-  // ============================================
-  // USER REFERRAL DASHBOARD ENDPOINTS
-  // ============================================
-
-  // GET /api/referrals/dashboard - Get user's referral dashboard data
-  app.get("/api/referrals/dashboard", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session!.userId;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Get all referrals created by this user
-      const userReferrals = await storage.getUserReferrals(userId);
-
-      // Find the user's active referral code (the one they share - no referredId)
-      let referralCode = userReferrals.find(r => r.status === 'Active' && !r.referredId)?.referralCode;
-
-      // If no referral code, try to find any referral code
-      if (!referralCode) {
-        const codeReferral = userReferrals.find(r => r.referralCode);
-        referralCode = codeReferral?.referralCode || null;
-      }
-
-      // Get referral settings from platform config
-      const configs = await storage.getAllPlatformConfigs();
-      const configMap: Record<string, string> = {};
-      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
-
-      const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
-
-      // Calculate stats - only count referrals that have a referredId (actual referrals)
-      const actualReferrals = userReferrals.filter(r => r.referredId);
-      const totalReferrals = actualReferrals.length;
-      const activeReferrals = actualReferrals.filter(r => r.status === 'Active').length;
-      const completedReferrals = actualReferrals.filter(r => r.status === 'Completed');
-      const pendingReferrals = actualReferrals.filter(r => r.status === 'Pending').length;
-      
-      // Calculate total bonus earned (sum of rewardAmount for completed referrals)
-      const totalBonusEarned = completedReferrals.reduce((sum, r) => sum + parseFloat(r.rewardAmount || '0'), 0);
-
-      // Get recent referrals (last 5) with masked data
-      const recentReferrals = await Promise.all(
-        actualReferrals.slice(0, 5).map(async (r) => {
-          let refereeName = 'Unknown';
-          let refereeEmail = '';
-          
-          if (r.referredId) {
-            const referee = await storage.getUser(r.referredId);
-            if (referee) {
-              // Mask name: show first 2 chars + ***
-              const firstName = referee.firstName || '';
-              refereeName = firstName.length > 2 ? firstName.substring(0, 2) + '***' : firstName + '***';
-              // Mask email: show first 3 chars + *** + domain
-              const email = referee.email || '';
-              const atIndex = email.indexOf('@');
-              if (atIndex > 3) {
-                refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
-              } else {
-                refereeEmail = '***' + email.substring(atIndex);
-              }
-            }
-          } else if (r.referredEmail) {
-            const email = r.referredEmail;
-            const atIndex = email.indexOf('@');
-            if (atIndex > 3) {
-              refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
-            } else {
-              refereeEmail = '***' + email.substring(atIndex);
-            }
-          }
-
-          return {
-            id: r.id,
-            refereeName,
-            refereeEmail,
-            status: r.status,
-            bonusEarned: parseFloat(r.rewardAmount || '0'),
-            dateJoined: r.createdAt,
-            completedAt: r.completedAt,
-          };
-        })
-      );
-
-      res.json({
-        referralCode,
-        stats: {
-          totalReferrals,
-          activeReferrals,
-          pendingReferrals,
-          completedReferrals: completedReferrals.length,
-          totalBonusEarned,
-          bonusPerReferral: referrerBonusUsd,
-        },
-        recentReferrals,
-      });
-    } catch (error) {
-      console.error('[Referral Dashboard Error]', error);
-      res.status(500).json({ message: "Failed to get referral dashboard" });
-    }
-  });
-
-  // GET /api/referrals/my-referrals - List users they have referred with pagination
-  app.get("/api/referrals/my-referrals", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session!.userId;
-      const page = parseInt(req.query.page as string) || 1;
-      const limit = Math.min(parseInt(req.query.limit as string) || 10, 50); // Max 50 per page
-      const status = req.query.status as string | undefined;
-
-      // Get all referrals created by this user that have a referredId
-      let userReferrals = await storage.getUserReferrals(userId);
-      userReferrals = userReferrals.filter(r => r.referredId);
-
-      // Filter by status if provided
-      if (status && ['Pending', 'Active', 'Completed', 'Expired', 'Cancelled'].includes(status)) {
-        userReferrals = userReferrals.filter(r => r.status === status);
-      }
-
-      const totalCount = userReferrals.length;
-      const totalPages = Math.ceil(totalCount / limit);
-      const offset = (page - 1) * limit;
-      const paginatedReferrals = userReferrals.slice(offset, offset + limit);
-
-      // Map referrals with masked data and referee info
-      const referralsWithDetails = await Promise.all(
-        paginatedReferrals.map(async (r) => {
-          let refereeName = 'Unknown';
-          let refereeEmail = '';
-          let dateJoined = r.createdAt;
-
-          if (r.referredId) {
-            const referee = await storage.getUser(r.referredId);
-            if (referee) {
-              // Mask name: show first 2 chars + ***
-              const firstName = referee.firstName || '';
-              const lastName = referee.lastName || '';
-              refereeName = (firstName.length > 2 ? firstName.substring(0, 2) : firstName) + '*** ' + 
-                           (lastName.length > 1 ? lastName.substring(0, 1) : '') + '***';
-              // Mask email: show first 3 chars + *** + domain
-              const email = referee.email || '';
-              const atIndex = email.indexOf('@');
-              if (atIndex > 3) {
-                refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
-              } else {
-                refereeEmail = '***' + email.substring(atIndex);
-              }
-              dateJoined = referee.createdAt;
-            }
-          } else if (r.referredEmail) {
-            const email = r.referredEmail;
-            const atIndex = email.indexOf('@');
-            if (atIndex > 3) {
-              refereeEmail = email.substring(0, 3) + '***' + email.substring(atIndex);
-            } else {
-              refereeEmail = '***' + email.substring(atIndex);
-            }
-          }
-
-          return {
-            id: r.id,
-            refereeName,
-            refereeEmail,
-            status: r.status,
-            bonusEarned: parseFloat(r.rewardAmount || '0'),
-            goldWalletType: r.goldWalletType,
-            dateJoined,
-            completedAt: r.completedAt,
-          };
-        })
-      );
-
-      res.json({
-        referrals: referralsWithDetails,
-        pagination: {
-          page,
-          limit,
-          totalCount,
-          totalPages,
-          hasMore: page < totalPages,
-        },
-      });
-    } catch (error) {
-      console.error('[My Referrals Error]', error);
-      res.status(500).json({ message: "Failed to get referrals" });
-    }
-  });
-
-  // POST /api/referrals/generate-code - Generate or regenerate referral code
-  app.post("/api/referrals/generate-code", ensureAuthenticated, async (req, res) => {
-    try {
-      const userId = req.session!.userId;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Get all existing referrals for this user
-      const userReferrals = await storage.getUserReferrals(userId);
-
-      // Check if user already has an active referral code (without referredId)
-      const existingActiveCode = userReferrals.find(r => r.status === 'Active' && !r.referredId);
-      if (existingActiveCode) {
-        return res.json({
-          referralCode: existingActiveCode.referralCode,
-          message: "Existing referral code returned",
-          isNew: false,
-        });
-      }
-
-      // Get max referrals setting
-      const configs = await storage.getAllPlatformConfigs();
-      const configMap: Record<string, string> = {};
-      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
-      const maxReferrals = parseInt(configMap['max_referrals_per_user'] || '50');
-
-      // Check if user has reached max referrals
-      const totalReferralsUsed = userReferrals.filter(r => r.referredId).length;
-      if (totalReferralsUsed >= maxReferrals) {
-        return res.status(400).json({ 
-          message: `Maximum referral limit (${maxReferrals}) reached` 
-        });
-      }
-
-      // Generate unique referral code
-      const namePrefix = user.firstName?.substring(0, 3).toUpperCase() || 'FIN';
-      const code = `REF-${namePrefix}${Date.now().toString(36).toUpperCase().slice(-4)}`;
-
-      // Create new referral entry with the code
-      const newReferral = await storage.createReferral({
-        referrerId: userId,
-        referralCode: code,
-        status: 'Active',
-        goldWalletType: 'LGPW',
-      });
-
-      res.json({
-        referralCode: newReferral.referralCode,
-        message: "New referral code generated",
-        isNew: true,
-      });
-    } catch (error) {
-      console.error('[Generate Referral Code Error]', error);
-      res.status(500).json({ message: "Failed to generate referral code" });
-    }
-  });
-  // Get user's referrals
-  app.get("/api/referrals/:userId", async (req, res) => {
-    try {
-      const referrals = await storage.getUserReferrals(req.params.userId);
-
-
-      res.json({ referrals });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get referrals" });
-    }
-  });
-
-  // Get user's referral stats and code (creates one if doesn't exist)
-  app.get("/api/referrals/:userId/stats", ensureOwnerOrAdmin, async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Get all referrals created by this user
-      const userReferrals = await storage.getUserReferrals(userId);
-      
-      // Find the user's active referral code (the one they share)
-      let activeReferral = userReferrals.find(r => r.status === 'Active' && !r.referredId);
-      
-      // If no active code exists, create one
-      if (!activeReferral) {
-        const code = `REF-${user.firstName?.substring(0, 3).toUpperCase() || 'FIN'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
-        activeReferral = await storage.createReferral({
-          referrerId: userId,
-          referralCode: code,
-          status: 'Active',
-        });
-      }
-
-      // Get referral settings from platform config
-      const configs = await storage.getAllPlatformConfigs();
-      const configMap: Record<string, string> = {};
-      configs.forEach(c => { configMap[c.configKey] = c.configValue; });
-      
-      const referrerBonusUsd = parseFloat(configMap['referrer_bonus_usd'] || '10');
-      const refereeBonusUsd = parseFloat(configMap['referee_bonus_usd'] || '5');
-      const maxReferrals = parseInt(configMap['max_referrals_per_user'] || '50');
-
-      // Calculate stats
-      const completedReferrals = userReferrals.filter(r => r.status === 'Completed');
-      const totalReferrals = userReferrals.filter(r => r.referredId).length;
-      const totalEarnedUsd = completedReferrals.reduce((sum, r) => sum + parseFloat(r.rewardAmount || '0'), 0);
-
-      // Get current gold price to convert USD reward to grams
-      const goldPricePerGram = await getGoldPricePerGram();
-      const rewardPerReferralGrams = referrerBonusUsd / goldPricePerGram;
-      const totalEarnedGrams = totalEarnedUsd / goldPricePerGram;
-
-
-
-        return res.json({
-        referralCode: activeReferral.referralCode,
-        stats: {
-          totalReferrals,
-          completedReferrals: completedReferrals.length,
-          totalEarnedUsd,
-          totalEarnedGrams,
-          rewardPerReferralUsd: referrerBonusUsd,
-          rewardPerReferralGrams,
-          refereeBonusUsd,
-          maxReferrals,
-          remainingReferrals: maxReferrals - totalReferrals,
-        },
-        referrals: userReferrals.filter(r => r.referredId).map(r => ({
-          id: r.id,
-          referredEmail: r.referredEmail,
-          status: r.status,
-          rewardAmount: r.rewardAmount,
-          createdAt: r.createdAt,
-          completedAt: r.completedAt,
-        })),
-      });
-    } catch (error) {
-      console.error('[Referral Stats Error]', error);
-      res.status(500).json({ message: "Failed to get referral stats" });
-    }
-  });
-
-  // Create referral code for user
-  app.post("/api/referrals", async (req, res) => {
-    try {
-      const { referrerId } = req.body;
-      const user = await storage.getUser(referrerId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      // Generate unique referral code
-      const code = `REF-${user.firstName?.substring(0, 3).toUpperCase() || 'FIN'}${Date.now().toString(36).toUpperCase().slice(-4)}`;
-      
-      const referral = await storage.createReferral({
-        referrerId,
-        referralCode: code,
-        status: 'Active',
-      });
-      
-
-
-      res.json({ referral });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to create referral" });
-    }
-  });
-
-  // ============================================
-  // USER NOTIFICATIONS
-  // ============================================
-
-  // Get user notifications
   app.get("/api/users/:userId/notifications", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const { userId } = req.params;
       const notifications = await storage.getUserNotifications(userId);
 
 
-      res.json({ notifications });
+      return res.json({ notifications });
     } catch (error) {
       console.error('[Notifications Error]', error);
-      res.status(500).json({ message: "Failed to get notifications" });
+      return res.status(500).json({ message: "Failed to get notifications" });
     }
   });
 
@@ -23679,10 +14366,10 @@ export async function registerRoutes(
       const preferences = await storage.getOrCreateUserPreferences(req.params.userId);
 
 
-      res.json({ preferences });
+      return res.json({ preferences });
     } catch (error) {
       console.error('[Preferences Error]', error);
-      res.status(500).json({ message: "Failed to get preferences" });
+      return res.status(500).json({ message: "Failed to get preferences" });
     }
   });
 
@@ -23703,10 +14390,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ preferences, message: "Settings saved successfully" });
+      return res.json({ preferences, message: "Settings saved successfully" });
     } catch (error) {
       console.error('[Preferences Error]', error);
-      res.status(500).json({ message: "Failed to save preferences" });
+      return res.status(500).json({ message: "Failed to save preferences" });
     }
   });
 
@@ -23729,10 +14416,10 @@ export async function registerRoutes(
       );
 
 
-      res.json({ users: usersWithPrefs });
+      return res.json({ users: usersWithPrefs });
     } catch (error) {
       console.error('[Admin Preferences Error]', error);
-      res.status(500).json({ message: "Failed to get user preferences" });
+      return res.status(500).json({ message: "Failed to get user preferences" });
     }
   });
 
@@ -23747,100 +14434,14 @@ export async function registerRoutes(
       
 
 
-      res.json({ preferences, message: "User preferences updated" });
+      return res.json({ preferences, message: "User preferences updated" });
     } catch (error) {
       console.error('[Admin Preferences Error]', error);
-      res.status(500).json({ message: "Failed to update user preferences" });
+      return res.status(500).json({ message: "Failed to update user preferences" });
     }
   });
 
   // Admin: Repair corrupted wallet balance by recalculating from transactions
-  app.post("/api/admin/users/:userId/repair-wallet", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
-    try {
-      const { userId } = req.params;
-      const { newGoldGrams } = req.body;
-      
-      // Get user's wallet
-      const wallet = await storage.getWallet(userId);
-      if (!wallet) {
-        return res.status(404).json({ message: "Wallet not found for user" });
-      }
-      
-      // Get current value (for logging)
-      const currentValue = wallet.goldGrams;
-      const isCorrupted = currentValue === null || currentValue === undefined || 
-                          (typeof currentValue === 'string' && currentValue === 'NaN') ||
-                          (typeof currentValue === 'number' && isNaN(currentValue));
-      
-      // If newGoldGrams is provided, use it; otherwise calculate from transactions
-      let calculatedBalance = 0;
-      
-      if (newGoldGrams !== undefined && newGoldGrams !== null) {
-        calculatedBalance = parseFloat(newGoldGrams);
-      } else {
-        // Recalculate from completed transactions
-        const transactions = await storage.getUserTransactions(userId);
-        
-        for (const tx of transactions) {
-          if (tx.status !== 'Completed') continue;
-          
-          const goldAmount = parseFloat(tx.amountGold || '0');
-          if (isNaN(goldAmount)) continue;
-          
-          switch (tx.type) {
-            case 'Buy':
-            case 'Receive':
-            case 'Deposit':
-              calculatedBalance += goldAmount;
-              break;
-            case 'Sell':
-            case 'Send':
-            case 'Withdrawal':
-              calculatedBalance -= goldAmount;
-              break;
-          }
-        }
-      }
-      
-      // Ensure non-negative
-      calculatedBalance = Math.max(0, calculatedBalance);
-      
-      // Update the wallet
-      await storage.updateWallet(wallet.id, { goldGrams: calculatedBalance.toFixed(6) });
-      
-      // Log the repair action
-      await storage.createAuditLog({
-        actor: req.session?.userId || 'system',
-        action: 'wallet_repair',
-        entityType: 'wallet',
-        entityId: wallet.id,
-        details: {
-          userId,
-          previousValue: currentValue,
-          newValue: calculatedBalance.toFixed(6),
-          wasCorrupted: isCorrupted,
-          method: newGoldGrams !== undefined ? 'manual' : 'calculated'
-        }
-      });
-      
-      console.log(`[Wallet Repair] User ${userId}: ${currentValue} -> ${calculatedBalance.toFixed(6)}g`);
-      
-
-
-      res.json({ 
-        success: true, 
-        message: "Wallet repaired successfully",
-        previousValue: currentValue,
-        newValue: calculatedBalance.toFixed(6),
-        wasCorrupted: isCorrupted
-      });
-    } catch (error) {
-      console.error('[Wallet Repair Error]', error);
-      res.status(500).json({ message: "Failed to repair wallet" });
-    }
-  });
-
-  // Mark notification as read - with ownership verification
   app.post("/api/notifications/:notificationId/read", async (req, res) => {
     try {
       const { notificationId } = req.params;
@@ -23857,9 +14458,9 @@ export async function registerRoutes(
       await storage.markNotificationRead(notificationId);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to mark notification as read" });
+      return res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 
@@ -23870,9 +14471,9 @@ export async function registerRoutes(
       await storage.markAllNotificationsRead(userId);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to mark all as read" });
+      return res.status(500).json({ message: "Failed to mark all as read" });
     }
   });
 
@@ -23881,10 +14482,10 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const emailLogs = await storage.getEmailLogsByUser(userId);
-      res.json({ emailLogs });
+      return res.json({ emailLogs });
     } catch (error) {
       console.error('[Email Logs Error]', error);
-      res.status(500).json({ message: "Failed to get email history" });
+      return res.status(500).json({ message: "Failed to get email history" });
     }
   });
 
@@ -23905,9 +14506,9 @@ export async function registerRoutes(
       await storage.deleteNotification(notificationId);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete notification" });
+      return res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 
@@ -23965,9 +14566,9 @@ export async function registerRoutes(
       
 
 
-      res.json({ logs: enrichedLogs });
+      return res.json({ logs: enrichedLogs });
     } catch (error) {
-      res.status(500).json({ message: "Failed to get audit logs" });
+      return res.status(500).json({ message: "Failed to get audit logs" });
     }
   });
 
@@ -23976,1516 +14577,14 @@ export async function registerRoutes(
   // ============================================
 
   // Get all crypto wallet configs (admin)
-  app.get("/api/admin/crypto-wallets", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const wallets = await storage.getAllCryptoWalletConfigs();
-
-
-      res.json({ wallets });
-    } catch (error) {
-      console.error("Failed to get crypto wallets:", error);
-      res.status(500).json({ message: "Failed to get crypto wallets" });
-    }
-  });
-
-  // Create crypto wallet config (admin)
-  app.post("/api/admin/crypto-wallets", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { network, networkLabel, walletAddress, memo, instructions, qrCodeImage, isActive, displayOrder } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      const wallet = await storage.createCryptoWalletConfig({
-        network,
-        networkLabel,
-        walletAddress,
-        memo: memo || null,
-        instructions: instructions || null,
-        qrCodeImage: qrCodeImage || null,
-        isActive: isActive !== false,
-        displayOrder: displayOrder || 0,
-      });
-      
-      await storage.createAuditLog({
-        entityType: "crypto_wallet_config",
-        entityId: wallet.id,
-        actionType: "create",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Created crypto wallet config: ${networkLabel}`,
-      });
-      
-
-
-      res.json({ wallet });
-    } catch (error) {
-      console.error("Failed to create crypto wallet:", error);
-      res.status(500).json({ message: "Failed to create crypto wallet" });
-    }
-  });
-
-  // Update crypto wallet config (admin)
-  app.patch("/api/admin/crypto-wallets/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const updates = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      const wallet = await storage.updateCryptoWalletConfig(id, updates);
-      if (!wallet) {
-        return res.status(404).json({ message: "Crypto wallet not found" });
-      }
-      
-      await storage.createAuditLog({
-        entityType: "crypto_wallet_config",
-        entityId: wallet.id,
-        actionType: "update",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Updated crypto wallet config: ${wallet.networkLabel}`,
-      });
-      
-
-
-      res.json({ wallet });
-    } catch (error) {
-      console.error("Failed to update crypto wallet:", error);
-      res.status(500).json({ message: "Failed to update crypto wallet" });
-    }
-  });
-
-  // Delete crypto wallet config (admin)
-  app.delete("/api/admin/crypto-wallets/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const adminUser = (req as any).adminUser;
-      
-      const wallet = await storage.getCryptoWalletConfig(id);
-      if (!wallet) {
-        return res.status(404).json({ message: "Crypto wallet not found" });
-      }
-      
-      const success = await storage.deleteCryptoWalletConfig(id);
-      if (!success) {
-        return res.status(400).json({ message: "Failed to delete crypto wallet" });
-      }
-      
-      await storage.createAuditLog({
-        entityType: "crypto_wallet_config",
-        entityId: id,
-        actionType: "delete",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Deleted crypto wallet config: ${wallet.networkLabel}`,
-      });
-      
-
-
-      res.json({ success: true });
-    } catch (error) {
-      console.error("Failed to delete crypto wallet:", error);
-      res.status(500).json({ message: "Failed to delete crypto wallet" });
-    }
-  });
-
-  // Get active crypto wallets (public - for payment options)
-  app.get("/api/crypto-wallets/active", async (req, res) => {
-    try {
-      const wallets = await storage.getActiveCryptoWalletConfigs();
-
-
-      res.json({ wallets });
-    } catch (error) {
-      console.error("Failed to get active crypto wallets:", error);
-      res.status(500).json({ message: "Failed to get crypto wallets" });
-    }
-  });
-
-  // ============================================
-  // CRYPTO PAYMENT REQUESTS (Manual payments)
-  // ============================================
-
-  // Create crypto payment request (user initiates payment)
-  // UNIFIED PAYMENT ARCHITECTURE: Creates deposit_request with paymentMethod='Crypto'
-  app.post("/api/crypto-payments", async (req, res) => {
-    try {
-      const { userId, walletConfigId, amountUsd, goldGrams, goldPriceAtTime, cryptoAmount } = req.body;
-      
-      if (!userId || !walletConfigId || !amountUsd || !goldGrams) {
-        return res.status(400).json({ message: "Missing required fields" });
-      }
-      
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      const walletConfig = await storage.getCryptoWalletConfig(walletConfigId);
-      if (!walletConfig || !walletConfig.isActive) {
-        return res.status(400).json({ message: "Invalid or inactive crypto wallet" });
-      }
-
-      // Server-side gold price verification (±2%). Fail-closed: 503 if live price unavailable.
-      const { livePrice: livePriceForCrypto, priceToUse: verifiedCryptoPrice, valid: cryptoPriceValid, unavailable: cryptoPriceUnavailable } =
-        await validateAndFetchGoldPrice(parseFloat(String(goldPriceAtTime)));
-      if (cryptoPriceUnavailable) {
-        return res.status(503).json({ message: 'Live gold price is temporarily unavailable. Please try again shortly.' });
-      }
-      if (!cryptoPriceValid) {
-        return res.status(409).json({
-          message: 'Gold price has changed. Please refresh and try again.',
-          livePrice: livePriceForCrypto.toFixed(2),
-        });
-      }
-      // Recalculate goldGrams server-side from USD amount and live price
-      const verifiedGoldGrams = verifiedCryptoPrice > 0
-        ? (parseFloat(String(amountUsd)) / verifiedCryptoPrice).toFixed(6)
-        : String(goldGrams);
-
-      // Set expiry to 24 hours from now
-      const expiresAt = new Date();
-      expiresAt.setHours(expiresAt.getHours() + 24);
-      
-      // Create legacy crypto payment request for backward compatibility
-      const paymentRequest = await storage.createCryptoPaymentRequest({
-        userId,
-        walletConfigId,
-        amountUsd,
-        goldGrams: verifiedGoldGrams,
-        goldPriceAtTime: verifiedCryptoPrice.toFixed(6),
-        cryptoAmount: cryptoAmount || null,
-        status: 'Pending',
-        expiresAt,
-      });
-      
-      // UNIFIED ARCHITECTURE: Also create deposit_request with paymentMethod='Crypto'
-      // This allows all payments to flow through the same admin approval queue
-      const referenceNumber = `CRYPTO-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-      const depositRequest = await storage.createDepositRequest({
-        userId,
-        referenceNumber,
-        amountUsd: amountUsd.toString(),
-        currency: 'USD',
-        paymentMethod: 'Crypto',
-        expectedGoldGrams: verifiedGoldGrams.toString(),
-        priceSnapshotUsdPerGram: verifiedCryptoPrice.toFixed(6),
-        notes: `Crypto payment via ${walletConfig.networkLabel || walletConfig.cryptoCurrency}`,
-        cryptoNetwork: walletConfig.networkLabel || walletConfig.cryptoCurrency,
-        cryptoWalletConfigId: walletConfigId,
-        cryptoAmount: cryptoAmount?.toString() || null,
-        goldWalletType: 'LGPW',
-        status: 'Pending',
-      });
-      
-      await storage.createAuditLog({
-        entityType: "deposit_request",
-        entityId: depositRequest.id,
-        actionType: "create",
-        actor: userId,
-        actorRole: "user",
-        details: `Created unified crypto deposit request for ${amountUsd} (${goldGrams}g gold) via ${walletConfig.networkLabel || walletConfig.cryptoCurrency}`,
-      });
-      
-      // Send notification to user
-      await storage.createNotification({
-        userId,
-        title: "Crypto Deposit Request Created",
-        message: `Your crypto deposit request for ${amountUsd} has been created. Please complete the transfer within 24 hours.`,
-        type: "transaction",
-        read: false,
-      });
-      
-      // Return both for compatibility - frontend may need legacy paymentRequest.id for proof submission
-
-
-      res.json({ paymentRequest, depositRequest, walletConfig });
-    } catch (error) {
-      console.error("Failed to create crypto payment request:", error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Request Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(500).json({ message: "Failed to create payment request" });
-    }
-  });
-
-  // Submit payment proof (user uploads tx hash or screenshot)
-  // UNIFIED ARCHITECTURE: Updates both crypto_payment_request AND deposit_request
-  app.patch("/api/crypto-payments/:id/submit-proof", async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { transactionHash, proofImageUrl } = req.body;
-      
-      const paymentRequest = await storage.getCryptoPaymentRequest(id);
-      if (!paymentRequest) {
-        return res.status(404).json({ message: "Payment request not found" });
-      }
-      
-      if (paymentRequest.status !== 'Pending') {
-        return res.status(400).json({ message: "Payment request is not pending" });
-      }
-      
-      // Update legacy crypto_payment_request
-      const updated = await storage.updateCryptoPaymentRequest(id, {
-        transactionHash: transactionHash || paymentRequest.transactionHash,
-        proofImageUrl: proofImageUrl || paymentRequest.proofImageUrl,
-        status: 'Under Review',
-      });
-      
-      // UNIFIED ARCHITECTURE: Also update corresponding deposit_request
-      // Find the deposit request by userId, paymentMethod='Crypto', and matching amount
-      const userDepositRequests = await storage.getUserDepositRequests(paymentRequest.userId);
-      const matchingDepositReq = userDepositRequests.find(dr => 
-        dr.paymentMethod === 'Crypto' && 
-        dr.status === 'Pending' &&
-        dr.cryptoWalletConfigId === paymentRequest.walletConfigId &&
-        parseFloat(dr.amountUsd || '0') === parseFloat(paymentRequest.amountUsd || '0')
-      );
-      
-      if (matchingDepositReq) {
-        await storage.updateDepositRequest(matchingDepositReq.id, {
-          cryptoTransactionHash: transactionHash || null,
-          proofOfPayment: proofImageUrl || null,
-          status: 'Under Review' as const,
-        });
-      }
-      
-      await storage.createAuditLog({
-        entityType: "crypto_payment_request",
-        entityId: id,
-        actionType: "update",
-        actor: paymentRequest.userId,
-        actorRole: "user",
-        details: `Submitted payment proof: ${transactionHash || 'screenshot'}`,
-      });
-      
-      // Notify user
-      await storage.createNotification({
-        userId: paymentRequest.userId,
-        title: "Payment Proof Submitted",
-        message: "Your payment proof has been submitted and is under review.",
-        type: "transaction",
-        read: false,
-      });
-      
-
-
-      res.json({ paymentRequest: updated });
-    } catch (error) {
-      console.error("Failed to submit payment proof:", error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Payment Proof Submission Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(500).json({ message: "Failed to submit payment proof" });
-    }
-  });
-
-  // Get user's crypto payment requests
-  app.get("/api/crypto-payments/user/:userId", async (req, res) => {
-    try {
-      const requests = await storage.getUserCryptoPaymentRequests(req.params.userId);
-      
-      // Enrich with network labels
-      const enrichedRequests = await Promise.all(
-        requests.map(async (r) => {
-          const walletConfig = await storage.getCryptoWalletConfig(r.walletConfigId);
-          return {
-            ...r,
-            networkLabel: walletConfig?.networkLabel || null,
-          };
-        })
-      );
-      
-
-
-      res.json({ requests: enrichedRequests });
-    } catch (error) {
-      console.error("Failed to get user crypto payments:", error);
-      res.status(500).json({ message: "Failed to get payment requests" });
-    }
-  });
-
-  // Get single crypto payment request
-  app.get("/api/crypto-payments/:id", async (req, res) => {
-    try {
-      const request = await storage.getCryptoPaymentRequest(req.params.id);
-      if (!request) {
-        return res.status(404).json({ message: "Payment request not found" });
-      }
-      
-      // Get wallet config details
-      const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
-      
-
-
-      res.json({ request, walletConfig });
-    } catch (error) {
-      console.error("Failed to get crypto payment:", error);
-      res.status(500).json({ message: "Failed to get payment request" });
-    }
-  });
-
-  // Admin: Get all crypto payment requests
-  app.get("/api/admin/crypto-payments", ensureAdminAsync, requirePermission('view_transactions', 'manage_deposits'), async (req, res) => {
-    try {
-      const { status } = req.query;
-      let requests: any[] = [];
-      
-      try {
-        if (status && typeof status === 'string') {
-          requests = await storage.getCryptoPaymentRequestsByStatus(status).catch(() => []);
-        } else {
-          requests = await storage.getAllCryptoPaymentRequests().catch(() => []);
-        }
-      } catch (e) { console.error('crypto-payments fetch failed:', e); }
-      
-      // Enrich with user and wallet info
-      const enrichedRequests = await Promise.all(requests.map(async (request) => {
-        const user = await storage.getUser(request.userId);
-        const walletConfig = await storage.getCryptoWalletConfig(request.walletConfigId);
-        return {
-          ...request,
-          user: user ? { id: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName } : null,
-          walletConfig,
-        };
-      }));
-      
-
-
-      res.json({ requests: enrichedRequests });
-    } catch (error) {
-      console.error("Failed to get admin crypto payments:", error);
-      res.status(500).json({ message: "Failed to get payment requests" });
-    }
-  });
-
-  // Admin: Approve crypto payment
-  // STREAMLINED CRYPTO APPROVAL: Single step with pricing mode + vault + auto-certificate + wallet credit
-  app.patch("/api/admin/crypto-payments/:id/approve", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    console.log('[DEBUG] Streamlined crypto approval - Route entered, id:', req.params.id);
-    try {
-      const { id } = req.params;
-      const { 
-        reviewNotes, 
-        pricingMode = 'LIVE',  // 'LIVE' or 'MANUAL'
-        manualGoldPrice,       // Required if MANUAL
-        manualGoldGrams,       // Required if MANUAL  
-        vaultLocation = 'Wingold & Metals DMCC',
-        wingoldOrderId,
-      } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      console.log('[DEBUG] Crypto approval params:', { pricingMode, manualGoldPrice, manualGoldGrams, vaultLocation });
-      
-      const paymentRequest = await storage.getCryptoPaymentRequest(id);
-      if (!paymentRequest) {
-        return res.status(404).json({ message: "Payment request not found" });
-      }
-      
-      if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
-        return res.status(400).json({ message: "Payment request cannot be approved in current status" });
-      }
-      
-      const wallet = await storage.getWallet(paymentRequest.userId);
-      if (!wallet) {
-        return res.status(400).json({ message: "User wallet not found" });
-      }
-      
-      const usdAmount = parseFloat(paymentRequest.amountUsd || '0');
-      let goldPrice: number;
-      let goldGrams: number;
-      
-      // Determine gold price and grams based on pricing mode
-      if (pricingMode === 'MANUAL') {
-        if (!manualGoldPrice || !manualGoldGrams) {
-          return res.status(400).json({ message: "Manual mode requires both gold price and gold grams" });
-        }
-        goldPrice = parseFloat(manualGoldPrice);
-        goldGrams = parseFloat(manualGoldGrams);
-      } else {
-        // LIVE mode - fetch current gold price with defensive error handling
-        try {
-          const { getGoldPrice } = await import('./gold-price-service');
-          const livePrice = await getGoldPrice();
-          if (!livePrice || !livePrice.pricePerGram || livePrice.pricePerGram <= 0) {
-            return res.status(500).json({ message: "Failed to fetch live gold price. Please try manual mode." });
-          }
-          goldPrice = livePrice.pricePerGram;
-          goldGrams = usdAmount / goldPrice;
-        } catch (priceError) {
-          console.error('[DEBUG] LIVE price fetch failed:', priceError);
-          return res.status(500).json({ message: "Failed to fetch live gold price. Please use manual mode." });
-        }
-      }
-      
-      console.log('[DEBUG] Final values:', { pricingMode, goldPrice, goldGrams, usdAmount });
-      
-      // GOLDEN RULE VALIDATION: Ensure valid allocation before proceeding
-      if (!goldPrice || isNaN(goldPrice) || goldPrice <= 0) {
-        return res.status(400).json({ message: "Invalid gold price. Cannot proceed with allocation." });
-      }
-      if (!goldGrams || isNaN(goldGrams) || goldGrams <= 0) {
-        return res.status(400).json({ message: "Invalid gold grams. Gold allocation must be greater than 0." });
-      }
-      // Enforce Golden Rule tolerance check
-      const tolerance = 0.0001; // 0.0001g tolerance
-      if (goldGrams < tolerance) {
-        return res.status(400).json({ message: `Golden Rule violation: goldGrams (${goldGrams.toFixed(6)}g) must be > ${tolerance}g` });
-      }
-      console.log('[DEBUG] Golden Rule validation passed:', { goldPrice, goldGrams });
-      
-      const tallyUser = await storage.getUser(paymentRequest.userId);
-      const walletType = (paymentRequest as any).goldWalletType || 'LGPW';
-
-      // Fetch platform fee configuration
-      const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
-      const feePercent = feeConfig ? parseFloat(feeConfig.configValue || '1') : 1; // Default 1%
-      const feeAmount = (usdAmount * feePercent) / 100;
-      const netAmount = usdAmount - feeAmount;
-      const adminEarnedProfit = feeAmount; // Fee is the admin's profit
-
-      console.log('[DEBUG] Fee calculation:', { usdAmount, feePercent, feeAmount, netAmount, adminEarnedProfit });
-      
-      // Generate unique UTT transaction ID
-      const year = new Date().getFullYear();
-      const existingCount = await db.select({ count: sql<number>`count(*)` })
-        .from(unifiedTallyTransactions)
-        .where(sql`EXTRACT(YEAR FROM created_at) = ${year}`);
-      const seqNum = (parseInt(existingCount[0]?.count as any) || 0) + 1;
-      const txnId = `UTT-${year}-${String(seqNum).padStart(4, '0')}`;
-      
-      // 1. Generate Physical Storage Certificate
-      let storageCert;
-      try {
-        storageCert = await storage.createCertificate({
-          userId: paymentRequest.userId,
-          type: 'Physical Storage',
-          certificateNumber: `SSC-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          status: 'Active',
-          goldGrams: goldGrams.toString(),
-          vaultLocation: vaultLocation,
-          goldPriceUsdPerGram: goldPrice.toString(),
-          issuer: vaultLocation || 'Wingold & Metals DMCC',
-        });
-      } catch (certError) {
-        console.error('[DEBUG] Certificate creation failed:', certError);
-        return res.status(500).json({ message: "Failed to generate Physical Storage Certificate. Allocation aborted." });
-      }
-      
-      // GOLDEN RULE: Verify certificate exists before wallet credit
-      if (!storageCert || !storageCert.certificateNumber) {
-        console.error('[DEBUG] Golden Rule violation: Certificate missing');
-        return res.status(500).json({ message: "Golden Rule violation: Storage certificate required before wallet credit." });
-      }
-      console.log('[DEBUG] Generated Physical Storage Certificate:', storageCert.id, storageCert.certificateNumber);
-      
-      // 1b. Generate Digital Ownership Certificate (Finatrades Finance SA) — linked to Physical Storage cert
-      let digitalOwnershipCert;
-      try {
-        digitalOwnershipCert = await storage.createCertificate({
-          userId: paymentRequest.userId,
-          type: 'Digital Ownership',
-          certificateNumber: `DOC-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`,
-          status: 'Active',
-          goldGrams: goldGrams.toString(),
-          vaultLocation: vaultLocation,
-          goldPriceUsdPerGram: goldPrice.toString(),
-          totalValueUsd: (goldGrams * goldPrice).toFixed(2),
-          issuer: 'Finatrades Finance SA',
-          relatedCertificateId: storageCert.id,
-        });
-        console.log('[DEBUG] Generated Digital Ownership Certificate:', digitalOwnershipCert.id, digitalOwnershipCert.certificateNumber);
-      } catch (docError) {
-        console.error('[DEBUG] Digital Ownership Certificate creation failed (non-fatal):', docError);
-      }
-      
-      // 2. Credit user wallet (GOLDEN RULE: certificate verified above)
-      const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
-      const newGoldGrams = currentGoldGrams + goldGrams;
-      await storage.updateWallet(wallet.id, { goldGrams: newGoldGrams.toString() });
-      
-      // 3. Create transaction record
-      const transaction = await storage.createTransaction({
-        userId: paymentRequest.userId,
-        type: 'Deposit',
-        status: 'Completed',
-        amountGold: goldGrams.toString(),
-        amountUsd: paymentRequest.amountUsd,
-        goldPriceUsdPerGram: goldPrice.toString(),
-          issuer: vaultLocation || 'Wingold & Metals DMCC',
-        description: `Crypto deposit - $${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g)`,
-        sourceModule: 'finapay',
-        goldWalletType: walletType,
-      });
-      
-      // 4. Record vault ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: paymentRequest.userId,
-        action: 'Deposit',
-        goldGrams: goldGrams,
-        goldPriceUsdPerGram: goldPrice,
-        fromWallet: 'External',
-        toWallet: 'FinaPay',
-        toStatus: 'Available',
-        transactionId: transaction.id,
-        notes: `Crypto deposit: ${goldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g (USD $${usdAmount.toFixed(2)})`,
-        createdBy: adminUser?.id || 'system',
-      });
-      
-      // 5. Update vault ownership summary
-      const [existingSummary] = await db.select().from(vaultOwnershipSummary)
-        .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-      
-      if (existingSummary) {
-        if (walletType === 'FGPW') {
-          const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6), lastUpdated: new Date() })
-            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-        } else {
-          const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6), lastUpdated: new Date() })
-            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-        }
-      } else {
-        await db.insert(vaultOwnershipSummary).values({
-          userId: paymentRequest.userId,
-          mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
-          fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
-        });
-      }
-      
-      // 6. Create Unified Gold Tally entry with COMPLETED status (all data auto-filled)
-      const [tallyEntry] = await db.insert(unifiedTallyTransactions).values({
-        id: crypto.randomUUID(),
-        txnId,
-        userId: paymentRequest.userId,
-        userName: tallyUser ? `${tallyUser.firstName || ''} ${tallyUser.lastName || ''}`.trim() : 'Unknown',
-        userEmail: tallyUser?.email || 'unknown@example.com',
-        txnType: 'FIAT_CRYPTO_DEPOSIT',
-        sourceMethod: 'CRYPTO',
-        walletType,
-        status: 'COMPLETED',
-        depositCurrency: 'USD',
-        depositAmount: paymentRequest.amountUsd,
-        feeAmount: feeAmount.toFixed(2),
-        feeCurrency: 'USD',
-        netAmount: netAmount.toFixed(2),
-        paymentReference: `CRYPTO-${id.substring(0, 8)}`,
-        paymentConfirmedAt: new Date(),
-        pricingMode: pricingMode === 'MANUAL' ? 'FIXED' : 'MARKET',
-        goldRateValue: goldPrice.toFixed(4),
-        rateTimestamp: new Date(),
-        goldEquivalentG: goldGrams.toFixed(6),
-        goldCreditedG: goldGrams.toFixed(6),
-        goldCreditedValueUsd: (goldGrams * goldPrice).toFixed(2),
-        physicalGoldAllocatedG: goldGrams.toFixed(6),
-        vaultLocation: vaultLocation,
-        storageCertificateId: storageCert.certificateNumber,
-        wingoldOrderId: wingoldOrderId || null,
-        gatewayCostUsd: '0.00',
-        bankCostUsd: '0.00',
-        networkCostUsd: '0.00',
-        opsCostUsd: '0.00',
-        totalCostsUsd: '0.00',
-        netProfitUsd: adminEarnedProfit.toFixed(2),
-        approvedBy: adminUser?.id,
-        approvedAt: new Date(),
-        notes: `Streamlined approval - ${pricingMode} pricing`,
-        createdBy: adminUser?.id,
-      }).returning();
-      console.log('[DEBUG] Created COMPLETED Unified Gold Tally entry:', tallyEntry.id);
-      
-      // Create timeline events for this tally entry
-      await db.insert(unifiedTallyEvents).values([
-        {
-          id: crypto.randomUUID(),
-          tallyId: tallyEntry.id,
-          eventType: 'PAYMENT_RECEIVED',
-          newStatus: 'PENDING_ALLOCATION',
-          details: { 
-            amount: usdAmount.toFixed(2), 
-            currency: 'USD',
-            method: 'Crypto',
-            transactionHash: paymentRequest.transactionHash 
-          },
-          notes: `Payment of $${usdAmount.toFixed(2)} received via crypto`,
-          triggeredBy: paymentRequest.userId,
-          triggeredByName: tallyUser ? `${tallyUser.firstName || ''} ${tallyUser.lastName || ''}`.trim() : 'User',
-        },
-        {
-          id: crypto.randomUUID(),
-          tallyId: tallyEntry.id,
-          eventType: 'GOLD_ALLOCATED',
-          previousStatus: 'PENDING_ALLOCATION',
-          newStatus: 'ALLOCATED',
-          details: { 
-            goldGrams: goldGrams.toFixed(6),
-            goldPrice: goldPrice.toFixed(4),
-            vaultLocation: vaultLocation 
-          },
-          notes: `${goldGrams.toFixed(4)}g physical gold allocated at ${vaultLocation}`,
-          triggeredBy: adminUser?.id,
-          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
-        },
-        {
-          id: crypto.randomUUID(),
-          tallyId: tallyEntry.id,
-          eventType: 'CERTIFICATE_ISSUED',
-          details: { 
-            certificateNumber: storageCert.certificateNumber,
-            issuer: vaultLocation 
-          },
-          notes: `Physical Storage Certificate ${storageCert.certificateNumber} issued`,
-          triggeredBy: adminUser?.id,
-          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
-        },
-        {
-          id: crypto.randomUUID(),
-          tallyId: tallyEntry.id,
-          eventType: 'WALLET_CREDITED',
-          previousStatus: 'ALLOCATED',
-          newStatus: 'COMPLETED',
-          details: { 
-            goldGrams: goldGrams.toFixed(6),
-            walletType: walletType,
-            transactionId: transaction.id 
-          },
-          notes: `${goldGrams.toFixed(4)}g gold credited to ${walletType} wallet`,
-          triggeredBy: adminUser?.id,
-          triggeredByName: adminUser ? `${adminUser.firstName || ''} ${adminUser.lastName || ''}`.trim() : 'Admin',
-        }
-      ]);
-      
-      // 7. Update crypto payment request status
-      await storage.updateCryptoPaymentRequest(id, {
-        status: 'Credited',
-        reviewerId: adminUser.id,
-        reviewedAt: new Date(),
-        reviewNotes: reviewNotes || `Approved with ${pricingMode} pricing`,
-        goldGrams: goldGrams.toString(),
-        goldPriceAtTime: goldPrice.toString(),
-        creditedTransactionId: transaction.id,
-      });
-      
-      // 8. Create audit log
-      await storage.createAuditLog({
-        entityType: "crypto_payment_request",
-        entityId: id,
-        actionType: "approve",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Approved crypto payment: $${usdAmount.toFixed(2)} → ${goldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g (${pricingMode} pricing)`,
-      });
-      
-      // 9. Notify user
-      await storage.createNotification({
-        userId: paymentRequest.userId,
-        title: "Payment Approved - Gold Credited!",
-        message: `Your crypto payment of $${usdAmount.toFixed(2)} has been approved. ${goldGrams.toFixed(4)}g gold has been credited to your wallet.`,
-        type: "success",
-        read: false,
-      });
-      
-      // 10. Emit real-time sync event
-      emitLedgerEvent(paymentRequest.userId, {
-        type: 'balance_update',
-        module: 'finapay',
-        action: 'crypto_payment_approved',
-        data: { goldGrams, amountUsd: usdAmount },
-      });
-      
-
-
-        return res.json({
-        success: true,
-        message: "Payment approved - Gold credited to user wallet",
-        transaction: {
-          id: transaction.id,
-          goldGrams: goldGrams.toFixed(6),
-          goldPrice: goldPrice.toFixed(2),
-          pricingMode,
-        },
-        certificate: {
-          id: storageCert.id,
-          number: storageCert.certificateNumber,
-        },
-        tally: {
-          id: tallyEntry.id,
-          txnId: tallyEntry.txnId,
-          status: 'COMPLETED',
-        },
-      });
-    } catch (error) {
-      console.error("[DEBUG] Failed to approve crypto payment:", error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Approval Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      return res.status(500).json({ message: "Failed to approve crypto payment", error: String(error) });
-    }
-  });
-
-
-  // LEGACY: Old crypto payment approval code - kept for reference but replaced by GOLDEN RULE workflow above
-  app.patch("/api/admin/crypto-payments/:id/approve-legacy-disabled", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { reviewNotes, goldPriceAtTime: adminGoldPrice, goldGrams: adminGoldGrams } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      const paymentRequest = await storage.getCryptoPaymentRequest(id);
-      if (!paymentRequest) return res.status(404).json({ message: "Payment request not found" });
-      
-      const wallet = await storage.getWallet(paymentRequest.userId);
-      if (!wallet) return res.status(400).json({ message: "User wallet not found" });
-      
-      const finalGoldGrams = adminGoldGrams ? adminGoldGrams : paymentRequest.goldGrams;
-      // Validate admin-supplied price against live (±2%). Fail-closed if live price unavailable.
-      const { livePrice: legacyLivePrice, priceToUse: legacyLivePriceRef, valid: legacyPriceValid, deviation: legacyDev, unavailable: legacyUnavailable } =
-        await validateAndFetchGoldPrice(adminGoldPrice ? parseFloat(adminGoldPrice) : null);
-      if (legacyUnavailable) {
-        return res.status(503).json({ message: 'Live gold price is temporarily unavailable. Please try again shortly.' });
-      }
-      if (adminGoldPrice && !legacyPriceValid) {
-        return res.status(409).json({
-          message: `Submitted price deviates ${(legacyDev * 100).toFixed(1)}% from live price (${legacyLivePrice.toFixed(2)}/g). Please use the current market price.`,
-          livePrice: legacyLivePrice.toFixed(2),
-        });
-      }
-      // Always use server-fetched live price for calculations
-      const finalGoldPrice = legacyLivePriceRef.toFixed(6);
-      
-      const currentGoldGrams = parseFloat(wallet.goldGrams || '0');
-      const newGoldGrams = currentGoldGrams + parseFloat(finalGoldGrams);
-      await storage.updateWallet(wallet.id, { goldGrams: newGoldGrams.toString() });
-      
-      const transaction = await storage.createTransaction({
-        userId: paymentRequest.userId,
-        type: 'Deposit',
-        status: 'Completed',
-        amountGold: finalGoldGrams,
-        amountUsd: paymentRequest.amountUsd,
-        goldPriceUsdPerGram: finalGoldPrice,
-        description: `Crypto deposit - ${parseFloat(paymentRequest.amountUsd).toFixed(2)} (${parseFloat(finalGoldGrams).toFixed(4)}g gold at ${parseFloat(finalGoldPrice).toFixed(2)}/g)`,
-        sourceModule: 'finapay',
-        goldWalletType: (paymentRequest as any).goldWalletType || 'LGPW',
-      });
-      
-      const goldGrams = finalGoldGrams ? parseFloat(finalGoldGrams) : 0;
-      const goldPrice = finalGoldPrice ? parseFloat(finalGoldPrice) : 0;
-      const usdAmount = paymentRequest.amountUsd ? parseFloat(paymentRequest.amountUsd) : 0;
-      
-      // SPECIFICATION REQUIREMENT: Record LedgerEntry for FinaVault system-of-record
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: paymentRequest.userId,
-        action: 'Deposit',
-        goldGrams: goldGrams,
-        goldPriceUsdPerGram: goldPrice > 0 ? goldPrice : undefined,
-        fromWallet: 'External',
-        toWallet: 'FinaPay',
-        toStatus: 'Available',
-        transactionId: transaction.id,
-        notes: `Crypto payment approved: ${(goldGrams || 0).toFixed(4)}g${goldPrice > 0 ? ` at $${(goldPrice || 0).toFixed(2)}/g` : ''} (USD $${(usdAmount || 0).toFixed(2)})`,
-        createdBy: adminUser?.id || 'system',
-      });
-      
-      // Update dual-wallet vaultOwnershipSummary for LGPW/FGPW balance tracking
-      const walletType = (paymentRequest as any).goldWalletType || 'LGPW';
-
-      // Fetch platform fee configuration
-      const feeConfig = await storage.getPlatformConfig('crypto_fee_percent');
-      const feePercent = feeConfig ? parseFloat(feeConfig.configValue || '1') : 1; // Default 1%
-      const feeAmount = (usdAmount * feePercent) / 100;
-      const netAmount = usdAmount - feeAmount;
-      const adminEarnedProfit = feeAmount; // Fee is the admin's profit
-
-      console.log('[DEBUG] Fee calculation:', { usdAmount, feePercent, feeAmount, netAmount, adminEarnedProfit });
-      const [existingSummary] = await db.select().from(vaultOwnershipSummary)
-        .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-      
-      if (existingSummary) {
-        if (walletType === 'FGPW') {
-          const currentFpgw = parseFloat(existingSummary.fpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ 
-              fpgwAvailableGrams: (currentFpgw + goldGrams).toFixed(6),
-              lastUpdated: new Date() 
-            })
-            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-        } else {
-          const currentMpgw = parseFloat(existingSummary.mpgwAvailableGrams || '0');
-          await db.update(vaultOwnershipSummary)
-            .set({ 
-              mpgwAvailableGrams: (currentMpgw + goldGrams).toFixed(6),
-              lastUpdated: new Date() 
-            })
-            .where(eq(vaultOwnershipSummary.userId, paymentRequest.userId));
-        }
-      } else {
-        await db.insert(vaultOwnershipSummary).values({
-          userId: paymentRequest.userId,
-          mpgwAvailableGrams: walletType === 'LGPW' ? goldGrams.toFixed(6) : '0',
-          fpgwAvailableGrams: walletType === 'FGPW' ? goldGrams.toFixed(6) : '0',
-        });
-      }
-      
-      // SPECIFICATION REQUIREMENT: Generate DOC + SSC certificates
-      const generatedCertificates: any[] = [];
-      
-      // Get or create vault holding
-      let holding = await storage.getVaultHolding(paymentRequest.userId);
-      
-      if (!holding) {
-        // Create new vault holding
-        holding = await storage.createVaultHolding({
-          userId: paymentRequest.userId,
-          goldGrams: goldGrams.toString(),
-          vaultLocation: 'Dubai - Wingold & Metals DMCC',
-          wingoldStorageRef: `WG-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-          purchasePriceUsdPerGram: goldPrice.toString(),
-        });
-      } else {
-        // Update existing holding
-        const newTotalGrams = parseFloat(holding.goldGrams) + goldGrams;
-        await storage.updateVaultHolding(holding.id, {
-          goldGrams: newTotalGrams.toString(),
-        });
-      }
-      
-      // Digital Ownership Certificate (DOC) from Finatrades
-      const docCertNum = await storage.generateCertificateNumber('Digital Ownership');
-      const digitalCert = await storage.createCertificate({
-        type: 'Digital Ownership',
-        issuer: 'Finatrades Finance SA',
-        userId: paymentRequest.userId,
-        transactionId: transaction.id,
-        vaultHoldingId: holding.id,
-        certificateNumber: docCertNum,
-        goldGrams: goldGrams.toString(),
-        vaultLocation: vaultLocation || 'Dubai - Wingold & Metals DMCC',
-        goldPriceUsdPerGram: goldPrice.toString(),
-      });
-      generatedCertificates.push(digitalCert);
-      
-      // Physical Storage Certificate (SSC) from Wingold & Metals DMCC
-      const sscCertNum = await storage.generateCertificateNumber('Physical Storage');
-      const storageCert = await storage.createCertificate({
-        type: 'Physical Storage',
-        issuer: 'Wingold and Metals DMCC',
-        userId: paymentRequest.userId,
-        transactionId: transaction.id,
-        vaultHoldingId: holding.id,
-        certificateNumber: sscCertNum,
-        goldGrams: goldGrams.toString(),
-        vaultLocation: vaultLocation || 'Dubai - Wingold & Metals DMCC',
-        goldPriceUsdPerGram: goldPrice.toString(),
-      });
-      generatedCertificates.push(storageCert);
-      
-      console.log(`[Crypto Approval] Issued ${generatedCertificates.length} certificates for user ${paymentRequest.userId}`);
-      
-      // Update payment request
-      const updated = await storage.updateCryptoPaymentRequest(id, {
-        status: 'Credited',
-        reviewerId: adminUser.id,
-        reviewedAt: new Date(),
-        reviewNotes: reviewNotes || null,
-        creditedTransactionId: transaction.id,
-        goldGrams: finalGoldGrams,
-        goldPriceAtTime: finalGoldPrice,
-      });
-      
-      await storage.createAuditLog({
-        entityType: "crypto_payment_request",
-        entityId: id,
-        actionType: "approve",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Approved and credited crypto payment: $${paymentRequest.amountUsd} (${paymentRequest.goldGrams}g gold)`,
-      });
-      
-      // Notify user (in-app)
-      await storage.createNotification({
-        userId: paymentRequest.userId,
-        title: "Payment Approved",
-        message: `Your crypto payment of $${paymentRequest.amountUsd} has been approved. ${paymentRequest.goldGrams}g gold has been credited to your wallet.`,
-        type: "success",
-        read: false,
-      });
-      
-      // Emit real-time sync event for auto-update
-      emitLedgerEvent(paymentRequest.userId, {
-        type: 'balance_update',
-        module: 'finapay',
-        action: 'crypto_payment_approved',
-        data: { goldGrams, amountUsd: usdAmount },
-      });
-      
-      // Send email with PDF attachments
-      const cryptoUser = await storage.getUser(paymentRequest.userId);
-      if (cryptoUser && cryptoUser.email) {
-        // Generate transaction receipt PDF
-        const receiptPdf = await generateTransactionReceiptPDF({
-          referenceNumber: paymentRequest.transactionHash || `CRYPTO-${id.substring(0, 8)}`,
-          transactionType: 'Crypto Deposit',
-          amountUsd: usdAmount,
-          goldGrams: goldGrams,
-          goldPricePerGram: goldPrice,
-          userName: `${cryptoUser.firstName || ''} ${cryptoUser.lastName || ''}`.trim() || 'Customer',
-          userEmail: cryptoUser.email,
-          transactionDate: new Date(),
-          status: 'Completed',
-          description: `Crypto payment confirmed - ${paymentRequest.cryptoCurrency}`,
-        });
-        
-        const attachments: Array<{ filename: string; content: Buffer; contentType: string }> = [
-          {
-            filename: `Transaction_Receipt_${paymentRequest.transactionHash?.substring(0, 10) || id.substring(0, 8)}.pdf`,
-            content: receiptPdf,
-            contentType: 'application/pdf',
-          }
-        ];
-        
-        // Generate certificate PDFs
-        for (const cert of generatedCertificates) {
-          const certPdf = await generateCertificatePDF(cert, cryptoUser);
-          attachments.push({
-            filename: `Certificate_${cert.certificateNumber}.pdf`,
-            content: certPdf,
-            contentType: 'application/pdf',
-          });
-        }
-        
-        const htmlBody = `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <div style="background: linear-gradient(135deg, #f97316, #ea580c); padding: 30px; text-align: center;">
-              <h1 style="color: white; margin: 0;">Crypto Payment Confirmed!</h1>
-            </div>
-            <div style="padding: 30px; background: #ffffff;">
-              <p>Hello ${cryptoUser.firstName},</p>
-              <p>Your crypto payment has been verified and gold has been credited to your wallet.</p>
-              <div style="background: #fef3c7; padding: 20px; border-radius: 8px; margin: 20px 0; text-align: center;">
-                <p style="font-size: 28px; font-weight: bold; color: #f97316; margin: 0;">+$${usdAmount.toFixed(2)}</p>
-                <p style="font-size: 18px; font-weight: bold; color: #92400e; margin: 10px 0;">Gold Credited: ${goldGrams.toFixed(4)}g</p>
-                <p style="color: #6b7280; margin: 5px 0;">Currency: ${paymentRequest.cryptoCurrency}</p>
-              </div>
-              <p><strong>Attached Documents:</strong></p>
-              <ul>
-                <li>Transaction Receipt (PDF)</li>
-                <li>Digital Ownership Certificate (PDF)</li>
-                <li>Physical Storage Certificate (PDF)</li>
-              </ul>
-              <p style="text-align: center; margin-top: 30px;">
-                <a href="https://finatrades.com/dashboard" style="background: #f97316; color: white; padding: 12px 30px; text-decoration: none; border-radius: 6px;">View Wallet</a>
-              </p>
-            </div>
-            <div style="padding: 20px; background: #f9fafb; text-align: center; color: #6b7280; font-size: 12px;">
-              <p>Finatrades - Gold-Backed Digital Finance</p>
-            </div>
-          </div>
-        `;
-        
-        sendEmailWithAttachment(
-          cryptoUser.email,
-          `Crypto Payment Confirmed - $${usdAmount.toFixed(2)} (${goldGrams.toFixed(4)}g Gold)`,
-          htmlBody,
-          attachments
-        ).catch(err => console.error('[Email] Failed to send crypto confirmation with PDF:', err));
-      }
-      
-
-
-      res.json({ paymentRequest: updated, transaction });
-    } catch (error: any) {
-      console.error("[DEBUG] Failed to approve crypto payment - Full error:", error);
-      console.error("[DEBUG] Error name:", error?.name);
-      console.error("[DEBUG] Error message:", error?.message);
-      console.error("[DEBUG] Error stack:", error?.stack);
-      res.status(500).json({ message: "Failed to approve payment", error: error?.message });
-    }
-  });
-
-  // Admin: Reject crypto payment
-  app.patch("/api/admin/crypto-payments/:id/reject", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { rejectionReason } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      if (!rejectionReason) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
-      const paymentRequest = await storage.getCryptoPaymentRequest(id);
-      if (!paymentRequest) {
-        return res.status(404).json({ message: "Payment request not found" });
-      }
-      
-      if (!['Pending', 'Under Review'].includes(paymentRequest.status)) {
-        return res.status(400).json({ message: "Payment request cannot be rejected in current status" });
-      }
-      
-      const updated = await storage.updateCryptoPaymentRequest(id, {
-        status: 'Rejected',
-        reviewerId: adminUser.id,
-        reviewedAt: new Date(),
-        rejectionReason,
-      });
-      
-      await storage.createAuditLog({
-        entityType: "crypto_payment_request",
-        entityId: id,
-        actionType: "reject",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Rejected crypto payment: ${rejectionReason}`,
-      });
-      
-      // Notify user
-      await storage.createNotification({
-        userId: paymentRequest.userId,
-        title: "Payment Rejected",
-        message: `Your crypto payment request has been rejected. Reason: ${rejectionReason}`,
-        type: "error",
-        read: false,
-      });
-      
-
-
-      res.json({ paymentRequest: updated });
-    } catch (error) {
-      console.error("Failed to reject crypto payment:", error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'Crypto Payment Rejection Failed', route: req.originalUrl, userId: req.session?.userId || undefined });
-      res.status(500).json({ message: "Failed to reject payment" });
-    }
-  });
-
-  // ============================================
-  // BUY GOLD REQUESTS (Wingold & Metals - Manual)
-  // ============================================
-
-  // User: Submit buy gold request
-  app.post("/api/buy-gold/submit", idempotencyMiddleware, async (req, res) => {
-    try {
-      const { userId, amountUsd, wingoldReferenceId, receiptFileUrl, receiptFileName } = req.body;
-      
-      if (!userId || !receiptFileUrl) {
-        return res.status(400).json({ message: "User ID and receipt are required" });
-      }
-      
-      // Check KYC status
-      const user = await storage.getUser(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      
-      if (user.kycStatus !== 'Approved') {
-        return res.status(403).json({ message: "KYC must be approved to submit buy gold requests" });
-      }
-      
-      // Check if buy gold mode is enabled (default to MANUAL if not configured)
-      const buyGoldModeConfig = await storage.getPlatformConfig('buy_gold_mode');
-      const buyGoldMode = buyGoldModeConfig?.configValue || 'MANUAL';
-      
-      if (buyGoldMode === 'API') {
-        return res.status(400).json({ message: "API mode is not yet available. Please wait for the feature update." });
-      }
-      
-      // Get current gold price if amount is provided
-      let goldGrams = null;
-      let goldPriceAtTime = null;
-      
-      if (amountUsd && parseFloat(amountUsd) > 0) {
-        const priceData = await getGoldPrice();
-        goldPriceAtTime = priceData.pricePerGram.toString();
-        goldGrams = (parseFloat(amountUsd) / priceData.pricePerGram).toFixed(8);
-      }
-      
-      const request = await storage.createBuyGoldRequest({
-        userId,
-        amountUsd: amountUsd || null,
-        goldGrams,
-        goldPriceAtTime,
-        wingoldReferenceId: wingoldReferenceId || null,
-        receiptFileUrl,
-        receiptFileName: receiptFileName || null,
-        status: 'Pending',
-      });
-      
-      // Create audit log
-      await storage.createAuditLog({
-        entityType: "buy_gold_request",
-        entityId: request.id,
-        actionType: "create",
-        actor: userId,
-        actorRole: "user",
-        details: `Buy gold request submitted: $${amountUsd || 'TBD'}`,
-      });
-      
-      // Notify admins
-      const admins = await storage.getAdminUsers();
-      for (const admin of admins) {
-        await storage.createNotification({
-          userId: admin.id,
-          title: "New Buy Gold Request",
-          message: `${user.firstName} ${user.lastName} submitted a buy gold request`,
-          type: "info",
-          read: false,
-          link: "/admin/finapay/buy-gold",
-        });
-      }
-      
-
-
-      res.json({ 
-        success: true, 
-        request,
-        message: "Buy gold request submitted successfully. Pending admin review." 
-      });
-    } catch (error) {
-      console.error("Failed to submit buy gold request:", error);
-      res.status(500).json({ message: "Failed to submit request" });
-    }
-  });
-
-  // User: Get their buy gold requests
-  app.get("/api/buy-gold/:userId", async (req, res) => {
-    try {
-      const requests = await storage.getUserBuyGoldRequests(req.params.userId);
-
-
-      res.json({ requests });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get buy gold requests" });
-    }
-  });
-
-  // Admin: Get all buy gold requests
-  app.get("/api/admin/buy-gold", ensureAdminAsync, requirePermission('view_transactions', 'manage_deposits'), async (req, res) => {
-    try {
-      const requests = await storage.getAllBuyGoldRequests().catch(() => []);
-      
-      // Enrich with user info
-      const enrichedRequests = await Promise.all(
-        requests.map(async (request) => {
-          const user = await storage.getUser(request.userId);
-          return {
-            ...request,
-            user: user ? {
-              id: user.id,
-              email: user.email,
-              firstName: user.firstName,
-              lastName: user.lastName,
-            } : null,
-          };
-        })
-      );
-      
-
-
-      res.json({ requests: enrichedRequests });
-    } catch (error) {
-      res.status(500).json({ message: "Failed to get buy gold requests" });
-    }
-  });
-
-  // Admin: Approve and credit buy gold request
-  app.patch("/api/admin/buy-gold/:id/approve", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { reviewNotes, amountUsd, goldGrams, goldPriceAtTime, adminNotes } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      const request = await storage.getBuyGoldRequest(id);
-      if (!request) {
-        return res.status(404).json({ message: "Buy gold request not found" });
-      }
-      
-      if (!['Pending', 'Under Review'].includes(request.status)) {
-        return res.status(400).json({ message: "Request cannot be approved in current status" });
-      }
-      
-      // Use provided gold grams (required from admin input)
-      const finalGoldGrams = parseFloat(goldGrams || request.goldGrams || '0');
-      if (finalGoldGrams <= 0) {
-        return res.status(400).json({ message: "Gold amount (grams) is required for approval" });
-      }
-      
-      // Validate admin-supplied price against live (±2%). Fail-closed if live price unavailable.
-      const { livePrice: bgLivePrice, priceToUse: goldPrice, valid: bgPriceValid, deviation: bgDev, unavailable: bgPriceUnavailable } =
-        await validateAndFetchGoldPrice(parseFloat(goldPriceAtTime || '0'));
-      if (bgPriceUnavailable) {
-        return res.status(503).json({ message: 'Live gold price is temporarily unavailable. Please try again shortly.' });
-      }
-      if (!bgPriceValid) {
-        return res.status(409).json({
-          message: `Submitted price deviates ${(bgDev * 100).toFixed(1)}% from live price (${bgLivePrice.toFixed(2)}/g). Please use the current market price.`,
-          livePrice: bgLivePrice.toFixed(2),
-        });
-      }
-      // goldPrice = server-fetched live price (priceToUse), used for all calculations
-      
-      // Calculate USD amount
-      const finalAmountUsd = parseFloat(amountUsd || '0') || (finalGoldGrams * goldPrice);
-      
-      // Process the approval with full wallet/vault/certificate creation
-      const result = await storage.withTransaction(async (txStorage) => {
-        const generatedCertificates: any[] = [];
-        
-        // 1. Update user's wallet with gold balance
-        const wallet = await txStorage.getWallet(request.userId);
-        if (!wallet) {
-          throw new Error('User wallet not found');
-        }
-        const currentGold = parseFloat(wallet.goldGrams || '0');
-        const newGoldBalance = currentGold + finalGoldGrams;
-        
-        await txStorage.updateWallet(wallet.id, {
-          goldGrams: newGoldBalance.toFixed(6)
-        });
-        
-        // 2. Create a completed transaction record
-        const newTransaction = await txStorage.createTransaction({
-          userId: request.userId,
-          type: 'Buy',
-          status: 'Completed',
-          amountGold: finalGoldGrams.toFixed(6),
-          amountUsd: finalAmountUsd.toFixed(2),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          sourceModule: 'Buy Gold Bar',
-          method: 'Wingold Purchase',
-          description: `Buy Gold Bar - ${finalGoldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g`,
-          completedAt: new Date()
-        });
-        
-        // 3. Create vault holding
-        const wingoldRef = `WG-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
-        
-        // Check for existing holdings
-        const existingHoldings = await txStorage.getUserVaultHoldings(request.userId);
-        let holdingId: string;
-        
-        if (existingHoldings.length > 0) {
-          // Update existing holding
-          const holding = existingHoldings[0];
-          const currentHoldingGrams = parseFloat(holding.goldGrams || '0');
-          await txStorage.updateVaultHolding(holding.id, {
-            goldGrams: (currentHoldingGrams + finalGoldGrams).toFixed(6),
-            wingoldStorageRef: wingoldRef
-          });
-          holdingId = holding.id;
-        } else {
-          // Create new holding
-          const newHolding = await txStorage.createVaultHolding({
-            userId: request.userId,
-            goldGrams: finalGoldGrams.toFixed(6),
-            vaultLocation: 'Dubai - Wingold & Metals DMCC',
-            wingoldStorageRef: wingoldRef,
-            purchasePriceUsdPerGram: goldPrice.toFixed(2),
-            isPhysicallyDeposited: false
-          });
-          holdingId = newHolding.id;
-        }
-        
-        // 4. Issue Digital Ownership Certificate from Finatrades
-        const docCertNum = await txStorage.generateCertificateNumber('Digital Ownership');
-        const digitalCert = await txStorage.createCertificate({
-          certificateNumber: docCertNum,
-          userId: request.userId,
-          transactionId: newTransaction.id,
-          vaultHoldingId: holdingId,
-          type: 'Digital Ownership',
-          status: 'Active',
-          goldGrams: finalGoldGrams.toFixed(6),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          totalValueUsd: finalAmountUsd.toFixed(2),
-          issuer: 'Finatrades Finance SA',
-          vaultLocation: 'Dubai - Wingold & Metals DMCC',
-          wingoldStorageRef: wingoldRef
-        });
-        generatedCertificates.push(digitalCert);
-        
-        // 5. Issue Physical Storage Certificate from Wingold
-        const pscCertNum = await txStorage.generateCertificateNumber('Physical Storage');
-        const storageCert = await txStorage.createCertificate({
-          certificateNumber: pscCertNum,
-          userId: request.userId,
-          transactionId: newTransaction.id,
-          vaultHoldingId: holdingId,
-          type: 'Physical Storage',
-          status: 'Active',
-          goldGrams: finalGoldGrams.toFixed(6),
-          goldPriceUsdPerGram: goldPrice.toFixed(2),
-          totalValueUsd: finalAmountUsd.toFixed(2),
-          issuer: 'Wingold and Metals DMCC',
-          vaultLocation: 'Dubai - Wingold & Metals DMCC',
-          wingoldStorageRef: wingoldRef
-        });
-        generatedCertificates.push(storageCert);
-        
-        // 6. Record vault ledger entry
-        const { vaultLedgerService } = await import('./vault-ledger-service');
-        await vaultLedgerService.recordLedgerEntry({
-          userId: request.userId,
-          action: 'Deposit',
-          goldGrams: finalGoldGrams,
-          goldPriceUsdPerGram: goldPrice,
-          fromWallet: 'External',
-          toWallet: 'FinaPay',
-          toStatus: 'Available',
-          transactionId: newTransaction.id,
-          certificateId: digitalCert.id,
-          notes: `Buy Gold Bar - Purchased ${finalGoldGrams.toFixed(4)}g gold at $${goldPrice.toFixed(2)}/g via Wingold & Metals DMCC`,
-          createdBy: adminUser.id,
-        });
-        
-        // 7. Update the buy gold request with the credited transaction
-        const updated = await txStorage.updateBuyGoldRequest(id, {
-          status: 'Credited',
-          amountUsd: finalAmountUsd.toFixed(2),
-          goldGrams: finalGoldGrams.toFixed(6),
-          goldPriceAtTime: goldPrice.toFixed(2),
-          reviewerId: adminUser.id,
-          reviewedAt: new Date(),
-          reviewNotes: adminNotes || reviewNotes || null,
-          creditedTransactionId: newTransaction.id,
-        });
-        
-        return { newTransaction, generatedCertificates, newGoldBalance, holdingId, updated };
-      });
-      
-      // Create audit log
-      await storage.createAuditLog({
-        entityType: "buy_gold_request",
-        entityId: id,
-        actionType: "approve",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Approved buy gold request: ${finalGoldGrams.toFixed(4)}g at $${goldPrice.toFixed(2)}/g = $${finalAmountUsd.toFixed(2)}. Certificates issued: ${result.generatedCertificates.length}`,
-      });
-      
-      // Notify user
-      await storage.createNotification({
-        userId: request.userId,
-        title: "Buy Gold Bar Approved",
-        message: `Your purchase of ${finalGoldGrams.toFixed(4)}g gold has been credited to your wallet. Certificates issued.`,
-        type: "success",
-        read: false,
-        link: "/finavault",
-      });
-      
-      // Notify all admins about the buy gold approval
-      const buyGoldUser = await storage.getUser(request.userId);
-      const buyGoldUserName = buyGoldUser ? `${buyGoldUser.firstName || ''} ${buyGoldUser.lastName || ''}`.trim() || 'User' : 'User';
-      notifyAllAdmins({
-        title: 'Buy Gold Bar Approved',
-        message: `${buyGoldUserName}'s purchase of ${finalGoldGrams.toFixed(4)}g gold ($${finalAmountUsd.toFixed(2)}) has been approved and credited.`,
-        type: 'success',
-        link: '/admin/finapay/buy-gold',
-      });
-      
-      // Send gold purchase email and push notification
-      if (buyGoldUser?.email) {
-        sendEmail(buyGoldUser.email, EMAIL_TEMPLATES.GOLD_PURCHASE, {
-          user_name: `${buyGoldUser.firstName} ${buyGoldUser.lastName}`,
-          gold_grams: finalGoldGrams.toFixed(4),
-          amount_usd: finalAmountUsd.toFixed(2),
-          gold_price: goldPrice.toFixed(2),
-        }).catch(err => console.error('[Email] Gold purchase notification failed:', err));
-        const { sendFinancialPushNotification } = await import('./push-notifications');
-        sendFinancialPushNotification(request.userId, 'gold_purchased', {
-          goldGrams: finalGoldGrams.toFixed(4),
-          amountUsd: finalAmountUsd.toFixed(2),
-        }).catch(err => console.error('[Push] Gold purchase notification failed:', err));
-      }
-      
-      // Emit real-time updates
-      const io = getIO();
-      io.to(`user:${request.userId}`).emit('ledger:balance_update', {
-        goldGrams: result.newGoldBalance.toFixed(6)
-      });
-      io.to(`user:${request.userId}`).emit('ledger:vault_update', {
-        holdingId: result.holdingId
-      });
-      
-
-
-      res.json({ 
-        request: result.updated, 
-        transaction: result.newTransaction,
-        certificates: result.generatedCertificates,
-        message: 'Buy Gold Bar approved - wallet credited and certificates issued'
-      });
-    } catch (error) {
-      console.error("Failed to approve buy gold request:", error);
-      res.status(500).json({ message: error instanceof Error ? error.message : "Failed to approve request" });
-    }
-  });
-
-  // Admin: Reject buy gold request
-  app.patch("/api/admin/buy-gold/:id/reject", ensureAdminAsync, requirePermission('manage_deposits'), async (req, res) => {
-    try {
-      const { id } = req.params;
-      const { rejectionReason, reviewNotes } = req.body;
-      const adminUser = (req as any).adminUser;
-      
-      if (!rejectionReason) {
-        return res.status(400).json({ message: "Rejection reason is required" });
-      }
-      
-      const request = await storage.getBuyGoldRequest(id);
-      if (!request) {
-        return res.status(404).json({ message: "Buy gold request not found" });
-      }
-      
-      if (!['Pending', 'Under Review'].includes(request.status)) {
-        return res.status(400).json({ message: "Request cannot be rejected in current status" });
-      }
-      
-      const updated = await storage.updateBuyGoldRequest(id, {
-        status: 'Rejected',
-        reviewerId: adminUser.id,
-        reviewedAt: new Date(),
-        reviewNotes: reviewNotes || null,
-        rejectionReason,
-      });
-      
-      // Create audit log
-      await storage.createAuditLog({
-        entityType: "buy_gold_request",
-        entityId: id,
-        actionType: "reject",
-        actor: adminUser.id,
-        actorRole: "admin",
-        details: `Rejected buy gold request: ${rejectionReason}`,
-      });
-      
-      // Notify user
-      await storage.createNotification({
-        userId: request.userId,
-        title: "Buy Gold Request Rejected",
-        message: `Your buy gold request has been rejected. Reason: ${rejectionReason}`,
-        type: "error",
-        read: false,
-      });
-      
-
-
-      res.json({ request: updated });
-    } catch (error) {
-      console.error("Failed to reject buy gold request:", error);
-      res.status(500).json({ message: "Failed to reject request" });
-    }
-  });
-
-  // ============================================
-  // USER NOTIFICATIONS
-  // ============================================
-
-  // Get user's notifications - PROTECTED: requires matching session
   app.get("/api/notifications/:userId", ensureOwnerOrAdmin, async (req, res) => {
     try {
       const notifications = await storage.getUserNotifications(req.params.userId);
 
 
-      res.json({ notifications });
+      return res.json({ notifications });
     } catch (error) {
-      res.status(500).json({ message: "Failed to get notifications" });
+      return res.status(500).json({ message: "Failed to get notifications" });
     }
   });
 
@@ -25515,9 +14614,9 @@ export async function registerRoutes(
         });
       }
 
-      res.json({ notification });
+      return res.json({ notification });
     } catch (error) {
-      res.status(500).json({ message: "Failed to create notification" });
+      return res.status(500).json({ message: "Failed to create notification" });
     }
   });
 
@@ -25537,9 +14636,9 @@ export async function registerRoutes(
       const updated = await storage.markNotificationRead(req.params.id);
 
 
-      res.json({ notification: updated });
+      return res.json({ notification: updated });
     } catch (error) {
-      res.status(500).json({ message: "Failed to mark notification as read" });
+      return res.status(500).json({ message: "Failed to mark notification as read" });
     }
   });
 
@@ -25549,9 +14648,9 @@ export async function registerRoutes(
       await storage.markAllNotificationsRead(req.params.userId);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to mark notifications as read" });
+      return res.status(500).json({ message: "Failed to mark notifications as read" });
     }
   });
 
@@ -25571,9 +14670,9 @@ export async function registerRoutes(
       await storage.deleteNotification(req.params.id);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to delete notification" });
+      return res.status(500).json({ message: "Failed to delete notification" });
     }
   });
 
@@ -25583,9 +14682,9 @@ export async function registerRoutes(
       await storage.deleteAllNotifications(req.params.userId);
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
-      res.status(500).json({ message: "Failed to clear notifications" });
+      return res.status(500).json({ message: "Failed to clear notifications" });
     }
   });
 
@@ -25608,14 +14707,14 @@ export async function registerRoutes(
       }
       
       const { registerDeviceToken } = await import('./push-notifications');
-      await registerDeviceToken(userId, token, platform, deviceName, deviceId);
+      await registerDeviceToken(userId!, token, platform, deviceName, deviceId);
       
 
 
-      res.json({ success: true, message: "Device registered for push notifications" });
+      return res.json({ success: true, message: "Device registered for push notifications" });
     } catch (error) {
       console.error("Failed to register push device:", error);
-      res.status(500).json({ message: "Failed to register device for push notifications" });
+      return res.status(500).json({ message: "Failed to register device for push notifications" });
     }
   });
 
@@ -25630,14 +14729,14 @@ export async function registerRoutes(
       }
       
       const { unregisterDeviceToken } = await import('./push-notifications');
-      await unregisterDeviceToken(userId, token);
+      await unregisterDeviceToken(userId!, token);
       
 
 
-      res.json({ success: true, message: "Device unregistered from push notifications" });
+      return res.json({ success: true, message: "Device unregistered from push notifications" });
     } catch (error) {
       console.error("Failed to unregister push device:", error);
-      res.status(500).json({ message: "Failed to unregister device" });
+      return res.status(500).json({ message: "Failed to unregister device" });
     }
   });
 
@@ -25646,14 +14745,14 @@ export async function registerRoutes(
     try {
       const userId = req.session?.userId;
       const { getUserDeviceTokens } = await import('./push-notifications');
-      const tokens = await getUserDeviceTokens(userId);
+      const tokens = await getUserDeviceTokens(userId!);
       
 
 
-      res.json({ devices: tokens.length, hasDevices: tokens.length > 0 });
+      return res.json({ devices: tokens.length, hasDevices: tokens.length > 0 });
     } catch (error) {
       console.error("Failed to get push devices:", error);
-      res.status(500).json({ message: "Failed to get registered devices" });
+      return res.status(500).json({ message: "Failed to get registered devices" });
     }
   });
 
@@ -25662,14 +14761,14 @@ export async function registerRoutes(
     try {
       const userId = req.session?.userId;
       const { unregisterAllDeviceTokens } = await import('./push-notifications');
-      const count = await unregisterAllDeviceTokens(userId);
+      const count = await unregisterAllDeviceTokens(userId!);
       
 
 
-      res.json({ success: true, devicesUnregistered: count });
+      return res.json({ success: true, devicesUnregistered: count });
     } catch (error) {
       console.error("Failed to unregister all push devices:", error);
-      res.status(500).json({ message: "Failed to unregister devices" });
+      return res.status(500).json({ message: "Failed to unregister devices" });
     }
   });
 
@@ -25683,10 +14782,10 @@ export async function registerRoutes(
       const configs = await storage.getAllPlatformConfigs();
 
 
-      res.json({ configs });
+      return res.json({ configs });
     } catch (error) {
       console.error("Failed to get platform configs:", error);
-      res.status(500).json({ message: "Failed to get platform configuration" });
+      return res.status(500).json({ message: "Failed to get platform configuration" });
     }
   });
 
@@ -25696,10 +14795,10 @@ export async function registerRoutes(
       const configs = await storage.getPlatformConfigsByCategory(req.params.category);
 
 
-      res.json({ configs });
+      return res.json({ configs });
     } catch (error) {
       console.error("Failed to get platform configs by category:", error);
-      res.status(500).json({ message: "Failed to get platform configuration" });
+      return res.status(500).json({ message: "Failed to get platform configuration" });
     }
   });
 
@@ -25712,10 +14811,10 @@ export async function registerRoutes(
       }
 
 
-      res.json({ config });
+      return res.json({ config });
     } catch (error) {
       console.error("Failed to get platform config:", error);
-      res.status(500).json({ message: "Failed to get platform configuration" });
+      return res.status(500).json({ message: "Failed to get platform configuration" });
     }
   });
 
@@ -25753,10 +14852,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ configs: configMap });
+      return res.json({ configs: configMap });
     } catch (error) {
       console.error("Failed to get public platform configs:", error);
-      res.status(500).json({ message: "Failed to get platform configuration" });
+      return res.status(500).json({ message: "Failed to get platform configuration" });
     }
   });
 
@@ -25793,10 +14892,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ config: updated });
+      return res.json({ config: updated });
     } catch (error) {
       console.error("Failed to update platform config:", error);
-      res.status(500).json({ message: "Failed to update platform configuration" });
+      return res.status(500).json({ message: "Failed to update platform configuration" });
     }
   });
 
@@ -25839,10 +14938,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ configs: results, updated: results.length });
+      return res.json({ configs: results, updated: results.length });
     } catch (error) {
       console.error("Failed to bulk update platform configs:", error);
-      res.status(500).json({ message: "Failed to update platform configuration" });
+      return res.status(500).json({ message: "Failed to update platform configuration" });
     }
   });
 
@@ -25853,10 +14952,10 @@ export async function registerRoutes(
       const configs = await storage.getAllPlatformConfigs();
 
 
-      res.json({ message: "Default platform configuration seeded", configs });
+      return res.json({ message: "Default platform configuration seeded", configs });
     } catch (error) {
       console.error("Failed to seed platform configs:", error);
-      res.status(500).json({ message: "Failed to seed platform configuration" });
+      return res.status(500).json({ message: "Failed to seed platform configuration" });
     }
   });
 
@@ -25888,10 +14987,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ config });
+      return res.json({ config });
     } catch (error) {
       console.error("Failed to create platform config:", error);
-      res.status(500).json({ message: "Failed to create platform configuration" });
+      return res.status(500).json({ message: "Failed to create platform configuration" });
     }
   });
 
@@ -25919,10 +15018,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete platform config:", error);
-      res.status(500).json({ message: "Failed to delete platform configuration" });
+      return res.status(500).json({ message: "Failed to delete platform configuration" });
     }
   });
 
@@ -25936,10 +15035,10 @@ export async function registerRoutes(
       const settings = await storage.getAllEmailNotificationSettings();
 
 
-      res.json({ settings });
+      return res.json({ settings });
     } catch (error) {
       console.error("Failed to get email notification settings:", error);
-      res.status(500).json({ message: "Failed to get email notification settings" });
+      return res.status(500).json({ message: "Failed to get email notification settings" });
     }
   });
 
@@ -25950,10 +15049,10 @@ export async function registerRoutes(
       const settings = await storage.getEmailNotificationSettingsByCategory(category);
 
 
-      res.json({ settings });
+      return res.json({ settings });
     } catch (error) {
       console.error("Failed to get email notification settings by category:", error);
-      res.status(500).json({ message: "Failed to get email notification settings" });
+      return res.status(500).json({ message: "Failed to get email notification settings" });
     }
   });
 
@@ -25981,10 +15080,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ setting });
+      return res.json({ setting });
     } catch (error) {
       console.error("Failed to toggle email notification:", error);
-      res.status(500).json({ message: "Failed to toggle email notification" });
+      return res.status(500).json({ message: "Failed to toggle email notification" });
     }
   });
 
@@ -26015,10 +15114,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ setting });
+      return res.json({ setting });
     } catch (error) {
       console.error("Failed to update email notification setting:", error);
-      res.status(500).json({ message: "Failed to update email notification setting" });
+      return res.status(500).json({ message: "Failed to update email notification setting" });
     }
   });
 
@@ -26029,10 +15128,10 @@ export async function registerRoutes(
       const settings = await storage.getAllEmailNotificationSettings();
 
 
-      res.json({ success: true, count: settings.length });
+      return res.json({ success: true, count: settings.length });
     } catch (error) {
       console.error("Failed to seed email notification settings:", error);
-      res.status(500).json({ message: "Failed to seed email notification settings" });
+      return res.status(500).json({ message: "Failed to seed email notification settings" });
     }
   });
 
@@ -26046,10 +15145,10 @@ export async function registerRoutes(
       const logs = await storage.getAllEmailLogs();
 
 
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
       console.error("Failed to get email logs:", error);
-      res.status(500).json({ message: "Failed to get email logs" });
+      return res.status(500).json({ message: "Failed to get email logs" });
     }
   });
 
@@ -26060,10 +15159,10 @@ export async function registerRoutes(
       const logs = await storage.getEmailLogsByUser(userId);
 
 
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
       console.error("Failed to get user email logs:", error);
-      res.status(500).json({ message: "Failed to get user email logs" });
+      return res.status(500).json({ message: "Failed to get user email logs" });
     }
   });
 
@@ -26074,10 +15173,10 @@ export async function registerRoutes(
       const logs = await storage.getEmailLogsByType(type);
 
 
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
       console.error("Failed to get email logs by type:", error);
-      res.status(500).json({ message: "Failed to get email logs by type" });
+      return res.status(500).json({ message: "Failed to get email logs by type" });
     }
   });
 
@@ -26093,10 +15192,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ log });
+      return res.json({ log });
     } catch (error) {
       console.error("Failed to get email log:", error);
-      res.status(500).json({ message: "Failed to get email log" });
+      return res.status(500).json({ message: "Failed to get email log" });
     }
   });
 
@@ -26107,10 +15206,10 @@ export async function registerRoutes(
     try {
       const templates = await storage.getAllTemplates();
       const emailTemplates = templates.filter(t => t.type === 'email');
-      res.json({ templates: emailTemplates });
+      return res.json({ templates: emailTemplates });
     } catch (error) {
       console.error("Failed to get email templates:", error);
-      res.status(500).json({ message: "Failed to get email templates" });
+      return res.status(500).json({ message: "Failed to get email templates" });
     }
   });
 
@@ -26122,9 +15221,9 @@ export async function registerRoutes(
       if (!template) {
         return res.status(404).json({ message: "Template not found" });
       }
-      res.json({ template });
+      return res.json({ template });
     } catch (error) {
-      res.status(500).json({ message: "Failed to get template" });
+      return res.status(500).json({ message: "Failed to get template" });
     }
   });
 
@@ -26150,10 +15249,10 @@ export async function registerRoutes(
         actorRole: "admin",
         details: `Email template updated: ${updated.name}`,
       });
-      res.json({ template: updated, message: "Template updated successfully" });
+      return res.json({ template: updated, message: "Template updated successfully" });
     } catch (error) {
       console.error("Failed to update email template:", error);
-      res.status(500).json({ message: "Failed to update template" });
+      return res.status(500).json({ message: "Failed to update template" });
     }
   });
 
@@ -26180,10 +15279,10 @@ export async function registerRoutes(
 
       await sendEmailDirect(email, "Finatrades Email Template Test", `<p>Test email from Finatrades</p>`);
 
-      res.json({ success: true, message: `Test email sent to ${email}` });
+      return res.json({ success: true, message: `Test email sent to ${email}` });
     } catch (error) {
       console.error("Failed to send test email:", error);
-      res.status(500).json({ message: "Failed to send test email: " + (error as Error).message });
+      return res.status(500).json({ message: "Failed to send test email: " + (error as Error).message });
     }
   });
   // ============================================
@@ -26210,7 +15309,7 @@ export async function registerRoutes(
       try {
         const geoResponse = await fetch(`http://ip-api.com/json/${clientIp}?fields=countryCode`);
         if (geoResponse.ok) {
-          const geoData = await geoResponse.json();
+          const geoData: any = await geoResponse.json();
           countryCode = geoData.countryCode || '';
         }
       } catch (err) {
@@ -26261,10 +15360,10 @@ export async function registerRoutes(
       const restrictions = await db.select().from(geoRestrictions).orderBy(geoRestrictions.countryName);
 
 
-      res.json({ restrictions });
+      return res.json({ restrictions });
     } catch (error) {
       console.error("Failed to get geo restrictions:", error);
-      res.status(500).json({ message: "Failed to get geo restrictions" });
+      return res.status(500).json({ message: "Failed to get geo restrictions" });
     }
   });
 
@@ -26274,10 +15373,10 @@ export async function registerRoutes(
       const [settings] = await db.select().from(geoRestrictionSettings).limit(1);
 
 
-      res.json({ settings: settings || null });
+      return res.json({ settings: settings || null });
     } catch (error) {
       console.error("Failed to get geo restriction settings:", error);
-      res.status(500).json({ message: "Failed to get geo restriction settings" });
+      return res.status(500).json({ message: "Failed to get geo restriction settings" });
     }
   });
 
@@ -26314,7 +15413,7 @@ export async function registerRoutes(
         
 
 
-      res.json({ settings: updated });
+      return res.json({ settings: updated });
       } else {
         const [created] = await db.insert(geoRestrictionSettings)
           .values({
@@ -26337,11 +15436,11 @@ export async function registerRoutes(
         
 
 
-      res.json({ settings: created });
+      return res.json({ settings: created });
       }
     } catch (error) {
       console.error("Failed to update geo restriction settings:", error);
-      res.status(500).json({ message: "Failed to update geo restriction settings" });
+      return res.status(500).json({ message: "Failed to update geo restriction settings" });
     }
   });
 
@@ -26386,10 +15485,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ restriction: created });
+      return res.json({ restriction: created });
     } catch (error) {
       console.error("Failed to create geo restriction:", error);
-      res.status(500).json({ message: "Failed to create geo restriction" });
+      return res.status(500).json({ message: "Failed to create geo restriction" });
     }
   });
 
@@ -26424,10 +15523,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ restriction: updated });
+      return res.json({ restriction: updated });
     } catch (error) {
       console.error("Failed to update geo restriction:", error);
-      res.status(500).json({ message: "Failed to update geo restriction" });
+      return res.status(500).json({ message: "Failed to update geo restriction" });
     }
   });
 
@@ -26456,10 +15555,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error("Failed to delete geo restriction:", error);
-      res.status(500).json({ message: "Failed to delete geo restriction" });
+      return res.status(500).json({ message: "Failed to delete geo restriction" });
     }
   });
 
@@ -26473,10 +15572,10 @@ export async function registerRoutes(
       const roles = await storage.getAllAdminRoles();
 
 
-      res.json({ roles });
+      return res.json({ roles });
     } catch (error) {
       console.error('Get roles error:', error);
-      res.status(500).json({ error: 'Failed to get roles' });
+      return res.status(500).json({ error: 'Failed to get roles' });
     }
   });
 
@@ -26490,10 +15589,10 @@ export async function registerRoutes(
       const permissions = await storage.getRolePermissions(req.params.id);
 
 
-      res.json({ role, permissions });
+      return res.json({ role, permissions });
     } catch (error) {
       console.error('Get role error:', error);
-      res.status(500).json({ error: 'Failed to get role' });
+      return res.status(500).json({ error: 'Failed to get role' });
     }
   });
 
@@ -26513,10 +15612,10 @@ export async function registerRoutes(
       });
 
 
-      res.json({ role });
+      return res.json({ role });
     } catch (error) {
       console.error('Create role error:', error);
-      res.status(500).json({ error: 'Failed to create role' });
+      return res.status(500).json({ error: 'Failed to create role' });
     }
   });
 
@@ -26529,10 +15628,10 @@ export async function registerRoutes(
       }
 
 
-      res.json({ role });
+      return res.json({ role });
     } catch (error) {
       console.error('Update role error:', error);
-      res.status(500).json({ error: 'Failed to update role' });
+      return res.status(500).json({ error: 'Failed to update role' });
     }
   });
 
@@ -26545,10 +15644,10 @@ export async function registerRoutes(
       }
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error('Delete role error:', error);
-      res.status(500).json({ error: 'Failed to delete role' });
+      return res.status(500).json({ error: 'Failed to delete role' });
     }
   });
 
@@ -26558,10 +15657,10 @@ export async function registerRoutes(
       const components = await storage.getAllAdminComponents();
 
 
-      res.json({ components });
+      return res.json({ components });
     } catch (error) {
       console.error('Get components error:', error);
-      res.status(500).json({ error: 'Failed to get components' });
+      return res.status(500).json({ error: 'Failed to get components' });
     }
   });
 
@@ -26575,10 +15674,10 @@ export async function registerRoutes(
       const result = await storage.updateRoleComponentPermission(roleId, componentId, permissions);
 
 
-      res.json({ permission: result });
+      return res.json({ permission: result });
     } catch (error) {
       console.error('Update permission error:', error);
-      res.status(500).json({ error: 'Failed to update permission' });
+      return res.status(500).json({ error: 'Failed to update permission' });
     }
   });
 
@@ -26588,10 +15687,10 @@ export async function registerRoutes(
       const assignments = await storage.getUserRoleAssignments(req.params.userId);
 
 
-      res.json({ assignments });
+      return res.json({ assignments });
     } catch (error) {
       console.error('Get user roles error:', error);
-      res.status(500).json({ error: 'Failed to get user roles' });
+      return res.status(500).json({ error: 'Failed to get user roles' });
     }
   });
 
@@ -26600,10 +15699,10 @@ export async function registerRoutes(
     try {
       const userId = req.session?.userId || "";
       const assignments = await storage.getUserRoleAssignments(userId);
-      res.json({ assignments });
+      return res.json({ assignments });
     } catch (error) {
       console.error('Get my role error:', error);
-      res.status(500).json({ error: 'Failed to get role' });
+      return res.status(500).json({ error: 'Failed to get role' });
     }
   });
 
@@ -26612,10 +15711,10 @@ export async function registerRoutes(
     try {
       const userId = req.session?.userId || "";
       const result = await storage.getUserEffectivePermissions(userId);
-      res.json(result);
+      return res.json(result);
     } catch (error) {
       console.error('Get user permissions error:', error);
-      res.status(500).json({ error: 'Failed to get user permissions' });
+      return res.status(500).json({ error: 'Failed to get user permissions' });
     }
   });
   // Assign role to user
@@ -26633,10 +15732,10 @@ export async function registerRoutes(
       );
 
 
-      res.json({ assignment });
+      return res.json({ assignment });
     } catch (error) {
       console.error('Assign role error:', error);
-      res.status(500).json({ error: 'Failed to assign role' });
+      return res.status(500).json({ error: 'Failed to assign role' });
     }
   });
 
@@ -26646,10 +15745,10 @@ export async function registerRoutes(
       const revoked = await storage.revokeUserRole(req.params.userId, req.params.roleId);
 
 
-      res.json({ success: revoked });
+      return res.json({ success: revoked });
     } catch (error) {
       console.error('Revoke role error:', error);
-      res.status(500).json({ error: 'Failed to revoke role' });
+      return res.status(500).json({ error: 'Failed to revoke role' });
     }
   });
 
@@ -26657,10 +15756,10 @@ export async function registerRoutes(
   app.get("/api/admin/rbac/roles/:roleId/users", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const users = await storage.getUsersByRoleId(req.params.roleId);
-      res.json({ users });
+      return res.json({ users });
     } catch (error) {
       console.error("Get role users error:", error);
-      res.status(500).json({ error: "Failed to get users for role" });
+      return res.status(500).json({ error: "Failed to get users for role" });
     }
   });
 
@@ -26676,10 +15775,10 @@ export async function registerRoutes(
       if (!updated) {
         return res.status(404).json({ error: "Role assignment not found" });
       }
-      res.json({ success: true, approvalLevel });
+      return res.json({ success: true, approvalLevel });
     } catch (error) {
       console.error("Update approval level error:", error);
-      res.status(500).json({ error: "Failed to update approval level" });
+      return res.status(500).json({ error: "Failed to update approval level" });
     }
   });
 
@@ -26689,10 +15788,10 @@ export async function registerRoutes(
       const tasks = await storage.getAllTaskDefinitions();
 
 
-      res.json({ tasks });
+      return res.json({ tasks });
     } catch (error) {
       console.error('Get tasks error:', error);
-      res.status(500).json({ error: 'Failed to get task definitions' });
+      return res.status(500).json({ error: 'Failed to get task definitions' });
     }
   });
 
@@ -26706,10 +15805,10 @@ export async function registerRoutes(
       });
 
 
-      res.json({ queue });
+      return res.json({ queue });
     } catch (error) {
       console.error('Get approval queue error:', error);
-      res.status(500).json({ error: 'Failed to get approval queue' });
+      return res.status(500).json({ error: 'Failed to get approval queue' });
     }
   });
 
@@ -26719,10 +15818,10 @@ export async function registerRoutes(
       const pendingApprovals = await storage.getPendingApprovalsForUser(req.session?.userId || '');
 
 
-      res.json({ approvals: pendingApprovals });
+      return res.json({ approvals: pendingApprovals });
     } catch (error) {
       console.error('Get pending approvals error:', error);
-      res.status(500).json({ error: 'Failed to get pending approvals' });
+      return res.status(500).json({ error: 'Failed to get pending approvals' });
     }
   });
 
@@ -26736,10 +15835,10 @@ export async function registerRoutes(
       const history = await storage.getApprovalHistory(req.params.id);
 
 
-      res.json({ approval, history });
+      return res.json({ approval, history });
     } catch (error) {
       console.error('Get approval error:', error);
-      res.status(500).json({ error: 'Failed to get approval' });
+      return res.status(500).json({ error: 'Failed to get approval' });
     }
   });
 
@@ -26795,10 +15894,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ approval: result });
+      return res.json({ approval: result });
     } catch (error) {
       console.error('Process approval error:', error);
-      res.status(500).json({ error: 'Failed to process approval' });
+      return res.status(500).json({ error: 'Failed to process approval' });
     }
   });
 
@@ -26835,10 +15934,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ approval });
+      return res.json({ approval });
     } catch (error) {
       console.error('Create approval error:', error);
-      res.status(500).json({ error: 'Failed to create approval request' });
+      return res.status(500).json({ error: 'Failed to create approval request' });
     }
   });
 
@@ -26847,287 +15946,6 @@ export async function registerRoutes(
   // ============================================================================
 
   // Audit Trail
-  app.get("/api/admin/audit-logs", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const { entityType, actionType, limit = 100 } = req.query;
-      const logs = await db.select().from(auditLogs)
-        .orderBy(desc(auditLogs.createdAt))
-        .limit(Number(limit));
-      
-      const formatted = logs.map(log => ({
-        id: log.id,
-        entityType: log.entityType,
-        entityId: log.entityId,
-        actor: log.userId || 'System',
-        actorRole: 'admin',
-        actionType: log.action,
-        details: log.details || log.reason,
-        oldValue: log.previousValue ? JSON.stringify(log.previousValue) : null,
-        newValue: log.newValue ? JSON.stringify(log.newValue) : null,
-        timestamp: log.createdAt,
-      }));
-      
-
-
-      res.json({ logs: formatted });
-    } catch (error) {
-      console.error('Audit logs error:', error);
-      res.status(500).json({ error: 'Failed to fetch audit logs' });
-    }
-  });
-
-  // Revenue Analytics
-  app.get("/api/admin/revenue-analytics", ensureAdminAsync, requirePermission('view_reports'), async (req, res) => {
-    try {
-      const { period = '30d' } = req.query;
-      const days = period === '7d' ? 7 : period === '90d' ? 90 : period === '365d' ? 365 : 30;
-      const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-      
-      const transactions = await db.select().from(transactionsTable)
-        .where(sql`created_at >= ${startDate}`)
-        .orderBy(desc(transactionsTable.createdAt));
-      
-      let totalFees = 0;
-      let totalSpread = 0;
-      const byModule: Record<string, { revenue: number; count: number }> = {};
-      const byType: Record<string, number> = { 'Fees': 0, 'Spread': 0, 'Other': 0 };
-      const dailyData: Record<string, { revenue: number; fees: number; spread: number }> = {};
-      
-      for (const tx of transactions) {
-        const fee = parseFloat(tx.feeAmount || '0');
-        totalFees += fee;
-        
-        const module = tx.module || 'General';
-        if (!byModule[module]) byModule[module] = { revenue: 0, count: 0 };
-        byModule[module].revenue += fee;
-        byModule[module].count++;
-        
-        byType['Fees'] += fee;
-        
-        const dateKey = tx.createdAt.toISOString().split('T')[0];
-        if (!dailyData[dateKey]) dailyData[dateKey] = { revenue: 0, fees: 0, spread: 0 };
-        dailyData[dateKey].fees += fee;
-        dailyData[dateKey].revenue += fee;
-      }
-      
-      const totalRevenue = totalFees + totalSpread;
-      const previousPeriodStart = new Date(startDate.getTime() - days * 24 * 60 * 60 * 1000);
-      
-
-
-        return res.json({
-        summary: {
-          totalRevenue,
-          totalFees,
-          totalSpreadRevenue: totalSpread,
-          revenueChange: 0,
-          averageDaily: totalRevenue / days,
-        },
-        byModule: Object.entries(byModule).map(([module, data]) => ({ module, ...data })),
-        byType: Object.entries(byType).map(([type, amount]) => ({ type, amount })),
-        daily: Object.entries(dailyData).map(([date, data]) => ({ date, ...data })).slice(-30),
-        topTransactions: transactions.slice(0, 10).map(tx => ({
-          id: tx.id,
-          amount: parseFloat(tx.feeAmount || '0'),
-          module: tx.module || 'General',
-          date: tx.createdAt,
-        })),
-      });
-    } catch (error) {
-      console.error('Revenue analytics error:', error);
-      res.status(500).json({ error: 'Failed to fetch revenue analytics' });
-    }
-  });
-
-  // Reconciliation Summary
-  app.get("/api/admin/reconciliation/summary", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const wallets = await db.select().from(walletsTable);
-      const vaultHoldings = await db.select().from(vaultHoldingsTable);
-      const bnslPlans = await db.select().from(bnslPlansTable);
-      
-      let totalGoldInWallets = 0;
-      let totalGoldInVault = 0;
-      let totalGoldInBnsl = 0;
-      
-      for (const wallet of wallets) {
-        totalGoldInWallets += parseFloat(wallet.goldGrams || '0');
-      }
-      
-      for (const holding of vaultHoldings) {
-        totalGoldInVault += parseFloat(holding.goldGrams || '0');
-      }
-      
-      for (const plan of bnslPlans) {
-        if (plan.status === 'active') {
-          totalGoldInBnsl += parseFloat(plan.goldGrams || '0');
-        }
-      }
-      
-      // Physical gold in vault is the actual gold in system
-      // Wallets + BNSL are claims on that gold (liabilities)
-      const totalDigitalClaims = totalGoldInWallets + totalGoldInBnsl;
-      const totalGoldInSystem = totalGoldInVault; // Physical gold is the source of truth
-      const difference = totalGoldInVault - totalDigitalClaims; // Should be 0 if properly backed
-      
-
-
-        return res.json({
-        totalGoldInSystem,
-        totalGoldInWallets,
-        totalGoldInVault,
-        totalGoldInBnsl,
-        totalGoldInTrades: 0,
-        difference,
-        lastReconciliation: new Date().toISOString(),
-        pendingReviews: 0,
-      });
-    } catch (error) {
-      console.error('Reconciliation summary error:', error);
-      res.status(500).json({ error: 'Failed to fetch reconciliation summary' });
-    }
-  });
-
-  // Reconciliation Reports
-  app.get("/api/admin/reconciliation/reports", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const reports = await db.select().from(reconciliationReports)
-        .orderBy(desc(reconciliationReports.createdAt))
-        .limit(30);
-      
-
-
-      res.json({ reports });
-    } catch (error) {
-      console.error('Reconciliation reports error:', error);
-      res.status(500).json({ error: 'Failed to fetch reconciliation reports' });
-    }
-  });
-
-  // Generate Reconciliation Report
-  app.post("/api/admin/reconciliation/generate", ensureAdminAsync, requirePermission('generate_reports', 'manage_vault'), async (req, res) => {
-    try {
-      const adminUser = (req as any).adminUser;
-      const today = new Date();
-      
-      const wallets = await db.select().from(walletsTable);
-      const transactions = await db.select().from(transactionsTable)
-        .where(sql`DATE(created_at) = DATE(${today})`);
-      
-      let totalGold = 0;
-      let totalUsd = 0;
-      let goldInflow = 0;
-      let goldOutflow = 0;
-      let depositCount = 0;
-      let withdrawalCount = 0;
-      
-      for (const wallet of wallets) {
-        totalGold += parseFloat(wallet.goldGrams || '0');
-        totalUsd += parseFloat(wallet.goldGrams || '0') * 143; // Approximate USD value
-      }
-      
-      for (const tx of transactions) {
-        if (tx.type === 'deposit' || tx.type === 'buy') {
-          goldInflow += parseFloat(tx.goldGrams || '0');
-          depositCount++;
-        } else if (tx.type === 'withdrawal' || tx.type === 'sell') {
-          goldOutflow += parseFloat(tx.goldGrams || '0');
-          withdrawalCount++;
-        }
-      }
-      
-      const report = await db.insert(reconciliationReports).values({
-        reportDate: today,
-        totalGoldGrams: totalGold.toString(),
-        totalUsdValue: totalUsd.toString(),
-        transactionCount: transactions.length,
-        depositCount,
-        withdrawalCount,
-        goldInflow: goldInflow.toString(),
-        goldOutflow: goldOutflow.toString(),
-        netGoldChange: (goldInflow - goldOutflow).toString(),
-        discrepancies: null,
-        status: 'balanced',
-        generatedBy: adminUser?.id || null,
-      }).returning();
-      
-
-
-      res.json({ report: report[0] });
-    } catch (error) {
-      console.error('Generate reconciliation error:', error);
-      res.status(500).json({ error: 'Failed to generate reconciliation report' });
-    }
-  });
-
-  // Risk Exposure
-  app.get("/api/admin/risk-exposure", ensureAdminAsync, requirePermission('view_reports', 'manage_kyc'), async (req, res) => {
-    try {
-      const wallets = await db.select().from(walletsTable);
-      const bnslPlans = await db.select().from(bnslPlansTable).where(eq(bnslPlansTable.status, 'active'));
-      const withdrawalRequests = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.status, 'pending'));
-      
-      let totalGoldGrams = 0;
-      let totalExposure = 0;
-      let pendingWithdrawals = 0;
-      let bnslObligations = 0;
-      
-      for (const wallet of wallets) {
-        totalGoldGrams += parseFloat(wallet.goldGrams || '0');
-      }
-      
-      for (const plan of bnslPlans) {
-        bnslObligations += parseFloat(plan.payoutAmountUsd || '0');
-      }
-      
-      for (const req of withdrawalRequests) {
-        pendingWithdrawals += parseFloat(req.amountUsd || '0');
-      }
-      
-      const goldPrice = 85;
-      totalExposure = totalGoldGrams * goldPrice;
-      
-      const liquidityRatio = totalExposure > 0 ? (totalExposure - pendingWithdrawals - bnslObligations) / totalExposure : 1;
-      const riskScore = Math.min(100, Math.max(0, (1 - liquidityRatio) * 100));
-      
-      let riskLevel: 'low' | 'medium' | 'high' | 'critical' = 'low';
-      if (riskScore > 75) riskLevel = 'critical';
-      else if (riskScore > 50) riskLevel = 'high';
-      else if (riskScore > 25) riskLevel = 'medium';
-      
-
-
-        return res.json({
-        overallRiskScore: riskScore,
-        riskLevel,
-        totalExposure: { goldGrams: totalGoldGrams, usdValue: totalExposure },
-        exposureByModule: [
-          { module: 'FinaPay', goldGrams: totalGoldGrams * 0.5, usdValue: totalExposure * 0.5, riskLevel: 'low' },
-          { module: 'BNSL', goldGrams: totalGoldGrams * 0.3, usdValue: totalExposure * 0.3, riskLevel: 'medium' },
-          { module: 'FinaVault', goldGrams: totalGoldGrams * 0.2, usdValue: totalExposure * 0.2, riskLevel: 'low' },
-        ],
-        highRiskUsers: [],
-        pendingObligations: {
-          bnslPayouts: bnslObligations,
-          withdrawals: pendingWithdrawals,
-          tradeSettlements: 0,
-          total: bnslObligations + pendingWithdrawals,
-        },
-        concentrationRisk: {
-          top10UsersPercent: 45,
-          top20UsersPercent: 65,
-          largestSingleExposure: totalExposure * 0.1,
-        },
-        liquidityRatio,
-        alerts: liquidityRatio < 1 ? [{ type: 'liquidity', message: 'Liquidity ratio below 100%', severity: 'critical' }] : [],
-      });
-    } catch (error) {
-      console.error('Risk exposure error:', error);
-      res.status(500).json({ error: 'Failed to fetch risk exposure' });
-    }
-  });
-
-  // SAR Reports
   app.get("/api/admin/sar-reports", ensureAdminAsync, requirePermission('view_kyc', 'manage_kyc'), async (req, res) => {
     try {
       const { status } = req.query;
@@ -27149,10 +15967,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ reports: reportsWithUsers });
+      return res.json({ reports: reportsWithUsers });
     } catch (error) {
       console.error('SAR reports error:', error);
-      res.status(500).json({ error: 'Failed to fetch SAR reports' });
+      return res.status(500).json({ error: 'Failed to fetch SAR reports' });
     }
   });
 
@@ -27173,14 +15991,14 @@ export async function registerRoutes(
         amountInvolved: amountInvolved || null,
         status: 'draft',
         createdBy: adminUser?.id || '',
-      }).returning();
+      } as any).returning();
       
 
 
-      res.json({ report: report[0] });
+      return res.json({ report: report[0] });
     } catch (error) {
       console.error('Create SAR error:', error);
-      res.status(500).json({ error: 'Failed to create SAR report' });
+      return res.status(500).json({ error: 'Failed to create SAR report' });
     }
   });
 
@@ -27192,16 +16010,16 @@ export async function registerRoutes(
           status: 'submitted',
           submittedAt: new Date(),
           submittedTo: 'DFSA',
-        })
+        } as any)
         .where(eq(sarReports.id, req.params.id))
         .returning();
       
 
 
-      res.json({ report: report[0] });
+      return res.json({ report: report[0] });
     } catch (error) {
       console.error('Submit SAR error:', error);
-      res.status(500).json({ error: 'Failed to submit SAR report' });
+      return res.status(500).json({ error: 'Failed to submit SAR report' });
     }
   });
 
@@ -27222,10 +16040,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ alerts: alertsWithUsers });
+      return res.json({ alerts: alertsWithUsers });
     } catch (error) {
       console.error('Fraud alerts error:', error);
-      res.status(500).json({ error: 'Failed to fetch fraud alerts' });
+      return res.status(500).json({ error: 'Failed to fetch fraud alerts' });
     }
   });
 
@@ -27242,10 +16060,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ jobs });
+      return res.json({ jobs });
     } catch (error) {
       console.error('Scheduled jobs error:', error);
-      res.status(500).json({ error: 'Failed to fetch scheduled jobs' });
+      return res.status(500).json({ error: 'Failed to fetch scheduled jobs' });
     }
   });
 
@@ -27267,130 +16085,14 @@ export async function registerRoutes(
       
 
 
-      res.json({ logs });
+      return res.json({ logs });
     } catch (error) {
       console.error('System logs error:', error);
-      res.status(500).json({ error: 'Failed to fetch system logs' });
+      return res.status(500).json({ error: 'Failed to fetch system logs' });
     }
   });
 
   // Settlement Queue
-  app.get("/api/admin/settlements", ensureAdminAsync, requirePermission('view_transactions', 'view_reports'), async (req, res) => {
-    try {
-      const { status, type } = req.query;
-      
-      const withdrawals = await db.select().from(withdrawalRequestsTable)
-        .orderBy(desc(withdrawalRequestsTable.createdAt))
-        .limit(50);
-      
-      const settlements = withdrawals.map(w => ({
-        id: w.id,
-        referenceId: w.referenceNumber || w.id,
-        userId: w.userId,
-        type: 'withdrawal' as const,
-        amountUsd: w.amountUsd,
-        amountGold: w.goldGrams,
-        currency: 'USD',
-        paymentMethod: w.paymentMethod,
-        bankDetails: w.bankDetails,
-        status: w.status === 'pending' ? 'pending' : w.status === 'approved' ? 'processing' : w.status === 'completed' ? 'completed' : 'failed',
-        priority: 5,
-        scheduledFor: null,
-        processedAt: w.approvedAt,
-        processedBy: w.approvedBy,
-        externalRef: null,
-        notes: w.notes,
-        errorMessage: w.rejectionReason,
-        createdAt: w.createdAt,
-      }));
-      
-      let filtered = settlements;
-      if (status && status !== 'all') {
-        filtered = filtered.filter(s => s.status === status);
-      }
-      if (type && type !== 'all') {
-        filtered = filtered.filter(s => s.type === type);
-      }
-      
-      const settlementsWithUsers = await Promise.all(filtered.map(async (s) => {
-        const user = await storage.getUser(s.userId);
-        return { ...s, user: user ? { firstName: user.firstName, lastName: user.lastName, email: user.email } : null };
-      }));
-      
-
-
-      res.json({ settlements: settlementsWithUsers });
-    } catch (error) {
-      console.error('Settlements error:', error);
-      res.status(500).json({ error: 'Failed to fetch settlements' });
-    }
-  });
-
-  // Liquidity Dashboard
-  app.get("/api/admin/liquidity", ensureAdminAsync, requirePermission('view_reports', 'view_vault'), async (req, res) => {
-    try {
-      const wallets = await db.select().from(walletsTable);
-      const bnslPlans = await db.select().from(bnslPlansTable).where(eq(bnslPlansTable.status, 'active'));
-      const withdrawalRequests = await db.select().from(withdrawalRequestsTable).where(eq(withdrawalRequestsTable.status, 'pending'));
-      const depositRequests = await db.select().from(depositRequestsTable).where(eq(depositRequestsTable.status, 'pending'));
-      
-      let totalGoldGrams = 0;
-      let totalCashUsd = 0;
-      
-      for (const wallet of wallets) {
-        totalGoldGrams += parseFloat(wallet.goldBalance || '0');
-        totalCashUsd += parseFloat(wallet.usdBalance || '0');
-      }
-      
-      let pendingWithdrawals = 0;
-      let pendingDeposits = 0;
-      let bnslObligations = 0;
-      
-      for (const w of withdrawalRequests) {
-        pendingWithdrawals += parseFloat(w.amountUsd || '0');
-      }
-      
-      for (const d of depositRequests) {
-        pendingDeposits += parseFloat(d.amountUsd || '0');
-      }
-      
-      for (const plan of bnslPlans) {
-        bnslObligations += parseFloat(plan.estimatedPayoutUsd || '0');
-      }
-      
-      const goldPrice = 85;
-      const totalGoldValue = totalGoldGrams * goldPrice;
-      const totalAssets = totalGoldValue + totalCashUsd;
-      const totalObligations = pendingWithdrawals + bnslObligations;
-      const availableLiquidity = totalAssets - totalObligations;
-      const liquidityRatio = totalObligations > 0 ? totalAssets / totalObligations : 10;
-      
-
-
-        return res.json({
-        current: {
-          totalGoldGrams,
-          totalGoldValueUsd: totalGoldValue,
-          totalCashUsd,
-          totalCashAed: totalCashUsd * 3.67,
-          pendingWithdrawalsUsd: pendingWithdrawals,
-          pendingDepositsUsd: pendingDeposits,
-          bnslObligationsUsd: bnslObligations,
-          tradeFinanceLockedUsd: 0,
-          availableLiquidityUsd: availableLiquidity,
-          liquidityRatio,
-        },
-        history: [],
-        alerts: liquidityRatio < 1.2 ? [{ type: 'liquidity', message: 'Liquidity ratio below 120%', severity: 'warning' }] : [],
-        recommendations: liquidityRatio < 1.5 ? ['Consider increasing cash reserves', 'Review pending withdrawals'] : [],
-      });
-    } catch (error) {
-      console.error('Liquidity error:', error);
-      res.status(500).json({ error: 'Failed to fetch liquidity data' });
-    }
-  });
-
-  // Regulatory Reports
   app.get("/api/admin/regulatory-reports", ensureAdminAsync, requirePermission('view_reports', 'manage_kyc'), async (req, res) => {
     try {
       const { type, status } = req.query;
@@ -27408,10 +16110,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ reports });
+      return res.json({ reports });
     } catch (error) {
       console.error('Regulatory reports error:', error);
-      res.status(500).json({ error: 'Failed to fetch regulatory reports' });
+      return res.status(500).json({ error: 'Failed to fetch regulatory reports' });
     }
   });
 
@@ -27435,10 +16137,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ report: report[0] });
+      return res.json({ report: report[0] });
     } catch (error) {
       console.error('Generate regulatory report error:', error);
-      res.status(500).json({ error: 'Failed to generate regulatory report' });
+      return res.status(500).json({ error: 'Failed to generate regulatory report' });
     }
   });
 
@@ -27458,10 +16160,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ report: report[0] });
+      return res.json({ report: report[0] });
     } catch (error) {
       console.error('Submit regulatory report error:', error);
-      res.status(500).json({ error: 'Failed to submit regulatory report' });
+      return res.status(500).json({ error: 'Failed to submit regulatory report' });
     }
   });
 
@@ -27474,10 +16176,10 @@ export async function registerRoutes(
   app.get("/api/admin/announcements", ensureAdminAsync, requirePermission('view_cms', 'manage_cms'), async (req, res) => {
     try {
       const allAnnouncements = await db.select().from(announcements).orderBy(desc(announcements.createdAt));
-      res.json(allAnnouncements);
+      return res.json(allAnnouncements);
     } catch (error) {
       console.error('Get announcements error:', error);
-      res.status(500).json({ error: 'Failed to get announcements' });
+      return res.status(500).json({ error: 'Failed to get announcements' });
     }
   });
 
@@ -27498,10 +16200,10 @@ export async function registerRoutes(
         createdBy: adminUser?.id,
       }).returning();
       
-      res.json(announcement[0]);
+      return res.json(announcement[0]);
     } catch (error) {
       console.error('Create announcement error:', error);
-      res.status(500).json({ error: 'Failed to create announcement' });
+      return res.status(500).json({ error: 'Failed to create announcement' });
     }
   });
 
@@ -27525,10 +16227,10 @@ export async function registerRoutes(
         .where(eq(announcements.id, req.params.id))
         .returning();
       
-      res.json(updated[0]);
+      return res.json(updated[0]);
     } catch (error) {
       console.error('Update announcement error:', error);
-      res.status(500).json({ error: 'Failed to update announcement' });
+      return res.status(500).json({ error: 'Failed to update announcement' });
     }
   });
 
@@ -27538,10 +16240,10 @@ export async function registerRoutes(
       await db.delete(announcements).where(eq(announcements.id, req.params.id));
 
 
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error) {
       console.error('Delete announcement error:', error);
-      res.status(500).json({ error: 'Failed to delete announcement' });
+      return res.status(500).json({ error: 'Failed to delete announcement' });
     }
   });
 
@@ -27580,10 +16282,10 @@ export async function registerRoutes(
         )
         .orderBy(desc(announcements.createdAt));
       
-      res.json(activeAnnouncements);
+      return res.json(activeAnnouncements);
     } catch (error) {
       console.error('Get active announcements error:', error);
-      res.status(500).json({ error: 'Failed to get announcements' });
+      return res.status(500).json({ error: 'Failed to get announcements' });
     }
   });
 
@@ -27606,10 +16308,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ summaries });
+      return res.json({ summaries });
     } catch (error: any) {
       console.error('Get workflow audit summaries error:', error);
-      res.status(500).json({ error: error.message || 'Failed to get summaries' });
+      return res.status(500).json({ error: error.message || 'Failed to get summaries' });
     }
   });
   
@@ -27624,10 +16326,10 @@ export async function registerRoutes(
         return res.status(404).json({ error: 'Flow not found' });
       }
       
-      res.json(details);
+      return res.json(details);
     } catch (error: any) {
       console.error('Get workflow audit details error:', error);
-      res.status(500).json({ error: error.message || 'Failed to get details' });
+      return res.status(500).json({ error: error.message || 'Failed to get details' });
     }
   });
   
@@ -27638,10 +16340,10 @@ export async function registerRoutes(
       
       const comparison = await workflowAuditService.compareFlow(flowInstanceId);
       
-      res.json(comparison);
+      return res.json(comparison);
     } catch (error: any) {
       console.error('Compare workflow flow error:', error);
-      res.status(500).json({ error: error.message || 'Failed to compare' });
+      return res.status(500).json({ error: error.message || 'Failed to compare' });
     }
   });
   
@@ -27658,10 +16360,10 @@ export async function registerRoutes(
       
 
 
-      res.json({ flowType, expectedSteps });
+      return res.json({ flowType, expectedSteps });
     } catch (error: any) {
       console.error('Get expected steps error:', error);
-      res.status(500).json({ error: error.message || 'Failed to get expected steps' });
+      return res.status(500).json({ error: error.message || 'Failed to get expected steps' });
     }
   });
   
@@ -27687,10 +16389,10 @@ export async function registerRoutes(
         if (summary.overallResult === 'FAIL') stats.byFlowType[summary.flowType].failed++;
       }
       
-      res.json(stats);
+      return res.json(stats);
     } catch (error: any) {
       console.error('Get workflow audit stats error:', error);
-      res.status(500).json({ error: error.message || 'Failed to get stats' });
+      return res.status(500).json({ error: error.message || 'Failed to get stats' });
     }
   });
 
@@ -27700,439 +16402,6 @@ export async function registerRoutes(
   // ============================================================================
 
   // GET /api/price-alerts - List user's price alerts
-  app.get("/api/price-alerts", async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const alerts = await db
-        .select()
-        .from(priceAlerts)
-        .where(eq(priceAlerts.userId, sessionUserId))
-        .orderBy(desc(priceAlerts.createdAt));
-
-
-
-      res.json({ alerts });
-    } catch (error: any) {
-      console.error("Get price alerts error:", error);
-      res.status(500).json({ message: error.message || "Failed to get price alerts" });
-    }
-  });
-
-  // POST /api/price-alerts - Create new price alert
-  app.post("/api/price-alerts", async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const validated = insertPriceAlertSchema.safeParse({
-        ...req.body,
-        userId: sessionUserId,
-      });
-
-      if (!validated.success) {
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: validated.error.flatten().fieldErrors 
-        });
-      }
-
-      const [alert] = await db
-        .insert(priceAlerts)
-        .values(validated.data)
-        .returning();
-
-      res.status(201).json({ alert });
-    } catch (error: any) {
-      console.error("Create price alert error:", error);
-      res.status(500).json({ message: error.message || "Failed to create price alert" });
-    }
-  });
-
-  // PATCH /api/price-alerts/:id - Update price alert
-  app.patch("/api/price-alerts/:id", async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      // Verify ownership
-      const [existing] = await db
-        .select()
-        .from(priceAlerts)
-        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)));
-
-      if (!existing) {
-        return res.status(404).json({ message: "Price alert not found" });
-      }
-
-      const updateSchema = z.object({
-        targetPricePerGram: z.string().optional(),
-        direction: z.enum(["above", "below"]).optional(),
-        channel: z.enum(["email", "push", "in_app", "all"]).optional(),
-        isActive: z.boolean().optional(),
-        note: z.string().nullable().optional(),
-      });
-
-      const validated = updateSchema.safeParse(req.body);
-      if (!validated.success) {
-        return res.status(400).json({ 
-          message: "Validation failed", 
-          errors: validated.error.flatten().fieldErrors 
-        });
-      }
-
-      const [updated] = await db
-        .update(priceAlerts)
-        .set({
-          ...validated.data,
-          updatedAt: new Date(),
-        })
-        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)))
-        .returning();
-
-
-
-      res.json({ alert: updated });
-    } catch (error: any) {
-      console.error("Update price alert error:", error);
-      res.status(500).json({ message: error.message || "Failed to update price alert" });
-    }
-  });
-
-  // DELETE /api/price-alerts/:id - Delete price alert
-  app.delete("/api/price-alerts/:id", async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      // Verify ownership and delete
-      const [deleted] = await db
-        .delete(priceAlerts)
-        .where(and(eq(priceAlerts.id, id), eq(priceAlerts.userId, sessionUserId)))
-        .returning();
-
-      if (!deleted) {
-        return res.status(404).json({ message: "Price alert not found" });
-      }
-
-
-
-      res.json({ message: "Price alert deleted successfully", alert: deleted });
-    } catch (error: any) {
-      console.error("Delete price alert error:", error);
-      res.status(500).json({ message: error.message || "Failed to delete price alert" });
-    }
-  });
-
-
-
-  // ============================================================================
-  // DCA (Dollar Cost Averaging) AUTO-BUY ENDPOINTS
-  // ============================================================================
-
-  // GET /api/dca-plans - List user's DCA plans
-  app.get("/api/dca-plans", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const plans = await db
-        .select()
-        .from(dcaPlans)
-        .where(eq(dcaPlans.userId, sessionUserId))
-        .orderBy(desc(dcaPlans.createdAt));
-
-
-
-      res.json({ plans });
-    } catch (error: any) {
-      console.error("Get DCA plans error:", error);
-      res.status(500).json({ message: error.message || "Failed to fetch DCA plans" });
-    }
-  });
-
-  // POST /api/dca-plans - Create new DCA plan
-  app.post("/api/dca-plans", ensureAuthenticated, checkMaintenanceMode, idempotencyMiddleware, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const createSchema = z.object({
-        name: z.string().nullable().optional(),
-        amountUsd: z.string().refine((val) => parseFloat(val) >= 1, { message: "Minimum amount is $1" }),
-        frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]),
-        dayOfWeek: z.number().min(0).max(6).nullable().optional(),
-        dayOfMonth: z.number().min(1).max(31).nullable().optional(),
-      });
-
-      const validated = createSchema.safeParse(req.body);
-      if (!validated.success) {
-        return res.status(400).json({
-          message: "Validation failed",
-          errors: validated.error.flatten().fieldErrors,
-        });
-      }
-
-      const { name, amountUsd, frequency, dayOfWeek, dayOfMonth } = validated.data;
-
-      // Calculate next run time based on frequency
-      const now = new Date();
-      let nextRunAt = new Date();
-
-      switch (frequency) {
-        case "daily":
-          nextRunAt.setDate(nextRunAt.getDate() + 1);
-          nextRunAt.setHours(9, 0, 0, 0); // 9 AM next day
-          break;
-        case "weekly":
-          const targetDay = dayOfWeek ?? 1; // Monday by default
-          const daysUntilTarget = (targetDay - now.getDay() + 7) % 7 || 7;
-          nextRunAt.setDate(nextRunAt.getDate() + daysUntilTarget);
-          nextRunAt.setHours(9, 0, 0, 0);
-          break;
-        case "biweekly":
-          const biweeklyDay = dayOfWeek ?? 1;
-          const daysUntilBiweekly = (biweeklyDay - now.getDay() + 7) % 7 || 7;
-          nextRunAt.setDate(nextRunAt.getDate() + daysUntilBiweekly);
-          nextRunAt.setHours(9, 0, 0, 0);
-          break;
-        case "monthly":
-          const targetDate = dayOfMonth ?? 1;
-          nextRunAt.setMonth(nextRunAt.getMonth() + 1);
-          nextRunAt.setDate(Math.min(targetDate, new Date(nextRunAt.getFullYear(), nextRunAt.getMonth() + 1, 0).getDate()));
-          nextRunAt.setHours(9, 0, 0, 0);
-          break;
-      }
-
-      const [plan] = await db
-        .insert(dcaPlans)
-        .values({
-          userId: sessionUserId,
-          name: name || null,
-          amountUsd,
-          frequency,
-          dayOfWeek: dayOfWeek ?? null,
-          dayOfMonth: dayOfMonth ?? null,
-          nextRunAt,
-          status: "active",
-        })
-        .returning();
-
-      // Create audit log
-      await storage.createAuditLog({
-        userId: sessionUserId,
-        action: "dca_plan_created",
-        details: { planId: plan.id, amountUsd, frequency },
-      });
-
-      res.status(201).json({ plan });
-    } catch (error: any) {
-      console.error("Create DCA plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to create DCA plan" });
-    }
-  });
-
-  // PATCH /api/dca-plans/:id - Update DCA plan (including pause/resume)
-  app.patch("/api/dca-plans/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      // Verify ownership
-      const [existing] = await db
-        .select()
-        .from(dcaPlans)
-        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
-
-      if (!existing) {
-        return res.status(404).json({ message: "DCA plan not found" });
-      }
-
-      const updateSchema = z.object({
-        name: z.string().nullable().optional(),
-        amountUsd: z.string().optional(),
-        frequency: z.enum(["daily", "weekly", "biweekly", "monthly"]).optional(),
-        dayOfWeek: z.number().min(0).max(6).nullable().optional(),
-        dayOfMonth: z.number().min(1).max(31).nullable().optional(),
-        status: z.enum(["active", "paused", "cancelled"]).optional(),
-      });
-
-      const validated = updateSchema.safeParse(req.body);
-      if (!validated.success) {
-        return res.status(400).json({
-          message: "Validation failed",
-          errors: validated.error.flatten().fieldErrors,
-        });
-      }
-
-      const updates: Record<string, any> = { ...validated.data, updatedAt: new Date() };
-
-      // If resuming from paused, recalculate next run time
-      if (validated.data.status === "active" && existing.status === "paused") {
-        const now = new Date();
-        let nextRunAt = new Date();
-        const frequency = validated.data.frequency || existing.frequency;
-        const dayOfWeek = validated.data.dayOfWeek ?? existing.dayOfWeek;
-        const dayOfMonth = validated.data.dayOfMonth ?? existing.dayOfMonth;
-
-        switch (frequency) {
-          case "daily":
-            nextRunAt.setDate(nextRunAt.getDate() + 1);
-            nextRunAt.setHours(9, 0, 0, 0);
-            break;
-          case "weekly":
-          case "biweekly":
-            const targetDay = dayOfWeek ?? 1;
-            const daysUntilTarget = (targetDay - now.getDay() + 7) % 7 || 7;
-            nextRunAt.setDate(nextRunAt.getDate() + daysUntilTarget);
-            nextRunAt.setHours(9, 0, 0, 0);
-            break;
-          case "monthly":
-            const targetDate = dayOfMonth ?? 1;
-            nextRunAt.setMonth(nextRunAt.getMonth() + 1);
-            nextRunAt.setDate(Math.min(targetDate, new Date(nextRunAt.getFullYear(), nextRunAt.getMonth() + 1, 0).getDate()));
-            nextRunAt.setHours(9, 0, 0, 0);
-            break;
-        }
-        updates.nextRunAt = nextRunAt;
-      }
-
-      const [updated] = await db
-        .update(dcaPlans)
-        .set(updates)
-        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)))
-        .returning();
-
-      // Create audit log for status changes
-      if (validated.data.status) {
-        await storage.createAuditLog({
-          userId: sessionUserId,
-          action: "dca_plan_updated",
-          details: { planId: id, status: validated.data.status },
-        });
-      }
-
-
-
-      res.json({ plan: updated });
-    } catch (error: any) {
-      console.error("Update DCA plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to update DCA plan" });
-    }
-  });
-
-  // DELETE /api/dca-plans/:id - Cancel DCA plan
-  app.delete("/api/dca-plans/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      // Verify ownership
-      const [existing] = await db
-        .select()
-        .from(dcaPlans)
-        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
-
-      if (!existing) {
-        return res.status(404).json({ message: "DCA plan not found" });
-      }
-
-      // Soft delete - mark as cancelled instead of hard delete
-      const [cancelled] = await db
-        .update(dcaPlans)
-        .set({ status: "cancelled", updatedAt: new Date() })
-        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)))
-        .returning();
-
-      await storage.createAuditLog({
-        userId: sessionUserId,
-        action: "dca_plan_cancelled",
-        details: { planId: id },
-      });
-
-
-
-      res.json({ message: "DCA plan cancelled successfully", plan: cancelled });
-    } catch (error: any) {
-      console.error("Cancel DCA plan error:", error);
-      res.status(500).json({ message: error.message || "Failed to cancel DCA plan" });
-    }
-  });
-
-  // GET /api/dca-plans/:id/executions - Get execution history for a plan
-  app.get("/api/dca-plans/:id/executions", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-      const { limit = "50", offset = "0" } = req.query;
-
-      // Verify plan ownership
-      const [plan] = await db
-        .select()
-        .from(dcaPlans)
-        .where(and(eq(dcaPlans.id, id), eq(dcaPlans.userId, sessionUserId)));
-
-      if (!plan) {
-        return res.status(404).json({ message: "DCA plan not found" });
-      }
-
-      const executions = await db
-        .select()
-        .from(dcaExecutions)
-        .where(eq(dcaExecutions.planId, id))
-        .orderBy(desc(dcaExecutions.scheduledAt))
-        .limit(parseInt(limit as string))
-        .offset(parseInt(offset as string));
-
-      const [{ count }] = await db
-        .select({ count: sql<number>`count(*)::int` })
-        .from(dcaExecutions)
-        .where(eq(dcaExecutions.planId, id));
-
-
-
-      res.json({ executions, total: count, plan });
-    } catch (error: any) {
-      console.error("Get DCA executions error:", error);
-      res.status(500).json({ message: error.message || "Failed to fetch DCA executions" });
-    }
-  });
-
-
-
-  // ============================================================================
-  // REPORT EXPORT API ENDPOINTS
-  // ============================================================================
-
   // GET /api/reports - List user's report exports with pagination
   app.get("/api/reports", ensureAuthenticated, async (req, res) => {
     try {
@@ -28160,7 +16429,7 @@ export async function registerRoutes(
 
       const total = Number(countResult?.count || 0);
 
-      res.json({
+      return res.json({
         reports,
         pagination: {
           page,
@@ -28171,152 +16440,18 @@ export async function registerRoutes(
       });
     } catch (error: any) {
       console.error("List reports error:", error);
-      res.status(500).json({ message: error.message || "Failed to list reports" });
+      return res.status(500).json({ message: error.message || "Failed to list reports" });
     }
   });
 
   // POST /api/reports/generate - Create a new report export request
-  app.post("/api/reports/generate", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const schema = z.object({
-        reportType: z.enum(['transaction_history', 'tax_report', 'portfolio_summary', 'vault_statement', 'bnsl_statement']),
-        format: z.enum(['pdf', 'csv', 'xlsx']),
-        dateFrom: z.string().nullable().optional(),
-        dateTo: z.string().nullable().optional(),
-        filters: z.record(z.unknown()).nullable().optional(),
-      });
-
-      const validated = schema.safeParse(req.body);
-      if (!validated.success) {
-        return res.status(400).json({ message: "Invalid request data", errors: validated.error.errors });
-      }
-
-      const { reportType, format, dateFrom, dateTo, filters } = validated.data;
-
-      const [report] = await db
-        .insert(reportExports)
-        .values({
-          userId: sessionUserId,
-          reportType,
-          format,
-          status: 'pending',
-          dateFrom: dateFrom || null,
-          dateTo: dateTo || null,
-          filters: filters || null,
-        })
-        .returning();
-
-      await storage.createAuditLog({
-        userId: sessionUserId,
-        action: "report_requested",
-        details: { reportId: report.id, reportType, format },
-      });
-
-      res.status(201).json({ report });
-    } catch (error: any) {
-      console.error("Generate report error:", error);
-      res.status(500).json({ message: error.message || "Failed to create report" });
-    }
-  });
-
-  // GET /api/reports/:id - Get status of a specific report
-  app.get("/api/reports/:id", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      const [report] = await db
-        .select()
-        .from(reportExports)
-        .where(and(eq(reportExports.id, id), eq(reportExports.userId, sessionUserId)));
-
-      if (!report) {
-        return res.status(404).json({ message: "Report not found" });
-      }
-
-      res.json({ report });
-    } catch (error: any) {
-      console.error("Get report error:", error);
-      res.status(500).json({ message: error.message || "Failed to get report" });
-    }
-  });
-
-  // GET /api/reports/:id/download - Download the generated report file
-  app.get("/api/reports/:id/download", ensureAuthenticated, async (req, res) => {
-    try {
-      const sessionUserId = req.session?.userId;
-      if (!sessionUserId) {
-        return res.status(401).json({ message: "Authentication required" });
-      }
-
-      const { id } = req.params;
-
-      const [report] = await db
-        .select()
-        .from(reportExports)
-        .where(and(eq(reportExports.id, id), eq(reportExports.userId, sessionUserId)));
-
-      if (!report) {
-        return res.status(404).json({ message: "Report not found" });
-      }
-
-      if (report.status !== 'completed') {
-        return res.status(400).json({ message: `Report is not ready. Status: ${report.status}` });
-      }
-
-      if (!report.fileUrl) {
-        return res.status(400).json({ message: "Report file not available" });
-      }
-
-      const filePath = report.fileUrl;
-      const fs = await import("fs");
-      const path = await import("path");
-
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ message: "Report file not found on disk" });
-      }
-
-      const fileName = path.basename(filePath);
-      const ext = path.extname(fileName).toLowerCase();
-      
-      const mimeTypes: Record<string, string> = {
-        '.pdf': 'application/pdf',
-        '.csv': 'text/csv',
-        '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      };
-
-      res.setHeader('Content-Type', mimeTypes[ext] || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
-      
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
-    } catch (error: any) {
-      console.error("Download report error:", error);
-      res.status(500).json({ message: error.message || "Failed to download report" });
-    }
-  });
-
-
-  // ===========================================================================
-  // User Bank Accounts (Payment Methods)
-  // ===========================================================================
-  
   app.get("/api/user/bank-accounts", ensureAuthenticated, async (req, res) => {
     try {
       const accounts = await storage.getUserBankAccounts(req.session.userId!);
-      res.json(accounts);
+      return res.json(accounts);
     } catch (error: any) {
       console.error("Get bank accounts error:", error);
-      res.status(500).json({ message: "Failed to retrieve bank accounts" });
+      return res.status(500).json({ message: "Failed to retrieve bank accounts" });
     }
   });
 
@@ -28326,10 +16461,10 @@ export async function registerRoutes(
         ...req.body,
         userId: req.session.userId!
       });
-      res.status(201).json(account);
+      return res.status(201).json(account);
     } catch (error: any) {
       console.error("Create bank account error:", error);
-      res.status(500).json({ message: "Failed to create bank account" });
+      return res.status(500).json({ message: "Failed to create bank account" });
     }
   });
 
@@ -28341,10 +16476,10 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Bank account not found" });
       }
       const updated = await storage.updateUserBankAccount(id, req.body);
-      res.json(updated);
+      return res.json(updated);
     } catch (error: any) {
       console.error("Update bank account error:", error);
-      res.status(500).json({ message: "Failed to update bank account" });
+      return res.status(500).json({ message: "Failed to update bank account" });
     }
   });
 
@@ -28356,10 +16491,10 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Bank account not found" });
       }
       await storage.deleteUserBankAccount(id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error: any) {
       console.error("Delete bank account error:", error);
-      res.status(500).json({ message: "Failed to delete bank account" });
+      return res.status(500).json({ message: "Failed to delete bank account" });
     }
   });
 
@@ -28370,10 +16505,10 @@ export async function registerRoutes(
   app.get("/api/user/crypto-wallets", ensureAuthenticated, async (req, res) => {
     try {
       const wallets = await storage.getUserCryptoWallets(req.session.userId!);
-      res.json(wallets);
+      return res.json(wallets);
     } catch (error: any) {
       console.error("Get crypto wallets error:", error);
-      res.status(500).json({ message: "Failed to retrieve crypto wallets" });
+      return res.status(500).json({ message: "Failed to retrieve crypto wallets" });
     }
   });
 
@@ -28383,10 +16518,10 @@ export async function registerRoutes(
         ...req.body,
         userId: req.session.userId!
       });
-      res.status(201).json(wallet);
+      return res.status(201).json(wallet);
     } catch (error: any) {
       console.error("Create crypto wallet error:", error);
-      res.status(500).json({ message: "Failed to create crypto wallet" });
+      return res.status(500).json({ message: "Failed to create crypto wallet" });
     }
   });
 
@@ -28398,10 +16533,10 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Crypto wallet not found" });
       }
       const updated = await storage.updateUserCryptoWallet(id, req.body);
-      res.json(updated);
+      return res.json(updated);
     } catch (error: any) {
       console.error("Update crypto wallet error:", error);
-      res.status(500).json({ message: "Failed to update crypto wallet" });
+      return res.status(500).json({ message: "Failed to update crypto wallet" });
     }
   });
 
@@ -28413,10 +16548,10 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Crypto wallet not found" });
       }
       await storage.deleteUserCryptoWallet(id);
-      res.json({ success: true });
+      return res.json({ success: true });
     } catch (error: any) {
       console.error("Delete crypto wallet error:", error);
-      res.status(500).json({ message: "Failed to delete crypto wallet" });
+      return res.status(500).json({ message: "Failed to delete crypto wallet" });
     }
   });
 
@@ -28426,21 +16561,21 @@ export async function registerRoutes(
   
   app.get("/api/admin/org-chart", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const positions = await db.select().from(schema.orgPositions).orderBy(schema.orgPositions.level, schema.orgPositions.order);
-      res.json(positions);
+      const positions = await db.select().from(orgPositions).orderBy(orgPositions.level, orgPositions.order);
+      return res.json(positions);
     } catch (error: any) {
       console.error("Get org chart error:", error);
-      res.status(500).json({ message: "Failed to retrieve org chart" });
+      return res.status(500).json({ message: "Failed to retrieve org chart" });
     }
   });
 
   app.post("/api/admin/org-chart", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const [position] = await db.insert(schema.orgPositions).values(req.body).returning();
-      res.status(201).json(position);
+      const [position] = await db.insert(orgPositions).values(req.body).returning();
+      return res.status(201).json(position);
     } catch (error: any) {
       console.error("Create org position error:", error);
-      res.status(500).json({ message: "Failed to create position" });
+      return res.status(500).json({ message: "Failed to create position" });
     }
   });
 
@@ -28456,37 +16591,37 @@ export async function registerRoutes(
         { name: 'Lead Developer', title: 'Senior Software Engineer', department: 'Technology', level: 2, order: 1 },
         { name: 'Finance Manager', title: 'Senior Accountant', department: 'Finance', level: 2, order: 2 },
       ];
-      const positions = await db.insert(schema.orgPositions).values(defaultPositions).returning();
-      res.status(201).json(positions);
+      const positions = await db.insert(orgPositions).values(defaultPositions).returning();
+      return res.status(201).json(positions);
     } catch (error: any) {
       console.error("Seed org chart error:", error);
-      res.status(500).json({ message: "Failed to seed org chart" });
+      return res.status(500).json({ message: "Failed to seed org chart" });
     }
   });
 
   app.put("/api/admin/org-chart/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { id } = req.params;
-      const [updated] = await db.update(schema.orgPositions)
+      const [updated] = await db.update(orgPositions)
         .set({ ...req.body, updatedAt: new Date() })
-        .where(eq(schema.orgPositions.id, id))
+        .where(eq(orgPositions.id, id))
         .returning();
       if (!updated) return res.status(404).json({ message: "Position not found" });
-      res.json(updated);
+      return res.json(updated);
     } catch (error: any) {
       console.error("Update org position error:", error);
-      res.status(500).json({ message: "Failed to update position" });
+      return res.status(500).json({ message: "Failed to update position" });
     }
   });
 
   app.delete("/api/admin/org-chart/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { id } = req.params;
-      await db.delete(schema.orgPositions).where(eq(schema.orgPositions.id, id));
-      res.json({ success: true });
+      await db.delete(orgPositions).where(eq(orgPositions.id, id));
+      return res.json({ success: true });
     } catch (error: any) {
       console.error("Delete org position error:", error);
-      res.status(500).json({ message: "Failed to delete position" });
+      return res.status(500).json({ message: "Failed to delete position" });
     }
   });
 
@@ -28536,11 +16671,11 @@ export async function registerRoutes(
       
       res.setHeader('Content-Type', 'application/pdf');
       res.setHeader('Content-Disposition', 'attachment; filename="Finatrades-Clawd-Integration-Guide.pdf"');
-      res.send(pdfBuffer);
+      return res.send(pdfBuffer);
       
     } catch (error: any) {
       console.error("PDF generation error:", error);
-      res.status(500).json({ message: "Failed to generate PDF", error: error.message });
+      return res.status(500).json({ message: "Failed to generate PDF", error: error.message });
     }
   });
 
@@ -28689,24 +16824,24 @@ export async function registerRoutes(
         emailHtml,
         [{
           filename: 'Finatrades-Clawd-Integration-Guide.pdf',
-          content: pdfBuffer,
+          content: Buffer.from(pdfBuffer),
           contentType: 'application/pdf'
         }]
       );
       
       if (result.success) {
-        res.json({ 
+        return res.json({ 
           success: true, 
           message: `Guide sent successfully to ${recipientEmail}`,
           messageId: result.messageId 
         });
       } else {
-        res.status(500).json({ message: "Failed to send email" });
+        return res.status(500).json({ message: "Failed to send email" });
       }
       
     } catch (error: any) {
       console.error("Email guide error:", error);
-      res.status(500).json({ message: "Failed to send guide", error: error.message });
+      return res.status(500).json({ message: "Failed to send guide", error: error.message });
     }
   });
 
@@ -28788,8 +16923,9 @@ a{color:#8A2BE2;text-decoration:none;}a:hover{text-decoration:underline;}
     });
 
     if (!res.headersSent) {
-      res.status(500).json({ message: 'Something went wrong. Our team has been notified.' });
+      return res.status(500).json({ message: 'Something went wrong. Our team has been notified.' });
     }
+    return undefined;
   });
 
   return httpServer;

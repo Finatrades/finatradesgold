@@ -39,7 +39,7 @@ router.post('/orders', async (req: Request, res: Response) => {
 
     const result = await B2bOrderService.createOrder(parseResult.data);
     
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       orderId: result.orderId,
       estimatedFulfillmentTime: result.estimatedFulfillmentTime
@@ -47,7 +47,7 @@ router.post('/orders', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('[B2B] Order creation error:', error);
     const message = error instanceof Error ? error.message : 'Failed to create order';
-    res.status(400).json({ success: false, error: message });
+    return res.status(400).json({ success: false, error: message });
   }
 });
 
@@ -60,7 +60,7 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
 
     const locations = await B2bOrderService.getVaultLocations();
     
-    res.json(locations.map(loc => ({
+    return res.json(locations.map(loc => ({
       id: loc.id,
       name: loc.name,
       code: loc.code,
@@ -71,7 +71,7 @@ router.get('/vault-locations', async (req: Request, res: Response) => {
     })));
   } catch (error) {
     console.error('[B2B] Failed to fetch vault locations:', error);
-    res.status(500).json({ error: 'Failed to fetch vault locations' });
+    return res.status(500).json({ error: 'Failed to fetch vault locations' });
   }
 });
 
@@ -88,10 +88,10 @@ router.get('/reconciliation', async (req: Request, res: Response) => {
     }
 
     const data = await B2bOrderService.getReconciliationData(date);
-    res.json(data);
+    return res.json(data);
   } catch (error) {
     console.error('[B2B] Failed to fetch reconciliation data:', error);
-    res.status(500).json({ error: 'Failed to fetch reconciliation data' });
+    return res.status(500).json({ error: 'Failed to fetch reconciliation data' });
   }
 });
 
@@ -107,10 +107,10 @@ router.get('/orders/:orderId', async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Order not found' });
     }
 
-    res.json(order);
+    return res.json(order);
   } catch (error) {
     console.error('[B2B] Failed to fetch order:', error);
-    res.status(500).json({ error: 'Failed to fetch order' });
+    return res.status(500).json({ error: 'Failed to fetch order' });
   }
 });
 
@@ -127,11 +127,11 @@ router.post('/orders/:orderId/cancel', async (req: Request, res: Response) => {
     }
 
     await B2bOrderService.cancelOrder(req.params.orderId, reason);
-    res.json({ success: true, message: 'Order cancelled' });
+    return res.json({ success: true, message: 'Order cancelled' });
   } catch (error) {
     console.error('[B2B] Failed to cancel order:', error);
     const message = error instanceof Error ? error.message : 'Failed to cancel order';
-    res.status(400).json({ error: message });
+    return res.status(400).json({ error: message });
   }
 });
 

@@ -22,6 +22,7 @@ export function registerR2ProxyRoutes(app: Express): void {
       res.setHeader("Content-Type", contentType);
       res.setHeader("Cache-Control", "public, max-age=31536000");
       body.pipe(res);
+      return undefined;
     } catch (error: any) {
       console.error("[R2 Proxy] Error fetching file:", key, error.message);
       if (error.name === "NoSuchKey" || error.Code === "NoSuchKey") {

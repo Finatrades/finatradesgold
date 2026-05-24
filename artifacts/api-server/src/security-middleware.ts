@@ -82,7 +82,7 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
     });
   }
   
-  next();
+  return next();
 }
 
 // Get CSRF token endpoint
@@ -98,7 +98,7 @@ export function getCsrfTokenHandler(req: Request, res: Response) {
     sameSite: 'lax',
     maxAge: 24 * 60 * 60 * 1000,
   });
-  res.json({ csrfToken: token });
+  return res.json({ csrfToken: token });
 }
 
 // ============================================================================
@@ -143,11 +143,11 @@ export function sessionAgeCheck(maxAgeMinutes: number = 30) {
       rotateSession(req)
         .then(() => {
           (req.session as any).createdAt = now;
-          next();
+          return next();
         })
         .catch(() => next());
     } else {
-      next();
+      return next();
     }
   };
 }
@@ -200,7 +200,7 @@ export function requirePermissions(...permissions: string[]) {
         });
       }
       
-      next();
+      return next();
     } catch (error) {
       console.error('[RBAC] Permission check error:', error);
       return res.status(500).json({ message: "Permission check failed" });
@@ -298,7 +298,7 @@ export function requireStepUpAuth(config: StepUpConfig) {
         });
       }
       
-      next();
+      return next();
     } catch (error) {
       console.error('[StepUp] Authentication error:', error);
       return res.status(500).json({ message: "Step-up authentication failed" });
@@ -410,7 +410,7 @@ export function sanitizeRequest(req: Request, res: Response, next: NextFunction)
       return res.status(400).json({ message: 'Invalid request body' });
     }
   }
-  next();
+  return next();
 }
 
 // ============================================================================
@@ -442,6 +442,6 @@ export function requireHighValueApproval(thresholdUsd: number = HIGH_VALUE_THRES
       }
     }
     
-    next();
+    return next();
   };
 }

@@ -111,7 +111,7 @@ if (process.env.NODE_ENV === 'production') {
     if (typeof proto === 'string' && proto.toLowerCase() === 'http') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`);
     }
-    next();
+    return next();
   });
 }
 
@@ -205,7 +205,7 @@ app.use('/uploads', (req, res, next) => {
   if (!req.session?.userId) {
     return res.status(401).json({ message: 'Authentication required to access documents' });
   }
-  next();
+  return next();
 }, express.static(path.join(process.cwd(), 'uploads')));
 
 // Serve attached_assets for product images (public assets only, no sensitive data)
@@ -348,21 +348,21 @@ app.use(async (req, res, next) => {
     console.error('[MaintenanceMiddleware] Error:', error);
   }
 
-  next();
+  return next();
 });
 
 // System status endpoint (always accessible)
 app.get('/api/system/status', async (req, res) => {
   try {
     const settings = await getSystemSettings();
-    res.json({
+    return res.json({
       maintenanceMode: settings.maintenanceMode,
       registrationsEnabled: settings.registrationsEnabled,
       sessionTimeoutMinutes: settings.sessionTimeoutMinutes,
       isAdmin: req.session?.userRole === 'admin',
     });
   } catch (error) {
-    res.json({ maintenanceMode: false, registrationsEnabled: true, sessionTimeoutMinutes: 30 });
+    return res.json({ maintenanceMode: false, registrationsEnabled: true, sessionTimeoutMinutes: 30 });
   }
 });
 
@@ -419,7 +419,7 @@ app.use((req, res, next) => {
       });
     }
   }
-  next();
+  return next();
 });
 
 export function log(message: string, source = "express") {
@@ -457,7 +457,7 @@ app.use((req, res, next) => {
     }
   });
 
-  next();
+  return next();
 });
 
 (async () => {
@@ -514,7 +514,7 @@ app.use((req, res, next) => {
       }).catch(console.error);
     }
 
-    res.status(status).json({ message: clientMessage });
+    return res.status(status).json({ message: clientMessage });
     // Log full error details on server (never sent to client in production)
     console.error(`[Error] ${req.method} ${req.path}:`, isProd ? err.message : err);
   });

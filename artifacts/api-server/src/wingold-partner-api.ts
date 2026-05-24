@@ -66,7 +66,7 @@ function verifyPartnerSignature(req: Request, res: Response, next: NextFunction)
     return res.status(401).json({ error: 'Invalid signature format' });
   }
   
-  next();
+  return next();
 }
 
 /**
@@ -140,7 +140,7 @@ router.get('/users/:finatradesId', verifyPartnerSignature, async (req: Request, 
     return await sendUserData(user, res);
   } catch (error) {
     console.error('[Partner API] Error fetching user:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -241,7 +241,7 @@ async function sendUserData(user: typeof users.$inferSelect, res: Response) {
     } : null,
   };
   
-  res.json(response);
+  return res.json(response);
 }
 
 /**
@@ -289,10 +289,10 @@ router.get('/documents', async (req: Request, res: Response) => {
     
     // Redirect to actual document location
     // In production, you'd stream the file or redirect to storage
-    res.redirect(path);
+    return res.redirect(path);
   } catch (error) {
     console.error('[Partner API] Document access error:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

@@ -8,7 +8,7 @@ const ensureAuthenticated = (req: Request, res: Response, next: NextFunction) =>
   if (!req.session?.userId) {
     return res.status(401).json({ error: 'Authentication required' });
   }
-  next();
+  return next();
 };
 
 const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
@@ -18,17 +18,17 @@ const ensureAdmin = (req: Request, res: Response, next: NextFunction) => {
   if (req.session?.userRole !== 'admin') {
     return res.status(403).json({ error: 'Admin access required' });
   }
-  next();
+  return next();
 };
 
 router.get('/.well-known/jwks.json', async (_req: Request, res: Response) => {
   try {
     const jwks = await credentialIssuer.getJwks();
     res.setHeader('Cache-Control', 'public, max-age=3600');
-    res.json(jwks);
+    return res.json(jwks);
   } catch (error: any) {
     console.error('JWKS endpoint error:', error);
-    res.status(500).json({ error: 'Failed to retrieve JWKS' });
+    return res.status(500).json({ error: 'Failed to retrieve JWKS' });
   }
 });
 
@@ -42,7 +42,7 @@ router.get('/vc/status/:credentialId', async (req: Request, res: Response) => {
 
     const status = await credentialIssuer.checkCredentialStatus(credentialId);
     
-    res.json({
+    return res.json({
       '@context': 'https://www.w3.org/2018/credentials/v1',
       type: 'CredentialStatusResponse',
       credentialId,
@@ -52,7 +52,7 @@ router.get('/vc/status/:credentialId', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Credential status check error:', error);
-    res.status(500).json({ error: 'Failed to check credential status' });
+    return res.status(500).json({ error: 'Failed to check credential status' });
   }
 });
 
@@ -89,10 +89,10 @@ router.post('/vc/verify', async (req: Request, res: Response) => {
       }
     }
     
-    res.json(result);
+    return res.json(result);
   } catch (error: any) {
     console.error('Credential verification error:', error);
-    res.status(500).json({ error: 'Failed to verify credential' });
+    return res.status(500).json({ error: 'Failed to verify credential' });
   }
 });
 
@@ -143,7 +143,7 @@ router.post('/vc/issue', ensureAdmin, async (req: Request, res: Response) => {
       expiresInDays
     );
 
-    res.json({
+    return res.json({
       success: true,
       credentialId: credential.credentialId,
       expiresAt: credential.expiresAt,
@@ -151,7 +151,7 @@ router.post('/vc/issue', ensureAdmin, async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Credential issuance error:', error);
-    res.status(500).json({ error: 'Failed to issue credential' });
+    return res.status(500).json({ error: 'Failed to issue credential' });
   }
 });
 
@@ -186,13 +186,13 @@ router.post('/vc/revoke', ensureAdmin, async (req: Request, res: Response) => {
 
     await credentialIssuer.revokeCredential(credentialId, reason, req.session?.userId);
 
-    res.json({
+    return res.json({
       success: true,
       message: 'Credential revoked successfully'
     });
   } catch (error: any) {
     console.error('Credential revocation error:', error);
-    res.status(500).json({ error: 'Failed to revoke credential' });
+    return res.status(500).json({ error: 'Failed to revoke credential' });
   }
 });
 
@@ -207,7 +207,7 @@ router.get('/vc/user/:userId', ensureAuthenticated, async (req: Request, res: Re
     const credentials = await credentialIssuer.getUserCredentials(userId);
     const activeCredential = await credentialIssuer.getUserActiveCredential(userId);
 
-    res.json({
+    return res.json({
       credentials: credentials.map(c => ({
         id: c.id,
         credentialId: c.credentialId,
@@ -222,7 +222,7 @@ router.get('/vc/user/:userId', ensureAuthenticated, async (req: Request, res: Re
     });
   } catch (error: any) {
     console.error('Get user credentials error:', error);
-    res.status(500).json({ error: 'Failed to get user credentials' });
+    return res.status(500).json({ error: 'Failed to get user credentials' });
   }
 });
 
@@ -237,7 +237,7 @@ router.get('/vc/my-credential', ensureAuthenticated, async (req: Request, res: R
       });
     }
 
-    res.json({
+    return res.json({
       hasCredential: true,
       credentialId: activeCredential.credentialId,
       status: activeCredential.status,
@@ -249,7 +249,7 @@ router.get('/vc/my-credential', ensureAuthenticated, async (req: Request, res: R
     });
   } catch (error: any) {
     console.error('Get my credential error:', error);
-    res.status(500).json({ error: 'Failed to get credential' });
+    return res.status(500).json({ error: 'Failed to get credential' });
   }
 });
 
@@ -268,7 +268,7 @@ router.get('/vc/presentations/:credentialId', ensureAuthenticated, async (req: R
 
     const presentations = await storage.getCredentialPresentations(credentialId);
 
-    res.json({
+    return res.json({
       credentialId,
       presentations: presentations.map(p => ({
         id: p.id,
@@ -282,7 +282,7 @@ router.get('/vc/presentations/:credentialId', ensureAuthenticated, async (req: R
     });
   } catch (error: any) {
     console.error('Get presentations error:', error);
-    res.status(500).json({ error: 'Failed to get presentations' });
+    return res.status(500).json({ error: 'Failed to get presentations' });
   }
 });
 
@@ -336,7 +336,7 @@ router.get('/vc/partner/credential/:credentialId', async (req: Request, res: Res
       }
     );
     
-    res.json({
+    return res.json({
       '@context': 'https://www.w3.org/2018/credentials/v1',
       credentialId: credential.credentialId,
       vcJwt: (credential as any).credentialJwt ?? (credential as any).vcJwt,
@@ -347,7 +347,7 @@ router.get('/vc/partner/credential/:credentialId', async (req: Request, res: Res
     });
   } catch (error: any) {
     console.error('Partner credential fetch error:', error);
-    res.status(500).json({ error: 'Failed to fetch credential' });
+    return res.status(500).json({ error: 'Failed to fetch credential' });
   }
 });
 

@@ -82,20 +82,20 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const params = listQuerySchema.parse(req.query);
     const result = await storage.listUnifiedTallyTransactions(params);
-    res.json(result);
+    return res.json(result);
   } catch (error: any) {
     console.error('Error listing unified tally transactions:', error);
-    res.status(500).json({ error: error.message || 'Failed to list transactions' });
+    return res.status(500).json({ error: error.message || 'Failed to list transactions' });
   }
 });
 
 router.get('/stats', async (req: Request, res: Response) => {
   try {
     const stats = await storage.getUnifiedTallyStats();
-    res.json(stats);
+    return res.json(stats);
   } catch (error: any) {
     console.error('Error getting unified tally stats:', error);
-    res.status(500).json({ error: error.message || 'Failed to get stats' });
+    return res.status(500).json({ error: error.message || 'Failed to get stats' });
   }
 });
 
@@ -248,7 +248,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     const cardCount = depositRequests.filter((d: any) => d.paymentMethod === 'Card Payment').length;
     const physicalCount = physicalDeposits.length;
 
-    res.json({
+    return res.json({
       payments: pendingPayments,
       counts: {
         crypto: cryptoCount,
@@ -260,7 +260,7 @@ router.get('/pending-payments', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error fetching pending payments:', error);
-    res.status(500).json({ error: error.message || 'Failed to fetch pending payments' });
+    return res.status(500).json({ error: error.message || 'Failed to fetch pending payments' });
   }
 });
 
@@ -405,21 +405,15 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
       });
     }
 
-    // Calculate fees and gold price (outside transaction - read operations)
-    const { getGoldPricePerGram } = await import('./gold-price-service');
-    
-    // Validate gold price based on pricing mode
-    if (pricingMode === 'FIXED') {
-      if (!manualGoldPrice || isNaN(Number(manualGoldPrice)) || Number(manualGoldPrice) <= 0) {
-        return res.status(400).json({
-          error: 'Fixed pricing mode requires a valid manual gold price greater than 0',
-          code: 'INVALID_MANUAL_GOLD_PRICE'
-        });
-      }
-      goldPrice = Number(manualGoldPrice);
-    } else {
-      goldPrice = await getGoldPricePerGram();
+    // Validate gold price — only FIXED pricing is supported now that the live
+    // gold-price service has been removed with the rest of the gold stack.
+    if (pricingMode !== 'FIXED' || !manualGoldPrice || isNaN(Number(manualGoldPrice)) || Number(manualGoldPrice) <= 0) {
+      return res.status(400).json({
+        error: 'Fixed pricing mode with a valid manual gold price greater than 0 is required.',
+        code: 'INVALID_MANUAL_GOLD_PRICE'
+      });
     }
+    goldPrice = Number(manualGoldPrice);
     
     // Guard against invalid gold price
     if (!goldPrice || isNaN(goldPrice) || goldPrice <= 0) {
@@ -784,7 +778,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
     // Get updated holdings for response
     const holdingsSnapshot = await storage.getUserHoldingsSnapshot(userId);
 
-    res.json({
+    return res.json({
       success: true,
       message: `Payment approved & wallet credited! ${parsedAllocation.toFixed(4)}g added to ${dbWalletType} wallet.`,
       tally: {
@@ -801,7 +795,7 @@ router.post('/approve-payment/:sourceType/:id', async (req: Request, res: Respon
 
   } catch (error: any) {
     console.error('Error approving payment:', error);
-    res.status(500).json({ error: error.message || 'Failed to approve payment' });
+    return res.status(500).json({ error: error.message || 'Failed to approve payment' });
   }
 });
 
@@ -817,14 +811,14 @@ router.get('/:txnId', async (req: Request, res: Response) => {
     const events = await storage.getUnifiedTallyEvents(transaction.id);
     const bars = await storage.getWingoldBarsByTally(transaction.id);
 
-    res.json({
+    return res.json({
       row: transaction,
       events,
       bars,
     });
   } catch (error: any) {
     console.error('Error getting unified tally transaction:', error);
-    res.status(500).json({ error: error.message || 'Failed to get transaction' });
+    return res.status(500).json({ error: error.message || 'Failed to get transaction' });
   }
 });
 
@@ -838,10 +832,10 @@ router.get('/:txnId/events', async (req: Request, res: Response) => {
     }
 
     const events = await storage.getUnifiedTallyEvents(transaction.id);
-    res.json(events);
+    return res.json(events);
   } catch (error: any) {
     console.error('Error getting unified tally events:', error);
-    res.status(500).json({ error: error.message || 'Failed to get events' });
+    return res.status(500).json({ error: error.message || 'Failed to get events' });
   }
 });
 
@@ -881,10 +875,10 @@ router.post('/', async (req: Request, res: Response) => {
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'System',
     });
 
-    res.status(201).json(transaction);
+    return res.status(201).json(transaction);
   } catch (error: any) {
     console.error('Error creating unified tally transaction:', error);
-    res.status(500).json({ error: error.message || 'Failed to create transaction' });
+    return res.status(500).json({ error: error.message || 'Failed to create transaction' });
   }
 });
 
@@ -920,10 +914,10 @@ router.post('/:txnId/confirm-payment', async (req: Request, res: Response) => {
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error confirming payment:', error);
-    res.status(500).json({ error: error.message || 'Failed to confirm payment' });
+    return res.status(500).json({ error: error.message || 'Failed to confirm payment' });
   }
 });
 
@@ -947,7 +941,7 @@ router.get('/:txnId/wingold-form', async (req: Request, res: Response) => {
       inspection = await storage.getDepositInspection(txnAny.sourceReferenceId);
     }
     
-    res.json({
+    return res.json({
       transaction,
       bars,
       inspection,
@@ -967,7 +961,7 @@ router.get('/:txnId/wingold-form', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error getting wingold form:', error);
-    res.status(500).json({ error: error.message || 'Failed to get form data' });
+    return res.status(500).json({ error: error.message || 'Failed to get form data' });
   }
 });
 
@@ -1005,10 +999,10 @@ router.post('/:txnId/place-order', async (req: Request, res: Response) => {
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error placing physical order:', error);
-    res.status(500).json({ error: error.message || 'Failed to place physical order' });
+    return res.status(500).json({ error: error.message || 'Failed to place physical order' });
   }
 });
 
@@ -1040,10 +1034,10 @@ router.post('/:txnId/wingold-form/save-draft', async (req: Request, res: Respons
       physicalGoldAllocatedG,
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error saving draft:', error);
-    res.status(500).json({ error: error.message || 'Failed to save draft' });
+    return res.status(500).json({ error: error.message || 'Failed to save draft' });
   }
 });
 
@@ -1127,10 +1121,10 @@ router.post('/:txnId/wingold-form/submit', async (req: Request, res: Response) =
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error submitting allocation:', error);
-    res.status(500).json({ error: error.message || 'Failed to submit allocation' });
+    return res.status(500).json({ error: error.message || 'Failed to submit allocation' });
   }
 });
 
@@ -1175,10 +1169,10 @@ router.post('/:txnId/wingold-form/generate-bars', async (req: Request, res: Resp
       }));
     }
 
-    res.json({ bars });
+    return res.json({ bars });
   } catch (error: any) {
     console.error('Error generating bars:', error);
-    res.status(500).json({ error: error.message || 'Failed to generate bars' });
+    return res.status(500).json({ error: error.message || 'Failed to generate bars' });
   }
 });
 
@@ -1220,10 +1214,10 @@ router.post('/:txnId/certificate', async (req: Request, res: Response) => {
       triggeredByName: (req as any).user?.firstName ? `${(req as any).user.firstName} ${(req as any).user.lastName}` : 'Admin',
     });
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error attaching certificate:', error);
-    res.status(500).json({ error: error.message || 'Failed to attach certificate' });
+    return res.status(500).json({ error: error.message || 'Failed to attach certificate' });
   }
 });
 
@@ -1397,7 +1391,7 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
 
     const holdingsSnapshot = await storage.getUserHoldingsSnapshot(transaction.userId);
 
-    res.json({
+    return res.json({
       transaction: result,
       holdingsSnapshot,
       creditDetails: {
@@ -1410,7 +1404,7 @@ router.post('/:txnId/approve-credit', async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     console.error('Error approving credit:', error);
-    res.status(500).json({ error: error.message || 'Failed to approve credit' });
+    return res.status(500).json({ error: error.message || 'Failed to approve credit' });
   }
 });
 
@@ -1462,10 +1456,10 @@ router.post('/:txnId/reject', async (req: Request, res: Response) => {
       });
     } catch (e) { console.error('[Notification] Failed to create tally reject notification:', e); }
 
-    res.json(updated);
+    return res.json(updated);
   } catch (error: any) {
     console.error('Error rejecting transaction:', error);
-    res.status(500).json({ error: error.message || 'Failed to reject transaction' });
+    return res.status(500).json({ error: error.message || 'Failed to reject transaction' });
   }
 });
 
@@ -1473,10 +1467,10 @@ router.get('/user/:userId/holdings-snapshot', async (req: Request, res: Response
   try {
     const { userId } = req.params;
     const snapshot = await storage.getUserHoldingsSnapshot(userId);
-    res.json(snapshot);
+    return res.json(snapshot);
   } catch (error: any) {
     console.error('Error getting user holdings snapshot:', error);
-    res.status(500).json({ error: error.message || 'Failed to get holdings snapshot' });
+    return res.status(500).json({ error: error.message || 'Failed to get holdings snapshot' });
   }
 });
 
@@ -1573,10 +1567,10 @@ router.get('/:txnId/projection', async (req: Request, res: Response) => {
       isAlreadyApproved,
     };
 
-    res.json(projection);
+    return res.json(projection);
   } catch (error: any) {
     console.error('Error getting projection:', error);
-    res.status(500).json({ error: error.message || 'Failed to get projection' });
+    return res.status(500).json({ error: error.message || 'Failed to get projection' });
   }
 });
 

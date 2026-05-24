@@ -53,7 +53,7 @@ function ensureAuthenticated(req: Request, res: Response, next: any) {
   if (!(req as any).session?.userId) {
     return res.status(401).json({ message: "Authentication required" });
   }
-  next();
+  return next();
 }
 
 async function getUserKycTier(userId: string): Promise<string | null> {
@@ -161,7 +161,7 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
 
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
 
-    res.json({ 
+    return res.json({ 
       redirectUrl,
       expiresIn: 300,
       hasVerifiableCredential: !!vcData,
@@ -169,7 +169,7 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
   } catch (error: any) {
     console.error("[SSO] Token generation error:", error.message);
     console.error("[SSO] Stack trace:", error.stack);
-    res.status(500).json({ error: "Failed to generate SSO token" });
+    return res.status(500).json({ error: "Failed to generate SSO token" });
   }
 });
 
@@ -230,10 +230,10 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
     });
 
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
-    res.redirect(redirectUrl);
+    return res.redirect(redirectUrl);
   } catch (error: any) {
     console.error("SSO redirect error:", error);
-    res.redirect("/dashboard?error=sso_failed");
+    return res.redirect("/dashboard?error=sso_failed");
   }
 });
 
@@ -287,10 +287,10 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
     });
 
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}`;
-    res.redirect(redirectUrl);
+    return res.redirect(redirectUrl);
   } catch (error: any) {
     console.error("SSO redirect error:", error);
-    res.redirect("/dashboard?error=sso_failed");
+    return res.redirect("/dashboard?error=sso_failed");
   }
 });
 
@@ -301,7 +301,7 @@ router.get("/api/sso/public-key", (req, res) => {
     const keyObject = crypto.createPrivateKey(privateKey);
     const publicKey = crypto.createPublicKey(keyObject).export({ type: 'spki', format: 'pem' }) as string;
     
-    res.json({ 
+    return res.json({ 
       publicKey,
       algorithm: "RS256",
       issuer: "finatrades.com",
@@ -316,7 +316,7 @@ router.get("/api/sso/public-key", (req, res) => {
     if (!publicKey) {
       return res.status(500).json({ error: "Could not derive public key. Check FINATRADES_PRIVATE_KEY configuration." });
     }
-    res.json({ 
+    return res.json({ 
       publicKey: publicKey.replace(/\\n/g, '\n'),
       algorithm: "RS256",
       issuer: "finatrades.com"
@@ -349,7 +349,7 @@ router.post("/api/sso/verify-token", (req, res) => {
       audience: 'wingoldandmetals.com'
     });
     
-    res.json({
+    return res.json({
       valid: true,
       payload: {
         sub: (decoded as any).sub,
@@ -365,7 +365,7 @@ router.post("/api/sso/verify-token", (req, res) => {
     });
   } catch (error: any) {
     console.error("Token verification failed:", error.message);
-    res.status(401).json({ 
+    return res.status(401).json({ 
       valid: false, 
       error: error.message,
       hint: "Ensure you are using RS256 algorithm, issuer: 'finatrades.com', audience: 'wingoldandmetals.com'"
@@ -429,10 +429,10 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
     });
 
     const redirectUrl = `${WINGOLD_URL}/api/sso/finatrades?token=${encodeURIComponent(token)}&redirect=/shop`;
-    res.redirect(redirectUrl);
+    return res.redirect(redirectUrl);
   } catch (error: any) {
     console.error("SSO shop redirect error:", error);
-    res.redirect("/finavault?error=sso_failed");
+    return res.redirect("/finavault?error=sso_failed");
   }
 });
 
@@ -637,7 +637,7 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
 
     console.log('[SSO Checkout] Generated redirect checkout:', { orderId, checkoutUrl: checkoutUrl.substring(0, 100) + '...' });
 
-    res.json({ 
+    return res.json({ 
       checkoutUrl,
       expiresIn: 1800,
       orderId,
@@ -651,7 +651,7 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
     });
   } catch (error: any) {
     console.error("SSO redirect checkout error:", error);
-    res.status(500).json({ error: "Failed to generate checkout URL" });
+    return res.status(500).json({ error: "Failed to generate checkout URL" });
   }
 });
 
@@ -769,7 +769,7 @@ router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, r
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    res.json({
+    return res.json({
       orderId: order.id,
       status: order.status,
       totalGrams: parseFloat(order.totalGrams),
@@ -780,7 +780,7 @@ router.get("/api/sso/wingold/order/:orderId", ensureAuthenticated, async (req, r
     });
   } catch (error: any) {
     console.error('[Order Status] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch order status' });
+    return res.status(500).json({ error: 'Failed to fetch order status' });
   }
 });
 
@@ -802,7 +802,7 @@ router.get("/api/sso/wingold/allowed-origins", (req, res) => {
   
   // Remove duplicates and return
   const uniqueOrigins = Array.from(new Set(origins));
-  res.json({ 
+  return res.json({ 
     origins: uniqueOrigins,
     primary: WINGOLD_URL
   });
@@ -977,10 +977,10 @@ router.get("/api/partner/kyc/:finatradesId", async (req, res) => {
       kycStatus: user.kycStatus 
     });
 
-    res.json(response);
+    return res.json(response);
   } catch (error: any) {
     console.error('[Partner KYC API] Error:', error);
-    res.status(500).json({ error: 'Failed to fetch KYC data' });
+    return res.status(500).json({ error: 'Failed to fetch KYC data' });
   }
 });
 
