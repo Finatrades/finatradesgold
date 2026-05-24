@@ -378,18 +378,29 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
   const revenueTitle = config.revenueTitle || 'Revenue & Volume';
 
   return (
-    <div className="relative text-[#1A1A1A] font-sans selection:bg-[#C73B22] selection:text-white" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
-      {/* Background blobs scoped to this page */}
+    <div
+      className="relative text-[#1A1A1A] font-sans selection:bg-white selection:text-[#C73B22] rounded-3xl -m-6 p-6 lg:-m-8 lg:p-8"
+      style={{
+        fontFamily: 'Inter, system-ui, sans-serif',
+        background: `
+          radial-gradient(120% 60% at 100% 0%, rgba(255,200,180,0.55) 0%, transparent 55%),
+          radial-gradient(80% 60% at 0% 100%, rgba(168,47,27,0.55) 0%, transparent 60%),
+          linear-gradient(135deg, #C73B22 0%, #A82F1B 55%, #7A1F12 100%)
+        `,
+      }}
+    >
+      {/* Soft inner highlights */}
       <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-3xl">
+        <div className="absolute top-[10%] right-[8%] w-[640px] h-[640px] rounded-full" style={{
+          background: 'radial-gradient(circle, rgba(255,180,150,0.45) 0%, transparent 65%)',
+          filter: 'blur(80px)',
+        }} />
+        <div className="absolute bottom-[5%] left-[2%] w-[520px] h-[520px] rounded-full" style={{
+          background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 65%)',
+          filter: 'blur(90px)',
+        }} />
         <div className="absolute inset-0" style={{
-          background: `radial-gradient(circle at bottom left, rgba(199,59,34,0.06), transparent 50%),
-                       radial-gradient(circle at top right, rgba(212,175,55,0.05), transparent 50%)`,
-        }} />
-        <div className="absolute top-[20%] right-[10%] w-[600px] h-[600px] rounded-full mix-blend-multiply" style={{
-          backgroundColor: 'rgba(232,106,79,0.35)', filter: 'blur(120px)',
-        }} />
-        <div className="absolute bottom-[10%] left-[5%] w-[500px] h-[500px] rounded-full mix-blend-multiply" style={{
-          backgroundColor: 'rgba(199,59,34,0.35)', filter: 'blur(120px)',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.10) 0%, transparent 50%)',
         }} />
       </div>
 
