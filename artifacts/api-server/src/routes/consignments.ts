@@ -15,6 +15,7 @@ import {
 } from "../shared/schema";
 import { serializeTally } from "./warehouse";
 import { uploadToR2, isR2Configured, generateR2Key, getSignedDownloadUrl } from "../r2-storage";
+import { sendEmailDirect } from "../email";
 
 // ─── KYC Tier-3 eligibility ────────────────────────────────────────────────
 async function getExporterEligibility(userId: string, user: any): Promise<{
@@ -156,15 +157,32 @@ router.get("/requirements", ensureAuthenticated, (req: Request, res: Response) =
 });
 
 // ─── GET /b2b/consignments — list my consignments (admin sees all) ─────────
+//   Optional ?queue=review (admin only) filters to statuses in the admin review queue.
 router.get("/", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
   try {
     const uid = req.session!.userId!;
     const user = await storage.getUser(uid);
     if (!user) { res.status(401).json({ message: "Authentication required" }); return; }
 
-    const rows = user.role === "admin"
-      ? await db.select().from(consignments).orderBy(desc(consignments.createdAt)).limit(500)
-      : await db.select().from(consignments).where(eq(consignments.userId, uid)).orderBy(desc(consignments.createdAt));
+    const queue = (req.query.queue as string | undefined) ?? null;
+    const reviewStatuses = ["Submitted", "Pending Review", "Under Review", "Needs More Info"] as const;
+
+    let rows;
+    if (user.role === "admin") {
+      if (queue === "review") {
+        rows = await db.select().from(consignments)
+          .where(sql`${consignments.status} = ANY(${reviewStatuses as unknown as string[]})`)
+          .orderBy(desc(consignments.submittedAt), desc(consignments.createdAt))
+          .limit(500);
+      } else {
+        rows = await db.select().from(consignments)
+          .orderBy(desc(consignments.createdAt)).limit(500);
+      }
+    } else {
+      rows = await db.select().from(consignments)
+        .where(eq(consignments.userId, uid))
+        .orderBy(desc(consignments.createdAt));
+    }
 
     res.json(rows.map(serializeConsignment));
   } catch (e: any) {
@@ -480,90 +498,176 @@ router.post(
   }
 );
 
-// ─── Admin status transition (Task #77 — drives auto-publish to marketplace) ─
-const STATUS_VALUES = [
-  "Draft", "Submitted", "Pending Review", "Under Review", "Approved",
-  "Rejected", "Needs More Info", "In Transit", "At Warehouse", "Verified",
-] as const;
-type ConsignmentStatus = typeof STATUS_VALUES[number];
+// ─── Admin status transition ──────────────────────────────────────────────
+// Combines:
+//  - Task #76: action-based admin review workflow (start_review / approve /
+//    reject / needs_info) with reviewer notes, in-app notifications, and
+//    best-effort email to the exporter.
+//  - Task #77: auto-publish to marketplace when a consignment is Approved,
+//    and visibility management for other transitions.
+const statusPatchSchema = z.object({
+  action: z.enum(["start_review", "approve", "reject", "needs_info"]),
+  note: z.string().trim().max(2000).optional(),
+});
+
+const ACTION_TO_STATUS: Record<string, string> = {
+  start_review: "Under Review",
+  approve: "Approved",
+  reject: "Rejected",
+  needs_info: "Needs More Info",
+};
+
+const REVIEWABLE_FROM = new Set([
+  "Submitted",
+  "Pending Review",
+  "Under Review",
+  "Needs More Info",
+]);
 
 // Statuses for which a listing should be visible in the marketplace.
-const VISIBLE_STATUSES: ReadonlySet<ConsignmentStatus> = new Set<ConsignmentStatus>([
+const VISIBLE_STATUSES: ReadonlySet<string> = new Set<string>([
   "Approved", "At Warehouse", "Verified",
 ]);
 
-const statusUpdateSchema = z.object({
-  status: z.enum(STATUS_VALUES),
-  note: z.string().max(2000).optional(),
-});
-
-router.patch(
-  "/:id/status",
-  requireUserType("exporter", "importer", "government"),
-  async (req: Request, res: Response): Promise<void> => {
-    try {
-      const user = (req as any).currentUser as any;
-      if (user.role !== "admin") {
-        res.status(403).json({ message: "Admin access required" });
-        return;
-      }
-      const parsed = statusUpdateSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
-        return;
-      }
-      const { status: toStatus, note } = parsed.data;
-
-      const [row] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
-      if (!row) { res.status(404).json({ message: "Consignment not found" }); return; }
-      if (row.status === toStatus) {
-        res.json({ ...serializeConsignment(row), unchanged: true });
-        return;
-      }
-
-      const fromStatus = row.status as ConsignmentStatus;
-      const patch: Record<string, any> = { status: toStatus, updatedAt: new Date() };
-      if (toStatus === "Approved") {
-        patch.approvedAt = new Date();
-        patch.approvedBy = user.id;
-      }
-
-      // Transactional: status update + history + marketplace publish/visibility
-      // must all succeed together. If publish fails, the status transition is
-      // rolled back so we never end up "Approved" without a visible listing.
-      const { updated, listingAction } = await db.transaction(async (tx) => {
-        const [updatedRow] = await tx
-          .update(consignments)
-          .set(patch)
-          .where(eq(consignments.id, row.id))
-          .returning();
-
-        await tx.insert(consignmentStatusHistory).values({
-          consignmentId: row.id,
-          fromStatus: fromStatus as any,
-          toStatus: toStatus as any,
-          actorId: user.id,
-          note: note ?? `Status transitioned ${fromStatus} → ${toStatus}`,
-        } as any);
-
-        let action: "created" | "shown" | "hidden" | "none" = "none";
-        if (toStatus === "Approved") {
-          action = await ensureMarketplaceListing(tx, updatedRow);
-        } else if (VISIBLE_STATUSES.has(toStatus)) {
-          if (await setListingVisibility(tx, row.id, true)) action = "shown";
-        } else {
-          if (await setListingVisibility(tx, row.id, false)) action = "hidden";
-        }
-        return { updated: updatedRow, listingAction: action };
-      });
-
-      res.json({ ...serializeConsignment(updated), listingAction });
-    } catch (e: any) {
-      console.error("[consignments.status]", e?.message || e);
-      res.status(500).json({ message: "Failed to update status", error: e?.message });
+router.patch("/:id/status", ensureAuthenticated, async (req: Request, res: Response): Promise<void> => {
+  try {
+    const uid = req.session!.userId!;
+    const actor = await storage.getUser(uid);
+    if (!actor) { res.status(401).json({ message: "Authentication required" }); return; }
+    if (actor.role !== "admin") {
+      res.status(403).json({ message: "Admin role required" });
+      return;
     }
+
+    const parsed = statusPatchSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ message: "Invalid input", errors: parsed.error.flatten() });
+      return;
+    }
+    const { action, note } = parsed.data;
+
+    const [row] = await db.select().from(consignments).where(eq(consignments.id, req.params.id));
+    if (!row) { res.status(404).json({ message: "Consignment not found" }); return; }
+
+    const fromStatus = row.status as string;
+    const toStatus = ACTION_TO_STATUS[action];
+
+    if (!REVIEWABLE_FROM.has(fromStatus)) {
+      res.status(409).json({
+        message: `Cannot ${action} a consignment in status '${fromStatus}'`,
+        currentStatus: fromStatus,
+      });
+      return;
+    }
+    if (action === "reject" && !note) {
+      res.status(400).json({ message: "A note is required when rejecting a consignment" });
+      return;
+    }
+    if (action === "needs_info" && !note) {
+      res.status(400).json({ message: "A note is required when requesting more information" });
+      return;
+    }
+    if (fromStatus === toStatus) {
+      res.status(409).json({ message: `Consignment is already '${toStatus}'` });
+      return;
+    }
+
+    const updates: Record<string, unknown> = {
+      status: toStatus as any,
+      updatedAt: new Date(),
+    };
+    if (action === "approve") {
+      updates.approvedAt = new Date();
+      updates.approvedBy = actor.id;
+    }
+    if (note) {
+      updates.adminNotes = note;
+    }
+
+    // Transactional: status update + history + marketplace publish/visibility
+    // must all succeed together. If publish fails, the status transition is
+    // rolled back so we never end up "Approved" without a visible listing.
+    const { updated, listingAction } = await db.transaction(async (tx) => {
+      const [updatedRow] = await tx.update(consignments)
+        .set(updates as any)
+        .where(eq(consignments.id, row.id))
+        .returning();
+
+      await tx.insert(consignmentStatusHistory).values({
+        consignmentId: row.id,
+        fromStatus: fromStatus as any,
+        toStatus: toStatus as any,
+        actorId: actor.id,
+        note: note ?? null,
+      } as any);
+
+      let listing: "created" | "shown" | "hidden" | "none" = "none";
+      if (toStatus === "Approved") {
+        listing = await ensureMarketplaceListing(tx, updatedRow);
+      } else if (VISIBLE_STATUSES.has(toStatus)) {
+        if (await setListingVisibility(tx, row.id, true)) listing = "shown";
+      } else {
+        if (await setListingVisibility(tx, row.id, false)) listing = "hidden";
+      }
+      return { updated: updatedRow, listingAction: listing };
+    });
+
+    // In-app notification to the exporter
+    try {
+      const titleByAction: Record<string, string> = {
+        start_review: "Consignment under review",
+        approve: "Consignment approved",
+        reject: "Consignment rejected",
+        needs_info: "More information needed",
+      };
+      const baseMsg = `Your consignment ${row.referenceNo ?? row.id} (${row.commodityName}) is now '${toStatus}'.`;
+      const message = note ? `${baseMsg} Reviewer note: ${note}` : baseMsg;
+      await storage.createNotification({
+        userId: row.userId,
+        title: titleByAction[action] ?? `Consignment ${toStatus}`,
+        message,
+        type: "trade",
+        link: `/consignments/${row.id}`,
+        read: false,
+      });
+    } catch (e: any) {
+      console.error("[consignments.status] notification failed:", e?.message || e);
+    }
+
+    // Email to the exporter (best-effort; SMTP not required in dev)
+    try {
+      const exporter = await storage.getUser(row.userId);
+      if (exporter?.email) {
+        const subject = `Finatrades: Consignment ${row.referenceNo ?? row.id} — ${toStatus}`;
+        const html = `
+          <p>Hi ${exporter.firstName || "there"},</p>
+          <p>Your consignment <strong>${row.referenceNo ?? row.id}</strong>
+             (${row.commodityName}, ${row.quantity} ${row.unit}) has been transitioned to
+             <strong>${toStatus}</strong> by the Finatrades review team.</p>
+          ${note ? `<p><strong>Reviewer note:</strong><br/>${String(note).replace(/</g, "&lt;").replace(/\n/g, "<br/>")}</p>` : ""}
+          <p>You can view the latest status and any uploaded documents in your dashboard:
+             <br/><a href="${process.env.APP_URL || ""}/consignments/${row.id}">Open consignment</a></p>
+          <p>— Finatrades</p>
+        `;
+        sendEmailDirect(exporter.email, subject, html).catch((e: any) =>
+          console.error("[consignments.status] email failed:", e?.message || e)
+        );
+      }
+    } catch (e: any) {
+      console.error("[consignments.status] email lookup failed:", e?.message || e);
+    }
+
+    res.json({
+      ...serializeConsignment(updated),
+      fromStatus,
+      toStatus,
+      listingAction,
+    });
+  } catch (e: any) {
+    console.error("[consignments.status]", e?.message || e);
+    res.status(500).json({ message: "Failed to update consignment status", error: e?.message });
   }
-);
+});
 
 type DbExecutor = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -728,6 +832,8 @@ function serializeConsignment(c: any) {
     reviewNotes: c.reviewNotes,
     submittedAt: c.submittedAt,
     approvedAt: c.approvedAt,
+    approvedBy: c.approvedBy,
+    adminNotes: c.adminNotes,
     createdAt: c.createdAt,
     updatedAt: c.updatedAt,
   };

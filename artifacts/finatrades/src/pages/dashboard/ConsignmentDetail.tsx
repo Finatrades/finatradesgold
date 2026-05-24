@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useRoute, Link } from 'wouter';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  ArrowLeft, FileText, CheckCircle2, Clock, AlertCircle, X, Truck, Warehouse, Package as PackageIcon, ShieldCheck,
+  ArrowLeft, FileText, CheckCircle2, Clock, AlertCircle, X, Truck, Warehouse, Package as PackageIcon, ShieldCheck, Gavel,
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { apiRequest } from '@/lib/queryClient';
+import { toast } from 'sonner';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
   'Draft':            { bg: 'rgba(136,136,128,0.1)', color: '#888880', icon: <FileText size={12} /> },
@@ -36,9 +39,13 @@ function fmtDate(s: string | null | undefined): string {
   try { return new Date(s).toLocaleString(); } catch { return s; }
 }
 
+const REVIEWABLE = new Set(['Submitted', 'Pending Review', 'Under Review', 'Needs More Info']);
+
 export default function ConsignmentDetail() {
   const [, params] = useRoute<{ id: string }>('/consignments/:id');
   const id = params?.id;
+  const { user } = useAuth();
+  const isAdmin = (user as any)?.role === 'admin';
 
   const { data, isLoading, error } = useQuery<any>({
     queryKey: [`/api/b2b/consignments/${id}`],
@@ -82,6 +89,20 @@ export default function ConsignmentDetail() {
           </span>
         </div>
       </div>
+
+      {isAdmin && REVIEWABLE.has(c.status) && (
+        <AdminReviewPanel consignmentId={c.id} status={c.status} />
+      )}
+
+      {c.adminNotes && (
+        <div className="rounded-xl p-4" data-testid="admin-note"
+             style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{ color: '#B45309' }}>
+            Reviewer note
+          </p>
+          <p className="text-sm mt-1 whitespace-pre-wrap" style={{ color: '#1A1A1A' }}>{c.adminNotes}</p>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card title="Commodity" icon={<PackageIcon size={16} />}>
@@ -263,6 +284,163 @@ export default function ConsignmentDetail() {
         )}
       </Card>
     </div>
+  );
+}
+
+function DocOpenLink({ doc }: { doc: any }) {
+  const [busy, setBusy] = useState(false);
+  // Server returns signedUrl directly on detail; otherwise we fetch via downloadPath.
+  const directUrl: string | undefined = doc.signedUrl || doc.storageUrl;
+  if (directUrl) {
+    return (
+      <a href={directUrl} target="_blank" rel="noreferrer"
+         className="text-xs font-semibold shrink-0"
+         style={{ color: '#C73B22' }}
+         data-testid={`doc-open-${doc.docType}`}>Open</a>
+    );
+  }
+  if (!doc.downloadPath) return null;
+  const onClick = async () => {
+    try {
+      setBusy(true);
+      const r = await fetch(doc.downloadPath, { credentials: 'include' });
+      if (!r.ok) throw new Error(`Failed to get download URL (${r.status})`);
+      const json = await r.json();
+      if (json?.signedUrl) window.open(json.signedUrl, '_blank', 'noreferrer');
+    } catch (e: any) {
+      toast.error(e?.message || 'Could not open document');
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <button type="button" onClick={onClick} disabled={busy}
+            className="text-xs font-semibold shrink-0 disabled:opacity-50"
+            style={{ color: '#C73B22' }}
+            data-testid={`doc-open-${doc.docType}`}>
+      {busy ? 'Opening…' : 'Open'}
+    </button>
+  );
+}
+
+type ReviewAction = 'start_review' | 'approve' | 'reject' | 'needs_info';
+
+function AdminReviewPanel({ consignmentId, status }: { consignmentId: string; status: string }) {
+  const qc = useQueryClient();
+  const [note, setNote] = useState('');
+  const [pendingAction, setPendingAction] = useState<ReviewAction | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async (action: ReviewAction) => {
+      const res = await apiRequest('PATCH', `/api/b2b/consignments/${consignmentId}/status`, {
+        action,
+        note: note.trim() || undefined,
+      });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      toast.success(`Consignment ${data.toStatus || 'updated'}`);
+      setNote('');
+      setPendingAction(null);
+      qc.invalidateQueries({ queryKey: [`/api/b2b/consignments/${consignmentId}`] });
+      qc.invalidateQueries({ queryKey: ['/api/b2b/consignments'] });
+      qc.invalidateQueries({ queryKey: ['/api/b2b/consignments?queue=review'] });
+    },
+    onError: (e: any) => {
+      toast.error(e?.message || 'Failed to update consignment');
+      setPendingAction(null);
+    },
+  });
+
+  const run = (action: ReviewAction) => {
+    if ((action === 'reject' || action === 'needs_info') && !note.trim()) {
+      toast.error('Please provide a note explaining your decision.');
+      return;
+    }
+    setPendingAction(action);
+    mutation.mutate(action);
+  };
+
+  const isBusy = mutation.isPending;
+  const showStartReview = status === 'Submitted' || status === 'Pending Review';
+
+  return (
+    <section className="rounded-2xl p-4 bg-white" style={{ border: '1.5px solid #C73B22' }}
+             data-testid="admin-review-panel">
+      <h3 className="text-sm font-bold mb-1 flex items-center gap-2" style={{ color: '#C73B22' }}>
+        <Gavel size={16} /> Admin Review
+      </h3>
+      <p className="text-xs mb-3" style={{ color: '#888880' }}>
+        Inspect the documents and pricing above, then transition this consignment.
+        A note is required for Reject and Needs More Info.
+      </p>
+
+      <textarea
+        value={note}
+        onChange={(e) => setNote(e.target.value)}
+        placeholder="Reviewer note (visible to exporter; required for Reject / Needs More Info)…"
+        rows={3}
+        className="w-full p-3 rounded-lg text-sm mb-3"
+        style={{ border: '1px solid #E8E2DC', background: '#FAFAF8', color: '#1A1A1A' }}
+        data-testid="input-review-note"
+      />
+
+      <div className="flex flex-wrap gap-2">
+        {showStartReview && (
+          <ActionBtn
+            label="Start Review"
+            color="#2563EB"
+            outline
+            disabled={isBusy}
+            loading={isBusy && pendingAction === 'start_review'}
+            onClick={() => run('start_review')}
+            testid="btn-start-review"
+          />
+        )}
+        <ActionBtn
+          label="Approve"
+          color="#047857"
+          disabled={isBusy}
+          loading={isBusy && pendingAction === 'approve'}
+          onClick={() => run('approve')}
+          testid="btn-approve"
+        />
+        <ActionBtn
+          label="Request More Info"
+          color="#B45309"
+          outline
+          disabled={isBusy}
+          loading={isBusy && pendingAction === 'needs_info'}
+          onClick={() => run('needs_info')}
+          testid="btn-needs-info"
+        />
+        <ActionBtn
+          label="Reject"
+          color="#DC2626"
+          disabled={isBusy}
+          loading={isBusy && pendingAction === 'reject'}
+          onClick={() => run('reject')}
+          testid="btn-reject"
+        />
+      </div>
+    </section>
+  );
+}
+
+function ActionBtn({
+  label, color, outline, disabled, loading, onClick, testid,
+}: {
+  label: string; color: string; outline?: boolean; disabled?: boolean;
+  loading?: boolean; onClick: () => void; testid?: string;
+}) {
+  const base = 'px-3.5 py-2 rounded-lg text-xs font-semibold transition disabled:opacity-50';
+  const style: React.CSSProperties = outline
+    ? { background: 'white', color, border: `1.5px solid ${color}` }
+    : { background: color, color: 'white', border: `1.5px solid ${color}` };
+  return (
+    <button type="button" onClick={onClick} disabled={disabled} className={base} style={style} data-testid={testid}>
+      {loading ? 'Working…' : label}
+    </button>
   );
 }
 
