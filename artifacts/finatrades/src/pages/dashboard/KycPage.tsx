@@ -92,6 +92,17 @@ function guessFileKind(url: string): 'pdf' | 'image' | 'other' {
   return 'other';
 }
 
+// Older submissions stored raw `https://pub-*.r2.dev/<key>` URLs which 404
+// when the bucket is not publicly exposed. The API server now exposes the
+// same objects through `/api/files/<key>`. Rewrite any legacy public R2 URL
+// to the same-origin proxy so existing docs render correctly.
+function toProxyUrl(url: string): string {
+  if (!url) return url;
+  const m = url.match(/^https?:\/\/[^/]*r2\.(?:dev|cloudflarestorage\.com)\/(?:[^/]+\/)?(.+)$/);
+  if (m) return `/api/files/${m[1]}`;
+  return url;
+}
+
 function DocumentViewerModal({
   open, onClose, title, url,
 }: { open: boolean; onClose: () => void; title: string; url: string | null }) {
@@ -191,8 +202,8 @@ function SubmittedDocList({ documents }: { documents: any }) {
   }
   const entries = Object.entries(documents)
     .map(([key, val]: [string, any]) => {
-      const url = typeof val === 'string' ? val : val?.url;
-      return url ? { key, url: String(url) } : null;
+      const raw = typeof val === 'string' ? val : val?.url;
+      return raw ? { key, url: toProxyUrl(String(raw)) } : null;
     })
     .filter(Boolean) as { key: string; url: string }[];
   if (entries.length === 0) {

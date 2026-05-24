@@ -159,6 +159,7 @@ import {
 } from "./backup-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
+import { convertToProxyUrl } from "./r2-proxy";
 import { logActivity, notifyError } from "./system-notifications";
 import { checkKycOcrMismatch, scanDocumentBase64, nameSimilarity, extractAddressProofFields, scanCorporateDocument, type KycOcrResult, type TieredScanResult, type AddressProofFields, type CorpDocType, type CorpDocScanResult } from "./services/ocr-service";
 import { format } from "date-fns";
@@ -1240,18 +1241,22 @@ export async function registerRoutes(
       if (isR2Configured() && req.file.buffer) {
         const r2Key = generateR2Key('documents', req.file.originalname);
         const result = await uploadToR2(r2Key, req.file.buffer, req.file.mimetype);
-        fileUrl = result.url;
-        console.log(`[R2] File uploaded: ${r2Key}`);
+        // Always return the same-origin proxy URL (/api/files/{key}) instead of
+        // the raw public R2 URL — the pub-*.r2.dev URL requires public bucket
+        // access (often disabled) and breaks CSP/CORS inside the iframe viewer.
+        // The proxy streams the object via the API server, which works regardless.
+        fileUrl = convertToProxyUrl(result.url) || `/api/files/${r2Key}`;
+        console.log(`[R2] File uploaded: ${r2Key} → ${fileUrl}`);
       } else {
         // Fallback to local disk storage
         fileUrl = `/uploads/${req.file.filename}`;
       }
-      
-      return res.json({ 
-        url: fileUrl, 
+
+      return res.json({
+        url: fileUrl,
         filename: req.file.originalname,
         mimetype: req.file.mimetype,
-        size: req.file.size 
+        size: req.file.size
       });
     } catch (error) {
       console.error('File upload error:', error);
