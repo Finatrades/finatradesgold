@@ -4,7 +4,8 @@ import {
   ArrowUpRight, ShieldCheck, ChevronRight, Activity, 
   Package, DollarSign, Wallet, FileText, Anchor, Settings, Plus,
   List, Send, FileSearch, ArrowRight, Eye, ShieldAlert,
-  Clock, Lock, Globe, FileCheck, Info, Check, CircleDot, Circle
+  Clock, Lock, Globe, FileCheck, Info, Check, CircleDot, Circle,
+  AlertTriangle, Scale
 } from 'lucide-react';
 import { 
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -56,9 +57,14 @@ const commodityMix = [
 ];
 
 const cases = [
-  { ref: 'FT-TRD-082', item: 'Cocoa Beans (Grade A)', qty: '200 MT', party: 'FT-IMP-104', rating: 4.8, status: 'in-progress', step: 2, escrow: '$450,000', action: 'Approve Doc' },
-  { ref: 'FT-TRD-091', item: 'Raw Cotton', qty: '150 MT', party: 'FT-IMP-201', rating: 4.5, status: 'pending', step: 1, escrow: '$210,000', action: 'Sign Contract' },
-  { ref: 'FT-TRD-103', item: 'Arabica Coffee', qty: '80 MT', party: 'FT-IMP-099', rating: 4.9, status: 'done', step: 3, escrow: '$180,000', action: 'Release Funds' },
+  { ref: 'FT-TRD-082', item: 'Cocoa Beans (Grade A)', qty: '200 MT', party: 'FT-IMP-104', rating: 4.8, status: 'in-progress', step: 2, escrow: '$450,000', action: 'Approve Doc', tag: 'awaiting_action' },
+  { ref: 'FT-TRD-091', item: 'Raw Cotton', qty: '150 MT', party: 'FT-IMP-201', rating: 4.5, status: 'pending', step: 1, escrow: '$210,000', action: 'Sign Contract', tag: 'awaiting_action' },
+  { ref: 'FT-TRD-103', item: 'Arabica Coffee', qty: '80 MT', party: 'FT-IMP-099', rating: 4.9, status: 'in-progress', step: 2, escrow: '€180,000', action: 'View Escrow', tag: 'in_escrow' },
+  { ref: 'FT-TRD-108', item: 'Refined Gold (99.9%)', qty: '50 KG', party: 'FT-IMP-305', rating: 5.0, status: 'in-progress', step: 2, escrow: '$3,200,000', action: 'Track Shipment', tag: 'shipping' },
+  { ref: 'FT-TRD-112', item: 'Robusta Coffee', qty: '120 MT', party: 'FT-IMP-112', rating: 4.7, status: 'done', step: 3, escrow: '$340,000', action: 'View Receipt', tag: 'completed' },
+  { ref: 'FT-TRD-115', item: 'Cocoa Butter', qty: '60 MT', party: 'FT-IMP-155', rating: 4.6, status: 'done', step: 3, escrow: '£150,000', action: 'View Receipt', tag: 'completed' },
+  { ref: 'FT-TRD-095', item: 'Raw Cotton', qty: '300 MT', party: 'FT-IMP-205', rating: 4.3, status: 'disputed', step: 2, escrow: '$420,000', action: 'Resolve Dispute', tag: 'disputed' },
+  { ref: 'FT-TRD-118', item: 'Arabica Coffee', qty: '40 MT', party: 'FT-IMP-088', rating: 4.8, status: 'pending', step: 1, escrow: '€90,000', action: 'Upload BoL', tag: 'awaiting_action' },
 ];
 
 const tickerData = [
@@ -185,6 +191,25 @@ const WalletMeter = ({ currency, total, available, locked, pending }) => {
 // --- Main Dashboard Component ---
 
 export default function PremiumFintech() {
+  const [activeTab, setActiveTab] = useState('All');
+
+  const tabs = [
+    { id: 'All', label: 'All' },
+    { id: 'awaiting_action', label: 'Awaiting Action' },
+    { id: 'in_escrow', label: 'In Escrow' },
+    { id: 'shipping', label: 'Shipping' },
+    { id: 'completed', label: 'Completed' },
+    { id: 'disputed', label: 'Disputed' }
+  ];
+
+  const filteredCases = cases.filter(c => activeTab === 'All' || c.tag === activeTab);
+  
+  const counts = cases.reduce((acc: any, c) => {
+    acc[c.tag] = (acc[c.tag] || 0) + 1;
+    acc['All'] = (acc['All'] || 0) + 1;
+    return acc;
+  }, {});
+
   return (
     <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans selection:bg-[#C73B22] selection:text-white" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       
@@ -285,67 +310,154 @@ export default function PremiumFintech() {
             
             {/* Active Trade Cases */}
             <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6 flex flex-col" style={{ boxShadow: theme.shadowCard }}>
-              <div className="flex justify-between items-end mb-6">
+              <style>{`
+                @keyframes tab-indicator {
+                  from { transform: scaleX(0); }
+                  to { transform: scaleX(1); }
+                }
+              `}</style>
+              <div className="flex justify-between items-end mb-4">
                 <div>
                   <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-2">Active Trade Cases</h2>
-                  <div className="text-[24px] font-bold text-[#1A1A1A]">3 Cases Requiring Action</div>
+                  <div className="text-[24px] font-bold text-[#1A1A1A]">{counts['awaiting_action'] || 0} Cases Requiring Action</div>
                 </div>
                 <button className="h-[40px] px-4 text-[14px] font-semibold text-[#C73B22] flex items-center gap-1.5 hover:bg-[#F5F0EB] focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40 rounded-xl transition-colors border border-transparent hover:border-[#E8E2DC]">
                   View all <ArrowRight size={16} />
                 </button>
               </div>
 
-              <div className="flex flex-col gap-4">
-                {cases.map((c, i) => (
-                  <div key={i} className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-[#E8E2DC] bg-[#FAFAF8] hover:bg-[#FFFFFF] hover:border-[#DDD5CC] transition-all" style={{ boxShadow: '0 2px 8px rgba(26,26,26,0.02)' }}>
-                    
-                    <div className="flex flex-col gap-1 w-full md:w-[22%] mb-4 md:mb-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[13px] font-medium font-mono text-[#888880]">{c.ref}</span>
-                        {c.status === 'done' && <CheckCircle2 size={14} className="text-[#059669]" />}
-                        {c.status === 'in-progress' && <CircleDot size={14} className="text-[#2563EB]" />}
-                        {c.status === 'pending' && <Circle size={14} className="text-[#D97706]" />}
+              {/* Tabs */}
+              <div 
+                role="tablist" 
+                aria-label="Trade Cases Pipeline"
+                className="flex items-center gap-2 border-b border-[#E8E2DC] mb-6 overflow-x-auto no-scrollbar"
+              >
+                {tabs.map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const isDisputed = tab.id === 'disputed';
+                  const count = counts[tab.id] || 0;
+                  
+                  return (
+                    <button
+                      key={tab.id}
+                      role="tab"
+                      aria-selected={isActive}
+                      aria-controls={`panel-${tab.id}`}
+                      id={`tab-${tab.id}`}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`relative flex items-center gap-2 h-[40px] px-1 whitespace-nowrap transition-colors focus:outline-none ${
+                        isActive ? 'text-[#1A1A1A]' : 'text-[#4A4A48] hover:bg-[#F5F0EB]'
+                      }`}
+                    >
+                      <span className={`text-[13px] ${isActive ? 'font-semibold' : 'font-medium'}`}>
+                        {tab.label}
+                      </span>
+                      
+                      <div className={`flex items-center justify-center px-1.5 min-w-[20px] h-[20px] rounded-full text-[11px] font-medium tabular-nums ${
+                        isDisputed && count > 0 
+                          ? 'bg-[#D97706]/10 text-[#D97706]' 
+                          : isActive 
+                            ? 'bg-[#C73B22]/10 text-[#C73B22]' 
+                            : 'bg-[#F0EBE5] text-[#4A4A48]'
+                      }`}>
+                        {isDisputed && count > 0 && <AlertTriangle size={10} className="mr-1" />}
+                        {count}
                       </div>
-                      <span className="text-[14px] font-bold text-[#1A1A1A] leading-tight">{c.item}</span>
-                      <span className="text-[13px] text-[#4A4A48]">{c.qty}</span>
-                    </div>
 
-                    <div className="flex flex-col gap-1 w-full md:w-[20%] mb-4 md:mb-0">
-                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Counterparty</span>
-                      <span className="text-[14px] font-mono font-medium text-[#1A1A1A]">{c.party}</span>
-                      <span className="text-[12px] font-medium text-[#D97706]">★ {c.rating}/5.0</span>
-                    </div>
+                      {isActive && (
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#C73B22]" style={{ transformOrigin: 'left center', animation: 'tab-indicator 150ms ease-out forwards' }} />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-                    <div className="flex flex-col gap-2 w-full md:w-[24%] mb-4 md:mb-0">
-                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Milestone</span>
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <div className={`h-2 flex-1 rounded-l-full ${c.step >= 1 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
-                        <div className={`h-2 flex-1 ${c.step >= 2 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
-                        <div className={`h-2 flex-1 rounded-r-full ${c.step >= 3 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+              <div 
+                role="tabpanel"
+                id={`panel-${activeTab}`}
+                aria-labelledby={`tab-${activeTab}`}
+                className="flex flex-col gap-4"
+              >
+                {filteredCases.length > 0 ? (
+                  filteredCases.map((c, i) => (
+                    <div key={i} className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-[#E8E2DC] bg-[#FAFAF8] hover:bg-[#FFFFFF] hover:border-[#DDD5CC] transition-all relative overflow-hidden" style={{ boxShadow: '0 2px 8px rgba(26,26,26,0.02)' }}>
+                      
+                      {c.tag === 'disputed' && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]" />
+                      )}
+
+                      <div className="flex flex-col gap-1 w-full md:w-[22%] mb-4 md:mb-0 pl-2 md:pl-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[13px] font-medium font-mono text-[#888880]">{c.ref}</span>
+                          {c.status === 'done' && <CheckCircle2 size={14} className="text-[#059669]" />}
+                          {c.status === 'in-progress' && <CircleDot size={14} className="text-[#2563EB]" />}
+                          {c.status === 'pending' && <Circle size={14} className="text-[#D97706]" />}
+                          {c.status === 'disputed' && <AlertCircle size={14} className="text-[#D97706]" />}
+                          {c.tag === 'completed' && <span className="text-[10px] font-semibold text-[#059669] bg-[#059669]/10 px-1.5 py-0.5 rounded uppercase tracking-wider">30 Days</span>}
+                        </div>
+                        <span className="text-[14px] font-bold text-[#1A1A1A] leading-tight">{c.item}</span>
+                        <span className="text-[13px] text-[#4A4A48]">{c.qty}</span>
                       </div>
-                      <div className="flex justify-between items-center text-[11px] font-semibold">
-                        <span className={c.step >= 1 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Contract</span>
-                        <span className={c.step >= 2 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Docs</span>
-                        <span className={c.step >= 3 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Settled</span>
+
+                      <div className="flex flex-col gap-1 w-full md:w-[20%] mb-4 md:mb-0">
+                        <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Counterparty</span>
+                        <span className="text-[14px] font-mono font-medium text-[#1A1A1A]">{c.party}</span>
+                        <span className="text-[12px] font-medium text-[#D97706]">★ {c.rating}/5.0</span>
                       </div>
-                    </div>
 
-                    <div className="flex flex-col w-full md:w-[15%] text-left md:text-right pr-4 mb-4 md:mb-0">
-                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider mb-1">Escrow</span>
-                      <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">{c.escrow}</span>
-                    </div>
+                      <div className="flex flex-col gap-2 w-full md:w-[24%] mb-4 md:mb-0">
+                        <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Milestone</span>
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <div className={`h-2 flex-1 rounded-l-full ${c.step >= 1 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                          <div className={`h-2 flex-1 ${c.step >= 2 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                          <div className={`h-2 flex-1 rounded-r-full ${c.step >= 3 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                        </div>
+                        <div className="flex justify-between items-center text-[11px] font-semibold">
+                          <span className={c.step >= 1 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Contract</span>
+                          <span className={c.step >= 2 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Docs</span>
+                          <span className={c.step >= 3 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Settled</span>
+                        </div>
+                      </div>
 
-                    <div className="flex w-full md:w-auto items-center justify-end gap-3">
-                      <button aria-label="View deal" className="h-[40px] w-[40px] flex items-center justify-center rounded-xl border border-[#E8E2DC] text-[#4A4A48] hover:bg-[#F5F0EB] hover:text-[#1A1A1A] transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
-                        <Eye size={18} />
-                      </button>
-                      <button className="h-[40px] px-5 rounded-xl bg-[#C73B22] hover:bg-[#A82F1B] text-white text-[14px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40 focus:ring-offset-2">
-                        {c.action}
-                      </button>
-                    </div>
+                      <div className="flex flex-col w-full md:w-[15%] text-left md:text-right pr-4 mb-4 md:mb-0">
+                        <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider mb-1">Escrow</span>
+                        <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">{c.escrow}</span>
+                      </div>
 
+                      <div className="flex w-full md:w-auto items-center justify-end gap-3">
+                        <button aria-label="View deal" className="h-[40px] w-[40px] flex items-center justify-center rounded-xl border border-[#E8E2DC] text-[#4A4A48] hover:bg-[#F5F0EB] hover:text-[#1A1A1A] transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+                          <Eye size={18} />
+                        </button>
+                        <button className={`h-[40px] px-5 rounded-xl text-[14px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                          c.tag === 'disputed' 
+                            ? 'bg-[#D97706] hover:bg-[#B45309] text-white focus:ring-[#D97706]/40' 
+                            : c.tag === 'completed'
+                              ? 'bg-transparent border border-[#E8E2DC] text-[#1A1A1A] hover:bg-[#F5F0EB] focus:ring-[#E8E2DC]'
+                              : 'bg-[#C73B22] hover:bg-[#A82F1B] text-white focus:ring-[#C73B22]/40'
+                        }`}>
+                          {c.action}
+                        </button>
+                      </div>
+
+                    </div>
+                  ))
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl border border-dashed border-[#E8E2DC] bg-[#FAFAF8] h-[120px]">
+                    {activeTab === 'disputed' ? (
+                      <Scale size={24} className="text-[#888880] mb-3" />
+                    ) : activeTab === 'completed' ? (
+                      <FileCheck size={24} className="text-[#888880] mb-3" />
+                    ) : (
+                      <FileSearch size={24} className="text-[#888880] mb-3" />
+                    )}
+                    <h3 className="text-[14px] font-semibold text-[#1A1A1A]">
+                      {activeTab === 'disputed' ? 'No disputed deals — nice work' : 'No cases in this stage'}
+                    </h3>
+                    <p className="text-[13px] text-[#888880] mt-1">
+                      {activeTab === 'disputed' ? 'All your transactions are running smoothly.' : 'There are currently no trade cases matching this filter.'}
+                    </p>
                   </div>
-                ))}
+                )}
               </div>
             </section>
 
