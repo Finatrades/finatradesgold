@@ -10,6 +10,7 @@ type Op = {
   table?: any;
   values?: any;
   set?: any;
+  whereArgs?: any[];
 };
 
 interface MockState {
@@ -59,6 +60,12 @@ function makeChain(op: Op): any {
           return makeChain(op);
         };
       }
+      if (prop === "where") {
+        return (...args: any[]) => {
+          op.whereArgs = args;
+          return makeChain(op);
+        };
+      }
       // generic chain method
       return (..._args: any[]) => makeChain(op);
     },
@@ -85,6 +92,26 @@ const db = {
 };
 
 vi.mock("../../db", () => ({ db, pool: {}, secondaryDb: null, secondaryPool: null }));
+
+// Walks a drizzle SQL expression (as built by eq/and/inArray/etc.) and collects
+// every bound literal value so tests can assert filter semantics without
+// dialect serialization. Drizzle wraps literals as `Param { value }` and nests
+// expressions under `queryChunks`.
+function collectSqlParamValues(node: any, out: any[] = []): any[] {
+  if (node == null) return out;
+  if (Array.isArray(node)) {
+    for (const item of node) collectSqlParamValues(item, out);
+    return out;
+  }
+  if (typeof node !== "object") return out;
+  if ("value" in node && !("queryChunks" in node)) {
+    const v = (node as any).value;
+    if (Array.isArray(v)) for (const item of v) out.push(item);
+    else out.push(v);
+  }
+  if ("queryChunks" in node) collectSqlParamValues((node as any).queryChunks, out);
+  return out;
+}
 
 // ─── Storage mock (used by requireAdmin) ──────────────────────────────────
 const getUserMock = vi.fn();
@@ -369,5 +396,327 @@ describe("PATCH /api/admin/consignments/:id/documents/:docId", () => {
       .send({ action: "approve" });
 
     expect(res.status).toBe(404);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET /:id (detail / timeline)
+// ──────────────────────────────────────────────────────────────────────────
+describe("GET /api/admin/consignments/:id", () => {
+  const consignment = {
+    id: "c-9",
+    referenceNo: "CONS-9",
+    userId: "user-9",
+    status: "Under Review",
+    commodityName: "Cocoa",
+    commodityCategory: "agri",
+    hsCode: "1801.00",
+    quantity: "12",
+    unit: "MT",
+    qualityGrade: "A",
+    originCountry: "GH",
+    targetHubCode: "TEMA",
+    incoterms: "FOB",
+    askingPriceCents: 100000,
+    askingCurrency: "USD",
+    estimatedValueCents: 120000,
+    notes: null,
+    adminNotes: null,
+    reviewerId: null,
+    reviewedAt: null,
+    reviewNotes: null,
+    submittedAt: new Date("2026-05-01T00:00:00Z"),
+    approvedAt: null,
+    createdAt: new Date("2026-05-01T00:00:00Z"),
+    updatedAt: new Date("2026-05-01T00:00:00Z"),
+  };
+  const exporter = {
+    firstName: "Ada",
+    lastName: "Lovelace",
+    email: "ada@x.com",
+    companyName: "Ada Trading",
+  };
+
+  it("returns consignment with documents, history (with actorName/actorRole), and signed download paths", async () => {
+    // 1. select consignment + exporter
+    queueResult([{ c: consignment, u: exporter }]);
+    // 2. select documents
+    queueResult([
+      {
+        id: "d-1",
+        consignmentId: "c-9",
+        docType: "invoice",
+        docLabel: "Commercial Invoice",
+        isRequired: true,
+        status: "verified",
+        fileName: "inv.pdf",
+        fileSize: 1024,
+        mimeType: "application/pdf",
+        storageKey: "consignments/c-9/inv.pdf",
+        uploadedAt: new Date("2026-05-02T00:00:00Z"),
+        reviewedAt: null,
+        reviewerId: null,
+        reviewNotes: null,
+        rejectReason: null,
+      },
+    ]);
+    // 3. select history joined to actor
+    queueResult([
+      {
+        h: {
+          id: "h-1",
+          consignmentId: "c-9",
+          fromStatus: "Submitted",
+          toStatus: "Under Review",
+          actorId: "admin-1",
+          note: "picked up",
+          createdAt: new Date("2026-05-03T00:00:00Z"),
+        },
+        actor: { firstName: "Cara", lastName: "Reviewer", email: "cara@x.com", role: "admin" },
+      },
+      {
+        h: {
+          id: "h-2",
+          consignmentId: "c-9",
+          fromStatus: null,
+          toStatus: "Submitted",
+          actorId: null,
+          note: null,
+          createdAt: new Date("2026-05-01T00:00:00Z"),
+        },
+        actor: null,
+      },
+    ]);
+
+    const res = await request(makeApp()).get("/api/admin/consignments/c-9");
+
+    expect(res.status).toBe(200);
+    expect(res.body.id).toBe("c-9");
+    expect(res.body.exporterName).toBe("Ada Trading");
+    expect(res.body.exporterEmail).toBe("ada@x.com");
+
+    expect(res.body.documents).toHaveLength(1);
+    expect(res.body.documents[0]).toMatchObject({
+      id: "d-1",
+      docLabel: "Commercial Invoice",
+      status: "verified",
+      downloadPath: "/api/b2b/consignments/c-9/documents/d-1/url",
+    });
+    // r2 not configured → no signedUrl
+    expect(res.body.documents[0].signedUrl).toBeUndefined();
+
+    expect(res.body.history).toHaveLength(2);
+    expect(res.body.history[0]).toMatchObject({
+      id: "h-1",
+      fromStatus: "Submitted",
+      toStatus: "Under Review",
+      actorName: "Cara Reviewer",
+      actorRole: "admin",
+      note: "picked up",
+    });
+    // history entry with no actor (system event) should still serialize
+    expect(res.body.history[1]).toMatchObject({
+      id: "h-2",
+      toStatus: "Submitted",
+      actorName: null,
+      actorRole: null,
+    });
+  });
+
+  it("returns 404 when consignment id is missing", async () => {
+    queueResult([]); // empty consignment lookup
+
+    const res = await request(makeApp()).get("/api/admin/consignments/does-not-exist");
+
+    expect(res.status).toBe(404);
+    expect(res.body.message).toMatch(/not found/i);
+  });
+
+  it("returns empty documents and history arrays when none exist", async () => {
+    queueResult([{ c: consignment, u: exporter }]);
+    queueResult([]); // no docs
+    queueResult([]); // no history
+
+    const res = await request(makeApp()).get("/api/admin/consignments/c-9");
+
+    expect(res.status).toBe(200);
+    expect(res.body.documents).toEqual([]);
+    expect(res.body.history).toEqual([]);
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// GET / (queue + SLA summary)
+// ──────────────────────────────────────────────────────────────────────────
+describe("GET /api/admin/consignments", () => {
+  const now = new Date("2026-05-24T00:00:00Z");
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(now);
+  });
+
+  function makeRow(overrides: any = {}) {
+    return {
+      c: {
+        id: overrides.id ?? "c-1",
+        referenceNo: overrides.referenceNo ?? "CONS-1",
+        userId: "user-1",
+        status: overrides.status ?? "Submitted",
+        commodityName: overrides.commodityName ?? "Cocoa",
+        commodityCategory: "agri",
+        hsCode: null,
+        quantity: "10",
+        unit: "MT",
+        qualityGrade: null,
+        originCountry: "GH",
+        targetHubCode: overrides.targetHubCode ?? "TEMA",
+        incoterms: "FOB",
+        askingPriceCents: 0,
+        askingCurrency: "USD",
+        estimatedValueCents: 0,
+        notes: null,
+        adminNotes: null,
+        reviewerId: null,
+        reviewedAt: overrides.reviewedAt ?? null,
+        reviewNotes: null,
+        submittedAt: overrides.submittedAt ?? now,
+        approvedAt: null,
+        createdAt: overrides.createdAt ?? now,
+        updatedAt: now,
+      },
+      u: overrides.u ?? { firstName: "Ada", lastName: "L", email: "ada@x.com", companyName: "Ada Trading" },
+    };
+  }
+
+  function queueListAndSla(rows: any[], pending: any[] = [], reviewed: any[] = []) {
+    queueResult(rows); // main list query
+    queueResult(pending); // pending pool for SLA
+    queueResult(reviewed); // recent reviewed
+  }
+
+  it("returns items + SLA summary with pendingTotal, pendingOverSla, oldestPendingHours, avgReviewHoursLast7d", async () => {
+    const rows = [makeRow({ id: "c-1", referenceNo: "CONS-1" })];
+    // Two pending: one 60h old (breaches 48h SLA), one 10h old
+    const pending = [
+      { c: { submittedAt: new Date(now.getTime() - 60 * 60 * 60 * 1000), createdAt: now } },
+      { c: { submittedAt: new Date(now.getTime() - 10 * 60 * 60 * 1000), createdAt: now } },
+    ];
+    // Two reviewed in last 7d: review times 2h and 4h → avg 3h
+    const reviewed = [
+      {
+        submittedAt: new Date(now.getTime() - 5 * 60 * 60 * 1000),
+        reviewedAt: new Date(now.getTime() - 3 * 60 * 60 * 1000), // 2h
+      },
+      {
+        submittedAt: new Date(now.getTime() - 8 * 60 * 60 * 1000),
+        reviewedAt: new Date(now.getTime() - 4 * 60 * 60 * 1000), // 4h
+      },
+    ];
+
+    queueListAndSla(rows, pending, reviewed);
+
+    const res = await request(makeApp()).get("/api/admin/consignments");
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toHaveLength(1);
+    expect(res.body.items[0]).toMatchObject({
+      id: "c-1",
+      referenceNo: "CONS-1",
+      exporterName: "Ada Trading",
+    });
+    expect(res.body.sla).toMatchObject({
+      pendingTotal: 2,
+      pendingOverSla: 1,
+      slaHours: 48,
+      reviewedLast7d: 2,
+    });
+    expect(res.body.sla.oldestPendingHours).toBeCloseTo(60, 1);
+    expect(res.body.sla.avgReviewHoursLast7d).toBeCloseTo(3, 1);
+  });
+
+  it("applies status and hub filters to the main list query (where clause carries both values)", async () => {
+    queueListAndSla([makeRow()]);
+
+    const res = await request(makeApp())
+      .get("/api/admin/consignments")
+      .query({ status: "Submitted", hub: "TEMA" });
+
+    expect(res.status).toBe(200);
+
+    // Three select calls expected: list + pending pool + recent reviewed
+    const selects = state.ops.filter((o) => o.kind === "select");
+    expect(selects.length).toBe(3);
+
+    // The list query (first select) must have called .where(...) with a SQL
+    // expression that bound BOTH the status and hub filter values.
+    const listOp = selects[0];
+    expect(listOp.whereArgs).toBeDefined();
+    const values = collectSqlParamValues(listOp.whereArgs);
+    expect(values).toContain("Submitted");
+    expect(values).toContain("TEMA");
+
+    // Pending pool (2nd select) is keyed on inArray of pending statuses, not
+    // on the request's status filter — make sure the user's filter did NOT
+    // leak into it.
+    const pendingOp = selects[1];
+    const pendingValues = collectSqlParamValues(pendingOp.whereArgs ?? []);
+    expect(pendingValues).not.toContain("TEMA");
+  });
+
+  it("does not call .where on the list query when no filters are provided", async () => {
+    queueListAndSla([makeRow()]);
+
+    const res = await request(makeApp()).get("/api/admin/consignments");
+
+    expect(res.status).toBe(200);
+    const selects = state.ops.filter((o) => o.kind === "select");
+    // Route always invokes .where(...) — but with `undefined` when no filters.
+    expect(selects[0].whereArgs).toEqual([undefined]);
+  });
+
+  it("applies in-memory search filter across referenceNo and exporter name", async () => {
+    const rows = [
+      makeRow({
+        id: "c-1",
+        referenceNo: "CONS-AAA",
+        u: { firstName: "Ada", lastName: "L", email: "ada@x.com", companyName: "Alpha Co" },
+      }),
+      makeRow({
+        id: "c-2",
+        referenceNo: "CONS-BBB",
+        u: { firstName: "Bob", lastName: "K", email: "bob@x.com", companyName: "Beta Co" },
+      }),
+      makeRow({
+        id: "c-3",
+        referenceNo: "CONS-CCC",
+        u: { firstName: "Cy", lastName: "M", email: "cy@x.com", companyName: "Alpha Holdings" },
+      }),
+    ];
+    queueListAndSla(rows);
+
+    const res = await request(makeApp())
+      .get("/api/admin/consignments")
+      .query({ search: "alpha" });
+
+    expect(res.status).toBe(200);
+    const refs = res.body.items.map((i: any) => i.referenceNo).sort();
+    expect(refs).toEqual(["CONS-AAA", "CONS-CCC"]);
+  });
+
+  it("returns zeroed SLA summary when no pending and no recent reviews exist", async () => {
+    queueListAndSla([], [], []);
+
+    const res = await request(makeApp()).get("/api/admin/consignments");
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual([]);
+    expect(res.body.sla).toMatchObject({
+      pendingTotal: 0,
+      pendingOverSla: 0,
+      oldestPendingHours: 0,
+      avgReviewHoursLast7d: 0,
+      reviewedLast7d: 0,
+    });
   });
 });
