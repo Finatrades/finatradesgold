@@ -62,6 +62,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="consignments"
+        options={{
+          title: "Consignments",
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons
+              name={focused ? "cube" : "cube-outline"}
+              size={22}
+              color={color}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="vault"
         options={{
           title: "Vault",
