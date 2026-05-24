@@ -146,19 +146,41 @@ export function getRoleLabel(user: any): string {
 }
 
 /**
- * Routes each user-type is permitted to access. Admin always allowed.
- * Used by RoleRoute on the client; backend should ultimately enforce too.
+ * Authoritative role-matrix. Admin always allowed.
+ * Backend MUST mirror this in requireUserType middleware for real enforcement.
+ *
+ *  Path                | Exporter | Importer | Government
+ *  /dashboard          |    ✓     |    ✓     |     ✓
+ *  /transactions       |    ✓     |    ✓     |     ✓
+ *  /notifications      |    ✓     |    ✓     |     ✓
+ *  /consignments       |    ✓     |    ✓     |     —
+ *  /inventory          |    ✓     |    —     |     ✓     (gov sees national inventory)
+ *  /marketplace        |    ✓     |    ✓     |     —
+ *  /orders             |    ✓     |    ✓     |     —
+ *  /escrow             |    ✓     |    ✓     |     ✓
+ *  /finabridge         |    ✓     |    ✓     |     ✓     (Trade Finance visible to all)
+ *  /certificates       |    ✓     |    ✓     |     —
+ *  /barter             |    —     |    —     |     ✓     (sovereign-only)
+ *  /sovereign          |    —     |    —     |     ✓     (sovereign-only)
+ *  /profile /kyc /security /help — open to all
  */
 export const ROUTE_ACCESS: Record<string, UserType[]> = {
-  '/sovereign': ['government'],
-  '/barter': ['government', 'exporter', 'importer'], // barter visible to all but workflows differ
+  '/consignments':  ['exporter', 'importer'],
+  '/inventory':     ['exporter', 'government'],
+  '/marketplace':   ['exporter', 'importer'],
+  '/orders':        ['exporter', 'importer'],
+  '/escrow':        ['exporter', 'importer', 'government'],
+  '/finabridge':    ['exporter', 'importer', 'government'],
+  '/certificates':  ['exporter', 'importer'],
+  '/barter':        ['government'],
+  '/sovereign':     ['government'],
 };
 
 export function canAccess(path: string, user: any): boolean {
   if (!user) return false;
   if (user.role === 'admin') return true;
   const allowed = ROUTE_ACCESS[path];
-  if (!allowed) return true;
+  if (!allowed) return true; // un-listed paths (profile, kyc, etc.) are open
   const t: UserType = user.userType || 'exporter';
   return allowed.includes(t);
 }

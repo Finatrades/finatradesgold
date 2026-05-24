@@ -307,6 +307,42 @@ function ensureAuthenticated(req: Request, res: Response, next: NextFunction) {
   next();
 }
 
+// SECURITY: Server-side role-based authorization.
+// Mirrors ROUTE_ACCESS matrix from artifacts/finatrades/src/lib/roleMenus.tsx.
+// Admins bypass; otherwise the user's user_type must be in the allowed list.
+type UserTypeAllowed = 'exporter' | 'importer' | 'government';
+function requireUserType(...allowed: UserTypeAllowed[]) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      const user = await storage.getUser(sessionUserId);
+      if (!user) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      if (user.role === 'admin') {
+        (req as any).currentUser = user;
+        return next();
+      }
+      const ut = (user as any).userType as UserTypeAllowed | null | undefined;
+      if (!ut || !allowed.includes(ut)) {
+        return res.status(403).json({
+          message: "Access denied for your account type",
+          requiredUserType: allowed,
+          actualUserType: ut ?? null,
+        });
+      }
+      (req as any).currentUser = user;
+      next();
+    } catch (error: any) {
+      console.error('[requireUserType]', error?.message || error);
+      return res.status(500).json({ message: "Authorization check failed" });
+    }
+  };
+}
+
 // Middleware to check if platform is in maintenance mode
 // Admin routes are exempt from this check
 async function checkMaintenanceMode(req: Request, res: Response, next: NextFunction) {

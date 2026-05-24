@@ -258,7 +258,7 @@ export default function DashboardOverview() {
           {/* Alert */}
           <div className="rounded-2xl p-4 flex items-start gap-3"
             style={{ background: 'rgba(199,59,34,0.04)', border: '1px solid rgba(199,59,34,0.15)' }}>
-            <AlertCircle size={16} style={{ color: '#C73B22', marginTop: 1, shrink: 0 }} />
+            <AlertCircle size={16} style={{ color: '#C73B22', marginTop: 1, flexShrink: 0 }} />
             <div>
               <p className="text-xs font-semibold" style={{ color: '#C73B22' }}>KYC Pending</p>
               <p className="text-xs mt-0.5" style={{ color: '#888880' }}>

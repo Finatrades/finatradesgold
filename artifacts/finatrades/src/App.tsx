@@ -101,27 +101,27 @@ function AppRoutes() {
 
       {/* Trade Operations */}
       <Route path="/consignments">
-        <ProtectedRoute component={Consignments} />
+        <ProtectedRoute path="/consignments" component={Consignments} />
       </Route>
       <Route path="/inventory">
-        <ProtectedRoute component={Inventory} />
+        <ProtectedRoute path="/inventory" component={Inventory} />
       </Route>
       <Route path="/marketplace">
-        <ProtectedRoute component={Marketplace} />
+        <ProtectedRoute path="/marketplace" component={Marketplace} />
       </Route>
       <Route path="/orders">
-        <ProtectedRoute component={Orders} />
+        <ProtectedRoute path="/orders" component={Orders} />
       </Route>
 
       {/* Finance & Settlement */}
       <Route path="/escrow">
-        <ProtectedRoute component={Escrow} />
+        <ProtectedRoute path="/escrow" component={Escrow} />
       </Route>
       <Route path="/finabridge">
-        <ProtectedRoute component={() => <ComingSoon title="Trade Finance" desc="Letters of credit, invoice financing & working capital for institutional trade." />} />
+        <ProtectedRoute path="/finabridge" component={() => <ComingSoon title="Trade Finance" desc="Letters of credit, invoice financing & working capital for institutional trade." />} />
       </Route>
       <Route path="/certificates">
-        <ProtectedRoute component={() => <ComingSoon title="Warehouse Receipts" desc="Digital warehouse receipts and ownership documents for verified inventory." />} />
+        <ProtectedRoute path="/certificates" component={() => <ComingSoon title="Warehouse Receipts" desc="Digital warehouse receipts and ownership documents for verified inventory." />} />
       </Route>
 
       {/* Government */}

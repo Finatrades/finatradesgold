@@ -62,8 +62,7 @@ export default function Register() {
       await register({
         ...form,
         role: 'user',
-        userType: role, // exporter | importer | government
-        accountType: 'business',
+        userType: role, // exporter | importer | government — single source of truth
         username: form.email,
         fullName: `${form.firstName} ${form.lastName}`,
       });
