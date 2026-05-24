@@ -143,9 +143,25 @@ async function notifyTradeFinanceEvent(input: {
       ),
     );
 
-    // 2. Email notifications.
+    // 2. Email notifications — respecting per-user trade-finance email opt-outs.
+    //    Missing key → defaults to TRUE (preserve historical behaviour).
     const users = await Promise.all(recipientIds.map((id) => storage.getUser(id)));
-    const emails = users.map((u) => u?.email).filter((e): e is string => !!e);
+    const prefsList = await Promise.all(
+      recipientIds.map((id) =>
+        storage.getUserPreferences(id).catch(() => undefined),
+      ),
+    );
+    const emails = users
+      .map((u, i) => {
+        if (!u?.email) return null;
+        const prefs = prefsList[i]?.tradeFinanceEmailPrefs as
+          | Record<string, boolean>
+          | null
+          | undefined;
+        if (prefs && prefs[input.kind] === false) return null;
+        return u.email;
+      })
+      .filter((e): e is string => !!e);
     if (emails.length === 0) return;
     const subject = `[Finatrades] ${title}`;
     const body = `

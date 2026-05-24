@@ -2928,6 +2928,13 @@ export const userPreferences = pgTable("user_preferences", {
   transferApprovalTimeout: integer("transfer_approval_timeout").notNull().default(24), // Hours before auto-accept (0 = no auto-accept)
   // Alert preferences
   lowBalanceThresholdGrams: decimal("low_balance_threshold_grams", { precision: 18, scale: 6 }).default('0.1'), // Alert when LGPW balance drops below this (grams)
+  // Per-event email opt-outs for trade-finance lifecycle alerts.
+  // Shape: { lc_issued?: boolean, lc_compliant?: boolean, lc_discrepant?: boolean,
+  //          escrow_funded?: boolean, milestone_released?: boolean,
+  //          dispute_opened?: boolean, dispute_resolved?: boolean }
+  // Missing keys default to TRUE (preserve historical behaviour of always emailing).
+  // In-app notifications are unaffected by this setting.
+  tradeFinanceEmailPrefs: jsonb("trade_finance_email_prefs").$type<Record<string, boolean>>().notNull().default(sql`'{}'::jsonb`),
   // Timestamps
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

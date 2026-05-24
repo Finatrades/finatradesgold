@@ -1,9 +1,123 @@
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import {
   User, Building2, Mail, Phone, MapPin, Globe, Save,
   Camera, Shield, Bell, LogOut, ChevronRight, Edit3,
 } from 'lucide-react';
+
+type TradeFinanceEventKind =
+  | 'lc_issued'
+  | 'lc_compliant'
+  | 'lc_discrepant'
+  | 'escrow_funded'
+  | 'milestone_released'
+  | 'dispute_opened'
+  | 'dispute_resolved';
+
+const TRADE_EVENT_LABELS: { key: TradeFinanceEventKind; label: string; help: string }[] = [
+  { key: 'lc_issued', label: 'Letter of Credit issued', help: 'Email me when an LC is issued on my case.' },
+  { key: 'lc_compliant', label: 'LC documents Compliant', help: 'Email me when presented LC documents pass review.' },
+  { key: 'lc_discrepant', label: 'LC documents Discrepant', help: 'Email me when LC documents come back with discrepancies.' },
+  { key: 'escrow_funded', label: 'Escrow funded', help: 'Email me when an importer funds escrow on my case.' },
+  { key: 'milestone_released', label: 'Escrow milestone released', help: 'Email me each time a milestone payment is released.' },
+  { key: 'dispute_opened', label: 'Trade dispute opened', help: 'Email me when a dispute is opened on my case.' },
+  { key: 'dispute_resolved', label: 'Trade dispute resolved', help: 'Email me when a dispute is resolved.' },
+];
+
+function Toggle({ enabled, onClick }: { enabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={enabled}
+      className="w-10 h-5 rounded-full relative cursor-pointer transition-colors shrink-0"
+      style={{ background: enabled ? '#C73B22' : '#E8E2DC' }}
+    >
+      <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all"
+        style={{ left: enabled ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+    </button>
+  );
+}
+
+function TradeFinanceEmailPrefs({ userId }: { userId: string }) {
+  const qc = useQueryClient();
+  const queryKey = ['/api/users', userId, 'preferences'] as const;
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: async () => {
+      const res = await apiRequest('GET', `/api/users/${userId}/preferences`);
+      if (!res.ok) throw new Error('Failed to load preferences');
+      return res.json() as Promise<{ preferences: { tradeFinanceEmailPrefs?: Record<string, boolean> | null } }>;
+    },
+  });
+
+  const prefs = (data?.preferences?.tradeFinanceEmailPrefs ?? {}) as Record<string, boolean>;
+  const isOn = (k: TradeFinanceEventKind) => prefs[k] !== false; // default ON
+
+  const mutation = useMutation({
+    mutationFn: async (next: Record<string, boolean>) => {
+      const res = await apiRequest('PUT', `/api/users/${userId}/preferences`, {
+        tradeFinanceEmailPrefs: next,
+      });
+      if (!res.ok) throw new Error('Failed to save');
+      return res.json();
+    },
+    onMutate: async (next) => {
+      await qc.cancelQueries({ queryKey });
+      const prev = qc.getQueryData<any>(queryKey);
+      qc.setQueryData<any>(queryKey, (old: any) => ({
+        preferences: { ...(old?.preferences ?? {}), tradeFinanceEmailPrefs: next },
+      }));
+      return { prev };
+    },
+    onError: (_e, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(queryKey, ctx.prev);
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey });
+    },
+  });
+
+  const handleToggle = (k: TradeFinanceEventKind) => {
+    const currentlyOn = isOn(k);
+    const next: Record<string, boolean> = { ...prefs, [k]: !currentlyOn };
+    mutation.mutate(next);
+  };
+
+  return (
+    <div className="rounded-2xl bg-white p-6" style={{ border: '1px solid #E8E2DC' }}>
+      <div className="flex items-start justify-between mb-1">
+        <div>
+          <h3 className="text-sm font-bold" style={{ color: '#1A1A1A' }}>Trade alerts by email</h3>
+          <p className="text-xs mt-0.5" style={{ color: '#888880' }}>
+            Pick which trade-finance events email you. In-app notifications stay on either way.
+          </p>
+        </div>
+        {mutation.isPending && (
+          <span className="text-xs" style={{ color: '#888880' }}>Saving…</span>
+        )}
+      </div>
+      <div className="mt-3">
+        {TRADE_EVENT_LABELS.map(({ key, label, help }) => (
+          <div key={key} className="flex items-center justify-between py-3 gap-4"
+            style={{ borderBottom: '1px solid #F0EBE6' }}>
+            <div className="min-w-0">
+              <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{label}</p>
+              <p className="text-xs mt-0.5" style={{ color: '#888880' }}>{help}</p>
+            </div>
+            <Toggle
+              enabled={isOn(key)}
+              onClick={() => !isLoading && handleToggle(key)}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function FieldRow({ label, value, editable = false }: { label: string; value: string; editable?: boolean }) {
   return (
@@ -124,26 +238,7 @@ export default function ProfilePage() {
 
       {activeTab === 'preferences' && (
         <div className="space-y-4">
-          <div className="rounded-2xl bg-white p-6" style={{ border: '1px solid #E8E2DC' }}>
-            <h3 className="text-sm font-bold mb-4" style={{ color: '#1A1A1A' }}>Notifications</h3>
-            {[
-              ['RFQ Offers Received', true],
-              ['Order Status Updates', true],
-              ['Escrow Condition Changes', true],
-              ['Marketplace Price Alerts', false],
-              ['Platform Announcements', true],
-            ].map(([label, enabled]) => (
-              <div key={label as string} className="flex items-center justify-between py-3"
-                style={{ borderBottom: '1px solid #F0EBE6' }}>
-                <p className="text-sm font-medium" style={{ color: '#1A1A1A' }}>{label as string}</p>
-                <div className="w-10 h-5 rounded-full relative cursor-pointer transition-colors"
-                  style={{ background: enabled ? '#C73B22' : '#E8E2DC' }}>
-                  <div className="w-4 h-4 rounded-full bg-white absolute top-0.5 transition-all"
-                    style={{ left: enabled ? '22px' : '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-                </div>
-              </div>
-            ))}
-          </div>
+          {u?.id && <TradeFinanceEmailPrefs userId={u.id} />}
 
           <div className="rounded-2xl bg-white p-6" style={{ border: '1px solid #E8E2DC' }}>
             <h3 className="text-sm font-bold mb-4" style={{ color: '#1A1A1A' }}>Platform Preferences</h3>
