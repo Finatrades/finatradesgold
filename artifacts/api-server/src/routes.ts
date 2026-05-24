@@ -165,8 +165,6 @@ import {
   logBackupAction,
   getBackupAuditLogs
 } from "./backup-service";
-import { getBalanceSummary, validateSpend, type GoldWalletType } from "./spend-guard";
-import { deductFromCerts } from "./cert-ledger-service";
 import { cacheGet, cacheSet, getRedisClient } from "./redis-client";
 import { uploadToR2, isR2Configured, generateR2Key } from "./r2-storage";
 import { logActivity, notifyError } from "./system-notifications";
@@ -176,7 +174,7 @@ import { format } from "date-fns";
 const registerComplianceRoutes = (_app: Express, _ensureAdminAsync: any, _requirePermission: any): void => {};
 import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security-middleware";
 import { checkIsSuperAdmin, loadUserPermissions } from "./rbac-middleware";
-import { registerSsoRoutes } from "./sso-routes";
+// sso-routes (WinGold SSO bridge) removed with the rest of the legacy gold stack.
 import vcRoutes from "./vc-routes";
 // wingold-partner-api, wingold-webhook-routes, and admin-vault-exposure-routes
 // removed with the rest of the legacy gold stack.
@@ -186,9 +184,8 @@ import marketplaceRouter from "./routes/marketplace";
 import adminConsignmentsRouter from "./routes/admin-consignments";
 import adminEmailQueuesRouter from "./routes/admin-email-queues";
 import warehouseRouter from "./routes/warehouse";
-import unifiedTallyRoutes from "./unified-tally-routes";
-// physical-deposit-routes and wingold-user-sync-service removed with the rest
-// of the legacy gold stack.
+// unified-tally-routes, physical-deposit-routes and wingold-user-sync-service
+// removed with the rest of the legacy gold stack.
 const WingoldUserSyncService = {
   onUserRegistered: async (_userId: string) => {},
   onKycApproved: async (_userId: string) => {},
@@ -1147,8 +1144,7 @@ export async function registerRoutes(
   
   // Register compliance, reconciliation, SAR, and fraud detection routes
   registerComplianceRoutes(app, ensureAdminAsync, requirePermission);
-  // Register SSO routes for Wingold integration
-  registerSsoRoutes(app);
+  // Wingold SSO bridge removed with the rest of the legacy gold stack.
   // Register Verifiable Credentials routes for W3C VC 2.0
   app.use("/api", vcRoutes);
   // Wingold partner / webhook route registrations removed with the rest of the
@@ -1200,9 +1196,8 @@ export async function registerRoutes(
     }
   });
 
-  // Vault-exposure and physical-deposit routes were part of the legacy gold
-  // stack and have been removed. unified-tally remains for warehouse flows.
-  app.use("/api/admin/unified-tally", ensureAdminAsync, requirePermission('view_vault', 'manage_vault'), unifiedTallyRoutes);
+  // Vault-exposure, physical-deposit, and unified-tally routes were part of
+  // the legacy gold stack and have been removed.
   // Register B2B order receiving routes
   app.use("/api/b2b", b2bRoutes);
   // Register B2B USD Wallet routes (Task #74)
@@ -1413,23 +1408,8 @@ export async function registerRoutes(
               respondedAt: new Date(),
             });
             
-            // Record ledger entry
-            const { vaultLedgerService } = await import('./vault-ledger-service');
-            await vaultLedgerService.recordLedgerEntry({
-              userId: user.id,
-              action: 'Transfer_Receive',
-              goldGrams: goldAmount,
-              goldPriceUsdPerGram: goldPrice,
-              fromWallet: 'External',
-              toWallet: 'FinaPay',
-              fromStatus: 'Pending_Deposit',
-              toStatus: 'Available',
-              transactionId: recipientTx.id,
-              counterpartyUserId: invite.senderId,
-              notes: `Claimed invitation transfer ${invite.referenceNumber}`,
-              createdBy: 'system',
-            });
-            
+            // Vault-ledger recording removed with the rest of the legacy gold stack.
+
             // Create notification
             await storage.createNotification({
               userId: user.id,
@@ -1711,46 +1691,8 @@ export async function registerRoutes(
     });
   }, 60000); // Clean every minute
 
-  // Certificate Ledger: Backfill remaining_grams on startup (one-time)
-  (async () => {
-    try {
-      const { backfillRemainingGrams } = await import('./cert-ledger-service');
-      const updated = await backfillRemainingGrams(storage);
-      if (updated > 0) {
-        console.log(`[CertLedger] Startup backfill: ${updated} certificates updated with remaining_grams`);
-      }
-    } catch (error) {
-      console.error('[CertLedger] Startup backfill failed:', error);
-    }
-  })();
-
-  // Certificate Ledger: Daily reconciliation (every 24 hours)
-  setInterval(async () => {
-    try {
-      console.log('[CertLedger] Running daily cert-wallet reconciliation...');
-      const { reconcileUserPosition } = await import('./cert-ledger-service');
-      const allUsers = await storage.getAllUsers();
-      let mismatches = 0;
-      
-      for (const user of allUsers) {
-        const wallet = await storage.getWallet(user.id);
-        if (!wallet) continue;
-        const walletGrams = parseFloat(wallet.goldGrams || '0');
-        if (walletGrams <= 0) continue;
-        
-        const result = await reconcileUserPosition(storage, user.id, walletGrams);
-        if (!result.match) {
-          mismatches++;
-        }
-      }
-      
-      console.log(`[CertLedger] Reconciliation complete: ${mismatches} mismatches found across ${allUsers.length} users`);
-    } catch (error) {
-      console.error('[CertLedger] Daily reconciliation failed:', error);
-    }
-  }, 24 * 60 * 60 * 1000);
-
-  // BNSL/monthly/annual statement schedulers were part of the legacy gold
+  // Certificate-ledger startup backfill, daily cert-wallet reconciliation,
+  // and BNSL/monthly/annual statement schedulers were part of the legacy gold
   // stack and have been removed along with their job modules.
 
   // FinaBridge LC Expiry Notification Cron — runs every 12 hours
@@ -3934,11 +3876,6 @@ export async function registerRoutes(
       
       const totalRequests = allTransactions.length + allDepositRequests.length;
       
-      const activeBnslPlans = 0;
-      const bnslBaseLiability = 0;
-      const bnslMarginLiability = 0;
-      const pendingBnslTermRequests = 0;
-      
       // Get trade finance cases
       let openTradeCases = 0;
       let pendingReviewCases = 0;
@@ -4027,26 +3964,7 @@ export async function registerRoutes(
         allPendingItems.push(...pendingCryptoReqs);
       } catch (e) { /* table may not exist */ }
       
-      // Pending buy gold requests
-      try {
-        const allBuyGoldReqs = await db.select().from(buyGoldRequests);
-        const pendingBuyGoldReqs = allBuyGoldReqs.filter((b: any) => 
-          b.status === 'Pending' || b.status === 'Under Review'
-        ).map((b: any) => ({
-          id: b.id,
-          odooId: b.odooId,
-          userId: b.userId,
-          type: 'Buy Gold Bar',
-          status: b.status,
-          amountGold: null,
-          amountUsd: null,
-          description: 'Wingold purchase request',
-          sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-          createdAt: b.createdAt
-        }));
-        allPendingItems.push(...pendingBuyGoldReqs);
-      } catch (e) { /* table may not exist */ }
+      // Pending buy-gold (Wingold purchase) requests removed with the legacy gold stack.
       // Pending trade cases
       try {
         const allTrades = await db.select().from(tradeCases);
@@ -4067,26 +3985,8 @@ export async function registerRoutes(
         allPendingItems.push(...pendingTrades);
       } catch (e) { /* table may not exist */ }
       
-      // Pending BNSL plans (activation pending, termination pending)
-      try {
-        const allBnsl = await db.select().from(bnslPlans);
-        const pendingBnsl = allBnsl.filter((b: any) => 
-          b.status === 'Pending Termination' || b.status === 'Pending'
-        ).map((b: any) => ({
-          id: b.id,
-          odooId: b.odooId,
-          userId: b.userId,
-          type: 'BNSL',
-          status: b.status,
-          amountGold: b.goldGrams,
-          amountUsd: b.baseAmountUsd,
-          description: b.status === 'Pending Termination' ? 'BNSL termination request' : 'BNSL activation pending',
-          sourceModule: 'bnsl',
-          createdAt: b.createdAt
-        }));
-        allPendingItems.push(...pendingBnsl);
-      } catch (e) { /* table may not exist */ }
-      
+      // Pending BNSL plans removed with the legacy gold stack.
+
       // Get recent transactions from main transactions table
       const recentTxFromTable = allTransactions
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
@@ -4131,10 +4031,6 @@ export async function registerRoutes(
         totalWithdrawals,
         totalRequests,
         openReviewCount: pendingKycCount + pendingDeposits + pendingWithdrawals,
-        activeBnslPlans,
-        bnslBaseLiability,
-        bnslMarginLiability,
-        pendingBnslTermRequests,
         openTradeCases,
         pendingReviewCases,
         recentCriticalEvents,
@@ -8644,13 +8540,9 @@ export async function registerRoutes(
       // Get settlements where user is involved
       const settlements = await storage.getUserSettlementHolds(userId);
       
-      // Get wallet transactions (transfers from vault ledger)
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      const vaultEntries = await vaultLedgerService.getLedgerHistory(userId, 200);
-      const tradeRelatedEntries = vaultEntries.filter((e: any) => 
-        e.action === 'FinaPay_To_Trade' || e.action === 'Trade_To_FinaPay'
-      );
-      
+      // Vault-ledger transfer history removed with the rest of the legacy gold stack.
+      const tradeRelatedEntries: any[] = [];
+
       // Build ledger entries
       const entries: any[] = [];
       
@@ -8913,21 +8805,8 @@ export async function registerRoutes(
         console.error('[Wallet] Failed to release margin hold on settlement cancel:', releaseErr);
       }
       
-      // Record ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: hold.importerUserId,
-        action: 'Trade_Release',
-        goldGrams: lockedAmount,
-        goldPriceUsdPerGram: 0,
-        fromWallet: 'FinaBridge',
-        toWallet: 'FinaBridge',
-        fromStatus: 'Reserved_Trade',
-        toStatus: 'Available',
-        notes: `Settlement cancelled: ${reason || 'Trade cancelled'}`,
-        createdBy: adminUser.id,
-      });
-      
+      // Vault-ledger recording removed with the rest of the legacy gold stack.
+
       // Audit log
       await storage.createAuditLog({
         entityType: "settlement_hold",
@@ -9018,22 +8897,8 @@ export async function registerRoutes(
         transactionId: tx.id,
       });
       
-      // Record ledger entry
-      const { vaultLedgerService } = await import('./vault-ledger-service');
-      await vaultLedgerService.recordLedgerEntry({
-        userId: hold.exporterUserId,
-        action: 'Transfer_Receive',
-        goldGrams: releaseGrams,
-        goldPriceUsdPerGram: releaseGrams > 0 ? tradeValue / releaseGrams : 0,
-        fromWallet: 'FinaBridge',
-        toWallet: 'FinaBridge',
-        toStatus: 'Available',
-        transactionId: tx.id,
-        counterpartyUserId: hold.importerUserId,
-        notes: `Partial settlement ${percentage}%: ${releaseGrams.toFixed(4)}g${milestone ? ' - ' + milestone : ''}`,
-        createdBy: adminUser.id,
-      });
-      
+      // Vault-ledger recording removed with the rest of the legacy gold stack.
+
       // Audit log
       await storage.createAuditLog({
         entityType: "settlement_hold",
@@ -13958,13 +13823,9 @@ export async function registerRoutes(
         'login': 'otpOnLogin',
         'withdrawal': 'otpOnWithdrawal',
         'transfer': 'otpOnTransfer',
-        'buy_gold': 'otpOnBuyGold',
         'sell_gold': 'otpOnSellGold',
         'profile_change': 'otpOnProfileChange',
         'password_change': 'otpOnPasswordChange',
-        'bnsl_create': 'otpOnBnslCreate',
-        'bnsl_early_termination': 'otpOnBnslEarlyTermination',
-        'vault_withdrawal': 'otpOnVaultWithdrawal',
         'trade_bridge': 'otpOnTradeBridge',
       };
       
@@ -14115,13 +13976,9 @@ export async function registerRoutes(
         'login': 'otpOnLogin',
         'withdrawal': 'otpOnWithdrawal',
         'transfer': 'otpOnTransfer',
-        'buy_gold': 'otpOnBuyGold',
         'sell_gold': 'otpOnSellGold',
         'profile_change': 'otpOnProfileChange',
         'password_change': 'otpOnPasswordChange',
-        'bnsl_create': 'otpOnBnslCreate',
-        'bnsl_early_termination': 'otpOnBnslEarlyTermination',
-        'vault_withdrawal': 'otpOnVaultWithdrawal',
         'trade_bridge': 'otpOnTradeBridge',
       };
       
