@@ -137,10 +137,18 @@ function PersonalKycForm({
     }
   };
 
-  const required = ['fullName', 'email', 'phone', 'dateOfBirth', 'country', 'address'];
-  const formValid = required.every(k => String((form as any)[k] || '').trim().length > 0);
-  const docsValid = !!docs.idFront && !!docs.addressProof;
-  const canSubmit = formValid && docsValid && !submit.isPending;
+  const requiredFields: { key: string; label: string }[] = [
+    { key: 'fullName', label: 'Full Name' },
+    { key: 'email', label: 'Email' },
+    { key: 'phone', label: 'Phone' },
+    { key: 'dateOfBirth', label: 'Date of Birth' },
+    { key: 'country', label: 'Country' },
+    { key: 'address', label: 'Address' },
+  ];
+  const missingFields = requiredFields.filter(
+    f => String((form as any)[f.key] || '').trim().length === 0,
+  );
+  const formValid = missingFields.length === 0;
 
   const docSlots: { key: keyof typeof docs; label: string; required: boolean }[] = [
     { key: 'idFront', label: 'Government ID — front', required: true },
@@ -148,6 +156,29 @@ function PersonalKycForm({
     { key: 'passport', label: 'Passport (optional)', required: false },
     { key: 'addressProof', label: 'Proof of address (utility bill / bank statement)', required: true },
   ];
+  const missingDocs = docSlots.filter(s => s.required && !docs[s.key]);
+  const docsValid = missingDocs.length === 0;
+  const canSubmit = !submit.isPending;
+
+  const handleSubmitClick = () => {
+    if (!formValid) {
+      toast({
+        variant: 'destructive',
+        title: missingFields.length === 1 ? '1 field is still empty' : `${missingFields.length} fields are still empty`,
+        description: `Please fill: ${missingFields.map(f => f.label).join(', ')}.`,
+      });
+      return;
+    }
+    if (!docsValid) {
+      toast({
+        variant: 'destructive',
+        title: missingDocs.length === 1 ? '1 document is missing' : `${missingDocs.length} documents are missing`,
+        description: `Please upload: ${missingDocs.map(d => d.label).join(', ')}.`,
+      });
+      return;
+    }
+    submit.mutate();
+  };
 
   return (
     <div className="space-y-5">
@@ -216,15 +247,23 @@ function PersonalKycForm({
 
       <button
         disabled={!canSubmit}
-        onClick={() => submit.mutate()}
+        onClick={handleSubmitClick}
         data-testid="button-submit-personal-kyc"
         className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ background: '#C73B22' }}
       >
         {submit.isPending ? 'Submitting…' : initial ? 'Resubmit for review' : 'Submit for review'}
       </button>
-      {!formValid && <p className="text-xs text-[#DC2626]">Fill all required fields (marked *).</p>}
-      {formValid && !docsValid && <p className="text-xs text-[#DC2626]">Upload at least Government ID front and Proof of address.</p>}
+      {!formValid && (
+        <p className="text-xs text-[#DC2626]" data-testid="text-missing-fields">
+          Still needed: {missingFields.map(f => f.label).join(', ')}.
+        </p>
+      )}
+      {formValid && !docsValid && (
+        <p className="text-xs text-[#DC2626]" data-testid="text-missing-docs">
+          Still needed: {missingDocs.map(d => d.label).join(', ')}.
+        </p>
+      )}
     </div>
   );
 }
@@ -301,10 +340,18 @@ function CorporateKycForm({
     }
   };
 
-  const required = ['companyName', 'registrationNumber', 'countryOfIncorporation', 'natureOfBusiness', 'headOfficeAddress', 'emailAddress'];
-  const formValid = required.every(k => String((form as any)[k] || '').trim().length > 0);
-  const docsValid = !!docs.incorporationCertificate && !!docs.tradeLicense;
-  const canSubmit = formValid && docsValid && !submit.isPending;
+  const requiredFields: { key: string; label: string }[] = [
+    { key: 'companyName', label: 'Company Name' },
+    { key: 'registrationNumber', label: 'Registration Number' },
+    { key: 'countryOfIncorporation', label: 'Country of Incorporation' },
+    { key: 'natureOfBusiness', label: 'Nature of Business' },
+    { key: 'headOfficeAddress', label: 'Head Office Address' },
+    { key: 'emailAddress', label: 'Company Email' },
+  ];
+  const missingFields = requiredFields.filter(
+    f => String((form as any)[f.key] || '').trim().length === 0,
+  );
+  const formValid = missingFields.length === 0;
 
   const docSlots: { key: string; label: string; required: boolean }[] = [
     { key: 'incorporationCertificate', label: 'Certificate of Incorporation', required: true },
@@ -313,6 +360,29 @@ function CorporateKycForm({
     { key: 'bankReference', label: 'Bank reference letter', required: false },
     { key: 'directorPassport', label: 'Authorized signatory passport', required: false },
   ];
+  const missingDocs = docSlots.filter(s => s.required && !docs[s.key]);
+  const docsValid = missingDocs.length === 0;
+  const canSubmit = !submit.isPending;
+
+  const handleSubmitClick = () => {
+    if (!formValid) {
+      toast({
+        variant: 'destructive',
+        title: missingFields.length === 1 ? '1 field is still empty' : `${missingFields.length} fields are still empty`,
+        description: `Please fill: ${missingFields.map(f => f.label).join(', ')}.`,
+      });
+      return;
+    }
+    if (!docsValid) {
+      toast({
+        variant: 'destructive',
+        title: missingDocs.length === 1 ? '1 document is missing' : `${missingDocs.length} documents are missing`,
+        description: `Please upload: ${missingDocs.map(d => d.label).join(', ')}.`,
+      });
+      return;
+    }
+    submit.mutate();
+  };
 
   return (
     <div className="space-y-5">
@@ -395,15 +465,23 @@ function CorporateKycForm({
 
       <button
         disabled={!canSubmit}
-        onClick={() => submit.mutate()}
+        onClick={handleSubmitClick}
         data-testid="button-submit-corporate-kyc"
         className="w-full py-3 rounded-xl text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
         style={{ background: '#C73B22' }}
       >
         {submit.isPending ? 'Submitting…' : initial ? 'Resubmit for review' : 'Submit for review'}
       </button>
-      {!formValid && <p className="text-xs text-[#DC2626]">Fill all required fields (marked *).</p>}
-      {formValid && !docsValid && <p className="text-xs text-[#DC2626]">Upload at least the Certificate of Incorporation and Trade License.</p>}
+      {!formValid && (
+        <p className="text-xs text-[#DC2626]" data-testid="text-missing-fields">
+          Still needed: {missingFields.map(f => f.label).join(', ')}.
+        </p>
+      )}
+      {formValid && !docsValid && (
+        <p className="text-xs text-[#DC2626]" data-testid="text-missing-docs">
+          Still needed: {missingDocs.map(d => d.label).join(', ')}.
+        </p>
+      )}
     </div>
   );
 }
