@@ -8,6 +8,7 @@ import { SocketProvider } from "@/context/SocketContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
 import EcosystemLanding from "@/pages/ecosystem/EcosystemLanding";
 import Login from "@/pages/Login";
+import AdminLogin from "@/pages/admin/AdminLogin";
 import Register from "@/pages/Register";
 import DashboardLayout from "@/components/DashboardLayout";
 import DashboardOverview from "@/pages/dashboard/DashboardOverview";
@@ -139,6 +140,7 @@ function AppRoutes() {
       <Route path="/" component={EcosystemLanding} />
       <Route path="/ecosystem" component={EcosystemLanding} />
       <Route path="/login" component={Login} />
+      <Route path="/admin/login" component={AdminLogin} />
       <Route path="/register" component={Register} />
       <Route path="/wr/verify/:wrNumber" component={VerifyWarehouseReceipt} />
 
@@ -204,6 +206,9 @@ function AppRoutes() {
       {/* Wallet */}
       <Route path="/wallet">
         <ProtectedRoute path="/wallet" component={Wallet} />
+      </Route>
+      <Route path="/admin/dashboard">
+        <AdminRoute component={DashboardOverview} />
       </Route>
       <Route path="/admin/wallets">
         <ProtectedRoute component={AdminWallets} />
