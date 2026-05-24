@@ -3,6 +3,7 @@ import { Bell, Check, CheckCheck, Trash2, X, Info, CheckCircle2, AlertTriangle, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { useSocket } from '@/context/SocketContext';
 import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -27,6 +28,7 @@ interface Notification {
 
 export default function NotificationCenter() {
   const { user } = useAuth();
+  const { socket } = useSocket();
   const queryClient = useQueryClient();
   const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
@@ -112,6 +114,44 @@ export default function NotificationCenter() {
       }, 300);
     },
   });
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNewNotification = (notification: Notification) => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+
+      const target = notification.link || notification.actionUrl;
+      const toastOptions = target
+        ? {
+            description: notification.message,
+            action: {
+              label: 'View',
+              onClick: () => setLocation(target),
+            },
+          }
+        : { description: notification.message };
+
+      switch (notification.type) {
+        case 'success':
+          toast.success(notification.title, toastOptions);
+          break;
+        case 'error':
+          toast.error(notification.title, toastOptions);
+          break;
+        case 'warning':
+          toast.warning(notification.title, toastOptions);
+          break;
+        default:
+          toast(notification.title, toastOptions);
+      }
+    };
+
+    socket.on('notification:new', handleNewNotification);
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+    };
+  }, [socket, queryClient, setLocation]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

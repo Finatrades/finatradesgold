@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { consignments, notifications } from "../shared/schema";
+import { emitNotification } from "../socket";
 
 type NotificationType = "info" | "success" | "warning" | "error" | "system";
 
@@ -76,11 +77,37 @@ export async function notifyExporterOfStatusChange(
   if (!c || !c.userId) return;
 
   const ref = c.referenceNo ?? c.id.slice(0, 8);
-  await db.insert(notifications).values({
-    userId: c.userId,
-    title: meta.title(ref),
-    message: meta.body(ref, c.commodityName, note ?? undefined),
-    type: meta.type,
-    link: `/consignments/${c.id}`,
-  } as any);
+  const title = meta.title(ref);
+  const message = meta.body(ref, c.commodityName, note ?? undefined);
+  const link = `/consignments/${c.id}`;
+
+  const [inserted] = await db
+    .insert(notifications)
+    .values({
+      userId: c.userId,
+      title,
+      message,
+      type: meta.type,
+      link,
+    } as any)
+    .returning();
+
+  if (inserted) {
+    try {
+      emitNotification(c.userId, {
+        id: inserted.id,
+        title,
+        message,
+        type: meta.type,
+        link,
+        read: false,
+        createdAt:
+          inserted.createdAt instanceof Date
+            ? inserted.createdAt.toISOString()
+            : new Date().toISOString(),
+      });
+    } catch (err) {
+      console.error("[consignment-notifications] socket emit failed", err);
+    }
+  }
 }

@@ -4,6 +4,7 @@ import { queryClient } from "./lib/queryClient";
 import { Toaster } from "@/components/ui/toaster";
 import { HelmetProvider } from 'react-helmet-async';
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { SocketProvider } from "@/context/SocketContext";
 import { AccountTypeProvider } from "@/context/AccountTypeContext";
 import EcosystemLanding from "@/pages/ecosystem/EcosystemLanding";
 import Login from "@/pages/Login";
@@ -221,12 +222,14 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
-          {/* AccountTypeProvider kept for legacy home/mobile components that still
-              consume useAccountType. New role logic lives in user_type / roleMenus. */}
-          <AccountTypeProvider>
-            <AppRoutes />
-            <Toaster />
-          </AccountTypeProvider>
+          <SocketProvider>
+            {/* AccountTypeProvider kept for legacy home/mobile components that still
+                consume useAccountType. New role logic lives in user_type / roleMenus. */}
+            <AccountTypeProvider>
+              <AppRoutes />
+              <Toaster />
+            </AccountTypeProvider>
+          </SocketProvider>
         </AuthProvider>
       </QueryClientProvider>
     </HelmetProvider>
