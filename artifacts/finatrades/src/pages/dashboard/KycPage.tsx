@@ -85,7 +85,107 @@ function fileNameFromUrl(url: string): string {
   }
 }
 
+function guessFileKind(url: string): 'pdf' | 'image' | 'other' {
+  const clean = url.split('?')[0].split('#')[0].toLowerCase();
+  if (clean.endsWith('.pdf')) return 'pdf';
+  if (/\.(png|jpe?g|gif|webp|bmp|svg)$/.test(clean)) return 'image';
+  return 'other';
+}
+
+function DocumentViewerModal({
+  open, onClose, title, url,
+}: { open: boolean; onClose: () => void; title: string; url: string | null }) {
+  // Lock body scroll while modal is open + close on Escape.
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
+
+  if (!open || !url) return null;
+
+  const kind = guessFileKind(url);
+  // For PDFs strip the built-in toolbar (Chromium/Firefox honour these hints) so
+  // there is no visible download/print/open-in-new-tab control.
+  const pdfSrc = `${url}${url.includes('#') ? '&' : '#'}toolbar=0&navpanes=0&statusbar=0`;
+  const blockMenu = (e: React.MouseEvent | React.DragEvent) => e.preventDefault();
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      data-testid="modal-doc-viewer"
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      style={{ background: 'rgba(26,20,16,0.72)' }}
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-5xl h-[85vh] rounded-2xl bg-[#FFFAF3] border border-[#E8D9C8] overflow-hidden flex flex-col shadow-2xl"
+        onClick={e => e.stopPropagation()}
+        onContextMenu={blockMenu}
+        onDragStart={blockMenu}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-[#F0EBE6] bg-[#FFFAF3]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <FileText size={16} className="text-[#C73B22] shrink-0" />
+            <p className="font-semibold text-sm text-[#1A1410] truncate" data-testid="text-doc-viewer-title">
+              {title}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            data-testid="button-close-doc-viewer"
+            aria-label="Close"
+            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#5A4838] hover:bg-[#F0EBE6]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 bg-[#1A1410]/5 overflow-auto select-none">
+          {kind === 'image' && (
+            <div className="w-full h-full flex items-center justify-center p-4">
+              {/* eslint-disable-next-line jsx-a11y/no-noninteractive-element-interactions */}
+              <img
+                src={url}
+                alt={title}
+                draggable={false}
+                onContextMenu={blockMenu}
+                onDragStart={blockMenu}
+                className="max-w-full max-h-full object-contain pointer-events-none"
+              />
+            </div>
+          )}
+          {kind === 'pdf' && (
+            <iframe
+              src={pdfSrc}
+              title={title}
+              className="w-full h-full border-0"
+              data-testid="iframe-doc-pdf"
+            />
+          )}
+          {kind === 'other' && (
+            <div className="w-full h-full flex flex-col items-center justify-center text-center p-8 text-[#5A4838]">
+              <FileText size={32} className="mb-2 text-[#B0AAA4]" />
+              <p className="text-sm font-semibold text-[#1A1410]">Preview not available</p>
+              <p className="text-xs mt-1">This document type can only be reviewed by our compliance team.</p>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SubmittedDocList({ documents }: { documents: any }) {
+  const [viewer, setViewer] = useState<{ title: string; url: string } | null>(null);
+
   if (!documents || typeof documents !== 'object') {
     return <p className="text-xs italic text-[#888880]">No documents on file yet.</p>;
   }
@@ -99,27 +199,38 @@ function SubmittedDocList({ documents }: { documents: any }) {
     return <p className="text-xs italic text-[#888880]">No documents on file yet.</p>;
   }
   return (
-    <div className="space-y-2" data-testid="list-submitted-docs">
-      {entries.map(({ key, url }) => (
-        <div key={key}
-          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#FAFAF8] border border-[#F0EBE6]">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <FileText size={14} className="text-[#B0AAA4] shrink-0" />
-            <div className="min-w-0">
-              <p className="text-sm font-medium text-[#1A1410] truncate">{prettifyDocKey(key)}</p>
-              <p className="text-xs text-[#888880] truncate" title={fileNameFromUrl(url)}>
-                {fileNameFromUrl(url)}
-              </p>
+    <>
+      <div className="space-y-2" data-testid="list-submitted-docs">
+        {entries.map(({ key, url }) => (
+          <div key={key}
+            className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#FAFAF8] border border-[#F0EBE6]">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <FileText size={14} className="text-[#B0AAA4] shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-[#1A1410] truncate">{prettifyDocKey(key)}</p>
+                <p className="text-xs text-[#888880] truncate" title={fileNameFromUrl(url)}>
+                  {fileNameFromUrl(url)}
+                </p>
+              </div>
             </div>
+            <button
+              type="button"
+              onClick={() => setViewer({ title: prettifyDocKey(key), url })}
+              data-testid={`button-view-doc-${key}`}
+              className="text-xs font-semibold underline text-[#C73B22] hover:opacity-80 shrink-0"
+            >
+              View
+            </button>
           </div>
-          <a href={url} target="_blank" rel="noopener noreferrer"
-            data-testid={`link-view-doc-${key}`}
-            className="text-xs font-semibold underline text-[#C73B22] hover:opacity-80 shrink-0">
-            View
-          </a>
-        </div>
-      ))}
-    </div>
+        ))}
+      </div>
+      <DocumentViewerModal
+        open={!!viewer}
+        onClose={() => setViewer(null)}
+        title={viewer?.title || ''}
+        url={viewer?.url || null}
+      />
+    </>
   );
 }
 
