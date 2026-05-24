@@ -47,6 +47,8 @@ import AdminBankPartners from "@/pages/admin/AdminBankPartners";
 import AdminLcTemplates from "@/pages/admin/AdminLcTemplates";
 import AdminMilestonePresets from "@/pages/admin/AdminMilestonePresets";
 import AdminEscrowConfig from "@/pages/admin/AdminEscrowConfig";
+import AdminStaffRoles from "@/pages/admin/AdminStaffRoles";
+import StaffAcceptInvite from "@/pages/public/StaffAcceptInvite";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import AdminHubs from "@/pages/dashboard/AdminHubs";
@@ -161,6 +163,7 @@ function AppRoutes() {
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/register" component={Register} />
       <Route path="/wr/verify/:wrNumber" component={VerifyWarehouseReceipt} />
+      <Route path="/staff/accept-invite" component={StaffAcceptInvite} />
 
       {/* Dashboard */}
       <Route path="/dashboard">
@@ -299,6 +302,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/settings/announcements">
         <AdminRoute component={AdminAnnouncements} />
+      </Route>
+      <Route path="/admin/staff">
+        <AdminRoute component={AdminStaffRoles} />
       </Route>
 
       {/* Account */}

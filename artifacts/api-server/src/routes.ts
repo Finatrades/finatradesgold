@@ -301,6 +301,7 @@ import { registerTradeFinanceRoutes, pushImporterMilestoneReady } from "./routes
 import { registerAdminAnalyticsRoutes } from "./routes/admin-analytics";
 import { registerNetworkRoutes } from "./routes/network";
 import { registerAdminSettingsRoutes } from "./routes/admin-settings";
+import { registerAdminStaffRoutes } from "./routes/admin-staff";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1240,6 +1241,7 @@ export async function registerRoutes(
   registerAdminAnalyticsRoutes(app);
   registerNetworkRoutes(app, ensureAdminAsync, requirePermission);
   registerAdminSettingsRoutes(app, ensureAdminAsync, requirePermission);
+  registerAdminStaffRoutes(app, ensureAdminAsync, requirePermission);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);

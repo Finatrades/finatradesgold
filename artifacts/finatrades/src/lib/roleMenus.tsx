@@ -12,6 +12,12 @@ export interface MenuItem {
   label: string;
   href: string;
   badge?: string;
+  /**
+   * RBAC component slug + action this menu item requires. If set, the
+   * sidebar hides the entry unless the signed-in admin has that
+   * permission (or is a Super Admin with the '*' wildcard).
+   */
+  requires?: { component: string; action: 'view' | 'edit' };
 }
 export interface MenuSection {
   key: string;
@@ -142,6 +148,8 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
       { icon: <Mail size={16} />, label: 'Email Queues', href: '/admin/email-queues' },
+      { icon: <ShieldCheck size={16} />, label: 'Staff & Roles', href: '/admin/staff',
+        requires: { component: 'employees', action: 'edit' } },
     ],
   },
   {

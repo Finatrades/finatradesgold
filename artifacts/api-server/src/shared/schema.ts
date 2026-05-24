@@ -88,6 +88,9 @@ export const users = pgTable("users", {
   ratingAvg: decimal("rating_avg", { precision: 2, scale: 1 }),
   ratingCount: integer("rating_count").notNull().default(0),
   completedTradesCount: integer("completed_trades_count").notNull().default(0),
+  // Set by the Staff & Role admin tool; combined with session destruction
+  // to fully block a staff account.
+  isSuspended: boolean("is_suspended").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

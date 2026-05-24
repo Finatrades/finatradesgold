@@ -4,6 +4,8 @@ import {
   LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
 import { getMenuForUser, getRoleLabel } from '@/lib/roleMenus';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import faviconIcon from '@/assets/favicon-icon.webp';
@@ -32,8 +34,32 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
   const [location] = useLocation();
   const { logout, user } = useAuth();
 
-  const sections = getMenuForUser(user);
+  const rawSections = getMenuForUser(user);
   const roleLabel = getRoleLabel(user);
+
+  // Admin-only: load effective RBAC permissions so we can gate sensitive
+  // menu entries (e.g. Staff & Roles) on the right component permission.
+  // Super Admins get an `{ '*': {...} }` map and pass every check.
+  const { data: permsData } = useQuery<{ isSuperAdmin?: boolean; components?: any[] }>({
+    queryKey: ['admin', 'rbac', 'my-permissions'],
+    queryFn: async () => (await apiRequest('GET', '/api/admin/rbac/my-permissions')).json(),
+    enabled: user?.role === 'admin',
+    staleTime: 60_000,
+  });
+
+  const hasPermission = (component: string, action: 'view' | 'edit'): boolean => {
+    if (!user || user.role !== 'admin') return false;
+    if (permsData?.isSuperAdmin) return true;
+    const match = (permsData?.components || []).find((c: any) => c.component_slug === component);
+    if (!match) return false;
+    if (action === 'view') return !!match.can_view;
+    return !!(match.can_edit || match.can_create || match.can_approve_l1 || match.can_approve_final);
+  };
+
+  const sections = rawSections.map((sec) => ({
+    ...sec,
+    items: sec.items.filter((it) => !it.requires || hasPermission(it.requires.component, it.requires.action)),
+  })).filter((sec) => sec.items.length > 0);
 
   const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
     const init: Record<string, boolean> = {};
