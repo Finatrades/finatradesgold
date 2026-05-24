@@ -19,6 +19,7 @@ import Transactions from "@/pages/dashboard/Transactions";
 import KycPage from "@/pages/dashboard/KycPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
 import { Suspense, useEffect } from "react";
+import { canAccess } from "@/lib/roleMenus";
 
 function PageLoader() {
   return (
@@ -29,7 +30,7 @@ function PageLoader() {
   );
 }
 
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({ component: Component, path }: { component: React.ComponentType; path?: string }) {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
 
@@ -40,6 +41,23 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
   }, [user, loading, setLocation]);
 
   if (loading || !user) return <PageLoader />;
+
+  if (path && !canAccess(path, user)) {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+            style={{ background: 'rgba(199,59,34,0.08)', border: '1.5px solid rgba(199,59,34,0.15)' }}>
+            <span className="text-2xl">🔒</span>
+          </div>
+          <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>Restricted Module</h2>
+          <p className="text-sm max-w-sm" style={{ color: '#888880' }}>
+            This module is not available for your role. Contact your account manager if you believe this is an error.
+          </p>
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
@@ -108,10 +126,10 @@ function AppRoutes() {
 
       {/* Government */}
       <Route path="/barter">
-        <ProtectedRoute component={() => <ComingSoon title="Government Barter" desc="Sovereign commodity barter and structured settlement" />} />
+        <ProtectedRoute path="/barter" component={() => <ComingSoon title="Government Barter" desc="Sovereign commodity barter and structured settlement" />} />
       </Route>
       <Route path="/sovereign">
-        <ProtectedRoute component={() => <ComingSoon title="Sovereign Programs" desc="Government-backed trade and policy programs" />} />
+        <ProtectedRoute path="/sovereign" component={() => <ComingSoon title="Sovereign Programs" desc="Government-backed trade and policy programs" />} />
       </Route>
 
       {/* Account */}

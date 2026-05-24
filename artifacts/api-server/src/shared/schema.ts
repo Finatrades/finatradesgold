@@ -46,6 +46,10 @@ export const mfaMethodEnum = pgEnum('mfa_method', ['totp', 'email']);
 // FinaBridge role enum for differentiating importers and exporters
 export const finabridgeRoleEnum = pgEnum('finabridge_role', ['importer', 'exporter', 'both']);
 
+// User type enum for role-based platform workflow (exporter / importer / government)
+// Separate from `role` (user/admin) — admin gating is preserved via `role`.
+export const userTypeEnum = pgEnum('user_type', ['exporter', 'importer', 'government']);
+
 export const users = pgTable("users", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   finatradesId: varchar("finatrades_id", { length: 20 }).unique(), // Unique user identifier for transfers
@@ -63,6 +67,7 @@ export const users = pgTable("users", {
   country: varchar("country", { length: 100 }),
   accountType: accountTypeEnum("account_type").notNull().default('personal'),
   role: userRoleEnum("role").notNull().default('user'),
+  userType: userTypeEnum("user_type").notNull().default('exporter'),
   kycStatus: kycStatusEnum("kyc_status").notNull().default('Not Started'),
   isEmailVerified: boolean("is_email_verified").notNull().default(false),
   emailVerificationCode: varchar("email_verification_code", { length: 10 }),
@@ -102,6 +107,7 @@ export const insertUserSchema = createInsertSchema(users)
     finatradesIdOtpAttempts: z.number().optional(),
     accountType: z.enum(['personal', 'business']).optional(),
     role: z.enum(['user', 'admin']).optional(),
+    userType: z.enum(['exporter', 'importer', 'government']).optional(),
     kycStatus: z.enum(['Not Started', 'In Progress', 'Approved', 'Rejected']).optional(),
     isEmailVerified: z.boolean().optional(),
     emailVerificationCode: z.string().nullable().optional(),

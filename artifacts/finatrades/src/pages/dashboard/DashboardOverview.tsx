@@ -5,8 +5,9 @@ import { Link } from 'wouter';
 import {
   Package, Warehouse, Store, ArrowLeftRight, Shield,
   TrendingUp, FileText, Clock, CheckCircle2, AlertCircle,
-  ArrowRight, ChevronRight, BarChart3,
+  ArrowRight, ChevronRight, BarChart3, Building2, Scale,
 } from 'lucide-react';
+import { getRoleLabel } from '@/lib/roleMenus';
 
 function KpiCard({
   label, value, sub, icon, color = '#C73B22', trend,
@@ -68,7 +69,8 @@ const STEPS = [
 export default function DashboardOverview() {
   const { user } = useAuth();
   const userName = (user as any)?.fullName?.split(' ')[0] || (user as any)?.email?.split('@')[0] || 'User';
-  const userRole = (user as any)?.role || 'importer';
+  const userType: 'exporter' | 'importer' | 'government' = (user as any)?.userType || 'exporter';
+  const roleLabel = getRoleLabel(user);
 
   const { data: goldData } = useQuery({
     queryKey: ['/api/gold-price'],
@@ -91,8 +93,8 @@ export default function DashboardOverview() {
           <h1 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>
             Welcome back, {userName}
           </h1>
-          <p className="text-sm mt-0.5 capitalize" style={{ color: '#888880' }}>
-            {userRole} · Finatrades Institutional Platform
+          <p className="text-sm mt-0.5" style={{ color: '#888880' }}>
+            {roleLabel} · Finatrades Institutional Platform
           </p>
         </div>
         <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"

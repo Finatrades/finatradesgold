@@ -1,76 +1,12 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'wouter';
 import {
-  LayoutDashboard, Package, Warehouse,
-  Store, FileText, Handshake, Scale, Shield, User, Settings,
-  LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen, HelpCircle,
-  ShieldCheck, Building2, Bell, History,
+  LogOut, ChevronDown, PanelLeftClose, PanelLeftOpen,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { getMenuForUser, getRoleLabel } from '@/lib/roleMenus';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
 import faviconIcon from '@/assets/favicon-icon.webp';
-
-interface MenuItem {
-  icon: React.ReactNode;
-  label: string;
-  href: string;
-  badge?: string;
-}
-interface MenuSection {
-  key: string;
-  label: string;
-  items: MenuItem[];
-  roles?: string[];
-}
-
-const SECTIONS: MenuSection[] = [
-  {
-    key: 'main',
-    label: 'Overview',
-    items: [
-      { icon: <LayoutDashboard size={16} />, label: 'Dashboard', href: '/dashboard' },
-      { icon: <History size={16} />, label: 'Transactions', href: '/transactions' },
-      { icon: <Bell size={16} />, label: 'Notifications', href: '/notifications' },
-    ],
-  },
-  {
-    key: 'trade',
-    label: 'Trade Operations',
-    items: [
-      { icon: <Package size={16} />, label: 'Consignments', href: '/consignments' },
-      { icon: <Warehouse size={16} />, label: 'Warehouse & Inventory', href: '/inventory' },
-      { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
-      { icon: <FileText size={16} />, label: 'RFQ & Orders', href: '/orders' },
-    ],
-  },
-  {
-    key: 'finance',
-    label: 'Finance & Settlement',
-    items: [
-      { icon: <Shield size={16} />, label: 'Escrow & Settlement', href: '/escrow' },
-      { icon: <Handshake size={16} />, label: 'Trade Finance', href: '/finabridge' },
-      { icon: <FileText size={16} />, label: 'Warehouse Receipts', href: '/certificates' },
-    ],
-  },
-  {
-    key: 'government',
-    label: 'Government',
-    items: [
-      { icon: <Scale size={16} />, label: 'Barter Workflow', href: '/barter' },
-      { icon: <Building2 size={16} />, label: 'Sovereign Programs', href: '/sovereign' },
-    ],
-  },
-  {
-    key: 'account',
-    label: 'Account',
-    items: [
-      { icon: <User size={16} />, label: 'Profile', href: '/profile' },
-      { icon: <ShieldCheck size={16} />, label: 'KYC / Compliance', href: '/kyc' },
-      { icon: <Settings size={16} />, label: 'Security', href: '/security' },
-      { icon: <HelpCircle size={16} />, label: 'Help & Support', href: '/help' },
-    ],
-  },
-];
 
 interface SidebarProps {
   isOpen: boolean;
@@ -82,23 +18,22 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: SidebarProps) {
   const [location] = useLocation();
   const { logout, user } = useAuth();
-  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
-    main: true, trade: true, finance: true, government: false, account: false,
+
+  const sections = getMenuForUser(user);
+  const roleLabel = getRoleLabel(user);
+
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {};
+    sections.forEach((s, i) => { init[s.key] = i < 3; });
+    return init;
   });
 
-  const userRole = (user as any)?.role || 'importer';
-
   const toggle = (key: string) => setOpenSections(prev => ({ ...prev, [key]: !prev[key] }));
-
-  const visibleSections = SECTIONS.filter(s =>
-    !s.roles || s.roles.includes(userRole)
-  );
 
   const sidebarW = collapsed ? '68px' : '240px';
 
   return (
     <>
-      {/* Mobile overlay */}
       {isOpen && (
         <div className="fixed inset-0 z-40 bg-black/50 lg:hidden" onClick={() => setIsOpen(false)} />
       )}
@@ -130,9 +65,20 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
           </button>
         </div>
 
+        {/* Role pill */}
+        {!collapsed && (
+          <div className="px-4 pt-3 pb-1">
+            <div className="inline-flex items-center gap-1.5 px-2 py-1 rounded-full text-[10px] font-bold tracking-wide"
+              style={{ background: 'rgba(199,59,34,0.12)', color: '#E8896E', border: '1px solid rgba(199,59,34,0.20)' }}>
+              <div className="w-1 h-1 rounded-full" style={{ background: '#C73B22' }} />
+              {roleLabel.toUpperCase()}
+            </div>
+          </div>
+        )}
+
         {/* Nav */}
-        <nav className="flex-1 overflow-y-auto py-4 space-y-0.5 px-2" style={{ scrollbarWidth: 'none' }}>
-          {visibleSections.map(section => (
+        <nav className="flex-1 overflow-y-auto py-3 space-y-0.5 px-2" style={{ scrollbarWidth: 'none' }}>
+          {sections.map(section => (
             <div key={section.key} className="mb-1">
               {!collapsed && (
                 <button
@@ -210,8 +156,8 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
                   <p className="text-xs font-semibold text-white truncate">
                     {(user as any)?.fullName || (user as any)?.email?.split('@')[0]}
                   </p>
-                  <p className="text-[10px] truncate capitalize" style={{ color: '#555550' }}>
-                    {userRole}
+                  <p className="text-[10px] truncate" style={{ color: '#555550' }}>
+                    {roleLabel}
                   </p>
                 </div>
               </div>

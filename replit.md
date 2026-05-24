@@ -32,10 +32,16 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - **Kind**: web (React + Vite)
 - **Preview path**: `/`
 - **Port**: `$PORT` (injected by Replit, bound in `vite.config.ts`)
-- Full finance platform with landing pages, login/signup, trading dashboard, KYC/document upload, gold certificates (BNSL), WinGold partner integration, and more
+- B2B commodity trade platform for Africa — strict role-based 9-step workflow (Registration/KYC → Consignment → Logistics → Inventory → Marketplace → Order/Payment → Government Barter → Trade Finance/Escrow)
+- **Role-based architecture**: `users.user_type` enum = `exporter | importer | government` (separate from `role` which stays `user | admin`)
+  - Sidebar, dashboard, route guards all driven by `user.userType` via `src/lib/roleMenus.tsx`
+  - Exporter = sell-side (consignments, listings, incoming RFQs)
+  - Importer = buy-side (marketplace, outgoing RFQs, incoming shipments)
+  - Government = sovereign-only (programs, barter, national inventory)
+  - Admin = full platform oversight
 - Uses wouter for client-side routing
-- Theme: purple/gradient branding with custom CSS vars in `src/index.css`
-- Fonts: loaded from Google Fonts / local assets
+- Theme: redbrick `#C73B22` / cream `#FAFAF8` / dark `#1A1A1A` (rebranded from purple/gold)
+- Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar — code remains in tree but unreachable
 
 ### API Server (`artifacts/api-server/`)
 - **Kind**: api (Express)

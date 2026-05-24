@@ -8,6 +8,7 @@ import {
   Menu, Bell, Search, ChevronDown, LogOut, User, Settings,
   ShieldCheck, TrendingUp, X,
 } from 'lucide-react';
+import { getRoleLabel } from '@/lib/roleMenus';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -182,8 +183,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <p className="text-xs font-semibold leading-tight" style={{ color: '#1A1A1A' }}>
                     {(user as any)?.fullName || (user as any)?.email?.split('@')[0]}
                   </p>
-                  <p className="text-[10px] capitalize leading-tight" style={{ color: '#888880' }}>
-                    {(user as any)?.role || 'user'}
+                  <p className="text-[10px] leading-tight" style={{ color: '#888880' }}>
+                    {getRoleLabel(user)}
                   </p>
                 </div>
                 <ChevronDown size={13} style={{ color: '#888880' }} />

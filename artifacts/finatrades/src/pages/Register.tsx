@@ -62,7 +62,7 @@ export default function Register() {
       await register({
         ...form,
         role: 'user',
-        finabridgeRole: role === 'exporter' ? 'exporter' : role === 'importer' ? 'importer' : 'both',
+        userType: role, // exporter | importer | government
         accountType: 'business',
         username: form.email,
         fullName: `${form.firstName} ${form.lastName}`,
