@@ -14374,8 +14374,8 @@ export async function registerRoutes(
     }
   });
   
-  // Create trade case - PROTECTED - Requires KYC
-  app.post("/api/trade/cases", ensureAuthenticated, requireKycApproved, async (req, res) => {
+  // Create trade case - PROTECTED - Requires KYC. Exporter/importer only (no government).
+  app.post("/api/trade/cases", ensureAuthenticated, requireUserType('exporter', 'importer'), requireKycApproved, async (req, res) => {
     try {
       const caseData = insertTradeCaseSchema.parse(req.body);
       const tradeCase = await storage.createTradeCase(caseData);
@@ -14507,8 +14507,8 @@ export async function registerRoutes(
     }
   });
   
-  // Upload document - PROTECTED
-  app.post("/api/trade/documents", ensureAuthenticated, async (req, res) => {
+  // Upload document - PROTECTED. Exporter/importer only.
+  app.post("/api/trade/documents", ensureAuthenticated, requireUserType('exporter', 'importer'), async (req, res) => {
     try {
       const documentData = insertTradeDocumentSchema.parse(req.body);
       const document = await storage.createTradeDocument(documentData);
