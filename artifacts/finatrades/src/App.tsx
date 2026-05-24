@@ -163,6 +163,8 @@ function App() {
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
+          {/* AccountTypeProvider kept for legacy home/mobile components that still
+              consume useAccountType. New role logic lives in user_type / roleMenus. */}
           <AccountTypeProvider>
             <AppRoutes />
             <Toaster />

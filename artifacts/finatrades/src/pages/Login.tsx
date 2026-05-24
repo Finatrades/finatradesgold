@@ -25,9 +25,8 @@ export default function Login() {
       if (mfa?.requiresMfa) {
         setMfaRequired(true);
         setChallengeToken(mfa.challengeToken);
-      } else {
-        setLocation('/dashboard');
       }
+      // Non-MFA path: AuthContext.login() handles role-based redirect.
     } catch (err: any) {
       setError(err?.message || 'Invalid credentials. Please try again.');
     } finally {
@@ -41,7 +40,7 @@ export default function Login() {
     setLoading(true);
     try {
       await verifyMfa(challengeToken, mfaToken);
-      setLocation('/dashboard');
+      // AuthContext.verifyMfa handles redirect.
     } catch {
       setError('Invalid verification code.');
     } finally {

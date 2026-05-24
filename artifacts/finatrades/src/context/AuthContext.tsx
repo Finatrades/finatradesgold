@@ -12,6 +12,16 @@ interface MfaChallenge {
   mfaMethod: 'totp' | 'email';
 }
 
+/** Role-based post-login landing route. Admin -> admin dashboard; otherwise by user_type. */
+function landingForUser(user: any): string {
+  if (!user) return '/dashboard';
+  if (user.role === 'admin') return '/admin/dashboard';
+  const t = user.userType || 'exporter';
+  if (t === 'government') return '/sovereign';
+  if (t === 'importer') return '/marketplace';
+  return '/consignments'; // exporter
+}
+
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
@@ -130,11 +140,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('fina_user_id', data.user.id);
       setAdminPortal(false);
       
-      // Regular login always goes to user dashboard, even for admins
-      // Admins must use /admin/login to access admin panel
+      // Role-based post-login landing. Admins via /admin/login get /admin/dashboard;
+      // regular login routes by user_type so each role lands on its primary workflow.
       prefetchDashboardData(data.user.id);
       preloadNGeniusSDK().catch(() => {});
-      setLocation('/dashboard');
+      setLocation(landingForUser(data.user));
       
       return null;
     } catch (error) {
