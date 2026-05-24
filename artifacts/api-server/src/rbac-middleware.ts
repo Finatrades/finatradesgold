@@ -6,8 +6,17 @@ const PERMISSION_CACHE_TTL = 5 * 60 * 1000;
 export async function checkIsSuperAdmin(userId: string): Promise<boolean> {
   try {
     const assignments = await storage.getUserRoleAssignments(userId);
-    if (!assignments || assignments.length === 0) return false;
-    
+
+    // Fallback: a platform admin with NO RBAC role assignments at all is
+    // treated as a super-admin. This avoids locking out the seeded platform
+    // admin (or any admin created before the granular RBAC was rolled out)
+    // from every admin endpoint. Once any explicit role is assigned, the
+    // normal permission checks apply.
+    if (!assignments || assignments.length === 0) {
+      const user = await storage.getUser(userId);
+      return user?.role === 'admin';
+    }
+
     for (const assignment of assignments) {
       const role = await storage.getAdminRole(assignment.role_id);
       if (role && role.name === 'Super Admin') {
