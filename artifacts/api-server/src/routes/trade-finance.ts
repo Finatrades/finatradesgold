@@ -84,38 +84,75 @@ import { sendEmailDirect } from "../email";
  */
 type TradeFinanceEventKind =
   | "lc_issued"
+  | "lc_compliant"
+  | "lc_discrepant"
+  | "escrow_funded"
   | "milestone_released"
   | "dispute_opened"
   | "dispute_resolved";
+
+const TRADE_EVENT_TITLES: Record<TradeFinanceEventKind, string> = {
+  lc_issued: "Letter of Credit issued",
+  lc_compliant: "Letter of Credit documents Compliant",
+  lc_discrepant: "Letter of Credit documents Discrepant",
+  escrow_funded: "Escrow funded",
+  milestone_released: "Escrow milestone released",
+  dispute_opened: "Trade dispute opened",
+  dispute_resolved: "Trade dispute resolved",
+};
 
 async function notifyTradeFinanceEvent(input: {
   kind: TradeFinanceEventKind;
   caseId: string | null;
   importerUserId: string | null;
   exporterUserId: string | null;
+  /** Optional actor (user who triggered the event). Excluded from notifications. */
+  actorUserId?: string | null;
   payload: Record<string, any>;
+  /** Optional deep link path (e.g. `/trade/cases/<id>`). */
+  link?: string | null;
 }): Promise<void> {
   try {
-    const recipientIds = [input.importerUserId, input.exporterUserId].filter(
-      (x): x is string => !!x,
+    const recipientIds = Array.from(
+      new Set(
+        [input.importerUserId, input.exporterUserId].filter(
+          (x): x is string => !!x && x !== input.actorUserId,
+        ),
+      ),
     );
+    if (recipientIds.length === 0) return;
+    const title = TRADE_EVENT_TITLES[input.kind];
+    // FT-ID-safe payload: counterparty.ts guarantees no PII.
+    const payloadForBody = { caseId: input.caseId, ...input.payload };
+    const message = `${title} on your trade case.`;
+    const link = input.link ?? (input.caseId ? `/trade/cases/${input.caseId}` : null);
+
+    // 1. In-app notifications (one row per recipient).
+    await Promise.all(
+      recipientIds.map((userId) =>
+        storage
+          .createNotification({
+            userId,
+            title,
+            message,
+            type: "trade",
+            link,
+            read: false,
+          })
+          .catch(() => undefined),
+      ),
+    );
+
+    // 2. Email notifications.
     const users = await Promise.all(recipientIds.map((id) => storage.getUser(id)));
-    const emails = users
-      .map((u) => u?.email)
-      .filter((e): e is string => !!e);
+    const emails = users.map((u) => u?.email).filter((e): e is string => !!e);
     if (emails.length === 0) return;
-    const titleMap: Record<TradeFinanceEventKind, string> = {
-      lc_issued: "Letter of Credit issued",
-      milestone_released: "Milestone released",
-      dispute_opened: "Trade dispute opened",
-      dispute_resolved: "Trade dispute resolved",
-    };
-    const subject = `[Finatrades] ${titleMap[input.kind]}`;
+    const subject = `[Finatrades] ${title}`;
     const body = `
-      <h2 style="margin:0 0 12px;font:600 18px sans-serif;">${titleMap[input.kind]}</h2>
+      <h2 style="margin:0 0 12px;font:600 18px sans-serif;">${title}</h2>
       <p style="margin:0 0 8px;font:14px sans-serif;">A trade-finance event has occurred on your case.</p>
       <pre style="background:#f6f6f4;padding:12px;border-radius:6px;font:12px monospace;white-space:pre-wrap;">${
-        JSON.stringify({ caseId: input.caseId, ...input.payload }, null, 2)
+        JSON.stringify(payloadForBody, null, 2)
       }</pre>
       <p style="margin:12px 0 0;font:12px sans-serif;color:#666;">Open Finatrades to review and respond.</p>
     `;
@@ -499,6 +536,18 @@ export function registerTradeFinanceRoutes(app: Express): void {
           updatedAt: new Date(),
         })
         .where(eq(tradeCases.id, parties.resolvedCaseId!));
+      void notifyTradeFinanceEvent({
+        kind: "escrow_funded",
+        caseId: parties.resolvedCaseId,
+        importerUserId: parties.importerUserId,
+        exporterUserId: parties.exporterUserId,
+        actorUserId: req.session!.userId!,
+        payload: {
+          amountCents: amount,
+          currency: parties.currency,
+          caseNumber: parties.case.caseNumber,
+        },
+      });
       res.status(201).json({ ok: true, transaction: tx });
     } catch (err: any) {
       if (err?.code === "INSUFFICIENT_FUNDS") {
@@ -960,6 +1009,37 @@ export function registerTradeFinanceRoutes(app: Express): void {
         },
         notes: parsed.data.notes ?? null,
       });
+      // Notify counterparties when admin records a Compliant or Discrepant
+      // decision. (Rejected is treated as terminal discrepancy for parties.)
+      {
+        const kind: TradeFinanceEventKind =
+          parsed.data.decision === "approve"
+            ? "lc_compliant"
+            : "lc_discrepant";
+        let importerUserId: string | null = lc.applicantUserId;
+        let exporterUserId: string | null = lc.beneficiaryUserId;
+        let caseIdForLink: string | null = lc.tradeCaseId;
+        if (lc.tradeCaseId) {
+          const parties = await caseParties(lc.tradeCaseId);
+          importerUserId = parties.importerUserId ?? importerUserId;
+          exporterUserId = parties.exporterUserId ?? exporterUserId;
+          caseIdForLink = parties.resolvedCaseId ?? caseIdForLink;
+        }
+        void notifyTradeFinanceEvent({
+          kind,
+          caseId: caseIdForLink,
+          importerUserId,
+          exporterUserId,
+          actorUserId: sid,
+          payload: {
+            lcRef: lc.lcRef,
+            presentationId: pres.id,
+            decision: parsed.data.decision,
+            discrepancies: parsed.data.discrepancies ?? null,
+            lcStatus: newLcStatus,
+          },
+        });
+      }
       // On compliant decision auto-release any pending `lc_issued` milestones.
       let triggerResult: any = null;
       if (parsed.data.decision === "approve" && lc.tradeCaseId) {
