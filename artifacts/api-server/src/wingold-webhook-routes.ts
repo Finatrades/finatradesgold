@@ -471,12 +471,13 @@ async function handleOrderConfirmed(
   
   // Send notification to user if found
   if (user) {
-    await db.insert(notifications).values({
+    await storage.createNotification({
       userId: user.id,
       title: "Gold Purchase Confirmed",
       message: `Your order of ${data.totalGrams}g gold has been confirmed by Wingold. We're processing your order.`,
       type: "transaction",
-      link: "/dashboard"
+      link: "/dashboard",
+      read: false,
     });
   }
   
@@ -542,12 +543,13 @@ async function handleOrderApproved(
       });
       
       // Notify user
-      await db.insert(notifications).values({
+      await storage.createNotification({
         userId: user.id,
         title: "Wingold Order Approved",
         message: `Your Wingold order for ${data.totalGrams}g has been approved. Awaiting final processing.`,
         type: "transaction",
-        link: "/dashboard"
+        link: "/dashboard",
+        read: false,
       });
     }
   }
@@ -686,12 +688,13 @@ async function handleOrderFulfilled(
     }
     
     // Notify user that order is ready for final processing
-    await db.insert(notifications).values({
+    await storage.createNotification({
       userId: user.id,
       title: "Wingold Order Fulfilled",
       message: `Your ${data.totalGrams}g gold purchase from Wingold has been fulfilled and is being processed.`,
       type: "transaction",
-      link: "/dashboard"
+      link: "/dashboard",
+      read: false,
     });
     
     await createAuditLog(
@@ -749,12 +752,13 @@ async function handleOrderCancelled(
   
   // Notify user if found
   if (user) {
-    await db.insert(notifications).values({
+    await storage.createNotification({
       userId: user.id,
       title: "Order Cancelled",
       message: `Your Wingold order has been cancelled. Reason: ${data.reason}`,
       type: "warning",
-      link: "/dashboard"
+      link: "/dashboard",
+      read: false,
     });
   }
   

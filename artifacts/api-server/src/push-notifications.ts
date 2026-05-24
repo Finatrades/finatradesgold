@@ -330,14 +330,34 @@ export async function sendPushNotification(
   }
 
   if (!options.skipInAppRecord) {
-    await db.insert(notifications).values({
+    const [inserted] = await db.insert(notifications).values({
       userId,
       title: payload.title,
       message: payload.body,
       type: options.inAppType ?? 'trade',
       link: payload.link,
       read: false
-    });
+    }).returning();
+
+    if (inserted) {
+      try {
+        const { emitNotification } = await import("./socket");
+        emitNotification(userId, {
+          id: inserted.id,
+          title: inserted.title,
+          message: inserted.message,
+          type: inserted.type,
+          link: inserted.link ?? null,
+          read: inserted.read,
+          createdAt:
+            inserted.createdAt instanceof Date
+              ? inserted.createdAt.toISOString()
+              : new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error("[push-notifications] socket emit failed", err);
+      }
+    }
   }
 
   await deliverToExpo(tokens, payload);

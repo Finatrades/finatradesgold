@@ -3650,6 +3650,25 @@ export class DatabaseStorage implements IStorage {
 
   async createNotification(notification: InsertNotification): Promise<Notification> {
     const [newNotification] = await db.insert(notifications).values(notification).returning();
+    if (newNotification) {
+      try {
+        const { emitNotification } = await import("./socket");
+        emitNotification(newNotification.userId, {
+          id: newNotification.id,
+          title: newNotification.title,
+          message: newNotification.message,
+          type: newNotification.type,
+          link: newNotification.link ?? null,
+          read: newNotification.read,
+          createdAt:
+            newNotification.createdAt instanceof Date
+              ? newNotification.createdAt.toISOString()
+              : new Date().toISOString(),
+        });
+      } catch (err) {
+        console.error("[storage.createNotification] socket emit failed", err);
+      }
+    }
     return newNotification;
   }
 
