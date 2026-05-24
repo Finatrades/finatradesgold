@@ -5867,3 +5867,144 @@ export const escrowConfigurations = pgTable("escrow_configurations", {
 });
 export type EscrowConfiguration = typeof escrowConfigurations.$inferSelect;
 export type InsertEscrowConfiguration = typeof escrowConfigurations.$inferInsert;
+
+// ============================================
+// PLATFORM SETTINGS (Task #173 — Admin P6)
+// Fee schedules, supported countries/currencies, email-template versions,
+// help articles, announcement audience targeting.
+// ============================================
+
+export const feeCategoryEnum = pgEnum('platform_fee_category', [
+  'marketplace_commission',
+  'trade_finance_fee',
+  'wallet_deposit_fee',
+  'wallet_withdrawal_fee',
+  'fx_spread',
+]);
+
+export const feeSchedules = pgTable('fee_schedules', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  category: feeCategoryEnum('category').notNull(),
+  // Free-form scope key — depends on category:
+  // marketplace_commission → commodity category slug ('coffee', '*')
+  // trade_finance_fee → LC type ('sight', 'usance', '*')
+  // wallet_deposit_fee / wallet_withdrawal_fee → currency code ('USD', 'EUR')
+  // fx_spread → currency pair ('USD_EUR')
+  scopeKey: varchar('scope_key', { length: 100 }).notNull().default('*'),
+  // Percent in basis points (1bps = 0.01%). Eg 250 = 2.50%
+  percentBps: integer('percent_bps').notNull().default(0),
+  // Optional flat fee in cents (used for deposits / withdrawals)
+  flatCents: bigint('flat_cents', { mode: 'number' }).notNull().default(0),
+  currency: varchar('currency', { length: 3 }).notNull().default('USD'),
+  effectiveFrom: timestamp('effective_from').notNull().defaultNow(),
+  effectiveTo: timestamp('effective_to'),
+  notes: text('notes'),
+  createdBy: varchar('created_by', { length: 255 }).references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertFeeScheduleSchema = createInsertSchema(feeSchedules).omit({ id: true, createdAt: true });
+export type InsertFeeSchedule = z.infer<typeof insertFeeScheduleSchema>;
+export type FeeSchedule = typeof feeSchedules.$inferSelect;
+
+export const supportedCountries = pgTable('supported_countries', {
+  isoCode: varchar('iso_code', { length: 2 }).primaryKey(),
+  displayName: varchar('display_name', { length: 120 }).notNull(),
+  flagEmoji: varchar('flag_emoji', { length: 10 }),
+  region: varchar('region', { length: 80 }),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  allowSignup: boolean('allow_signup').notNull().default(true),
+  allowShipping: boolean('allow_shipping').notNull().default(true),
+  updatedBy: varchar('updated_by', { length: 255 }).references(() => users.id),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertSupportedCountrySchema = createInsertSchema(supportedCountries).omit({ createdAt: true, updatedAt: true });
+export type InsertSupportedCountry = z.infer<typeof insertSupportedCountrySchema>;
+export type SupportedCountry = typeof supportedCountries.$inferSelect;
+
+// Task #173: platform-managed currency directory (separate from the legacy
+// `supportedCurrencies` table whose schema is owned by the wallet code).
+export const platformSupportedCurrencies = pgTable('platform_supported_currencies', {
+  isoCode: varchar('iso_code', { length: 3 }).primaryKey(),
+  displayName: varchar('display_name', { length: 120 }).notNull(),
+  symbol: varchar('symbol', { length: 8 }),
+  decimals: integer('decimals').notNull().default(2),
+  isEnabled: boolean('is_enabled').notNull().default(true),
+  allowWallet: boolean('allow_wallet').notNull().default(true),
+  allowEscrow: boolean('allow_escrow').notNull().default(true),
+  updatedBy: varchar('updated_by', { length: 255 }).references(() => users.id),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertPlatformSupportedCurrencySchema = createInsertSchema(platformSupportedCurrencies).omit({ createdAt: true, updatedAt: true });
+export type InsertPlatformSupportedCurrency = z.infer<typeof insertPlatformSupportedCurrencySchema>;
+export type PlatformSupportedCurrency = typeof platformSupportedCurrencies.$inferSelect;
+
+// Versioned email templates. The email worker reads the latest `isActive=true`
+// row per slug. Saving a new version inserts a new row; the previous active
+// version is deactivated atomically in the same transaction.
+export const emailTemplateVersions = pgTable('email_template_versions', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar('slug', { length: 120 }).notNull(),
+  version: integer('version').notNull().default(1),
+  subject: varchar('subject', { length: 500 }).notNull(),
+  bodyHtml: text('body_html').notNull(),
+  mergeVars: jsonb('merge_vars').$type<string[]>(),
+  isActive: boolean('is_active').notNull().default(true),
+  notes: text('notes'),
+  createdBy: varchar('created_by', { length: 255 }).references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+}, (t) => ({
+  uniqueSlugVersion: unique('email_template_versions_slug_version').on(t.slug, t.version),
+}));
+export const insertEmailTemplateVersionSchema = createInsertSchema(emailTemplateVersions).omit({ id: true, createdAt: true });
+export type InsertEmailTemplateVersion = z.infer<typeof insertEmailTemplateVersionSchema>;
+export type EmailTemplateVersion = typeof emailTemplateVersions.$inferSelect;
+
+export const helpArticleStatusEnum = pgEnum('help_article_status', ['draft', 'published', 'archived']);
+
+export const helpArticles = pgTable('help_articles', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  slug: varchar('slug', { length: 200 }).notNull().unique(),
+  category: varchar('category', { length: 120 }).notNull().default('General'),
+  title: varchar('title', { length: 300 }).notNull(),
+  body: text('body').notNull(),
+  excerpt: text('excerpt'),
+  status: helpArticleStatusEnum('status').notNull().default('draft'),
+  publishedAt: timestamp('published_at'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  authorId: varchar('author_id', { length: 255 }).references(() => users.id),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+export const insertHelpArticleSchema = createInsertSchema(helpArticles).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertHelpArticle = z.infer<typeof insertHelpArticleSchema>;
+export type HelpArticle = typeof helpArticles.$inferSelect;
+
+// Extended announcement system for Task #173. Lives alongside the legacy
+// `announcements` table; segment-based targeting + scheduling + multi-channel.
+export const platformAnnouncementChannelEnum = pgEnum('platform_announcement_channel', ['banner', 'in_app', 'email']);
+export const platformAnnouncementSegmentEnum = pgEnum('platform_announcement_segment', [
+  'all', 'exporter', 'importer', 'government', 'warehouse', 'admin',
+]);
+
+export const platformAnnouncements = pgTable('platform_announcements', {
+  id: varchar('id', { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar('title', { length: 255 }).notNull(),
+  body: text('body').notNull(),
+  channel: platformAnnouncementChannelEnum('channel').notNull().default('banner'),
+  severity: varchar('severity', { length: 16 }).notNull().default('info'),
+  audienceSegment: platformAnnouncementSegmentEnum('audience_segment').notNull().default('all'),
+  audienceCountry: varchar('audience_country', { length: 2 }),
+  scheduledAt: timestamp('scheduled_at').notNull().defaultNow(),
+  expiresAt: timestamp('expires_at'),
+  isActive: boolean('is_active').notNull().default(true),
+  ctaLabel: varchar('cta_label', { length: 80 }),
+  ctaUrl: varchar('cta_url', { length: 500 }),
+  createdBy: varchar('created_by', { length: 255 }).references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+export const insertPlatformAnnouncementSchema = createInsertSchema(platformAnnouncements).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertPlatformAnnouncement = z.infer<typeof insertPlatformAnnouncementSchema>;
+export type PlatformAnnouncement = typeof platformAnnouncements.$inferSelect;

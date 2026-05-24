@@ -32,6 +32,13 @@ import AdminWallets from "@/pages/dashboard/AdminWallets";
 import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
 import AdminLcQueue from "@/pages/admin/AdminLcQueue";
 import AdminDisputeQueue from "@/pages/admin/AdminDisputeQueue";
+import AdminFees from "@/pages/admin/AdminFees";
+import AdminCountries from "@/pages/admin/AdminCountries";
+import AdminCurrencies from "@/pages/admin/AdminCurrencies";
+import AdminEmailTemplates from "@/pages/admin/AdminEmailTemplates";
+import AdminHelpArticles from "@/pages/admin/AdminHelpArticles";
+import AdminAnnouncements from "@/pages/admin/AdminAnnouncements";
+import HelpCenter from "@/pages/HelpCenter";
 import AdminKycQueue from "@/pages/admin/AdminKycQueue";
 import AdminAnalytics from "@/pages/admin/AdminAnalytics";
 import AdminRisk from "@/pages/admin/AdminRisk";
@@ -275,6 +282,24 @@ function AppRoutes() {
       <Route path="/admin/shipments">
         <AdminRoute component={AdminShipments} />
       </Route>
+      <Route path="/admin/settings/fees">
+        <AdminRoute component={AdminFees} />
+      </Route>
+      <Route path="/admin/settings/countries">
+        <AdminRoute component={AdminCountries} />
+      </Route>
+      <Route path="/admin/settings/currencies">
+        <AdminRoute component={AdminCurrencies} />
+      </Route>
+      <Route path="/admin/settings/email-templates">
+        <AdminRoute component={AdminEmailTemplates} />
+      </Route>
+      <Route path="/admin/settings/help-articles">
+        <AdminRoute component={AdminHelpArticles} />
+      </Route>
+      <Route path="/admin/settings/announcements">
+        <AdminRoute component={AdminAnnouncements} />
+      </Route>
 
       {/* Account */}
       <Route path="/transactions">
@@ -292,8 +317,11 @@ function AppRoutes() {
       <Route path="/security">
         <ProtectedRoute component={() => <ComingSoon title="Security" desc="2FA, session management and access control" />} />
       </Route>
+      <Route path="/help/:slug">
+        <HelpCenter />
+      </Route>
       <Route path="/help">
-        <ProtectedRoute component={() => <ComingSoon title="Help & Support" desc="Documentation, FAQs and support tickets" />} />
+        <HelpCenter />
       </Route>
 
       {/* Fallback */}

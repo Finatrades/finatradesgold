@@ -80,16 +80,29 @@ import { b2bWalletHolds } from "@shared/schema";
 
 // Margin required to commit to a trade request, expressed in basis points of trade value.
 // Default: 10% (1000 bps). Override via FINABRIDGE_TRADE_MARGIN_BPS env var.
-const TRADE_MARGIN_BPS = (() => {
+// Task #173: the actual rate is now resolved at call-time via the admin-
+// editable `fee_schedules` table (`trade_finance_fee`, scope `*`). The env
+// var remains as a deterministic fallback if no DB row matches.
+const TRADE_MARGIN_BPS_ENV = (() => {
   const raw = parseInt(process.env.FINABRIDGE_TRADE_MARGIN_BPS || "1000", 10);
   return Number.isFinite(raw) && raw > 0 && raw <= 10000 ? raw : 1000;
 })();
 
-function computeTradeMarginCents(tradeValueUsd: string | number): number {
+async function resolveTradeMarginBps(): Promise<number> {
+  try {
+    const { getFeeFor } = await import('./services/platform-settings');
+    const fee = await getFeeFor('trade_finance_fee', '*');
+    if (fee && fee.percentBps > 0 && fee.percentBps <= 10000) return fee.percentBps;
+  } catch { /* fall through */ }
+  return TRADE_MARGIN_BPS_ENV;
+}
+
+async function computeTradeMarginCents(tradeValueUsd: string | number): Promise<number> {
   const usd = typeof tradeValueUsd === "string" ? parseFloat(tradeValueUsd) : tradeValueUsd;
   if (!Number.isFinite(usd) || usd <= 0) return 0;
+  const bps = await resolveTradeMarginBps();
   // cents = usd * 100; margin = cents * bps / 10_000
-  return Math.ceil((usd * 100 * TRADE_MARGIN_BPS) / 10_000);
+  return Math.ceil((usd * 100 * bps) / 10_000);
 }
 
 async function releaseOpenTradeRequestMarginHold(
@@ -287,6 +300,7 @@ import { registerWalletRoutes } from "./routes/wallet";
 import { registerTradeFinanceRoutes, pushImporterMilestoneReady } from "./routes/trade-finance";
 import { registerAdminAnalyticsRoutes } from "./routes/admin-analytics";
 import { registerNetworkRoutes } from "./routes/network";
+import { registerAdminSettingsRoutes } from "./routes/admin-settings";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1091,7 +1105,24 @@ export async function registerRoutes(
   // otherwise block startup, causing platform healthcheck/promote probes to time out.
   // Templates aren't needed for the first few requests; emails are queued and processed
   // asynchronously, so seeding can finish after the server is already accepting traffic.
-  seedEmailTemplates().catch(err => console.error('[Email] Failed to seed templates:', err));
+  seedEmailTemplates().then(async () => {
+    // Task #173: mirror the canonical transactional templates into
+    // `email_template_versions` so the admin Email Templates page is populated
+    // out of the box. Skips any slug that already has a manually-saved version.
+    try {
+      const { DEFAULT_EMAIL_TEMPLATES } = await import('./email');
+      const { seedEmailTemplateVersions } = await import('./services/platform-settings');
+      const result = await seedEmailTemplateVersions(
+        DEFAULT_EMAIL_TEMPLATES.map((t: any) => ({
+          slug: t.slug, subject: t.subject, body: t.body,
+          variables: t.variables, module: t.module,
+        })),
+      );
+      console.log(`[Email] Seeded ${result.seeded} versioned templates, skipped ${result.skipped} existing`);
+    } catch (err) {
+      console.error('[Email] Failed to seed template versions:', err);
+    }
+  }).catch(err => console.error('[Email] Failed to seed templates:', err));
 
   // RBAC Consistency Check: ensure all active employees have matching user_role_assignments
   try {
@@ -1208,6 +1239,7 @@ export async function registerRoutes(
   registerTradeFinanceRoutes(app);
   registerAdminAnalyticsRoutes(app);
   registerNetworkRoutes(app, ensureAdminAsync, requirePermission);
+  registerAdminSettingsRoutes(app, ensureAdminAsync, requirePermission);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);
@@ -1332,6 +1364,31 @@ export async function registerRoutes(
       
       if (existingUser) {
         return res.status(400).json({ message: "Email already registered" });
+      }
+
+      // Task #173: gate signup on admin-managed country directory. If a
+      // country is supplied it must be present in `supported_countries` with
+      // `allow_signup = true`. Unknown ISO codes are rejected so the country
+      // list shown to users stays the source of truth.
+      if (userData.country) {
+        try {
+          const { getEnabledCountries } = await import('./services/platform-settings');
+          const enabled = await getEnabledCountries();
+          const iso = userData.country.trim().toUpperCase();
+          const match = enabled.find(c =>
+            c.isoCode === iso ||
+            c.displayName.toUpperCase() === userData.country!.trim().toUpperCase()
+          );
+          if (!match || !match.allowSignup) {
+            return res.status(400).json({
+              message: 'Signup is not currently available for the selected country.',
+            });
+          }
+        } catch (err) {
+          // If the settings service is unavailable, fall open (don't block
+          // legitimate signups during an outage) but log so it's visible.
+          console.error('[Auth] country eligibility check failed', err);
+        }
       }
       
       // Hash the password before storing
@@ -7327,7 +7384,7 @@ export async function registerRoutes(
       // Place a USD wallet hold on the importer for the required margin before
       // the request goes live. This enforces buyer commitment — declining the
       // request later releases the hold; accepting a proposal converts it to escrow.
-      const marginCents = computeTradeMarginCents(request.tradeValueUsd?.toString() || '0');
+      const marginCents = await computeTradeMarginCents(request.tradeValueUsd?.toString() || '0');
       let placedHoldId: string | null = null;
       if (marginCents > 0) {
         const existingHold = await findOpenWalletHoldForTradeRequest(request.id, request.importerUserId);
@@ -7343,7 +7400,7 @@ export async function registerRoutes(
               metadata: {
                 tradeRefId: request.tradeRefId,
                 tradeValueUsd: request.tradeValueUsd,
-                marginBps: TRADE_MARGIN_BPS,
+                marginBps: TRADE_MARGIN_BPS_ENV,
               },
             });
             placedHoldId = hold.id;
@@ -7351,10 +7408,10 @@ export async function registerRoutes(
             if (err?.code === 'INSUFFICIENT_FUNDS') {
               const requiredUsd = (marginCents / 100).toFixed(2);
               return res.status(402).json({
-                message: `Insufficient wallet balance to commit to this trade. Required margin: $${requiredUsd} USD (${(TRADE_MARGIN_BPS / 100).toFixed(2)}% of trade value). Please top up your wallet and try again.`,
+                message: `Insufficient wallet balance to commit to this trade. Required margin: $${requiredUsd} USD (${(TRADE_MARGIN_BPS_ENV / 100).toFixed(2)}% of trade value). Please top up your wallet and try again.`,
                 code: 'INSUFFICIENT_FUNDS',
                 requiredMarginCents: marginCents,
-                marginBps: TRADE_MARGIN_BPS,
+                marginBps: TRADE_MARGIN_BPS_ENV,
               });
             }
             // Concurrent submit/retry raced with us — the partial unique

@@ -9,6 +9,7 @@ import {
   ShieldCheck, TrendingUp, X,
 } from 'lucide-react';
 import NotificationCenter from '@/components/dashboard/NotificationCenter';
+import ActiveAnnouncementsBanner from '@/components/ActiveAnnouncementsBanner';
 import { getRoleLabel } from '@/lib/roleMenus';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -234,6 +235,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {/* Page content */}
         <main className="flex-1 px-4 pt-4 pb-6 overflow-auto">
+          <ActiveAnnouncementsBanner />
           {children}
         </main>
       </div>

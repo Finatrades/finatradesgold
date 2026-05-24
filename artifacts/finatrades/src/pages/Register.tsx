@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '@/context/AuthContext';
 import { ArrowRight, ArrowLeft, Check, Building2, Package, Landmark, Eye, EyeOff } from 'lucide-react';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
+import { apiRequest } from '@/lib/queryClient';
+
+interface SupportedCountry { isoCode: string; displayName: string; allowSignup: boolean }
 
 const ROLES = [
   {
@@ -50,6 +53,23 @@ export default function Register() {
   });
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+
+  // Task #173: load admin-managed country directory so disabled countries
+  // disappear from the signup dropdown.
+  const [countries, setCountries] = useState<SupportedCountry[]>([]);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const r = await apiRequest('GET', '/api/supported-countries');
+        const data = await r.json();
+        if (alive && Array.isArray(data?.countries)) {
+          setCountries(data.countries.filter((c: SupportedCountry) => c.allowSignup));
+        }
+      } catch { /* fall back to free-text below */ }
+    })();
+    return () => { alive = false; };
+  }, []);
 
   const inputCls = "w-full px-4 py-3 rounded-xl text-sm outline-none transition-all bg-white"
   const inputStyle = { border: '1.5px solid #E8E2DC', color: '#1A1A1A' };
@@ -214,8 +234,18 @@ export default function Register() {
                 </div>
                 <div>
                   <label className={labelCls} style={{ color: '#1A1A1A' }}>Country of registration</label>
-                  <input className={inputCls} style={inputStyle} placeholder="Ghana"
-                    value={form.country} onChange={e => set('country', e.target.value)} />
+                  {countries.length > 0 ? (
+                    <select className={inputCls} style={inputStyle}
+                      value={form.country} onChange={e => set('country', e.target.value)}>
+                      <option value="">Select a country…</option>
+                      {countries.map(c => (
+                        <option key={c.isoCode} value={c.isoCode}>{c.displayName}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input className={inputCls} style={inputStyle} placeholder="Ghana"
+                      value={form.country} onChange={e => set('country', e.target.value)} />
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>

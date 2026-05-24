@@ -173,6 +173,18 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Vault size={16} />, label: 'Escrow Config', href: '/admin/trade-finance/escrow' },
     ],
   },
+  {
+    key: 'settings',
+    label: 'Platform Settings',
+    items: [
+      { icon: <Settings size={16} />, label: 'Fees & Commissions', href: '/admin/settings/fees' },
+      { icon: <Globe size={16} />, label: 'Countries', href: '/admin/settings/countries' },
+      { icon: <Wallet size={16} />, label: 'Currencies', href: '/admin/settings/currencies' },
+      { icon: <Mail size={16} />, label: 'Email Templates', href: '/admin/settings/email-templates' },
+      { icon: <HelpCircle size={16} />, label: 'Help Articles', href: '/admin/settings/help-articles' },
+      { icon: <Bell size={16} />, label: 'Announcements', href: '/admin/settings/announcements' },
+    ],
+  },
   accountSection,
 ];
 

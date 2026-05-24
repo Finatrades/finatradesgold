@@ -271,9 +271,23 @@ export interface EmailData {
   [key: string]: string | number | undefined;
 }
 
+// HTML-escape merge variable values before interpolating them into a template
+// body. Without this, any user-controlled data (names, free-text fields, etc.)
+// would inject raw HTML into outbound emails.
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function replaceVariables(template: string, data: EmailData): string {
   return template.replace(/\{\{(\w+)\}\}/g, (match, key) => {
-    return data[key]?.toString() || match;
+    const v = data[key];
+    if (v === undefined || v === null) return match;
+    return escapeHtml(v.toString());
   });
 }
 
@@ -486,6 +500,16 @@ function wrapEmailWithBranding(
 }
 
 export async function getEmailTemplate(slug: string): Promise<{ subject: string; body: string } | null> {
+  // Task #173: prefer the latest active row from `email_template_versions`
+  // (admin-editable, versioned). Falls back to the legacy `templates` table so
+  // existing seeded templates keep working until they're migrated.
+  try {
+    const { getLatestEmailTemplate } = await import('./services/platform-settings');
+    const versioned = await getLatestEmailTemplate(slug);
+    if (versioned) return { subject: versioned.subject || '', body: versioned.bodyHtml };
+  } catch (err) {
+    console.error('[Email] getLatestEmailTemplate lookup failed, falling back to legacy templates table', err);
+  }
   const [template] = await db.select().from(templates).where(eq(templates.slug, slug)).limit(1);
   if (!template) return null;
   return {
