@@ -9,7 +9,6 @@ import { toast } from 'sonner';
 import { Link, useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 type AccountType = 'personal' | 'business';
 
@@ -340,7 +339,6 @@ export default function MobileRegister({ initialReferralCode = '', domainMode }:
 
   return (
     <>
-      <GeoRestrictionNotice />
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50">
         <div className="px-5 py-6 pb-24">
           <motion.div

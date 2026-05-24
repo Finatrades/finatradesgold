@@ -19,7 +19,7 @@ async function pdfFirstPageToJpegBase64(file: File): Promise<string> {
   canvas.width = viewport.width;
   canvas.height = viewport.height;
   const ctx = canvas.getContext('2d')!;
-  await page.render({ canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
+  await page.render({ canvas, canvasContext: ctx as CanvasRenderingContext2D, viewport }).promise;
   const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
   return dataUrl.split(',')[1];
 }

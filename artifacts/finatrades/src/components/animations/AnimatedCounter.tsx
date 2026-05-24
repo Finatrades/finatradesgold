@@ -32,10 +32,11 @@ export default function AnimatedCounter({
     if (isInView) {
       const controls = animate(count, to, { 
         duration,
-        ease: [0.25, 0.46, 0.45, 0.94],
+        ease: [0.25, 0.46, 0.45, 0.94] as const,
       });
       return controls.stop;
     }
+    return undefined;
   }, [isInView, to, duration, count]);
 
   return (

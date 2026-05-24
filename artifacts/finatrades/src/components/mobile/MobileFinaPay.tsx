@@ -7,7 +7,7 @@ import { normalizeStatus, getTransactionLabel } from '@/lib/transactionUtils';
 import { 
   Wallet, RefreshCw, ShoppingCart, Send, 
   ArrowDownLeft, Plus, Eye, EyeOff, 
-  ChevronRight, ArrowUpRight
+  ChevronRight, ArrowUpRight, Coins, TrendingUp
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';

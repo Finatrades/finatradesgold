@@ -33,6 +33,7 @@ export function NumberTicker({
       const t = setTimeout(() => motionValue.set(direction === 'down' ? 0 : value), delay * 1000);
       return () => clearTimeout(t);
     }
+    return undefined;
   }, [motionValue, isInView, delay, value, direction]);
 
   useEffect(() => {

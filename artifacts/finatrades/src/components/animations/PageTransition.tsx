@@ -1,11 +1,11 @@
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, type Variants, type Transition } from 'framer-motion';
 import { useLocation } from 'wouter';
 
 interface PageTransitionProps {
   children: React.ReactNode;
 }
 
-const pageVariants = {
+const pageVariants: Variants = {
   initial: {
     opacity: 0,
     y: 8,
@@ -20,9 +20,9 @@ const pageVariants = {
   },
 };
 
-const pageTransition = {
+const pageTransition: Transition = {
   type: 'tween',
-  ease: [0.25, 0.46, 0.45, 0.94],
+  ease: [0.25, 0.46, 0.45, 0.94] as const,
   duration: 0.3,
 };
 

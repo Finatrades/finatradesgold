@@ -68,6 +68,7 @@ export function FinaPayProvider({ children }: { children: React.ReactNode }) {
       
       return () => clearInterval(transactionInterval);
     }
+    return undefined;
   }, [user]);
 
   const refreshWallet = async () => {

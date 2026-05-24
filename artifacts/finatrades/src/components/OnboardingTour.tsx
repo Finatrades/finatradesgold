@@ -176,6 +176,7 @@ export function useOnboarding() {
       const timer = setTimeout(() => setShowOnboarding(true), 1000);
       return () => clearTimeout(timer);
     }
+    return undefined;
   }, []);
 
   return {

@@ -258,7 +258,7 @@ export default function TransactionHistory({ transactions, goldPrice = 85, ledge
         if (isCredit) runningBalance += tx.amountUsd;
         else if (isDebit) runningBalance -= tx.amountUsd;
       }
-      return { tx, isSwap, isDebit, isCredit, isMpgwToFpgw, isFpgwToMpgw, balance: isCompleted ? runningBalance : null };
+      return { tx, isSwap: !!isSwap, isDebit: !!isDebit, isCredit: !!isCredit, isMpgwToFpgw: !!isMpgwToFpgw, isFpgwToMpgw: !!isFpgwToMpgw, balance: isCompleted ? runningBalance : null };
     });
   }, [filteredTransactions]);
 

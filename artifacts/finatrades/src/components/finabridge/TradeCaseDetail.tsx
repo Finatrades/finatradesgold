@@ -38,7 +38,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
 
   // Mock State for DMS
   const [documents, setDocuments] = useState<TradeDocument[]>([
-    { id: 'd1', caseId: tradeCase.id, type: 'Invoice', fileName: 'inv-001.pdf', version: 1, uploadedBy: 'Exporter', uploadedAt: new Date().toISOString(), digitalSignatureStatus: 'Signed' }
+    { id: 'd1', caseId: tradeCase.id, type: 'Invoice', fileName: 'inv-001.pdf', status: 'Approved', uploadedBy: 'Exporter', uploadedAt: new Date().toISOString() }
   ]);
 
   // Mock State for Approvals
@@ -50,7 +50,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
 
   // Mock Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([
-    { id: 'log1', caseId: tradeCase.id, actorName: 'System', actorRole: 'System', actionType: 'Create Case', timestamp: tradeCase.createdAt, details: 'Case created via FinaBridge' }
+    { id: 'log1', caseId: tradeCase.id, actorName: 'System', actorRole: 'System', actionType: 'CaseCreated', timestamp: tradeCase.createdAt, details: 'Case created via FinaBridge' }
   ]);
 
   // Mock State for Chat
@@ -66,7 +66,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
     
     const msg: ChatMessage = {
       id: `m${Date.now()}`,
-      sender: currentRole === 'Importer' ? tradeCase.buyer.contactName : tradeCase.seller.contactName,
+      sender: currentRole === 'Importer' ? tradeCase.importer.name : tradeCase.exporter.name,
       role: currentRole,
       content: newMessage,
       timestamp: new Date().toISOString()
@@ -122,7 +122,7 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
               {tradeCase.id} 
               <Badge variant="outline" className="text-sm font-normal border-border text-muted-foreground">{tradeCase.status}</Badge>
             </h2>
-            <p className="text-muted-foreground text-sm">{tradeCase.name}</p>
+            <p className="text-muted-foreground text-sm">{tradeCase.reference}</p>
           </div>
         </div>
         
@@ -155,13 +155,13 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                  <div className="grid grid-cols-2 gap-8">
                    <div>
                      <Label className="text-muted-foreground">Buyer</Label>
-                     <p className="font-bold text-foreground">{tradeCase.buyer.company}</p>
-                     <p className="text-sm text-muted-foreground">{tradeCase.buyer.country}</p>
+                     <p className="font-bold text-foreground">{tradeCase.importer.name}</p>
+                     <p className="text-sm text-muted-foreground">{tradeCase.importer.country}</p>
                    </div>
                    <div>
                      <Label className="text-muted-foreground">Seller</Label>
-                     <p className="font-bold text-foreground">{tradeCase.seller.company}</p>
-                     <p className="text-sm text-muted-foreground">{tradeCase.seller.country}</p>
+                     <p className="font-bold text-foreground">{tradeCase.exporter.name}</p>
+                     <p className="text-sm text-muted-foreground">{tradeCase.exporter.country}</p>
                    </div>
                  </div>
                  
@@ -376,11 +376,11 @@ export default function TradeCaseDetail({ tradeCase, onBack, onUpdateCase, onRel
                       </div>
                       <div>
                         <p className="font-bold text-foreground">{doc.type}</p>
-                        <p className="text-sm text-muted-foreground">{doc.fileName} • v{doc.version}</p>
+                        <p className="text-sm text-muted-foreground">{doc.fileName}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      {doc.digitalSignatureStatus === 'Signed' ? (
+                      {doc.status === 'Approved' ? (
                         <Badge variant="outline" className="bg-green-50 dark:bg-green-950/200/10 text-green-500 border-green-500/20 flex gap-1">
                           <ShieldCheck className="w-3 h-3" /> Signed
                         </Badge>

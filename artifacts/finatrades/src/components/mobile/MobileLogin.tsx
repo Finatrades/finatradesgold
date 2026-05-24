@@ -10,7 +10,6 @@ import { Link, useLocation } from 'wouter';
 import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
 import BiometricService from '@/lib/biometric-service';
 import finatradesLogo from '@/assets/finatrades-logo-purple.png';
-import GeoRestrictionNotice from '@/pages/finagold/components/GeoRestrictionNotice';
 
 export default function MobileLogin() {
   const { login, verifyMfa, user, loading, setUser } = useAuth();
@@ -265,7 +264,6 @@ export default function MobileLogin() {
 
   return (
     <>
-      <GeoRestrictionNotice />
       <div className="min-h-screen bg-gradient-to-b from-purple-50 via-white to-purple-50 flex flex-col">
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-8">
           <div className="w-full max-w-sm">
