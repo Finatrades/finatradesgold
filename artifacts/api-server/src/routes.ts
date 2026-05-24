@@ -76,6 +76,66 @@ import {
   DEFAULT_AML_RULES 
 } from "./aml-monitoring";
 import { platformLimits } from "./platform-limit-service";
+import { placeHold as walletPlaceHold, releaseHold as walletReleaseHold, convertHoldToEscrow as walletConvertHoldToEscrow } from "./wallet-service";
+import { b2bWalletHolds } from "@shared/schema";
+
+// Margin required to commit to a trade request, expressed in basis points of trade value.
+// Default: 10% (1000 bps). Override via FINABRIDGE_TRADE_MARGIN_BPS env var.
+const TRADE_MARGIN_BPS = (() => {
+  const raw = parseInt(process.env.FINABRIDGE_TRADE_MARGIN_BPS || "1000", 10);
+  return Number.isFinite(raw) && raw > 0 && raw <= 10000 ? raw : 1000;
+})();
+
+function computeTradeMarginCents(tradeValueUsd: string | number): number {
+  const usd = typeof tradeValueUsd === "string" ? parseFloat(tradeValueUsd) : tradeValueUsd;
+  if (!Number.isFinite(usd) || usd <= 0) return 0;
+  // cents = usd * 100; margin = cents * bps / 10_000
+  return Math.ceil((usd * 100 * TRADE_MARGIN_BPS) / 10_000);
+}
+
+async function releaseOpenTradeRequestMarginHold(
+  tradeRequestId: string,
+  importerUserId: string,
+  reason: string,
+): Promise<void> {
+  // Best-effort release of an open USD wallet margin hold for a trade request
+  // that has reached a terminal pre-escrow outcome (AI rejection, tier
+  // rejection, etc). Logged-only on failure — never throws into the caller —
+  // so terminal status writes are not blocked.
+  try {
+    const walletHold = await findOpenWalletHoldForTradeRequest(tradeRequestId, importerUserId);
+    if (!walletHold) return;
+    await walletReleaseHold({
+      userId: importerUserId,
+      holdId: walletHold.id,
+    });
+    console.log(`[Wallet] Released margin hold ${walletHold.id} for trade_request=${tradeRequestId} (${reason})`);
+  } catch (err) {
+    console.error(
+      `[Wallet] Failed to release margin hold for trade_request=${tradeRequestId} (${reason}):`,
+      err,
+    );
+  }
+}
+
+async function findOpenWalletHoldForTradeRequest(tradeRequestId: string, userId: string) {
+  // Scope by userId to prevent cross-user interference: another user could
+  // create an unrelated open hold referencing the same trade_request id, and
+  // an unscoped lookup would pick it up and either fail conversion or release
+  // the wrong importer's funds.
+  const rows = await db
+    .select()
+    .from(b2bWalletHolds)
+    .where(and(
+      eq(b2bWalletHolds.referenceType, "trade_request"),
+      eq(b2bWalletHolds.referenceId, tradeRequestId),
+      eq(b2bWalletHolds.userId, userId),
+      eq(b2bWalletHolds.status, "open"),
+    ))
+    .orderBy(desc(b2bWalletHolds.createdAt))
+    .limit(1);
+  return rows[0] || null;
+}
 import { 
   getExpiringDocuments, 
   sendDocumentExpiryReminders, 
@@ -14744,10 +14804,89 @@ export async function registerRoutes(
       if (!request) {
         return res.status(404).json({ message: "Trade request not found" });
       }
+
+      // SECURITY: Only the owning importer (or an admin) may submit the request.
+      // Submitting another user's request places a real USD wallet hold on
+      // their balance, which would be a broken-access-control violation.
+      const sessionUserId = req.session?.userId;
+      const isAdmin = req.session?.userRole === 'admin';
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      if (!isAdmin && sessionUserId !== request.importerUserId) {
+        return res.status(403).json({ message: "You do not have permission to submit this trade request" });
+      }
+
       if (request.status !== 'Draft') {
         return res.status(400).json({ message: "Only draft requests can be submitted" });
       }
-      const updated = await storage.updateTradeRequest(req.params.id, { status: 'Open' });
+
+      // Place a USD wallet hold on the importer for the required margin before
+      // the request goes live. This enforces buyer commitment — declining the
+      // request later releases the hold; accepting a proposal converts it to escrow.
+      const marginCents = computeTradeMarginCents(request.tradeValueUsd?.toString() || '0');
+      let placedHoldId: string | null = null;
+      if (marginCents > 0) {
+        const existingHold = await findOpenWalletHoldForTradeRequest(request.id, request.importerUserId);
+        if (existingHold) {
+          placedHoldId = existingHold.id;
+        } else {
+          try {
+            const { hold } = await walletPlaceHold({
+              userId: request.importerUserId,
+              amountCents: marginCents,
+              referenceType: 'trade_request',
+              referenceId: request.id,
+              metadata: {
+                tradeRefId: request.tradeRefId,
+                tradeValueUsd: request.tradeValueUsd,
+                marginBps: TRADE_MARGIN_BPS,
+              },
+            });
+            placedHoldId = hold.id;
+          } catch (err: any) {
+            if (err?.code === 'INSUFFICIENT_FUNDS') {
+              const requiredUsd = (marginCents / 100).toFixed(2);
+              return res.status(402).json({
+                message: `Insufficient wallet balance to commit to this trade. Required margin: $${requiredUsd} USD (${(TRADE_MARGIN_BPS / 100).toFixed(2)}% of trade value). Please top up your wallet and try again.`,
+                code: 'INSUFFICIENT_FUNDS',
+                requiredMarginCents: marginCents,
+                marginBps: TRADE_MARGIN_BPS,
+              });
+            }
+            // Concurrent submit/retry raced with us — the partial unique
+            // index on b2b_wallet_holds (user_id, reference_type, reference_id)
+            // WHERE status='open' will reject the duplicate. Recover the
+            // existing winning hold and proceed idempotently.
+            if (err?.code === '23505' || err?.cause?.code === '23505') {
+              const raced = await findOpenWalletHoldForTradeRequest(request.id, request.importerUserId);
+              if (raced) {
+                placedHoldId = raced.id;
+              } else {
+                throw err;
+              }
+            } else {
+              throw err;
+            }
+          }
+        }
+      }
+
+      let updated;
+      try {
+        updated = await storage.updateTradeRequest(req.params.id, { status: 'Open' });
+      } catch (statusErr) {
+        // Compensate: status flip failed after we placed a hold — release it so
+        // we don't strand the importer's funds.
+        if (placedHoldId) {
+          try {
+            await walletReleaseHold({ userId: request.importerUserId, holdId: placedHoldId });
+          } catch (compensateErr) {
+            console.error('[Wallet] Failed to release margin hold after submit status failure:', compensateErr);
+          }
+        }
+        throw statusErr;
+      }
       
       // Notify all admins of new trade request
       const importerUser = await storage.getUser(request.importerUserId);
@@ -14835,7 +14974,23 @@ export async function registerRoutes(
       if (!request) {
         return res.status(404).json({ message: "Trade request not found" });
       }
-      
+
+      // Authorization: only the owning importer (or an admin) may accept a
+      // proposal — this endpoint locks importer gold, creates a settlement
+      // hold, and converts the importer's USD margin hold to escrow. Without
+      // this check any authenticated user knowing a proposal id could trigger
+      // financial mutations against another importer's account (IDOR). This
+      // codebase uses session-based identity (req.session.userId/userRole),
+      // not req.user — match the pattern used by the submit handler.
+      const acceptSessionUserId = req.session?.userId;
+      const acceptIsAdmin = req.session?.userRole === 'admin';
+      if (!acceptSessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      if (!acceptIsAdmin && acceptSessionUserId !== request.importerUserId) {
+        return res.status(403).json({ message: "Not authorized to accept this proposal" });
+      }
+
       // Verify proposal was forwarded
       const forwarded = await storage.getForwardedProposals(proposal.tradeRequestId);
       const isForwarded = forwarded.some(f => f.proposalId === proposal.id);
@@ -14853,7 +15008,13 @@ export async function registerRoutes(
           message: `Insufficient gold balance. Required: ${requiredGold}g, Available: ${availableGold}g` 
         });
       }
-      
+
+      // Pre-check the importer's USD wallet margin hold BEFORE mutating any
+      // gold balances or creating a settlement hold. If a hold exists it MUST
+      // be in 'open' state so the upcoming conversion can succeed atomically.
+      // Holds created before this wiring may legitimately be absent (legacy).
+      const walletHold = await findOpenWalletHoldForTradeRequest(request.id, request.importerUserId);
+
       // Lock the gold in wallet
       await storage.updateFinabridgeWallet(wallet.id, {
         availableGoldGrams: (availableGold - requiredGold).toFixed(6),
@@ -14874,6 +15035,43 @@ export async function registerRoutes(
         lockedGoldGrams: request.settlementGoldGrams,
         status: 'Held',
       });
+
+      // Convert the USD wallet margin hold into an escrow record tied to the
+      // new settlement hold. If conversion fails, compensate by rolling back
+      // the gold locks and cancelling the settlement hold so we don't leave
+      // partial state. We only skip conversion when no hold exists (legacy).
+      if (walletHold) {
+        try {
+          await walletConvertHoldToEscrow({
+            userId: request.importerUserId,
+            holdId: walletHold.id,
+            escrowId: settlementHold.id,
+          });
+        } catch (convertErr) {
+          console.error('[Wallet] Failed to convert margin hold to escrow, compensating:', convertErr);
+          // Compensate: undo gold locks on both wallets and cancel the
+          // settlement hold. These compensating writes are best-effort —
+          // any failures here require manual reconciliation.
+          try {
+            await storage.updateFinabridgeWallet(wallet.id, {
+              availableGoldGrams: availableGold.toFixed(6),
+              lockedGoldGrams: parseFloat(wallet.lockedGoldGrams).toFixed(6),
+            });
+          } catch (rb) { console.error('[Wallet] Compensation: importer gold rollback failed:', rb); }
+          try {
+            await storage.updateFinabridgeWallet(exporterWallet.id, {
+              incomingLockedGoldGrams: parseFloat(exporterWallet.incomingLockedGoldGrams || '0').toFixed(6),
+            });
+          } catch (rb) { console.error('[Wallet] Compensation: exporter incoming rollback failed:', rb); }
+          try {
+            await storage.updateSettlementHold(settlementHold.id, { status: 'Cancelled' });
+          } catch (rb) { console.error('[Wallet] Compensation: settlement hold cancel failed:', rb); }
+          return res.status(500).json({
+            message: "Failed to convert wallet margin hold to escrow. Trade not advanced; please retry.",
+            code: 'HOLD_CONVERSION_FAILED',
+          });
+        }
+      }
       
       // Generate Trade Lock Certificate for the importer (non-blocking)
       const lockedGoldAmount = parseFloat(request.settlementGoldGrams);
@@ -14994,7 +15192,23 @@ export async function registerRoutes(
       if (!proposal) {
         return res.status(404).json({ message: "Proposal not found" });
       }
-      
+
+      // Authorization: only the owning importer (or admin) may decline a
+      // proposal addressed to them. Closes IDOR symmetric to accept route.
+      // Use session-based identity to match this codebase's auth pattern.
+      const declineTradeReq = await storage.getTradeRequest(proposal.tradeRequestId);
+      if (!declineTradeReq) {
+        return res.status(404).json({ message: "Trade request not found" });
+      }
+      const declineSessionUserId = req.session?.userId;
+      const declineIsAdmin = req.session?.userRole === 'admin';
+      if (!declineSessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      if (!declineIsAdmin && declineSessionUserId !== declineTradeReq.importerUserId) {
+        return res.status(403).json({ message: "Not authorized to decline this proposal" });
+      }
+
       // Update proposal status to Declined
       await storage.updateTradeProposal(proposal.id, { status: 'Declined' });
       
@@ -15545,6 +15759,9 @@ export async function registerRoutes(
           aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
         } as any);
 
+        // Terminal pre-escrow outcome — release any open USD wallet margin hold.
+        await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'AI Rejected');
+
         // Email #3B — AI fail → importer notification
         if (importer?.email) {
           sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
@@ -15687,6 +15904,9 @@ export async function registerRoutes(
         tier1ReviewedBy: reviewedBy || 'Macy',
       } as any);
 
+      // Terminal pre-escrow outcome — release any open USD wallet margin hold.
+      await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 1 Rejected');
+
       // Notify importer of rejection
       const importer = await storage.getUser(request.importerUserId);
       if (importer?.email) {
@@ -15785,6 +16005,9 @@ export async function registerRoutes(
         tier2ReviewedBy: reviewedBy || 'Farah',
       } as any);
 
+      // Terminal pre-escrow outcome — release any open USD wallet margin hold.
+      await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 2 Rejected');
+
       const importer = await storage.getUser(request.importerUserId);
       if (importer?.email) {
         sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
@@ -15873,6 +16096,9 @@ export async function registerRoutes(
         tier3Notes: notes || '',
         tier3ReviewedBy: reviewedBy || 'Reda',
       } as any);
+
+      // Terminal pre-escrow outcome — release any open USD wallet margin hold.
+      await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 3 Rejected');
 
       const importer = await storage.getUser(request.importerUserId);
       if (importer?.email) {
@@ -16347,6 +16573,22 @@ export async function registerRoutes(
       
       // Update trade request status
       await storage.updateTradeRequest(hold.tradeRequestId, { status: 'Cancelled' });
+
+      // Release any still-open USD wallet margin hold for this trade request so
+      // the importer's locked balance is returned to available. By the normal
+      // flow the hold was converted to escrow at proposal-accept time, but if
+      // the conversion was skipped or failed we release here as a safety net.
+      try {
+        const walletHold = await findOpenWalletHoldForTradeRequest(hold.tradeRequestId, hold.importerUserId);
+        if (walletHold) {
+          await walletReleaseHold({
+            userId: hold.importerUserId,
+            holdId: walletHold.id,
+          });
+        }
+      } catch (releaseErr) {
+        console.error('[Wallet] Failed to release margin hold on settlement cancel:', releaseErr);
+      }
       
       // Record ledger entry
       const { vaultLedgerService } = await import('./vault-ledger-service');
