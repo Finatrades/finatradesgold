@@ -45,6 +45,12 @@ export interface Consignment {
   submittedAt?: string | null;
   /** @nullable */
   approvedAt?: string | null;
+  /** @nullable */
+  reviewerId?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
+  /** @nullable */
+  reviewNotes?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;

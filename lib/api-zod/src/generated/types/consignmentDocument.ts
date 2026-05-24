@@ -38,5 +38,9 @@ export interface ConsignmentDocument {
   /** @nullable */
   reviewedAt?: string | null;
   /** @nullable */
+  reviewerId?: string | null;
+  /** @nullable */
   reviewNotes?: string | null;
+  /** @nullable */
+  rejectReason?: string | null;
 }

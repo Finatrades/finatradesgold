@@ -19,10 +19,11 @@ const STATUS_STYLE: Record<string, { bg: string; color: string; icon: React.Reac
 };
 
 const DOC_STATUS: Record<string, { color: string; label: string }> = {
-  pending:  { color: '#888880', label: 'Pending upload' },
-  uploaded: { color: '#2563EB', label: 'Uploaded' },
-  verified: { color: '#047857', label: 'Verified' },
-  rejected: { color: '#DC2626', label: 'Rejected' },
+  pending:            { color: '#888880', label: 'Pending upload' },
+  uploaded:           { color: '#2563EB', label: 'Uploaded' },
+  verified:           { color: '#047857', label: 'Verified' },
+  rejected:           { color: '#DC2626', label: 'Rejected' },
+  changes_requested:  { color: '#B45309', label: 'Changes requested' },
 };
 
 function fmtMoney(cents: number | null | undefined, currency = 'USD'): string {
@@ -110,28 +111,50 @@ export default function ConsignmentDetail() {
         </Card>
       </div>
 
+      {(c.reviewNotes || c.reviewedAt) && (
+        <Card title="Reviewer Notes" icon={<ShieldCheck size={16} />}>
+          {c.reviewNotes ? (
+            <p className="text-sm whitespace-pre-wrap" style={{ color: '#1A1A1A' }}>{c.reviewNotes}</p>
+          ) : (
+            <p className="text-sm" style={{ color: '#888880' }}>No notes from reviewer.</p>
+          )}
+          {c.reviewedAt && (
+            <p className="text-xs mt-2" style={{ color: '#888880' }}>Reviewed {fmtDate(c.reviewedAt)}</p>
+          )}
+        </Card>
+      )}
+
       <Card title={`Documents (${c.documents?.length ?? 0})`} icon={<FileText size={16} />}>
         {c.documents?.length ? (
           <div className="space-y-2">
             {c.documents.map((d: any) => {
               const ds = DOC_STATUS[d.status] || DOC_STATUS.pending;
               return (
-                <div key={d.id} className="flex items-center justify-between gap-3 p-3 rounded-xl"
+                <div key={d.id} className="p-3 rounded-xl"
                      style={{ border: '1px solid #E8E2DC', background: '#FAFAF8' }}
                      data-testid={`doc-row-${d.docType}`}>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold truncate" style={{ color: '#1A1A1A' }}>
-                      {d.docLabel || d.docType} {d.isRequired && <span style={{ color: '#C73B22' }}>*</span>}
-                    </p>
-                    <p className="text-xs truncate" style={{ color: '#888880' }}>
-                      {d.fileName || '—'} {d.fileSize ? `· ${Math.round(d.fileSize / 1024)} KB` : ''}
-                    </p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold truncate" style={{ color: '#1A1A1A' }}>
+                        {d.docLabel || d.docType} {d.isRequired && <span style={{ color: '#C73B22' }}>*</span>}
+                      </p>
+                      <p className="text-xs truncate" style={{ color: '#888880' }}>
+                        {d.fileName || '—'} {d.fileSize ? `· ${Math.round(d.fileSize / 1024)} KB` : ''}
+                      </p>
+                    </div>
+                    <span className="text-xs font-semibold shrink-0" style={{ color: ds.color }}>{ds.label}</span>
+                    {d.downloadPath && (
+                      <a href={d.downloadPath} target="_blank" rel="noreferrer"
+                         className="text-xs font-semibold shrink-0"
+                         style={{ color: '#C73B22' }}>Open</a>
+                    )}
                   </div>
-                  <span className="text-xs font-semibold shrink-0" style={{ color: ds.color }}>{ds.label}</span>
-                  {d.storageUrl && (
-                    <a href={d.storageUrl} target="_blank" rel="noreferrer"
-                       className="text-xs font-semibold shrink-0"
-                       style={{ color: '#C73B22' }}>Open</a>
+                  {(d.rejectReason || d.reviewNotes) && (
+                    <div className="mt-2 p-2 rounded-md text-xs" style={{ background: '#FFF7ED', border: '1px solid #FED7AA', color: '#9A3412' }}>
+                      {d.rejectReason && <div><strong>Reason:</strong> {d.rejectReason}</div>}
+                      {d.reviewNotes && <div className="mt-1">{d.reviewNotes}</div>}
+                      {d.reviewedAt && <div className="mt-1 opacity-70">Reviewed {fmtDate(d.reviewedAt)}</div>}
+                    </div>
                   )}
                 </div>
               );
@@ -165,6 +188,12 @@ export default function ConsignmentDetail() {
                   <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>
                     {h.fromStatus ? `${h.fromStatus} → ${h.toStatus}` : h.toStatus}
                   </p>
+                  {h.actorName && (
+                    <p className="text-xs mt-0.5" style={{ color: '#888880' }}>
+                      by <span style={{ color: '#1A1A1A', fontWeight: 600 }}>{h.actorName}</span>
+                      {h.actorRole ? ` (${h.actorRole})` : ''}
+                    </p>
+                  )}
                   {h.note && <p className="text-xs mt-0.5" style={{ color: '#888880' }}>{h.note}</p>}
                 </div>
                 <span className="text-xs" style={{ color: '#888880' }}>{fmtDate(h.createdAt)}</span>

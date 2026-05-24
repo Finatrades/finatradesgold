@@ -334,6 +334,127 @@ paths:
               schema:
                 $ref: "#/components/schemas/Consignment"
 
+  # ─── ADMIN CONSIGNMENTS ─────────────────────────────────────────────────────
+  /admin/consignments:
+    get:
+      operationId: adminListConsignments
+      tags: [admin-consignments]
+      summary: List consignments for admin review queue
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+        - name: hub
+          in: query
+          required: false
+          schema: { type: string }
+        - name: commodity
+          in: query
+          required: false
+          schema: { type: string }
+        - name: exporterId
+          in: query
+          required: false
+          schema: { type: string }
+        - name: dateFrom
+          in: query
+          required: false
+          schema: { type: string }
+        - name: dateTo
+          in: query
+          required: false
+          schema: { type: string }
+        - name: search
+          in: query
+          required: false
+          schema: { type: string }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Admin queue
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminConsignmentQueue"
+
+  /admin/consignments/{id}:
+    get:
+      operationId: adminGetConsignment
+      tags: [admin-consignments]
+      summary: Get consignment detail (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Consignment detail
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminConsignmentDetail"
+
+  /admin/consignments/{id}/status:
+    patch:
+      operationId: adminUpdateConsignmentStatus
+      tags: [admin-consignments]
+      summary: Transition consignment status (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminConsignmentStatusUpdate"
+      responses:
+        "200":
+          description: Status updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Consignment"
+
+  /admin/consignments/{id}/documents/{docId}:
+    patch:
+      operationId: adminUpdateConsignmentDocument
+      tags: [admin-consignments]
+      summary: Approve / reject / request changes on a single document (admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: docId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminConsignmentDocumentUpdate"
+      responses:
+        "200":
+          description: Document updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsignmentDocument"
+
   # ─── INVENTORY ──────────────────────────────────────────────────────────────
   /b2b/inventory:
     get:
@@ -1091,6 +1212,12 @@ components:
           type: ["string", "null"]
         approvedAt:
           type: ["string", "null"]
+        reviewerId:
+          type: ["string", "null"]
+        reviewedAt:
+          type: ["string", "null"]
+        reviewNotes:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
@@ -1112,7 +1239,7 @@ components:
           type: boolean
         status:
           type: string
-          enum: [pending, uploaded, verified, rejected]
+          enum: [pending, uploaded, verified, rejected, changes_requested]
         fileName:
           type: ["string", "null"]
         fileSize:
@@ -1131,7 +1258,11 @@ components:
           type: ["string", "null"]
         reviewedAt:
           type: ["string", "null"]
+        reviewerId:
+          type: ["string", "null"]
         reviewNotes:
+          type: ["string", "null"]
+        rejectReason:
           type: ["string", "null"]
 
     ConsignmentDetail:
@@ -1176,6 +1307,64 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ConsignmentDocumentRequirement"
+
+    AdminConsignmentQueueRow:
+      allOf:
+        - $ref: "#/components/schemas/Consignment"
+        - type: object
+          properties:
+            exporterName: { type: ["string", "null"] }
+            exporterEmail: { type: ["string", "null"] }
+
+    AdminConsignmentSla:
+      type: object
+      required: [pendingTotal, pendingOverSla, slaHours, oldestPendingHours, avgReviewHoursLast7d, reviewedLast7d]
+      properties:
+        pendingTotal: { type: integer }
+        pendingOverSla: { type: integer }
+        slaHours: { type: integer }
+        oldestPendingHours: { type: number }
+        avgReviewHoursLast7d: { type: number }
+        reviewedLast7d: { type: integer }
+
+    AdminConsignmentQueue:
+      type: object
+      required: [items, sla]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminConsignmentQueueRow"
+        sla:
+          $ref: "#/components/schemas/AdminConsignmentSla"
+
+    AdminConsignmentDetail:
+      allOf:
+        - $ref: "#/components/schemas/ConsignmentDetail"
+        - type: object
+          properties:
+            exporter:
+              type: ["object", "null"]
+              additionalProperties: true
+
+    AdminConsignmentStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: ["Under Review", "Approved", "Rejected", "Needs More Info"]
+        note: { type: string }
+
+    AdminConsignmentDocumentUpdate:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [approve, reject, request_replacement]
+        reason: { type: string }
+        notes: { type: string }
 
     ConsignmentEligibility:
       type: object

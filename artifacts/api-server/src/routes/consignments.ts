@@ -9,6 +9,7 @@ import {
   consignmentDocuments,
   consignmentStatusHistory,
   kycSubmissions,
+  users,
 } from "../shared/schema";
 import { uploadToR2, isR2Configured, generateR2Key, getSignedDownloadUrl } from "../r2-storage";
 
@@ -185,9 +186,20 @@ router.get("/:id", ensureAuthenticated, async (req: Request, res: Response): Pro
     const docs = await db.select().from(consignmentDocuments)
       .where(eq(consignmentDocuments.consignmentId, row.id))
       .orderBy(consignmentDocuments.docType);
-    const history = await db.select().from(consignmentStatusHistory)
+    const historyRaw = await db
+      .select({
+        h: consignmentStatusHistory,
+        actor: { firstName: users.firstName, lastName: users.lastName, email: users.email, role: users.role },
+      })
+      .from(consignmentStatusHistory)
+      .leftJoin(users, eq(users.id, consignmentStatusHistory.actorId))
       .where(eq(consignmentStatusHistory.consignmentId, row.id))
       .orderBy(desc(consignmentStatusHistory.createdAt));
+    const history = historyRaw.map(({ h, actor }) => ({
+      ...h,
+      actorName: actor ? (`${actor.firstName ?? ""} ${actor.lastName ?? ""}`.trim() || actor.email) : null,
+      actorRole: actor?.role ?? null,
+    }));
 
     const serializedDocs = await Promise.all(docs.map(d => serializeDocWithSignedUrl(d)));
     res.json({
@@ -434,6 +446,9 @@ function serializeConsignment(c: any) {
     notes: c.notes,
     complianceDeclarations: c.complianceDeclarations,
     status: c.status,
+    reviewerId: c.reviewerId,
+    reviewedAt: c.reviewedAt,
+    reviewNotes: c.reviewNotes,
     submittedAt: c.submittedAt,
     approvedAt: c.approvedAt,
     createdAt: c.createdAt,
@@ -456,7 +471,9 @@ function serializeDoc(d: any) {
     downloadPath: d.id ? `/api/b2b/consignments/${d.consignmentId}/documents/${d.id}/url` : null,
     uploadedAt: d.uploadedAt,
     reviewedAt: d.reviewedAt,
+    reviewerId: d.reviewerId,
     reviewNotes: d.reviewNotes,
+    rejectReason: d.rejectReason,
   };
 }
 

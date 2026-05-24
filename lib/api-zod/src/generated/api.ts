@@ -229,6 +229,9 @@ export const ListConsignmentsResponseItem = zod.object({
   status: zod.string(),
   submittedAt: zod.string().nullish(),
   approvedAt: zod.string().nullish(),
+  reviewerId: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
+  reviewNotes: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
 });
@@ -331,6 +334,9 @@ export const GetConsignmentResponse = zod
     status: zod.string(),
     submittedAt: zod.string().nullish(),
     approvedAt: zod.string().nullish(),
+    reviewerId: zod.string().nullish(),
+    reviewedAt: zod.string().nullish(),
+    reviewNotes: zod.string().nullish(),
     createdAt: zod.string(),
     updatedAt: zod.string().nullish(),
   })
@@ -344,7 +350,13 @@ export const GetConsignmentResponse = zod
             docType: zod.string(),
             docLabel: zod.string().nullish(),
             isRequired: zod.boolean(),
-            status: zod.enum(["pending", "uploaded", "verified", "rejected"]),
+            status: zod.enum([
+              "pending",
+              "uploaded",
+              "verified",
+              "rejected",
+              "changes_requested",
+            ]),
             fileName: zod.string().nullish(),
             fileSize: zod.number().nullish(),
             mimeType: zod.string().nullish(),
@@ -363,7 +375,9 @@ export const GetConsignmentResponse = zod
             signedUrlExpiresIn: zod.number().nullish(),
             uploadedAt: zod.string().nullish(),
             reviewedAt: zod.string().nullish(),
+            reviewerId: zod.string().nullish(),
             reviewNotes: zod.string().nullish(),
+            rejectReason: zod.string().nullish(),
           }),
         )
         .optional(),
@@ -428,8 +442,269 @@ export const UpdateConsignmentStatusResponse = zod.object({
   status: zod.string(),
   submittedAt: zod.string().nullish(),
   approvedAt: zod.string().nullish(),
+  reviewerId: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
+  reviewNotes: zod.string().nullish(),
   createdAt: zod.string(),
   updatedAt: zod.string().nullish(),
+});
+
+/**
+ * @summary List consignments for admin review queue
+ */
+export const AdminListConsignmentsQueryParams = zod.object({
+  status: zod.coerce.string().optional(),
+  hub: zod.coerce.string().optional(),
+  commodity: zod.coerce.string().optional(),
+  exporterId: zod.coerce.string().optional(),
+  dateFrom: zod.coerce.string().optional(),
+  dateTo: zod.coerce.string().optional(),
+  search: zod.coerce.string().optional(),
+  limit: zod.coerce.number().optional(),
+  offset: zod.coerce.number().optional(),
+});
+
+export const AdminListConsignmentsResponse = zod.object({
+  items: zod.array(
+    zod
+      .object({
+        id: zod.string(),
+        referenceNo: zod.string(),
+        userId: zod.string(),
+        commodityName: zod.string(),
+        commodityCategory: zod.string().nullish(),
+        hsCode: zod.string().nullish(),
+        quantity: zod.number(),
+        unit: zod.string(),
+        qualityGrade: zod.string().nullish(),
+        originCountry: zod.string(),
+        packingType: zod.string().nullish(),
+        targetHubCode: zod.string().nullish(),
+        incoterms: zod.string(),
+        askingPriceCents: zod.number().nullish(),
+        askingCurrency: zod.string().nullish(),
+        estimatedValueCents: zod.number().nullish(),
+        harvestDate: zod.string().nullish(),
+        batchNumber: zod.string().nullish(),
+        notes: zod.string().nullish(),
+        complianceDeclarations: zod
+          .record(zod.string(), zod.unknown())
+          .nullish(),
+        status: zod.string(),
+        submittedAt: zod.string().nullish(),
+        approvedAt: zod.string().nullish(),
+        reviewerId: zod.string().nullish(),
+        reviewedAt: zod.string().nullish(),
+        reviewNotes: zod.string().nullish(),
+        createdAt: zod.string(),
+        updatedAt: zod.string().nullish(),
+      })
+      .and(
+        zod.object({
+          exporterName: zod.string().nullish(),
+          exporterEmail: zod.string().nullish(),
+        }),
+      ),
+  ),
+  sla: zod.object({
+    pendingTotal: zod.number(),
+    pendingOverSla: zod.number(),
+    slaHours: zod.number(),
+    oldestPendingHours: zod.number(),
+    avgReviewHoursLast7d: zod.number(),
+    reviewedLast7d: zod.number(),
+  }),
+});
+
+/**
+ * @summary Get consignment detail (admin)
+ */
+export const AdminGetConsignmentParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminGetConsignmentResponse = zod
+  .object({
+    id: zod.string(),
+    referenceNo: zod.string(),
+    userId: zod.string(),
+    commodityName: zod.string(),
+    commodityCategory: zod.string().nullish(),
+    hsCode: zod.string().nullish(),
+    quantity: zod.number(),
+    unit: zod.string(),
+    qualityGrade: zod.string().nullish(),
+    originCountry: zod.string(),
+    packingType: zod.string().nullish(),
+    targetHubCode: zod.string().nullish(),
+    incoterms: zod.string(),
+    askingPriceCents: zod.number().nullish(),
+    askingCurrency: zod.string().nullish(),
+    estimatedValueCents: zod.number().nullish(),
+    harvestDate: zod.string().nullish(),
+    batchNumber: zod.string().nullish(),
+    notes: zod.string().nullish(),
+    complianceDeclarations: zod.record(zod.string(), zod.unknown()).nullish(),
+    status: zod.string(),
+    submittedAt: zod.string().nullish(),
+    approvedAt: zod.string().nullish(),
+    reviewerId: zod.string().nullish(),
+    reviewedAt: zod.string().nullish(),
+    reviewNotes: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().nullish(),
+  })
+  .and(
+    zod.object({
+      documents: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            consignmentId: zod.string(),
+            docType: zod.string(),
+            docLabel: zod.string().nullish(),
+            isRequired: zod.boolean(),
+            status: zod.enum([
+              "pending",
+              "uploaded",
+              "verified",
+              "rejected",
+              "changes_requested",
+            ]),
+            fileName: zod.string().nullish(),
+            fileSize: zod.number().nullish(),
+            mimeType: zod.string().nullish(),
+            downloadPath: zod
+              .string()
+              .nullish()
+              .describe(
+                "API path that returns a short-lived signed URL (use GET to fetch a fresh one).",
+              ),
+            signedUrl: zod
+              .string()
+              .nullish()
+              .describe(
+                "Short-lived signed URL for direct download (expires after `signedUrlExpiresIn` seconds).",
+              ),
+            signedUrlExpiresIn: zod.number().nullish(),
+            uploadedAt: zod.string().nullish(),
+            reviewedAt: zod.string().nullish(),
+            reviewerId: zod.string().nullish(),
+            reviewNotes: zod.string().nullish(),
+            rejectReason: zod.string().nullish(),
+          }),
+        )
+        .optional(),
+      history: zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+      requirements: zod
+        .array(
+          zod.object({
+            docType: zod.string(),
+            label: zod.string(),
+            description: zod.string().optional(),
+            required: zod.boolean(),
+          }),
+        )
+        .optional(),
+    }),
+  )
+  .and(
+    zod.object({
+      exporter: zod.record(zod.string(), zod.unknown()).nullish(),
+    }),
+  );
+
+/**
+ * @summary Transition consignment status (admin)
+ */
+export const AdminUpdateConsignmentStatusParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const AdminUpdateConsignmentStatusBody = zod.object({
+  status: zod.enum(["Under Review", "Approved", "Rejected", "Needs More Info"]),
+  note: zod.string().optional(),
+});
+
+export const AdminUpdateConsignmentStatusResponse = zod.object({
+  id: zod.string(),
+  referenceNo: zod.string(),
+  userId: zod.string(),
+  commodityName: zod.string(),
+  commodityCategory: zod.string().nullish(),
+  hsCode: zod.string().nullish(),
+  quantity: zod.number(),
+  unit: zod.string(),
+  qualityGrade: zod.string().nullish(),
+  originCountry: zod.string(),
+  packingType: zod.string().nullish(),
+  targetHubCode: zod.string().nullish(),
+  incoterms: zod.string(),
+  askingPriceCents: zod.number().nullish(),
+  askingCurrency: zod.string().nullish(),
+  estimatedValueCents: zod.number().nullish(),
+  harvestDate: zod.string().nullish(),
+  batchNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  complianceDeclarations: zod.record(zod.string(), zod.unknown()).nullish(),
+  status: zod.string(),
+  submittedAt: zod.string().nullish(),
+  approvedAt: zod.string().nullish(),
+  reviewerId: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
+  reviewNotes: zod.string().nullish(),
+  createdAt: zod.string(),
+  updatedAt: zod.string().nullish(),
+});
+
+/**
+ * @summary Approve / reject / request changes on a single document (admin)
+ */
+export const AdminUpdateConsignmentDocumentParams = zod.object({
+  id: zod.coerce.string(),
+  docId: zod.coerce.string(),
+});
+
+export const AdminUpdateConsignmentDocumentBody = zod.object({
+  action: zod.enum(["approve", "reject", "request_replacement"]),
+  reason: zod.string().optional(),
+  notes: zod.string().optional(),
+});
+
+export const AdminUpdateConsignmentDocumentResponse = zod.object({
+  id: zod.string(),
+  consignmentId: zod.string(),
+  docType: zod.string(),
+  docLabel: zod.string().nullish(),
+  isRequired: zod.boolean(),
+  status: zod.enum([
+    "pending",
+    "uploaded",
+    "verified",
+    "rejected",
+    "changes_requested",
+  ]),
+  fileName: zod.string().nullish(),
+  fileSize: zod.number().nullish(),
+  mimeType: zod.string().nullish(),
+  downloadPath: zod
+    .string()
+    .nullish()
+    .describe(
+      "API path that returns a short-lived signed URL (use GET to fetch a fresh one).",
+    ),
+  signedUrl: zod
+    .string()
+    .nullish()
+    .describe(
+      "Short-lived signed URL for direct download (expires after `signedUrlExpiresIn` seconds).",
+    ),
+  signedUrlExpiresIn: zod.number().nullish(),
+  uploadedAt: zod.string().nullish(),
+  reviewedAt: zod.string().nullish(),
+  reviewerId: zod.string().nullish(),
+  reviewNotes: zod.string().nullish(),
+  rejectReason: zod.string().nullish(),
 });
 
 /**

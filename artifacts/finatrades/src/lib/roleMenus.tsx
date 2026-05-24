@@ -120,7 +120,7 @@ export const ADMIN_MENU: MenuSection[] = [
     items: [
       { icon: <Users size={16} />, label: 'All Users', href: '/admin/users' },
       { icon: <ShieldCheck size={16} />, label: 'KYC Review', href: '/admin/kyc' },
-      { icon: <Package size={16} />, label: 'All Consignments', href: '/consignments' },
+      { icon: <Package size={16} />, label: 'Consignment Review', href: '/admin/consignments' },
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },

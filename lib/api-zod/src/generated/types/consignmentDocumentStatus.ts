@@ -14,4 +14,5 @@ export const ConsignmentDocumentStatus = {
   uploaded: "uploaded",
   verified: "verified",
   rejected: "rejected",
+  changes_requested: "changes_requested",
 } as const;

@@ -19,6 +19,11 @@ import type {
 import type {
   AcceptOfferInput,
   ActivityItem,
+  AdminConsignmentDetail,
+  AdminConsignmentDocumentUpdate,
+  AdminConsignmentQueue,
+  AdminConsignmentStatusUpdate,
+  AdminListConsignmentsParams,
   AuthResponse,
   B2BRegisterInput,
   B2BUser,
@@ -28,6 +33,7 @@ import type {
   CompanyProfileInput,
   Consignment,
   ConsignmentDetail,
+  ConsignmentDocument,
   ConsignmentEligibility,
   ConsignmentInput,
   ConsignmentRequirements,
@@ -1593,6 +1599,391 @@ export const useUpdateConsignmentStatus = <
   TContext
 > => {
   return useMutation(getUpdateConsignmentStatusMutationOptions(options));
+};
+
+/**
+ * @summary List consignments for admin review queue
+ */
+export const getAdminListConsignmentsUrl = (
+  params?: AdminListConsignmentsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/admin/consignments?${stringifiedParams}`
+    : `/api/admin/consignments`;
+};
+
+export const adminListConsignments = async (
+  params?: AdminListConsignmentsParams,
+  options?: RequestInit,
+): Promise<AdminConsignmentQueue> => {
+  return customFetch<AdminConsignmentQueue>(
+    getAdminListConsignmentsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getAdminListConsignmentsQueryKey = (
+  params?: AdminListConsignmentsParams,
+) => {
+  return [`/api/admin/consignments`, ...(params ? [params] : [])] as const;
+};
+
+export const getAdminListConsignmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListConsignments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListConsignmentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListConsignments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminListConsignmentsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListConsignments>>
+  > = ({ signal }) =>
+    adminListConsignments(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListConsignments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListConsignmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListConsignments>>
+>;
+export type AdminListConsignmentsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List consignments for admin review queue
+ */
+
+export function useAdminListConsignments<
+  TData = Awaited<ReturnType<typeof adminListConsignments>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: AdminListConsignmentsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminListConsignments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListConsignmentsQueryOptions(params, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get consignment detail (admin)
+ */
+export const getAdminGetConsignmentUrl = (id: string) => {
+  return `/api/admin/consignments/${id}`;
+};
+
+export const adminGetConsignment = async (
+  id: string,
+  options?: RequestInit,
+): Promise<AdminConsignmentDetail> => {
+  return customFetch<AdminConsignmentDetail>(getAdminGetConsignmentUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminGetConsignmentQueryKey = (id: string) => {
+  return [`/api/admin/consignments/${id}`] as const;
+};
+
+export const getAdminGetConsignmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminGetConsignment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetConsignment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminGetConsignmentQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminGetConsignment>>
+  > = ({ signal }) => adminGetConsignment(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminGetConsignment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminGetConsignmentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminGetConsignment>>
+>;
+export type AdminGetConsignmentQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get consignment detail (admin)
+ */
+
+export function useAdminGetConsignment<
+  TData = Awaited<ReturnType<typeof adminGetConsignment>>,
+  TError = ErrorType<unknown>,
+>(
+  id: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof adminGetConsignment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminGetConsignmentQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Transition consignment status (admin)
+ */
+export const getAdminUpdateConsignmentStatusUrl = (id: string) => {
+  return `/api/admin/consignments/${id}/status`;
+};
+
+export const adminUpdateConsignmentStatus = async (
+  id: string,
+  adminConsignmentStatusUpdate: AdminConsignmentStatusUpdate,
+  options?: RequestInit,
+): Promise<Consignment> => {
+  return customFetch<Consignment>(getAdminUpdateConsignmentStatusUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(adminConsignmentStatusUpdate),
+  });
+};
+
+export const getAdminUpdateConsignmentStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>,
+    TError,
+    { id: string; data: BodyType<AdminConsignmentStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>,
+  TError,
+  { id: string; data: BodyType<AdminConsignmentStatusUpdate> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateConsignmentStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>,
+    { id: string; data: BodyType<AdminConsignmentStatusUpdate> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminUpdateConsignmentStatus(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateConsignmentStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>
+>;
+export type AdminUpdateConsignmentStatusMutationBody =
+  BodyType<AdminConsignmentStatusUpdate>;
+export type AdminUpdateConsignmentStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Transition consignment status (admin)
+ */
+export const useAdminUpdateConsignmentStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>,
+    TError,
+    { id: string; data: BodyType<AdminConsignmentStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateConsignmentStatus>>,
+  TError,
+  { id: string; data: BodyType<AdminConsignmentStatusUpdate> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateConsignmentStatusMutationOptions(options));
+};
+
+/**
+ * @summary Approve / reject / request changes on a single document (admin)
+ */
+export const getAdminUpdateConsignmentDocumentUrl = (
+  id: string,
+  docId: string,
+) => {
+  return `/api/admin/consignments/${id}/documents/${docId}`;
+};
+
+export const adminUpdateConsignmentDocument = async (
+  id: string,
+  docId: string,
+  adminConsignmentDocumentUpdate: AdminConsignmentDocumentUpdate,
+  options?: RequestInit,
+): Promise<ConsignmentDocument> => {
+  return customFetch<ConsignmentDocument>(
+    getAdminUpdateConsignmentDocumentUrl(id, docId),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(adminConsignmentDocumentUpdate),
+    },
+  );
+};
+
+export const getAdminUpdateConsignmentDocumentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>,
+    TError,
+    {
+      id: string;
+      docId: string;
+      data: BodyType<AdminConsignmentDocumentUpdate>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>,
+  TError,
+  { id: string; docId: string; data: BodyType<AdminConsignmentDocumentUpdate> },
+  TContext
+> => {
+  const mutationKey = ["adminUpdateConsignmentDocument"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>,
+    {
+      id: string;
+      docId: string;
+      data: BodyType<AdminConsignmentDocumentUpdate>;
+    }
+  > = (props) => {
+    const { id, docId, data } = props ?? {};
+
+    return adminUpdateConsignmentDocument(id, docId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminUpdateConsignmentDocumentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>
+>;
+export type AdminUpdateConsignmentDocumentMutationBody =
+  BodyType<AdminConsignmentDocumentUpdate>;
+export type AdminUpdateConsignmentDocumentMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Approve / reject / request changes on a single document (admin)
+ */
+export const useAdminUpdateConsignmentDocument = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>,
+    TError,
+    {
+      id: string;
+      docId: string;
+      data: BodyType<AdminConsignmentDocumentUpdate>;
+    },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminUpdateConsignmentDocument>>,
+  TError,
+  { id: string; docId: string; data: BodyType<AdminConsignmentDocumentUpdate> },
+  TContext
+> => {
+  return useMutation(getAdminUpdateConsignmentDocumentMutationOptions(options));
 };
 
 /**

@@ -21,6 +21,8 @@ import KycPage from "@/pages/dashboard/KycPage";
 import ProfilePage from "@/pages/dashboard/ProfilePage";
 import Wallet from "@/pages/dashboard/Wallet";
 import AdminWallets from "@/pages/dashboard/AdminWallets";
+import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
+import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import { Suspense, useEffect } from "react";
 import { canAccess } from "@/lib/roleMenus";
 
@@ -62,6 +64,36 @@ function ProtectedRoute({ component: Component, path }: { component: React.Compo
     );
   }
 
+  return (
+    <DashboardLayout>
+      <Suspense fallback={<PageLoader />}>
+        <Component />
+      </Suspense>
+    </DashboardLayout>
+  );
+}
+
+function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+  const { user, loading } = useAuth();
+  const [, setLocation] = useLocation();
+  useEffect(() => {
+    if (!loading && !user) setLocation('/login');
+  }, [user, loading, setLocation]);
+  if (loading || !user) return <PageLoader />;
+  if (user.role !== 'admin') {
+    return (
+      <DashboardLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+          <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-5"
+            style={{ background: 'rgba(199,59,34,0.08)', border: '1.5px solid rgba(199,59,34,0.15)' }}>
+            <span className="text-2xl">🔒</span>
+          </div>
+          <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>Admin Access Required</h2>
+          <p className="text-sm max-w-sm" style={{ color: '#888880' }}>This page is for platform administrators only.</p>
+        </div>
+      </DashboardLayout>
+    );
+  }
   return (
     <DashboardLayout>
       <Suspense fallback={<PageLoader />}>
@@ -144,6 +176,12 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/wallets">
         <ProtectedRoute component={AdminWallets} />
+      </Route>
+      <Route path="/admin/consignments">
+        <AdminRoute component={AdminConsignmentsQueue} />
+      </Route>
+      <Route path="/admin/consignments/:id">
+        <AdminRoute component={AdminConsignmentReview} />
       </Route>
 
       {/* Account */}

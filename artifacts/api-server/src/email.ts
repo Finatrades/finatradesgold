@@ -952,6 +952,11 @@ export const EMAIL_TEMPLATES = {
   FINABRIDGE_SETTLEMENT_EXPORTER: 'finabridge_settlement_exporter',   // #12 settlement → exporter
   FINABRIDGE_DEAL_ROOM_CLOSED: 'finabridge_deal_room_closed',         // #13 deal room closed → both
   
+  // Consignment Admin Review
+  CONSIGNMENT_DOCS_APPROVED: 'consignment_docs_approved',
+  CONSIGNMENT_DOCS_REJECTED: 'consignment_docs_rejected',
+  CONSIGNMENT_DOCS_NEEDS_INFO: 'consignment_docs_needs_info',
+
   // Documents & Certificates
   CERTIFICATE_DELIVERY: 'certificate_delivery',
   INVOICE_DELIVERY: 'invoice_delivery',
@@ -3597,6 +3602,91 @@ export const DEFAULT_EMAIL_TEMPLATES = [
       { name: 'total_sales_gold', description: 'Total gold sold' },
       { name: 'realized_gains', description: 'Realized gains/losses' },
       { name: 'year_end_gold', description: 'Year-end gold holdings' },
+    ],
+    status: 'published' as const,
+  },
+  // Consignment Admin Review
+  {
+    slug: EMAIL_TEMPLATES.CONSIGNMENT_DOCS_APPROVED,
+    name: 'Consignment Documents Approved',
+    type: 'email' as const,
+    module: 'consignments',
+    subject: 'Consignment {{reference_no}} — Documents Approved',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Good news — the documents for your consignment <strong>{{reference_no}}</strong> ({{commodity_name}}, {{quantity}} {{unit}}) have been reviewed and <strong>approved</strong>. Your consignment is now cleared for physical inspection at the destination hub.</p>
+      <div style="background: #f0fdf4; border-left: 4px solid #22c55e; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #166534; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Reviewer Notes</p>
+        <p style="color: #374151; margin: 0; line-height: 1.6;">{{review_notes}}</p>
+      </div>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{consignment_url}}" style="background: #C73B22; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Consignment</a>
+      </p>
+    `,
+    variables: [
+      { name: 'user_name', description: 'Exporter full name' },
+      { name: 'reference_no', description: 'Consignment reference number' },
+      { name: 'commodity_name', description: 'Commodity name' },
+      { name: 'quantity', description: 'Quantity' },
+      { name: 'unit', description: 'Unit' },
+      { name: 'review_notes', description: 'Reviewer notes' },
+      { name: 'consignment_url', description: 'Deep link to consignment detail page' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.CONSIGNMENT_DOCS_REJECTED,
+    name: 'Consignment Documents Rejected',
+    type: 'email' as const,
+    module: 'consignments',
+    subject: 'Consignment {{reference_no}} — Documents Rejected',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">After reviewing your consignment <strong>{{reference_no}}</strong> ({{commodity_name}}, {{quantity}} {{unit}}), our compliance team was <strong>unable to approve</strong> the submitted documentation. You may submit a new consignment with the issues addressed.</p>
+      <div style="background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #991b1b; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">Reason</p>
+        <p style="color: #374151; margin: 0; line-height: 1.6;">{{review_notes}}</p>
+      </div>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{consignment_url}}" style="background: #C73B22; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">View Consignment</a>
+      </p>
+    `,
+    variables: [
+      { name: 'user_name', description: 'Exporter full name' },
+      { name: 'reference_no', description: 'Consignment reference number' },
+      { name: 'commodity_name', description: 'Commodity name' },
+      { name: 'quantity', description: 'Quantity' },
+      { name: 'unit', description: 'Unit' },
+      { name: 'review_notes', description: 'Rejection reason' },
+      { name: 'consignment_url', description: 'Deep link to consignment detail page' },
+    ],
+    status: 'published' as const,
+  },
+  {
+    slug: EMAIL_TEMPLATES.CONSIGNMENT_DOCS_NEEDS_INFO,
+    name: 'Consignment Needs More Information',
+    type: 'email' as const,
+    module: 'consignments',
+    subject: 'Consignment {{reference_no}} — More Information Required',
+    body: `
+      <p style="font-size: 16px; color: #1a1a1a; margin: 0 0 20px 0;">Hello {{user_name}},</p>
+      <p style="color: #374151; line-height: 1.7; margin: 0 0 20px 0;">Our reviewer needs additional information to complete the review of your consignment <strong>{{reference_no}}</strong> ({{commodity_name}}, {{quantity}} {{unit}}).</p>
+      <div style="background: #fffbeb; border-left: 4px solid #F59E0B; border-radius: 8px; padding: 20px 24px; margin: 24px 0;">
+        <p style="font-weight: 700; color: #92400e; margin: 0 0 8px 0; font-size: 14px; text-transform: uppercase; letter-spacing: 1px;">What's needed</p>
+        <p style="color: #374151; margin: 0; line-height: 1.6;">{{review_notes}}</p>
+      </div>
+      <p style="text-align: center; margin: 30px 0;">
+        <a href="{{consignment_url}}" style="background: #C73B22; color: white; padding: 14px 40px; text-decoration: none; border-radius: 8px; font-weight: 700; display: inline-block; font-size: 15px;">Open Consignment</a>
+      </p>
+    `,
+    variables: [
+      { name: 'user_name', description: 'Exporter full name' },
+      { name: 'reference_no', description: 'Consignment reference number' },
+      { name: 'commodity_name', description: 'Commodity name' },
+      { name: 'quantity', description: 'Quantity' },
+      { name: 'unit', description: 'Unit' },
+      { name: 'review_notes', description: 'Reviewer notes describing what is needed' },
+      { name: 'consignment_url', description: 'Deep link to consignment detail page' },
     ],
     status: 'published' as const,
   },

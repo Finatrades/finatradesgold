@@ -295,6 +295,12 @@ export interface Consignment {
   submittedAt?: string | null;
   /** @nullable */
   approvedAt?: string | null;
+  /** @nullable */
+  reviewerId?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
+  /** @nullable */
+  reviewNotes?: string | null;
   createdAt: string;
   /** @nullable */
   updatedAt?: string | null;
@@ -308,6 +314,7 @@ export const ConsignmentDocumentStatus = {
   uploaded: "uploaded",
   verified: "verified",
   rejected: "rejected",
+  changes_requested: "changes_requested",
 } as const;
 
 export interface ConsignmentDocument {
@@ -341,7 +348,11 @@ export interface ConsignmentDocument {
   /** @nullable */
   reviewedAt?: string | null;
   /** @nullable */
+  reviewerId?: string | null;
+  /** @nullable */
   reviewNotes?: string | null;
+  /** @nullable */
+  rejectReason?: string | null;
 }
 
 export type ConsignmentDetailHistoryItem = { [key: string]: unknown };
@@ -363,6 +374,67 @@ export interface ConsignmentRequirements {
   /** @nullable */
   category?: string | null;
   documents: ConsignmentDocumentRequirement[];
+}
+
+export type AdminConsignmentQueueRow = Consignment & {
+  /** @nullable */
+  exporterName?: string | null;
+  /** @nullable */
+  exporterEmail?: string | null;
+};
+
+export interface AdminConsignmentSla {
+  pendingTotal: number;
+  pendingOverSla: number;
+  slaHours: number;
+  oldestPendingHours: number;
+  avgReviewHoursLast7d: number;
+  reviewedLast7d: number;
+}
+
+export interface AdminConsignmentQueue {
+  items: AdminConsignmentQueueRow[];
+  sla: AdminConsignmentSla;
+}
+
+/**
+ * @nullable
+ */
+export type AdminConsignmentDetailExporter = { [key: string]: unknown } | null;
+
+export type AdminConsignmentDetail = ConsignmentDetail & {
+  /** @nullable */
+  exporter?: AdminConsignmentDetailExporter;
+};
+
+export type AdminConsignmentStatusUpdateStatus =
+  (typeof AdminConsignmentStatusUpdateStatus)[keyof typeof AdminConsignmentStatusUpdateStatus];
+
+export const AdminConsignmentStatusUpdateStatus = {
+  Under_Review: "Under Review",
+  Approved: "Approved",
+  Rejected: "Rejected",
+  Needs_More_Info: "Needs More Info",
+} as const;
+
+export interface AdminConsignmentStatusUpdate {
+  status: AdminConsignmentStatusUpdateStatus;
+  note?: string;
+}
+
+export type AdminConsignmentDocumentUpdateAction =
+  (typeof AdminConsignmentDocumentUpdateAction)[keyof typeof AdminConsignmentDocumentUpdateAction];
+
+export const AdminConsignmentDocumentUpdateAction = {
+  approve: "approve",
+  reject: "reject",
+  request_replacement: "request_replacement",
+} as const;
+
+export interface AdminConsignmentDocumentUpdate {
+  action: AdminConsignmentDocumentUpdateAction;
+  reason?: string;
+  notes?: string;
 }
 
 export interface ConsignmentEligibility {
@@ -823,4 +895,16 @@ export interface Warehouse {
 
 export type GetConsignmentRequirementsParams = {
   category?: string;
+};
+
+export type AdminListConsignmentsParams = {
+  status?: string;
+  hub?: string;
+  commodity?: string;
+  exporterId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  search?: string;
+  limit?: number;
+  offset?: number;
 };

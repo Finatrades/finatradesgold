@@ -6790,7 +6790,7 @@ export const consignmentDocTypeEnum = pgEnum('consignment_doc_type', [
 ]);
 
 export const consignmentDocStatusEnum = pgEnum('consignment_doc_status', [
-  'pending', 'uploaded', 'verified', 'rejected'
+  'pending', 'uploaded', 'verified', 'rejected', 'changes_requested'
 ]);
 
 export const qualityGradeEnum = pgEnum('quality_grade', ['A+', 'A', 'B+', 'B', 'C', 'D']);
@@ -6874,6 +6874,9 @@ export const consignments = pgTable("consignments", {
   status: consignmentStatusEnum("status").notNull().default('Draft'),
   notes: text("notes"),
   adminNotes: text("admin_notes"),
+  reviewerId: varchar("reviewer_id", { length: 255 }).references((): AnyPgColumn => users.id),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewNotes: text("review_notes"),
   submittedAt: timestamp("submitted_at"),
   approvedAt: timestamp("approved_at"),
   approvedBy: varchar("approved_by", { length: 255 }).references((): AnyPgColumn => users.id),
@@ -6902,6 +6905,7 @@ export const consignmentDocuments = pgTable("consignment_documents", {
   reviewedAt: timestamp("reviewed_at"),
   reviewerId: varchar("reviewer_id", { length: 255 }).references((): AnyPgColumn => users.id),
   reviewNotes: text("review_notes"),
+  rejectReason: text("reject_reason"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
