@@ -1,556 +1,585 @@
-import React from 'react';
-import {
-  RadialBarChart, RadialBar, PieChart, Pie, Cell, AreaChart, Area,
-  BarChart, Bar, LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid
+import React, { useState } from 'react';
+import { 
+  CheckCircle2, AlertCircle, XCircle, TrendingUp, TrendingDown, 
+  ArrowUpRight, ShieldCheck, ChevronRight, Activity, 
+  Package, DollarSign, Wallet, FileText, Anchor, Settings, Plus,
+  List, Send, FileSearch, ArrowRight, Eye, ShieldAlert,
+  Clock, Lock, Globe, FileCheck, Info, Check, CircleDot, Circle
+} from 'lucide-react';
+import { 
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+  PieChart, Pie, Cell, LineChart, Line, Legend 
 } from 'recharts';
-import { ShieldCheck, Search, Bell, Settings, ArrowRight, PlaySquare, CheckCircle2, Circle, TrendingUp, ArrowUpRight, ArrowDownRight, Ship, FileCheck, Box, Tag, FileText } from 'lucide-react';
 
-const COLORS = {
+// --- Brand Tokens (Directly Mapped) ---
+const theme = {
   primary: '#C73B22',
+  primaryHover: '#A82F1B',
   coral: '#E86A4F',
-  cream: '#FAFAF8',
-  dark: '#1A1A1A',
-  muted: '#888880',
+  bg: '#FAFAF8',
+  surface: '#FFFFFF',
+  text: '#1A1A1A',
+  textSecondary: '#4A4A48',
+  textMuted: '#888880',
   border: '#E8E2DC',
+  subtle: '#F5F0EB',
+  gridline: '#F0EBE5',
   success: '#059669',
   warning: '#D97706',
   info: '#2563EB',
-  gold: '#D4AF37'
+  gold: '#D4AF37',
+  shadowCard: '0 1px 2px rgba(26,26,26,0.04), 0 4px 12px rgba(26,26,26,0.04)',
+  shadowHover: '0 4px 6px rgba(26,26,26,0.04), 0 12px 24px rgba(26,26,26,0.06)',
 };
 
-const KPI_DATA = [
-  { name: 'Active Consignments', value: 8, total: 12, unit: '', fill: COLORS.primary },
-  { name: 'Verified Inventory', value: 1240, total: 2000, unit: ' MT', fill: COLORS.coral },
-  { name: 'Open RFQs', value: 12, total: null, delta: '+3', fill: COLORS.info },
-  { name: 'Escrow Locked', value: 4.2, total: 6.0, unit: 'M', fill: COLORS.warning }
+// --- Mock Data ---
+const revenueData = [
+  { week: 'W1', rev: 1200000, vol: 150 },
+  { week: 'W2', rev: 1400000, vol: 180 },
+  { week: 'W3', rev: 1100000, vol: 140 },
+  { week: 'W4', rev: 1800000, vol: 210 },
+  { week: 'W5', rev: 1500000, vol: 190 },
+  { week: 'W6', rev: 2100000, vol: 260 },
+  { week: 'W7', rev: 1900000, vol: 240 },
+  { week: 'W8', rev: 2500000, vol: 300 },
+  { week: 'W9', rev: 2300000, vol: 280 },
+  { week: 'W10', rev: 2800000, vol: 330 },
+  { week: 'W11', rev: 3100000, vol: 370 },
+  { week: 'W12', rev: 3400000, vol: 410 },
 ];
 
-const HEALTH_SCORE = 87;
-
-const COMMODITY_MIX = [
-  { name: 'Cocoa', value: 38, fill: '#8D5524' },
-  { name: 'Cotton', value: 24, fill: '#E5E5E5' },
-  { name: 'Coffee', value: 18, fill: '#6F4E37' },
-  { name: 'Lithium', value: 12, fill: '#B0B0B0' },
-  { name: 'Gold', value: 8, fill: COLORS.gold }
+const commodityMix = [
+  { name: 'Cocoa', value: 450, color: '#C73B22' },
+  { name: 'Coffee', value: 380, color: '#D97706' },
+  { name: 'Cotton', value: 260, color: '#2563EB' },
+  { name: 'Gold', value: 150, color: '#D4AF37' },
 ];
 
-const REVENUE_TREND = [
-  { week: 'W1', revenue: 120, volume: 80 },
-  { week: 'W2', revenue: 132, volume: 85 },
-  { week: 'W3', revenue: 145, volume: 92 },
-  { week: 'W4', revenue: 138, volume: 88 },
-  { week: 'W5', revenue: 160, volume: 105 },
-  { week: 'W6', revenue: 175, volume: 110 },
-  { week: 'W7', revenue: 182, volume: 115 },
-  { week: 'W8', revenue: 170, volume: 108 },
-  { week: 'W9', revenue: 195, volume: 125 },
-  { week: 'W10', revenue: 210, volume: 135 },
-  { week: 'W11', revenue: 225, volume: 142 },
-  { week: 'W12', revenue: 240, volume: 150 },
+const cases = [
+  { ref: 'FT-TRD-082', item: 'Cocoa Beans (Grade A)', qty: '200 MT', party: 'FT-IMP-104', rating: 4.8, status: 'in-progress', step: 2, escrow: '$450,000', action: 'Approve Doc' },
+  { ref: 'FT-TRD-091', item: 'Raw Cotton', qty: '150 MT', party: 'FT-IMP-201', rating: 4.5, status: 'pending', step: 1, escrow: '$210,000', action: 'Sign Contract' },
+  { ref: 'FT-TRD-103', item: 'Arabica Coffee', qty: '80 MT', party: 'FT-IMP-099', rating: 4.9, status: 'done', step: 3, escrow: '$180,000', action: 'Release Funds' },
 ];
 
-const COMMODITY_TICKERS = [
-  { name: 'Cocoa', price: '$9,840.50', delta: '+2.4%', up: true, data: [4,5,4,6,7,6,8,9,8,10] },
-  { name: 'Cotton', price: '$82.45', delta: '-0.8%', up: false, data: [8,7,8,6,5,6,4,5,4,3] },
-  { name: 'Coffee', price: '$4,210.00', delta: '+1.2%', up: true, data: [3,4,3,5,4,6,5,7,8,7] },
-  { name: 'Gold', price: '$2,345.80', delta: '+0.5%', up: true, data: [5,6,5,7,8,7,9,8,10,9] },
+const tickerData = [
+  { name: 'Cocoa', price: '$8,420', delta: '+1.2%', up: true },
+  { name: 'Coffee', price: '$214.50', delta: '-0.8%', up: false },
+  { name: 'Cotton', price: '$88.20', delta: '+0.5%', up: true },
+  { name: 'Gold', price: '$2,340', delta: '+2.1%', up: true },
 ];
 
-const TRADE_CASES = [
-  { ref: 'TRD-2024-089', commodity: 'Cocoa Beans', counterparty: 'FT-IMP-8832', rating: 4.8, progress: 70, status: 'shipment', amount: '1.2M', currency: 'USD' },
-  { ref: 'TRD-2024-092', commodity: 'Raw Cotton', counterparty: 'FT-IMP-1145', rating: 4.5, progress: 30, status: 'lc_issued', amount: '850K', currency: 'EUR' },
-  { ref: 'TRD-2024-095', commodity: 'Arabica Coffee', counterparty: 'FT-IMP-6621', rating: 4.9, progress: 100, status: 'completed', amount: '2.1M', currency: 'USD' }
-];
+// --- Subcomponents ---
 
-const WALLET_BALANCES = [
-  { currency: 'USD', available: 1250000, escrow: 4200000, pending: 850000 },
-  { currency: 'EUR', available: 450000, escrow: 1200000, pending: 320000 },
-  { currency: 'GBP', available: 85000, escrow: 250000, pending: 0 }
-];
+const RadialGauge = ({ value, max, label, subLabel, delta, color = theme.primary }) => {
+  const radius = 36;
+  const circumference = 2 * Math.PI * radius;
+  const percent = max ? (value / max) : (value > 0 ? 1 : 0);
+  const offset = circumference - percent * circumference;
+
+  return (
+    <div className="flex flex-col items-center justify-center p-4">
+      <div className="relative w-[88px] h-[88px] flex items-center justify-center mb-3">
+        <svg className="absolute inset-0 w-full h-full transform -rotate-90">
+          <circle cx="44" cy="44" r={radius} stroke={theme.subtle} strokeWidth="10" fill="none" />
+          <circle 
+            cx="44" cy="44" r={radius} 
+            stroke={color} 
+            strokeWidth="10" 
+            fill="none" 
+            strokeDasharray={circumference} 
+            strokeDashoffset={offset}
+            strokeLinecap="round"
+            className="transition-all duration-700 ease-out"
+          />
+        </svg>
+        <div className="flex flex-col items-center z-10 text-center">
+          <span className="text-[20px] font-bold text-[#1A1A1A] tabular-nums leading-none mb-0.5">{value}</span>
+        </div>
+      </div>
+      <div className="flex flex-col items-center">
+        <span className="text-[13px] font-semibold text-[#1A1A1A] mb-0.5">{label}</span>
+        <span className="text-[12px] text-[#4A4A48] font-medium mb-1.5">{subLabel}</span>
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#FAFAF8] border border-[#E8E2DC] text-[11px] font-medium">
+          {delta.startsWith('+') ? <TrendingUp size={12} color={theme.success} /> : <span className="w-1" />}
+          <span style={{ color: delta.startsWith('+') ? theme.success : theme.textSecondary }}>{delta}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const Speedometer = ({ value }) => {
+  const radius = 60;
+  const circumference = Math.PI * radius;
+  const percent = value / 100;
+  const offset = circumference - percent * circumference;
+
+  return (
+    <div className="relative w-[140px] h-[80px] overflow-hidden flex flex-col items-center">
+      <svg className="w-full h-full" viewBox="0 0 140 80">
+        <path d="M 10 70 A 60 60 0 0 1 130 70" stroke={theme.subtle} strokeWidth="14" fill="none" strokeLinecap="round" />
+        <path 
+          d="M 10 70 A 60 60 0 0 1 130 70" 
+          stroke={theme.success} 
+          strokeWidth="14" 
+          fill="none" 
+          strokeDasharray={circumference} 
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="transition-all duration-1000 ease-out"
+        />
+      </svg>
+      <div className="absolute bottom-1 flex flex-col items-center">
+        <span className="text-[32px] font-bold text-[#1A1A1A] tabular-nums leading-none">{value}</span>
+        <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider mt-1">Excellent</span>
+      </div>
+    </div>
+  );
+};
+
+const ProgressMeter = ({ label, value, color }) => (
+  <div className="flex flex-col gap-1.5 w-full">
+    <div className="flex justify-between items-center text-[13px]">
+      <span className="text-[#4A4A48] font-medium">{label}</span>
+      <span className="text-[#1A1A1A] font-semibold tabular-nums">{value}%</span>
+    </div>
+    <div className="h-1.5 w-full rounded-full bg-[#F0EBE5] overflow-hidden">
+      <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${value}%`, backgroundColor: color }} />
+    </div>
+  </div>
+);
+
+const WalletMeter = ({ currency, total, available, locked, pending }) => {
+  const totalVal = available + locked + pending;
+  const avPct = (available / totalVal) * 100;
+  const lkPct = (locked / totalVal) * 100;
+  const pdPct = (pending / totalVal) * 100;
+
+  return (
+    <div className="flex flex-col gap-2.5 mb-5">
+      <div className="flex justify-between items-baseline">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-[#F5F0EB] border border-[#E8E2DC] flex items-center justify-center text-[12px] font-bold text-[#1A1A1A]">
+            {currency}
+          </div>
+          <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">
+            {currency === 'USD' ? '$' : currency === 'EUR' ? '€' : '£'}
+            {total.toLocaleString()}
+          </span>
+        </div>
+      </div>
+      <div className="h-2 w-full flex rounded-full overflow-hidden">
+        <div style={{ width: `${avPct}%`, backgroundColor: theme.primary }} className="h-full border-r border-[#FFFFFF]" />
+        <div style={{ width: `${lkPct}%`, backgroundColor: theme.coral }} className="h-full border-r border-[#FFFFFF]" />
+        <div style={{ width: `${pdPct}%`, backgroundColor: theme.subtle }} className="h-full" />
+      </div>
+      <div className="flex justify-between text-[11px] font-medium uppercase tracking-wider">
+        <span className="text-[#4A4A48] flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: theme.primary}}/> Avail: {avPct.toFixed(0)}%</span>
+        <span className="text-[#4A4A48] flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: theme.coral}}/> Lock: {lkPct.toFixed(0)}%</span>
+        <span className="text-[#888880] flex items-center gap-1.5"><div className="w-2 h-2 rounded-full" style={{backgroundColor: theme.subtle}}/> Pend: {pdPct.toFixed(0)}%</span>
+      </div>
+    </div>
+  );
+};
+
+// --- Main Dashboard Component ---
 
 export default function PremiumFintech() {
   return (
-    <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans selection:bg-[#E86A4F] selection:text-white" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="min-h-screen bg-[#FAFAF8] text-[#1A1A1A] font-sans selection:bg-[#C73B22] selection:text-white" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
       
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-[#FAFAF8]/90 backdrop-blur-md border-b border-[#E8E2DC] px-8 py-4 flex items-center justify-between">
+      {/* Top Navbar */}
+      <header className="sticky top-0 z-50 bg-[#FFFFFF]/90 backdrop-blur-md border-b border-[#E8E2DC] px-6 h-16 flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#C73B22] to-[#E86A4F] flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-[#C73B22]/20">
-            F
-          </div>
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-[#1A1A1A]">Welcome back, Charan</h1>
-            <div className="flex items-center gap-2 text-sm text-[#888880]">
-              <span>Exporter</span>
-              <span className="w-1 h-1 rounded-full bg-[#E8E2DC]" />
-              <span>Raminvest Holding DIFC</span>
-              <span className="w-1 h-1 rounded-full bg-[#E8E2DC]" />
-              <span className="font-mono text-xs bg-[#E8E2DC]/50 px-1.5 py-0.5 rounded">FT-EXP-04821</span>
-              <span className="w-1 h-1 rounded-full bg-[#E8E2DC]" />
-              <span className="flex items-center gap-1 text-[#059669] bg-[#059669]/10 px-2 py-0.5 rounded-full text-xs font-medium">
-                <ShieldCheck className="w-3 h-3" />
-                Corporate KYC Approved
-              </span>
+          <div className="flex flex-col">
+            <h1 className="text-[16px] font-semibold text-[#1A1A1A] leading-tight">Welcome back, Charan</h1>
+            <div className="flex items-center gap-2 mt-0.5">
+              <span className="text-[13px] text-[#4A4A48]">Exporter</span>
+              <span className="text-[#E8E2DC]">•</span>
+              <span className="text-[13px] text-[#4A4A48]">Raminvest Holding DIFC</span>
+              <span className="text-[#E8E2DC]">•</span>
+              <span className="text-[12px] text-[#888880] font-mono tracking-tight">FT-EXP-04821</span>
             </div>
           </div>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <button className="p-2 text-[#888880] hover:text-[#1A1A1A] hover:bg-[#E8E2DC]/50 rounded-full transition-colors relative">
-            <Search className="w-5 h-5" />
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-2 px-3 py-1.5 bg-[#059669]/10 text-[#059669] rounded-full border border-[#059669]/20">
+            <ShieldCheck size={14} />
+            <span className="text-[11px] font-semibold uppercase tracking-wider">Corporate KYC Approved</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2.5 w-2.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#059669] opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#059669]"></span>
+            </span>
+            <span className="text-[13px] font-medium text-[#4A4A48]">Platform Active</span>
+          </div>
+          <button aria-label="Settings" className="p-2 w-10 h-10 flex items-center justify-center text-[#4A4A48] hover:text-[#1A1A1A] hover:bg-[#F5F0EB] rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+            <Settings size={20} />
           </button>
-          <button className="p-2 text-[#888880] hover:text-[#1A1A1A] hover:bg-[#E8E2DC]/50 rounded-full transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-[#C73B22] rounded-full border-2 border-[#FAFAF8]" />
-          </button>
-          <button className="p-2 text-[#888880] hover:text-[#1A1A1A] hover:bg-[#E8E2DC]/50 rounded-full transition-colors">
-            <Settings className="w-5 h-5" />
-          </button>
-          <div className="w-px h-6 bg-[#E8E2DC] mx-2" />
-          <img src="https://i.pravatar.cc/150?u=charan" alt="Profile" className="w-10 h-10 rounded-full border border-[#E8E2DC]" />
         </div>
       </header>
 
-      <main className="max-w-[1280px] mx-auto p-8 grid grid-cols-12 gap-8">
+      {/* Main Layout */}
+      <main className="max-w-[1280px] mx-auto px-6 py-6 pb-24">
         
-        {/* LEFT COLUMN (8/12) */}
-        <div className="col-span-8 space-y-8">
-          
-          {/* Hero KPI Band */}
-          <section className="bg-gradient-to-br from-white to-[#FAFAF8] rounded-3xl p-6 shadow-sm border border-[#E8E2DC] relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-[#E86A4F]/5 to-transparent pointer-events-none" />
+        {/* Ticker Strip */}
+        <div className="flex items-center gap-6 mb-6 bg-[#FFFFFF] border border-[#E8E2DC] rounded-2xl px-4 py-2" style={{ boxShadow: theme.shadowCard }}>
+          <div className="flex items-center gap-2 border-r border-[#E8E2DC] pr-4 shrink-0">
+            <Activity size={16} color={theme.coral} />
+            <span className="text-[12px] font-bold text-[#1A1A1A] uppercase tracking-wider">Live Markets</span>
+          </div>
+          <div className="flex gap-8 overflow-x-auto no-scrollbar shrink-0">
+            {tickerData.map((tick, i) => (
+              <div key={i} className="flex items-center gap-3 shrink-0">
+                <span className="text-[13px] font-medium text-[#4A4A48]">{tick.name}</span>
+                <span className="text-[14px] font-bold font-mono text-[#1A1A1A]">{tick.price}</span>
+                <span className={`text-[13px] font-medium flex items-center ${tick.up ? 'text-[#059669]' : 'text-[#D97706]'}`}>
+                  {tick.up ? <ArrowUpRight size={14} className="mr-0.5" /> : <TrendingDown size={14} className="mr-0.5" />}
+                  {tick.delta}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Composite Hero Panel */}
+        <section className="bg-gradient-to-br from-[#FFFFFF] to-[#FAFAF8] rounded-3xl border border-[#E8E2DC] p-8 mb-6 relative overflow-hidden" style={{ boxShadow: theme.shadowCard }}>
+          <div className="absolute inset-0 bg-[#C73B22] opacity-[0.02] pointer-events-none mix-blend-multiply" />
+          <div className="grid grid-cols-12 gap-8 items-center relative z-10">
             
-            <div className="flex items-center justify-between mb-6 relative z-10">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <ActivityIcon /> Operating Metrics
-              </h2>
-              <button className="text-sm font-medium text-[#C73B22] hover:text-[#E86A4F] flex items-center gap-1 transition-colors">
-                Detailed Report <ArrowRight className="w-4 h-4" />
-              </button>
+            {/* KPI Rings */}
+            <div className="col-span-8 grid grid-cols-4 gap-4">
+              <RadialGauge value={8} max={12} label="Consignments" subLabel="8/12 Active" delta="+2 this week" color={theme.primary} />
+              <RadialGauge value={1240} max={2000} label="Verified Inventory" subLabel="1,240/2k MT" delta="62%" color={theme.info} />
+              <RadialGauge value={12} max={0} label="Open RFQs" subLabel="12 Active" delta="+3 today" color={theme.warning} />
+              <RadialGauge value={4.2} max={6.0} label="Escrow Locked" subLabel="$4.2M/$6M Comm" delta="70%" color={theme.success} />
             </div>
 
-            <div className="grid grid-cols-4 gap-4 relative z-10">
-              {KPI_DATA.map((kpi, i) => {
-                const percentage = kpi.total ? (kpi.value / kpi.total) * 100 : (i===2 ? 65 : 0); // Faked percentage for Open RFQs
-                return (
-                  <div key={i} className="flex flex-col items-center justify-center p-4 bg-white/50 rounded-2xl border border-[#E8E2DC]/50 backdrop-blur-sm">
-                    <div className="h-24 w-full relative">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <RadialBarChart 
-                          cx="50%" cy="50%" innerRadius="70%" outerRadius="100%" 
-                          barSize={10} data={[{ name: 'L1', value: 100, fill: '#E8E2DC' }, { name: 'L2', value: percentage, fill: kpi.fill }]} 
-                          startAngle={90} endAngle={-270}
-                        >
-                          <RadialBar background={false} dataKey="value" cornerRadius={10} />
-                        </RadialBarChart>
-                      </ResponsiveContainer>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <span className="text-xl font-bold tabular-nums">
-                          {kpi.value}{kpi.unit}
-                        </span>
-                        {kpi.delta && (
-                          <span className="text-xs font-medium text-[#059669] bg-[#059669]/10 px-1.5 rounded mt-1">{kpi.delta}</span>
-                        )}
-                      </div>
-                    </div>
-                    <span className="text-xs font-medium text-[#888880] mt-2 text-center leading-tight">
-                      {kpi.name}
-                    </span>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-
-          {/* Active Trade Cases */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
-                <PlaySquare className="w-5 h-5 text-[#888880]" /> Active Trade Cases
-              </h2>
-              <button className="text-sm font-medium text-[#1A1A1A] hover:bg-[#E8E2DC]/50 px-3 py-1.5 rounded-lg transition-colors border border-[#E8E2DC]">
-                View All
-              </button>
+            {/* Trade Health */}
+            <div className="col-span-4 pl-8 border-l border-[#E8E2DC] h-full flex flex-col justify-center">
+              <div className="flex flex-col items-center">
+                <div className="w-full flex justify-between items-center mb-6">
+                  <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider">Trade Health Score</h2>
+                  <Info size={16} className="text-[#888880] cursor-pointer" />
+                </div>
+                <Speedometer value={87} />
+                
+                <div className="w-full grid grid-cols-2 gap-x-8 gap-y-4 mt-6">
+                  <ProgressMeter label="On-time delivery" value={92} color={theme.success} />
+                  <ProgressMeter label="Compliance" value={95} color={theme.success} />
+                  <ProgressMeter label="Counterparty rating" value={94} color={theme.primary} />
+                  <ProgressMeter label="Doc completeness" value={78} color={theme.warning} />
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-4">
-              {TRADE_CASES.map((trade, i) => (
-                <div key={i} className="group p-4 rounded-2xl border border-[#E8E2DC] hover:border-[#E86A4F]/50 hover:shadow-md transition-all bg-[#FAFAF8]/50">
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="font-mono text-sm font-medium">{trade.ref}</span>
-                        <span className="w-1 h-1 rounded-full bg-[#E8E2DC]" />
-                        <span className="font-medium text-[#C73B22]">{trade.commodity}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-[#888880]">
-                        <span>Buyer: <span className="font-mono text-[#1A1A1A]">{trade.counterparty}</span></span>
-                        <span className="flex items-center text-[#D97706]"><StarIcon /> {trade.rating}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="font-semibold tabular-nums text-lg">{trade.currency} {trade.amount}</div>
-                      <div className="text-xs text-[#888880]">Escrow Value</div>
-                    </div>
-                  </div>
+          </div>
+        </section>
 
-                  {/* Segmented Progress Bar */}
-                  <div className="relative pt-2 pb-6">
-                    <div className="h-2 w-full bg-[#E8E2DC] rounded-full overflow-hidden flex">
-                      <div className={`h-full ${trade.progress >= 30 ? 'bg-[#059669]' : 'bg-transparent'} transition-all duration-1000`} style={{ width: '30%' }} />
-                      <div className={`h-full ${trade.progress >= 70 ? 'bg-[#2563EB]' : trade.progress > 30 ? 'bg-[#2563EB]/40' : 'bg-transparent'} transition-all duration-1000 border-l border-white/20`} style={{ width: '40%' }} />
-                      <div className={`h-full ${trade.progress === 100 ? 'bg-[#D4AF37]' : trade.progress > 70 ? 'bg-[#D4AF37]/40' : 'bg-transparent'} transition-all duration-1000 border-l border-white/20`} style={{ width: '30%' }} />
-                    </div>
+        {/* Mid Section Grid */}
+        <div className="grid grid-cols-12 gap-6 mb-6">
+          
+          {/* Main Content Area */}
+          <div className="col-span-8 flex flex-col gap-6">
+            
+            {/* Active Trade Cases */}
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6 flex flex-col" style={{ boxShadow: theme.shadowCard }}>
+              <div className="flex justify-between items-end mb-6">
+                <div>
+                  <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-2">Active Trade Cases</h2>
+                  <div className="text-[24px] font-bold text-[#1A1A1A]">3 Cases Requiring Action</div>
+                </div>
+                <button className="h-[40px] px-4 text-[14px] font-semibold text-[#C73B22] flex items-center gap-1.5 hover:bg-[#F5F0EB] focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40 rounded-xl transition-colors border border-transparent hover:border-[#E8E2DC]">
+                  View all <ArrowRight size={16} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4">
+                {cases.map((c, i) => (
+                  <div key={i} className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-[#E8E2DC] bg-[#FAFAF8] hover:bg-[#FFFFFF] hover:border-[#DDD5CC] transition-all" style={{ boxShadow: '0 2px 8px rgba(26,26,26,0.02)' }}>
                     
-                    <div className="absolute top-6 left-0 w-full flex justify-between text-[10px] font-medium text-[#888880]">
-                      <span className={`flex items-center gap-1 ${trade.progress >= 30 ? 'text-[#059669]' : ''}`}><CheckCircle2 className="w-3 h-3" /> LC Issued</span>
-                      <span className={`flex items-center gap-1 ${trade.progress >= 70 ? 'text-[#2563EB]' : ''}`}>{trade.progress >= 70 ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />} Shipment</span>
-                      <span className={`flex items-center gap-1 ${trade.progress === 100 ? 'text-[#D4AF37]' : ''}`}>{trade.progress === 100 ? <CheckCircle2 className="w-3 h-3" /> : <Circle className="w-3 h-3" />} Goods Received</span>
+                    <div className="flex flex-col gap-1 w-full md:w-[22%] mb-4 md:mb-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[13px] font-medium font-mono text-[#888880]">{c.ref}</span>
+                        {c.status === 'done' && <CheckCircle2 size={14} className="text-[#059669]" />}
+                        {c.status === 'in-progress' && <CircleDot size={14} className="text-[#2563EB]" />}
+                        {c.status === 'pending' && <Circle size={14} className="text-[#D97706]" />}
+                      </div>
+                      <span className="text-[14px] font-bold text-[#1A1A1A] leading-tight">{c.item}</span>
+                      <span className="text-[13px] text-[#4A4A48]">{c.qty}</span>
                     </div>
+
+                    <div className="flex flex-col gap-1 w-full md:w-[20%] mb-4 md:mb-0">
+                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Counterparty</span>
+                      <span className="text-[14px] font-mono font-medium text-[#1A1A1A]">{c.party}</span>
+                      <span className="text-[12px] font-medium text-[#D97706]">★ {c.rating}/5.0</span>
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full md:w-[24%] mb-4 md:mb-0">
+                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider">Milestone</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <div className={`h-2 flex-1 rounded-l-full ${c.step >= 1 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                        <div className={`h-2 flex-1 ${c.step >= 2 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                        <div className={`h-2 flex-1 rounded-r-full ${c.step >= 3 ? 'bg-[#059669]' : 'bg-[#E8E2DC]'}`} />
+                      </div>
+                      <div className="flex justify-between items-center text-[11px] font-semibold">
+                        <span className={c.step >= 1 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Contract</span>
+                        <span className={c.step >= 2 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Docs</span>
+                        <span className={c.step >= 3 ? 'text-[#1A1A1A]' : 'text-[#888880]'}>Settled</span>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col w-full md:w-[15%] text-left md:text-right pr-4 mb-4 md:mb-0">
+                      <span className="text-[11px] font-semibold text-[#888880] uppercase tracking-wider mb-1">Escrow</span>
+                      <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">{c.escrow}</span>
+                    </div>
+
+                    <div className="flex w-full md:w-auto items-center justify-end gap-3">
+                      <button aria-label="View deal" className="h-[40px] w-[40px] flex items-center justify-center rounded-xl border border-[#E8E2DC] text-[#4A4A48] hover:bg-[#F5F0EB] hover:text-[#1A1A1A] transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+                        <Eye size={18} />
+                      </button>
+                      <button className="h-[40px] px-5 rounded-xl bg-[#C73B22] hover:bg-[#A82F1B] text-white text-[14px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40 focus:ring-offset-2">
+                        {c.action}
+                      </button>
+                    </div>
+
                   </div>
-                  
-                  <div className="mt-2 flex justify-end">
-                    <button className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white border border-[#E8E2DC] shadow-sm hover:border-[#C73B22] hover:text-[#C73B22] transition-colors flex items-center gap-1">
-                      {trade.progress === 100 ? 'View Settlement' : 'Upload BL Doc'} <ArrowUpRight className="w-3 h-3" />
-                    </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Revenue & Volume Chart */}
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6" style={{ boxShadow: theme.shadowCard }}>
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-2">Revenue & Volume</h2>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-[28px] font-bold text-[#1A1A1A] tabular-nums">$3.4M</span>
+                    <div className="flex items-center gap-1 text-[14px] font-semibold text-[#059669] bg-[#059669]/10 px-2 py-1 rounded-md">
+                      <TrendingUp size={16} /> +12%
+                    </div>
                   </div>
                 </div>
-              ))}
-            </div>
-          </section>
+                <div className="flex gap-4">
+                   <div className="flex items-center gap-2 text-[13px] font-medium text-[#4A4A48]">
+                     <div className="w-3 h-3 rounded-full bg-[#C73B22]" /> Revenue ($)
+                   </div>
+                   <div className="flex items-center gap-2 text-[13px] font-medium text-[#4A4A48]">
+                     <div className="w-3 h-3 rounded-full bg-[#2563EB]" /> Volume (MT)
+                   </div>
+                </div>
+              </div>
+              <div className="h-[280px] w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={revenueData} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor={theme.primary} stopOpacity={0.15}/>
+                        <stop offset="95%" stopColor={theme.primary} stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={theme.gridline} />
+                    <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme.textMuted, fontWeight: 500 }} dy={10} />
+                    <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme.textMuted, fontWeight: 500 }} tickFormatter={(val) => `$${val/1000000}M`} />
+                    <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: theme.textMuted, fontWeight: 500 }} tickFormatter={(val) => `${val}`} />
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #E8E2DC', boxShadow: theme.shadowCard, fontSize: '13px', fontFamily: 'Inter', padding: '12px' }}
+                      itemStyle={{ fontWeight: 600, paddingTop: '4px' }}
+                      labelStyle={{ color: '#888880', fontWeight: 600, textTransform: 'uppercase', fontSize: '11px', letterSpacing: '0.05em' }}
+                      formatter={(val, name) => [name === 'rev' ? `$${val.toLocaleString()}` : `${val} MT`, name === 'rev' ? 'Revenue' : 'Volume']}
+                    />
+                    <Area yAxisId="left" type="monotone" dataKey="rev" name="Revenue" stroke={theme.primary} strokeWidth={3} fill="url(#colorRev)" animationDuration={500} />
+                    <Line yAxisId="right" type="monotone" dataKey="vol" name="Volume" stroke={theme.info} strokeWidth={2} dot={false} animationDuration={500} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </section>
 
-          {/* Revenue & Volume Trend */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h2 className="text-lg font-semibold flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-[#888880]" /> Revenue & Volume
-                </h2>
-                <p className="text-sm text-[#888880]">12-week rolling trend</p>
-              </div>
-              <div className="flex gap-4 text-sm font-medium">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-[#C73B22]" /> Revenue ($M)</div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-sm bg-[#E8E2DC]" /> Volume (MT)</div>
-              </div>
-            </div>
+          </div>
+
+          {/* Right Rail */}
+          <div className="col-span-4 flex flex-col gap-6">
             
-            <div className="h-64 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={REVENUE_TREND} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#C73B22" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#C73B22" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E8E2DC" />
-                  <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888880' }} dy={10} />
-                  <YAxis yAxisId="left" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888880' }} />
-                  <YAxis yAxisId="right" orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#888880' }} />
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '12px', border: '1px solid #E8E2DC', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#1A1A1A', fontWeight: 600 }}
-                  />
-                  <Bar yAxisId="right" dataKey="volume" fill="#FAFAF8" stroke="#E8E2DC" radius={[4, 4, 0, 0]} barSize={20} />
-                  <Area yAxisId="left" type="monotone" dataKey="revenue" stroke="#C73B22" strokeWidth={3} fillOpacity={1} fill="url(#colorRev)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </section>
+            {/* Multi-currency Wallet */}
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6" style={{ boxShadow: theme.shadowCard }}>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider">Treasury Wallets</h2>
+                <Wallet size={18} className="text-[#888880]" />
+              </div>
+              
+              <div className="flex flex-col gap-2">
+                <WalletMeter currency="USD" total={4200500} available={1200000} locked={2800000} pending={200500} />
+                <WalletMeter currency="EUR" total={1850000} available={850000} locked={900000} pending={100000} />
+              </div>
+              
+              <div className="mt-6 flex flex-col gap-3">
+                <button className="h-[44px] w-full bg-[#C73B22] hover:bg-[#A82F1B] text-white rounded-xl text-[14px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+                  Open wallet
+                </button>
+                <button className="h-[44px] w-full bg-transparent border border-[#E8E2DC] hover:bg-[#FAFAF8] text-[#1A1A1A] rounded-xl text-[14px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+                  View FX rates
+                </button>
+              </div>
+            </section>
 
-          {/* Incoming RFQs Mini-list */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-            <h2 className="text-lg font-semibold mb-4">Incoming RFQs</h2>
-            <div className="space-y-3">
-               {[
-                  { comm: 'Coffee Beans', qty: '50 MT', cp: 'FT-IMP-08812', rating: '4.9', age: '2h ago' },
-                  { comm: 'Cotton', qty: '120 MT', cp: 'FT-IMP-01124', rating: '4.5', age: '5h ago' },
-                  { comm: 'Cocoa', qty: '80 MT', cp: 'FT-IMP-05531', rating: '4.7', age: '1d ago' }
-                ].map((rfq, i) => (
-                  <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-[#E8E2DC] bg-[#FAFAF8]/50">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium text-[#1A1A1A]">{rfq.comm} · {rfq.qty}</span>
-                        <span className="text-xs text-[#888880]">{rfq.age}</span>
+            {/* Commodity Mix */}
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6" style={{ boxShadow: theme.shadowCard }}>
+              <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-6">Commodity Mix</h2>
+              <div className="relative h-[200px] w-full flex items-center justify-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={commodityMix}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={70}
+                      outerRadius={95}
+                      paddingAngle={4}
+                      dataKey="value"
+                      stroke="none"
+                      animationDuration={500}
+                    >
+                      {commodityMix.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ borderRadius: '12px', border: '1px solid #E8E2DC', boxShadow: theme.shadowCard, fontSize: '13px' }}
+                      itemStyle={{ color: '#1A1A1A', fontWeight: 600 }}
+                      formatter={(val) => `${val} MT`}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-[24px] font-bold text-[#1A1A1A]">1,240</span>
+                  <span className="text-[12px] font-semibold text-[#888880]">TOTAL MT</span>
+                </div>
+              </div>
+              <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3">
+                {commodityMix.map((item, i) => (
+                  <div key={i} className="flex items-center justify-between text-[13px]">
+                    <div className="flex items-center gap-2">
+                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} />
+                      <span className="text-[#4A4A48] font-medium">{item.name}</span>
+                    </div>
+                    <span className="font-semibold text-[#1A1A1A] tabular-nums">{item.value}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Quick Actions */}
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6" style={{ boxShadow: theme.shadowCard }}>
+              <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-4">Quick Actions</h2>
+              <div className="flex flex-col gap-1">
+                {[
+                  { icon: Plus, label: 'Create Consignment' },
+                  { icon: List, label: 'List on Marketplace' },
+                  { icon: Send, label: 'Submit RFQ Response' },
+                  { icon: Lock, label: 'View Escrow' },
+                  { icon: FileCheck, label: 'Upload Shipment Doc' }
+                ].map((action, i) => (
+                  <button key={i} className="group flex items-center justify-between h-[44px] px-3 rounded-xl hover:bg-[#FAFAF8] transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40 text-left">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-[#F5F0EB] flex items-center justify-center text-[#4A4A48] group-hover:text-[#C73B22] group-hover:bg-[#C73B22]/10 transition-colors">
+                        <action.icon size={16} />
                       </div>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="font-mono text-xs bg-white text-[#1A1A1A] px-2 py-0.5 rounded border border-[#E8E2DC]">{rfq.cp}</span>
-                        <span className="flex items-center text-xs text-[#D97706]"><StarIcon /> {rfq.rating}</span>
+                      <span className="text-[14px] font-medium text-[#1A1A1A]">{action.label}</span>
+                    </div>
+                    <ChevronRight size={16} className="text-[#888880] group-hover:text-[#1A1A1A] transition-colors" />
+                  </button>
+                ))}
+              </div>
+            </section>
+
+          </div>
+        </div>
+
+        {/* Bottom Section - RFQs & Compliance */}
+        <div className="grid grid-cols-12 gap-6">
+          
+          {/* Incoming RFQs */}
+          <div className="col-span-7 flex flex-col h-full">
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6 flex-grow" style={{ boxShadow: theme.shadowCard }}>
+              <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-6">Incoming RFQs</h2>
+              <div className="flex flex-col gap-3">
+                {[
+                  { item: 'Arabica Coffee', qty: '50 MT', party: 'FT-IMP-882', age: '2h ago', rating: 4.9 },
+                  { item: 'Cocoa Beans', qty: '120 MT', party: 'FT-IMP-105', age: '5h ago', rating: 4.8 },
+                  { item: 'Raw Cotton', qty: '80 MT', party: 'FT-IMP-304', age: '1d ago', rating: 4.5 },
+                ].map((rfq, i) => (
+                  <div key={i} className="flex items-center justify-between p-4 rounded-xl border border-[#E8E2DC] bg-[#FAFAF8] hover:bg-[#FFFFFF] transition-colors">
+                    <div className="flex flex-col w-[35%]">
+                      <span className="text-[14px] font-semibold text-[#1A1A1A] mb-1">{rfq.item}</span>
+                      <span className="text-[13px] text-[#4A4A48]">{rfq.qty}</span>
+                    </div>
+                    <div className="flex flex-col w-[35%]">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[13px] font-mono font-medium text-[#1A1A1A]">{rfq.party}</span>
+                        <span className="text-[11px] font-medium text-[#D97706]">★ {rfq.rating}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-[12px] text-[#888880]">
+                        <Clock size={12} /> {rfq.age}
                       </div>
                     </div>
                     <div className="flex gap-2">
-                      <button className="text-xs font-medium px-3 py-1.5 rounded-lg border border-[#E8E2DC] bg-white text-[#1A1A1A] hover:bg-[#E8E2DC]/50 transition-colors">Counter</button>
-                      <button className="text-xs font-medium px-3 py-1.5 rounded-lg bg-[#059669] text-white hover:bg-[#047857] transition-colors">Accept</button>
+                      <button className="h-[40px] px-4 rounded-xl border border-[#E8E2DC] text-[#1A1A1A] hover:bg-[#F5F0EB] text-[13px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#C73B22]/40">
+                        Counter
+                      </button>
+                      <button className="h-[40px] px-4 rounded-xl bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 text-[13px] font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-[#059669]/40">
+                        Accept
+                      </button>
                     </div>
                   </div>
                 ))}
-            </div>
-          </section>
-
-          {/* Active Logistics & Compliance */}
-          <div className="grid grid-cols-2 gap-6">
-            <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-               <h2 className="text-lg font-semibold mb-4">Active Logistics</h2>
-                <div className="space-y-4">
-                  {[
-                    { route: 'Abidjan → Rotterdam', vessel: 'MSC Rachele', progress: 65, eta: 'Oct 12' },
-                    { route: 'Tema → Antwerp', vessel: 'CMA CGM Jade', progress: 30, eta: 'Oct 15' }
-                  ].map((log, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-[#FAFAF8] border border-[#E8E2DC]">
-                      <div className="flex justify-between items-start mb-2">
-                        <div className="flex items-center gap-2">
-                          <Ship className="w-4 h-4 text-[#2563EB]" />
-                          <div className="text-sm font-medium">{log.vessel}</div>
-                        </div>
-                        <span className="text-xs font-medium text-[#888880]">ETA {log.eta}</span>
-                      </div>
-                      <div className="text-xs text-[#888880] mb-2">{log.route}</div>
-                      <div className="h-1.5 w-full bg-[#E8E2DC] rounded-full overflow-hidden">
-                         <div className="h-full bg-[#2563EB]" style={{ width: `${log.progress}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-            </section>
-            <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-               <h2 className="text-lg font-semibold mb-4">Compliance Inbox</h2>
-                <div className="space-y-4">
-                  {[
-                    { doc: 'KYB Renewal', progress: 80, color: 'bg-[#059669]' },
-                    { doc: 'Phytosanitary Cert - TC-0339', progress: 40, color: 'bg-[#D97706]' }
-                  ].map((doc, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-[#FAFAF8] border border-[#E8E2DC]">
-                      <div className="flex justify-between items-center mb-2">
-                        <div className="flex items-center gap-2">
-                          <FileCheck className="w-4 h-4 text-[#C73B22]" />
-                          <div className="text-sm font-medium">{doc.doc}</div>
-                        </div>
-                        <span className="text-xs font-medium text-[#888880]">{doc.progress}%</span>
-                      </div>
-                      <div className="h-1.5 w-full bg-[#E8E2DC] rounded-full overflow-hidden">
-                         <div className={`h-full ${doc.color}`} style={{ width: `${doc.progress}%` }} />
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              </div>
             </section>
           </div>
 
-        </div>
-
-
-        {/* RIGHT COLUMN (4/12) */}
-        <div className="col-span-4 space-y-8">
-          
-          {/* Health Score Speedometer */}
-          <section className="bg-[#1A1A1A] rounded-3xl p-6 shadow-xl text-white relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-[#C73B22]/20 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/4" />
-            
-            <h2 className="text-lg font-semibold text-white/90 mb-6">Trade Health Score</h2>
-            
-            <div className="flex justify-center mb-4">
-              <div className="w-48 h-24 relative overflow-hidden">
-                 <ResponsiveContainer width="100%" height="200%">
-                    <PieChart>
-                      <Pie
-                        data={[{ value: HEALTH_SCORE }, { value: 100 - HEALTH_SCORE }]}
-                        cx="50%"
-                        cy="50%"
-                        startAngle={180}
-                        endAngle={0}
-                        innerRadius={60}
-                        outerRadius={80}
-                        paddingAngle={2}
-                        dataKey="value"
-                        stroke="none"
-                      >
-                        <Cell fill="#059669" />
-                        <Cell fill="#333333" />
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center">
-                    <span className="text-4xl font-bold tracking-tighter">{HEALTH_SCORE}</span>
-                    <span className="text-xs text-white/60 font-medium tracking-wide uppercase">EXCELLENT</span>
-                  </div>
+          {/* Compliance & Logistics */}
+          <div className="col-span-5 flex flex-col gap-6 h-full">
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6" style={{ boxShadow: theme.shadowCard }}>
+              <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-6">Compliance Inbox</h2>
+              <div className="flex flex-col gap-5">
+                <ProgressMeter label="KYB renewal" value={80} color={theme.warning} />
+                <ProgressMeter label="Phyto cert" value={40} color={theme.primary} />
+                <ProgressMeter label="BoL upload" value={0} color={theme.subtle} />
               </div>
-            </div>
-
-            <div className="space-y-3 mt-6">
-              {[
-                { label: 'On-time Delivery', val: 92, color: 'bg-[#059669]' },
-                { label: 'Compliance', val: 100, color: 'bg-[#059669]' },
-                { label: 'Counterparty Rating', val: 95, color: 'bg-[#059669]' },
-                { label: 'Doc Completeness', val: 78, color: 'bg-[#D97706]' }
-              ].map((item, i) => (
-                <div key={i}>
-                  <div className="flex justify-between text-xs font-medium mb-1">
-                    <span className="text-white/70">{item.label}</span>
-                    <span>{item.val}%</span>
-                  </div>
-                  <div className="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
-                    <div className={`h-full ${item.color}`} style={{ width: `${item.val}%` }} />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Multi-currency Wallet */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-lg font-semibold">Wallet Balances</h2>
-              <button className="text-sm font-medium text-[#C73B22] hover:text-[#E86A4F] transition-colors">
-                Open Wallet
-              </button>
-            </div>
-
-            <div className="space-y-6">
-              {WALLET_BALANCES.map((wallet, i) => {
-                const total = wallet.available + wallet.escrow + wallet.pending;
-                const pAvail = (wallet.available / total) * 100;
-                const pEscrow = (wallet.escrow / total) * 100;
-                const pPend = (wallet.pending / total) * 100;
-
-                return (
-                  <div key={i}>
-                    <div className="flex justify-between items-baseline mb-2">
-                      <span className="font-bold text-lg">{wallet.currency}</span>
-                      <span className="font-mono text-sm text-[#888880]">Total: {(total/1000).toFixed(1)}K</span>
-                    </div>
-                    
-                    {/* Stacked Horizontal Meter */}
-                    <div className="h-3 w-full rounded-full overflow-hidden flex mb-2 bg-[#FAFAF8]">
-                      <div className="bg-[#059669] transition-all" style={{ width: `${pAvail}%` }} title="Available" />
-                      <div className="bg-[#D97706] transition-all border-l border-white/50" style={{ width: `${pEscrow}%` }} title="Escrow" />
-                      <div className="bg-[#E8E2DC] transition-all border-l border-white/50" style={{ width: `${pPend}%` }} title="Pending" />
-                    </div>
-                    
-                    <div className="flex justify-between text-[10px] font-medium text-[#888880] uppercase tracking-wider">
-                      <span className="text-[#059669]">Avail {(wallet.available/1000).toFixed(0)}K</span>
-                      <span className="text-[#D97706]">Escrow {(wallet.escrow/1000).toFixed(0)}K</span>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          </section>
-
-          {/* Commodity Mix Donut */}
-          <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-            <h2 className="text-lg font-semibold mb-2">Commodity Mix</h2>
-            <p className="text-sm text-[#888880] mb-6">By current inventory tonnage</p>
+            </section>
             
-            <div className="h-48 w-full relative">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={COMMODITY_MIX}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={2}
-                    dataKey="value"
-                    stroke="none"
-                  >
-                    {COMMODITY_MIX.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                  </Pie>
-                  <Tooltip 
-                    contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}
-                    itemStyle={{ color: '#1A1A1A', fontWeight: 500, fontSize: '12px' }}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-xl font-bold text-[#1A1A1A]">1,240</span>
-                <span className="text-xs font-medium text-[#888880]">MT Total</span>
+            <section className="bg-[#FFFFFF] rounded-3xl border border-[#E8E2DC] p-6 flex-grow" style={{ boxShadow: theme.shadowCard }}>
+              <h2 className="text-[14px] font-semibold text-[#888880] uppercase tracking-wider mb-6">Active Logistics</h2>
+              <div className="flex flex-col gap-5">
+                {[
+                  { route: 'Abidjan → Rotterdam', vessel: 'MSC Rachele', progress: 65, eta: 'Oct 12', status: 'In Transit', color: theme.info },
+                  { route: 'Tema → Antwerp', vessel: 'CMA CGM Jade', progress: 10, eta: 'Oct 15', status: 'Customs', color: theme.warning }
+                ].map((log, i) => (
+                  <div key={i} className="flex flex-col gap-3">
+                    <div className="flex justify-between items-start">
+                       <div className="flex flex-col gap-1">
+                          <span className="text-[14px] font-semibold text-[#1A1A1A]">{log.route}</span>
+                          <span className="text-[13px] text-[#4A4A48] flex items-center gap-1.5"><Anchor size={14} className="text-[#888880]" /> {log.vessel}</span>
+                       </div>
+                       <div className="flex flex-col items-end gap-1">
+                          <span className="text-[11px] font-semibold px-2 py-0.5 rounded-md uppercase tracking-wider" style={{ backgroundColor: `${log.color}15`, color: log.color }}>
+                            {log.status}
+                          </span>
+                          <span className="text-[12px] font-medium text-[#888880]">ETA {log.eta}</span>
+                       </div>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-[#F0EBE5] overflow-hidden">
+                      <div className="h-full rounded-full transition-all duration-700 ease-out" style={{ width: `${log.progress}%`, backgroundColor: log.color }} />
+                    </div>
+                  </div>
+                ))}
               </div>
-            </div>
-
-            <div className="flex flex-wrap gap-3 mt-4 justify-center">
-               {COMMODITY_MIX.map((item, i) => (
-                 <div key={i} className="flex items-center gap-1.5 text-xs font-medium text-[#1A1A1A]">
-                   <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: item.fill }} />
-                   {item.name} <span className="text-[#888880]">{item.value}%</span>
-                 </div>
-               ))}
-            </div>
-          </section>
-
-           {/* Live Ticker */}
-           <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold">Live Market</h2>
-              <span className="flex items-center gap-1.5 text-xs font-medium text-[#C73B22] bg-[#C73B22]/10 px-2 py-1 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#C73B22] animate-pulse" /> LIVE
-              </span>
-            </div>
-            
-            <div className="space-y-3">
-              {COMMODITY_TICKERS.map((ticker, i) => (
-                <div key={i} className="flex items-center justify-between p-3 rounded-xl hover:bg-[#FAFAF8] transition-colors cursor-pointer group">
-                  <div className="font-medium text-sm w-20">{ticker.name}</div>
-                  <div className="h-8 w-24 opacity-60 group-hover:opacity-100 transition-opacity">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <LineChart data={ticker.data.map((v, i) => ({ val: v, i }))}>
-                        <Line type="monotone" dataKey="val" stroke={ticker.up ? '#059669' : '#C73B22'} strokeWidth={2} dot={false} />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-mono text-sm font-semibold">{ticker.price}</div>
-                    <div className={`text-[10px] font-medium ${ticker.up ? 'text-[#059669]' : 'text-[#C73B22]'}`}>
-                      {ticker.delta}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-           </section>
-
-           {/* Quick Actions */}
-           <section className="bg-white rounded-3xl p-6 shadow-sm border border-[#E8E2DC]">
-            <h2 className="text-xs font-semibold text-[#888880] uppercase tracking-wider mb-4">Quick Actions</h2>
-            <div className="flex flex-col gap-2">
-              {[
-                { icon: <Box className="w-4 h-4" />, label: 'Create Consignment' },
-                { icon: <Tag className="w-4 h-4" />, label: 'List on Marketplace' },
-                { icon: <FileText className="w-4 h-4" />, label: 'Submit RFQ Response' },
-                { icon: <ShieldCheck className="w-4 h-4" />, label: 'View Escrow' },
-                { icon: <FileCheck className="w-4 h-4" />, label: 'Upload Shipment Doc' }
-              ].map((action, i) => (
-                <button key={i} className="flex items-center gap-3 w-full p-3 rounded-xl hover:bg-[#FAFAF8] text-[#1A1A1A] transition-colors text-left border border-transparent hover:border-[#E8E2DC]">
-                  <div className="text-[#888880]">{action.icon}</div>
-                  <span className="text-sm font-medium">{action.label}</span>
-                </button>
-              ))}
-            </div>
-           </section>
+            </section>
+          </div>
 
         </div>
 
       </main>
     </div>
   );
-}
-
-// Minimal Icons
-function ActivityIcon() {
-  return (
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#888880]">
-      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
-    </svg>
-  )
-}
-
-function StarIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" className="text-[#D97706] inline-block mr-0.5">
-      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-    </svg>
-  )
 }
