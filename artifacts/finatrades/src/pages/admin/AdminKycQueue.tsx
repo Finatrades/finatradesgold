@@ -115,10 +115,18 @@ export default function AdminKycQueue() {
     onMutate: ({ id }) => setBusyId(id),
     onSettled: () => setBusyId(null),
     onSuccess: (_data, vars) => {
-      toast({ title: `KYC ${vars.status}` });
+      const friendly =
+        vars.status === 'Approved' ? 'KYC approved' :
+        vars.status === 'Rejected' ? 'KYC rejected' :
+        'Changes requested from the user';
+      toast({ title: friendly, description: 'The user has been notified by email and in-app.' });
       qc.invalidateQueries({ queryKey: ['/api/admin/kyc'] });
     },
-    onError: (e: any) => toast({ variant: 'destructive', title: 'Decision failed', description: e?.message }),
+    onError: (e: any) => toast({
+      variant: 'destructive',
+      title: 'We could not save your decision',
+      description: e?.message || 'Please try again.',
+    }),
   });
 
   const submissions = q.data?.submissions ?? [];
@@ -288,7 +296,7 @@ export default function AdminKycQueue() {
                         disabled={busy}
                         onClick={() => {
                           const note = notesById[sub.id];
-                          if (!note?.trim()) { toast({ variant: 'destructive', title: 'Notes required', description: 'Explain what the user must update.' }); return; }
+                          if (!note?.trim()) { toast({ variant: 'destructive', title: 'Please add a note for the user', description: 'Tell them what to update before they can resubmit.' }); return; }
                           decide.mutate({ id: sub.id, status: 'Changes Requested', rejectionReason: note });
                         }}
                         data-testid={`button-changes-${sub.id}`}
@@ -301,7 +309,7 @@ export default function AdminKycQueue() {
                         disabled={busy}
                         onClick={() => {
                           const note = notesById[sub.id];
-                          if (!note?.trim()) { toast({ variant: 'destructive', title: 'Reason required', description: 'Provide a rejection reason for the user.' }); return; }
+                          if (!note?.trim()) { toast({ variant: 'destructive', title: 'Please add a reason', description: 'The user needs to know why their KYC was rejected.' }); return; }
                           decide.mutate({ id: sub.id, status: 'Rejected', rejectionReason: note });
                         }}
                         data-testid={`button-reject-${sub.id}`}

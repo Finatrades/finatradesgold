@@ -51,11 +51,19 @@ async function uploadFile(file: File): Promise<string> {
     body: fd,
   });
   if (!r.ok) {
-    const txt = await r.text().catch(() => '');
-    throw new Error(`Upload failed (${r.status}) ${txt}`);
+    // Surface the server's friendly message if available, otherwise a clear default.
+    let msg = 'We could not upload your document. Please check your connection and try again.';
+    try {
+      const body = await r.text();
+      const parsed = JSON.parse(body);
+      if (parsed?.message && typeof parsed.message === 'string') msg = parsed.message;
+    } catch {
+      /* ignore non-JSON */
+    }
+    throw new Error(msg);
   }
   const j = await r.json();
-  if (!j?.url) throw new Error('Upload succeeded but no URL returned');
+  if (!j?.url) throw new Error('Your file was sent but we could not save it. Please try again.');
   return j.url as string;
 }
 
@@ -102,10 +110,14 @@ function PersonalKycForm({
       return r.json();
     },
     onSuccess: () => {
-      toast({ title: 'KYC submitted', description: 'Compliance team will review within 24 hours.' });
+      toast({ title: 'KYC sent for review', description: 'Our compliance team will review your details within 24 hours. You will be notified once a decision is made.' });
       onSubmitted();
     },
-    onError: (e: any) => toast({ variant: 'destructive', title: 'Submission failed', description: e?.message }),
+    onError: (e: any) => toast({
+      variant: 'destructive',
+      title: 'We could not submit your KYC',
+      description: e?.message || 'Please check your details and try again in a moment.',
+    }),
   });
 
   const handleFile = async (key: keyof typeof docs, file: File) => {
@@ -113,9 +125,13 @@ function PersonalKycForm({
     try {
       const url = await uploadFile(file);
       setDocs(d => ({ ...d, [key]: url }));
-      toast({ title: 'File uploaded', description: file.name });
+      toast({ title: 'Document attached', description: `“${file.name}” is ready to be submitted with your KYC.` });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Upload failed', description: e?.message });
+      toast({
+        variant: 'destructive',
+        title: 'Could not attach this document',
+        description: e?.message || 'Please try again with a smaller PDF or image.',
+      });
     } finally {
       setUploadingKey(null);
     }
@@ -258,10 +274,14 @@ function CorporateKycForm({
       return r.json();
     },
     onSuccess: () => {
-      toast({ title: 'Corporate KYC submitted', description: 'Compliance team will review within 5 business days.' });
+      toast({ title: 'Corporate KYC sent for review', description: 'Our compliance team will review your company within 5 business days. We will email you once a decision is made.' });
       onSubmitted();
     },
-    onError: (e: any) => toast({ variant: 'destructive', title: 'Submission failed', description: e?.message }),
+    onError: (e: any) => toast({
+      variant: 'destructive',
+      title: 'We could not submit your company KYC',
+      description: e?.message || 'Please check your details and try again in a moment.',
+    }),
   });
 
   const handleFile = async (key: string, file: File) => {
@@ -269,9 +289,13 @@ function CorporateKycForm({
     try {
       const url = await uploadFile(file);
       setDocs(d => ({ ...d, [key]: url }));
-      toast({ title: 'File uploaded', description: file.name });
+      toast({ title: 'Document attached', description: `“${file.name}” is ready to be submitted with your KYC.` });
     } catch (e: any) {
-      toast({ variant: 'destructive', title: 'Upload failed', description: e?.message });
+      toast({
+        variant: 'destructive',
+        title: 'Could not attach this document',
+        description: e?.message || 'Please try again with a smaller PDF or image.',
+      });
     } finally {
       setUploadingKey(null);
     }
