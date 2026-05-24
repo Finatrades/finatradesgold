@@ -15,6 +15,9 @@ import {
   tradeOrders,
   b2bWatchlist,
   users,
+  sellerBadges,
+  marketingBanners,
+  commodityCategories,
 } from "../shared/schema";
 import { placeHold, releaseHold } from "../wallet-service";
 import { loadCounterpartiesByUserIds, type CounterpartySnapshot } from "../lib/counterparty";
@@ -199,8 +202,16 @@ router.get("/lots", ensureAuth, async (req: Request, res: Response): Promise<voi
         eq(warehouseReceipts.consignmentId, consignmentListings.consignmentId),
         eq(warehouseReceipts.status, "active" as any),
       ))
-      .where(eq(consignmentListings.isVisible, true))
-      .orderBy(desc(consignmentListings.publishedAt))
+      .where(and(
+        eq(consignmentListings.isVisible, true),
+        inArray(consignmentListings.moderationStatus, ["live", "featured"] as any),
+      ))
+      .orderBy(
+        // featured first (descending so 'live'=0 comes after 'featured'=1)
+        sql`CASE WHEN ${consignmentListings.moderationStatus} = 'featured' THEN 0 ELSE 1 END`,
+        sql`COALESCE(${consignmentListings.featuredRank}, 9999)`,
+        desc(consignmentListings.publishedAt),
+      )
       .limit(500);
 
     let filtered = rows.filter((r) => {
@@ -271,19 +282,33 @@ router.get("/lots", ensureAuth, async (req: Request, res: Response): Promise<voi
 
     const sellerIds = Array.from(new Set(filtered.map(r => r.listing.sellerId).filter(Boolean) as string[]));
     const counterpartyMap = await loadCounterpartiesByUserIds(sellerIds);
+    const badgesBySeller = new Map<string, { slug: string; label: string; color: string | null }[]>();
+    if (sellerIds.length > 0) {
+      const badgeRows = await db.select().from(sellerBadges).where(inArray(sellerBadges.userId, sellerIds));
+      for (const b of badgeRows) {
+        const arr = badgesBySeller.get(b.userId) || [];
+        arr.push({ slug: b.slug, label: b.label, color: b.color ?? null });
+        badgesBySeller.set(b.userId, arr);
+      }
+    }
 
-    const lots = filtered.map((r) => serializeLot(
-      r.listing,
-      counterpartyMap.get(r.listing.sellerId),
-      {
-        consignmentRef: r.consignmentRef,
-        consignmentStatus: r.consignmentStatus,
-        wrNumber: r.wrNumber,
-        wrIssuedAt: r.wrIssuedAt,
-        isWatched: watchedSet.has(r.listing.consignmentId),
-        thumbnailUrl: thumbByConsignment.get(r.listing.consignmentId) ?? null,
-      },
-    ));
+    const lots = filtered.map((r) => {
+      const base: any = serializeLot(
+        r.listing,
+        counterpartyMap.get(r.listing.sellerId),
+        {
+          consignmentRef: r.consignmentRef,
+          consignmentStatus: r.consignmentStatus,
+          wrNumber: r.wrNumber,
+          wrIssuedAt: r.wrIssuedAt,
+          isWatched: watchedSet.has(r.listing.consignmentId),
+          thumbnailUrl: thumbByConsignment.get(r.listing.consignmentId) ?? null,
+        },
+      );
+      base.featured = (r.listing as any).moderationStatus === "featured";
+      base.sellerBadges = badgesBySeller.get(r.listing.sellerId) || [];
+      return base;
+    });
 
     // Hub grouping summary (with total quantity per hub)
     const hubGroups: Record<string, { hub: string; count: number; commodities: Set<string>; totalQty: number; unit: string | null }> = {};
@@ -343,6 +368,7 @@ router.get("/lots/:id", ensureAuth, async (req: Request, res: Response): Promise
       .where(and(
         eq(consignmentListings.consignmentId, consignmentId),
         eq(consignmentListings.isVisible, true),
+        inArray(consignmentListings.moderationStatus, ["live", "featured"] as any),
       ))
       .limit(1);
 
@@ -1119,6 +1145,45 @@ router.post("/rfqs/:id/accept", requireUserType("importer"), async (req: Request
   } catch (e: any) {
     console.error("[marketplace.rfqs.accept]", e?.message || e);
     res.status(500).json({ message: "Failed to accept offer" });
+  }
+});
+
+// ─── Public categories (active tree) ──────────────────────────────────────
+router.get("/categories", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const rows = await db
+      .select()
+      .from(commodityCategories)
+      .where(eq(commodityCategories.isActive, true))
+      .orderBy(commodityCategories.sortOrder, commodityCategories.name);
+    const tree = rows.filter(r => !r.parentId).map(parent => ({
+      ...parent,
+      children: rows.filter(c => c.parentId === parent.id),
+    }));
+    res.json({ categories: tree });
+  } catch (e: any) {
+    console.error("[marketplace.categories]", e?.message || e);
+    res.status(500).json({ message: "Failed to load categories" });
+  }
+});
+
+// ─── Public active banners ────────────────────────────────────────────────
+router.get("/banners", async (_req: Request, res: Response): Promise<void> => {
+  try {
+    const now = new Date();
+    const rows = await db
+      .select()
+      .from(marketingBanners)
+      .where(eq(marketingBanners.isActive, true))
+      .orderBy(marketingBanners.sortOrder, desc(marketingBanners.createdAt));
+    const banners = rows.filter(b =>
+      (!b.startsAt || new Date(b.startsAt) <= now) &&
+      (!b.endsAt || new Date(b.endsAt) >= now),
+    );
+    res.json({ banners });
+  } catch (e: any) {
+    console.error("[marketplace.banners]", e?.message || e);
+    res.status(500).json({ message: "Failed to load banners" });
   }
 });
 

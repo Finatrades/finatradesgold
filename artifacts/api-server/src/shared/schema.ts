@@ -244,6 +244,7 @@ export const AVAILABLE_PERMISSIONS = [
   'manage_fees',
   'view_analytics',
   'view_risk',
+  'moderate_marketplace',
 ] as const;
 
 export type Permission = typeof AVAILABLE_PERMISSIONS[number];
@@ -256,7 +257,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_transactions', 'view_transactions', 'manage_withdrawals', 'manage_deposits',
     'manage_vault', 'view_vault', 'manage_bnsl', 'view_bnsl',
     'manage_finabridge', 'view_finabridge', 'manage_support', 'view_support',
-    'view_reports', 'manage_fees', 'view_analytics', 'view_risk'
+    'view_reports', 'manage_fees', 'view_analytics', 'view_risk', 'moderate_marketplace'
   ],
   manager: [
     'view_users', 'manage_kyc', 'view_kyc',
@@ -5283,12 +5284,18 @@ export type ConsignmentStatusHistory = typeof consignmentStatusHistory.$inferSel
 // Separate from `marketplaceListings` (which requires a warehouse inventory item).
 // Auto-created when an admin approves a consignment, before the goods physically
 // arrive at the hub.
+// Marketplace moderation status (Task #169)
+export const listingModerationStatusEnum = pgEnum('listing_moderation_status', [
+  'pending', 'live', 'featured', 'suspended', 'rejected'
+]);
+
 export const consignmentListings = pgTable("consignment_listings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   consignmentId: varchar("consignment_id", { length: 255 }).notNull().unique().references(() => consignments.id, { onDelete: 'cascade' }),
   sellerId: varchar("seller_id", { length: 255 }).notNull().references(() => users.id),
   commodityName: varchar("commodity_name", { length: 255 }).notNull(),
   commodityCategory: varchar("commodity_category", { length: 50 }),
+  categoryId: varchar("category_id", { length: 255 }),
   hsCode: varchar("hs_code", { length: 20 }),
   hubCode: varchar("hub_code", { length: 10 }),
   originCountry: varchar("origin_country", { length: 100 }),
@@ -5300,6 +5307,13 @@ export const consignmentListings = pgTable("consignment_listings", {
   askingCurrency: varchar("asking_currency", { length: 10 }).default('USD'),
   incoterms: varchar("incoterms", { length: 20 }),
   isVisible: boolean("is_visible").notNull().default(true),
+  // Task #169: moderation
+  moderationStatus: listingModerationStatusEnum("moderation_status").notNull().default('pending'),
+  moderationReason: text("moderation_reason"),
+  moderatedBy: varchar("moderated_by", { length: 255 }),
+  moderatedAt: timestamp("moderated_at"),
+  featuredAt: timestamp("featured_at"),
+  featuredRank: integer("featured_rank"),
   publishedAt: timestamp("published_at").notNull().defaultNow(),
   hiddenAt: timestamp("hidden_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -5308,6 +5322,55 @@ export const consignmentListings = pgTable("consignment_listings", {
 
 export type ConsignmentListing = typeof consignmentListings.$inferSelect;
 export type InsertConsignmentListing = typeof consignmentListings.$inferInsert;
+
+// --- Marketplace Moderation: Categories, Banners, Badges (Task #169) ---
+export const commodityCategories = pgTable("commodity_categories", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 100 }).notNull(),
+  slug: varchar("slug", { length: 100 }).notNull().unique(),
+  parentId: varchar("parent_id", { length: 255 }),
+  icon: varchar("icon", { length: 50 }),
+  hsCodes: text("hs_codes").array(),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type CommodityCategory = typeof commodityCategories.$inferSelect;
+export type InsertCommodityCategory = typeof commodityCategories.$inferInsert;
+
+export const marketingBanners = pgTable("marketing_banners", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  title: varchar("title", { length: 200 }).notNull(),
+  subtitle: text("subtitle"),
+  imageUrl: text("image_url"),
+  targetUrl: text("target_url"),
+  ctaLabel: varchar("cta_label", { length: 80 }),
+  startsAt: timestamp("starts_at"),
+  endsAt: timestamp("ends_at"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdBy: varchar("created_by", { length: 255 }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+export type MarketingBanner = typeof marketingBanners.$inferSelect;
+export type InsertMarketingBanner = typeof marketingBanners.$inferInsert;
+
+export const sellerBadges = pgTable("seller_badges", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  label: varchar("label", { length: 100 }).notNull(),
+  color: varchar("color", { length: 16 }),
+  awardedBy: varchar("awarded_by", { length: 255 }),
+  awardedAt: timestamp("awarded_at").notNull().defaultNow(),
+  notes: text("notes"),
+}, (t) => ({
+  uniqUserSlug: unique("seller_badges_user_slug_uniq").on(t.userId, t.slug),
+}));
+export type SellerBadge = typeof sellerBadges.$inferSelect;
+export type InsertSellerBadge = typeof sellerBadges.$inferInsert;
 
 // --- Consignment Tally (Step 4 — warehouse weigh/count/verify) ---
 export const consignmentTallyStatusEnum = pgEnum('consignment_tally_status', [

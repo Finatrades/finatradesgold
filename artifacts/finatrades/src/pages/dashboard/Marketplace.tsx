@@ -33,6 +33,17 @@ interface ApiLot {
   publishedAt: string | null;
   isWatched: boolean;
   thumbnailUrl: string | null;
+  featured?: boolean;
+  sellerBadges?: { slug: string; label: string; color: string | null }[];
+}
+
+interface MarketplaceBanner {
+  id: string;
+  title: string;
+  subtitle: string | null;
+  imageUrl: string | null;
+  targetUrl: string | null;
+  ctaLabel: string | null;
 }
 
 interface LotsResponse {
@@ -41,7 +52,18 @@ interface LotsResponse {
   total: number;
 }
 
-const CATEGORIES = ['All', 'Agricultural', 'Soft Commodities', 'Metals', 'Energy', 'Industrial'];
+interface MarketplaceCategory {
+  id: string;
+  slug: string;
+  name: string;
+  parentId: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+const FALLBACK_CATEGORIES: { name: string }[] = [
+  { name: 'Agricultural' }, { name: 'Soft Commodities' }, { name: 'Metals' }, { name: 'Energy' }, { name: 'Industrial' },
+];
 
 function GradeTag({ grade }: { grade: string | null }) {
   const c: Record<string, { bg: string; color: string }> = {
@@ -86,6 +108,11 @@ function LotCard({ l, onBuy, onRfq }: { l: ApiLot; onBuy: () => void; onRfq: () 
           <div className="w-full h-full flex items-center justify-center" style={{ color: '#B0AAA4' }}>
             <ImageOff size={28} />
           </div>
+        )}
+        {l.featured && (
+          <span className="absolute top-2 left-2 text-[10px] font-bold px-2 py-1 rounded-full flex items-center gap-1 text-white shadow-sm" style={{ background: '#C73B22' }}>
+            <Star size={10} fill="#fff"/> Featured
+          </span>
         )}
         <button
           onClick={(e) => { e.preventDefault(); e.stopPropagation(); toggleWatch.mutate(); }}
@@ -150,9 +177,19 @@ function LotCard({ l, onBuy, onRfq }: { l: ApiLot; onBuy: () => void; onRfq: () 
             <p className="font-bold" style={{ color: '#1A1A1A' }}>{l.minOrder} {l.unit}</p>
           </div>
         </div>
-        <p className="text-xs mb-3 truncate" style={{ color: '#888880' }}>
+        <p className="text-xs mb-1 truncate" style={{ color: '#888880' }}>
           Seller: <span style={{ color: '#1A1A1A' }} className="font-semibold">{l.seller.name}</span>
         </p>
+        {l.sellerBadges && l.sellerBadges.length > 0 && (
+          <div className="flex gap-1 flex-wrap mb-3">
+            {l.sellerBadges.map(b => (
+              <span key={b.slug} className="text-[9px] font-bold px-1.5 py-0.5 rounded-full"
+                style={{ background: `${b.color || '#C73B22'}14`, color: b.color || '#C73B22' }}>
+                {b.label}
+              </span>
+            ))}
+          </div>
+        )}
         <div className="flex gap-2 mt-auto">
           {price != null && (
             <button onClick={onBuy}
@@ -215,6 +252,31 @@ export default function Marketplace() {
     staleTime: 20_000,
   });
 
+  const { data: bannerData } = useQuery<{ banners: MarketplaceBanner[] }>({
+    queryKey: ['/api/b2b/marketplace/banners'],
+    queryFn: async () => {
+      const r = await fetch('/api/b2b/marketplace/banners', { credentials: 'include' });
+      if (!r.ok) return { banners: [] };
+      return r.json();
+    },
+    staleTime: 60_000,
+  });
+  const banners = bannerData?.banners ?? [];
+
+  const { data: categoryData } = useQuery<{ categories: MarketplaceCategory[] }>({
+    queryKey: ['/api/b2b/marketplace/categories'],
+    queryFn: async () => {
+      const r = await fetch('/api/b2b/marketplace/categories', { credentials: 'include' });
+      if (!r.ok) return { categories: [] };
+      return r.json();
+    },
+  });
+  const categoryNames = useMemo(() => {
+    const list = (categoryData?.categories ?? []).filter(c => c.isActive && !c.parentId);
+    if (list.length === 0) return FALLBACK_CATEGORIES.map(c => c.name);
+    return list.sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)).map(c => c.name);
+  }, [categoryData]);
+
   const lots = data?.lots ?? [];
   const hubs = useMemo(() => [
     { hub: 'ALL', count: data?.total ?? 0, commodityCount: 0, totalQty: 0, unit: null as string | null },
@@ -247,6 +309,37 @@ export default function Marketplace() {
           <Star size={13} /> My Watchlist
         </Link>
       </div>
+
+      {/* Marketing banners */}
+      {banners.length > 0 && (
+        <div className="grid gap-3 md:grid-cols-2">
+          {banners.slice(0, 2).map(b => {
+            const inner = (
+              <div className="relative rounded-2xl overflow-hidden h-28 flex items-center px-5 py-4"
+                style={{
+                  background: b.imageUrl
+                    ? `linear-gradient(90deg, rgba(26,26,26,0.85), rgba(26,26,26,0.35)), url(${b.imageUrl}) center/cover`
+                    : 'linear-gradient(135deg, #C73B22, #1A1A1A)',
+                  color: '#fff',
+                }}>
+                <div className="flex-1 min-w-0">
+                  <p className="font-bold text-base truncate">{b.title}</p>
+                  {b.subtitle && <p className="text-xs opacity-90 truncate">{b.subtitle}</p>}
+                </div>
+                {b.ctaLabel && (
+                  <span className="ml-3 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 bg-white/95"
+                    style={{ color: '#C73B22' }}>
+                    {b.ctaLabel} <ArrowRight size={12}/>
+                  </span>
+                )}
+              </div>
+            );
+            return b.targetUrl
+              ? <a key={b.id} href={b.targetUrl} target={b.targetUrl.startsWith('http') ? '_blank' : undefined} rel="noopener noreferrer">{inner}</a>
+              : <div key={b.id}>{inner}</div>;
+          })}
+        </div>
+      )}
 
       {/* Hub strip with counts */}
       <div className="overflow-x-auto pb-1 -mx-1 px-1">
@@ -283,8 +376,8 @@ export default function Marketplace() {
             style={{ color: '#1A1A1A' }}
           />
         </div>
-        <div className="flex items-center gap-1.5">
-          {CATEGORIES.map(c => (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          {(['All', ...categoryNames]).map(c => (
             <button key={c} onClick={() => setSelectedCategory(c)}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
               style={selectedCategory === c

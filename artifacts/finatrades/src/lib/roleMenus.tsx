@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale, Landmark, Workflow, Vault,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
   Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox, Mail, Truck, Route as RouteIcon,
+  ShieldAlert, Tags, Megaphone, Award,
 } from 'lucide-react';
 
 export type UserType = 'exporter' | 'importer' | 'government' | 'warehouse';
@@ -23,6 +24,7 @@ export interface MenuSection {
   key: string;
   label: string;
   items: MenuItem[];
+  requirePermission?: string;
 }
 
 const accountSection: MenuSection = {
@@ -147,6 +149,23 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Warehouse size={16} />, label: 'Warehouse Tally', href: '/warehouse' },
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
+    ],
+  },
+  {
+    key: 'marketplace_ops',
+    label: 'Marketplace Ops',
+    requirePermission: 'moderate_marketplace',
+    items: [
+      { icon: <ShieldAlert size={16} />, label: 'Listing Moderation', href: '/admin/listings' },
+      { icon: <Tags size={16} />, label: 'Categories', href: '/admin/categories' },
+      { icon: <Megaphone size={16} />, label: 'Marketing Banners', href: '/admin/banners' },
+      { icon: <Award size={16} />, label: 'Seller Badges', href: '/admin/sellers' },
+    ],
+  },
+  {
+    key: 'ops2',
+    label: 'More',
+    items: [
       { icon: <Mail size={16} />, label: 'Email Queues', href: '/admin/email-queues' },
       { icon: <ShieldCheck size={16} />, label: 'Staff & Roles', href: '/admin/staff',
         requires: { component: 'employees', action: 'edit' } },
@@ -198,12 +217,16 @@ export const ADMIN_MENU: MenuSection[] = [
 
 export function getMenuForUser(user: any): MenuSection[] {
   if (!user) return EXPORTER_MENU;
-  if (user.role === 'admin') return ADMIN_MENU;
-  const t: UserType = user.userType || 'exporter';
-  if (t === 'importer') return IMPORTER_MENU;
-  if (t === 'government') return GOVERNMENT_MENU;
-  if (t === 'warehouse') return WAREHOUSE_MENU;
-  return EXPORTER_MENU;
+  let sections: MenuSection[];
+  if (user.role === 'admin') sections = ADMIN_MENU;
+  else {
+    const t: UserType = user.userType || 'exporter';
+    if (t === 'importer') sections = IMPORTER_MENU;
+    else if (t === 'government') sections = GOVERNMENT_MENU;
+    else if (t === 'warehouse') sections = WAREHOUSE_MENU;
+    else sections = EXPORTER_MENU;
+  }
+  return sections.filter(s => !s.requirePermission || hasPermission(user, s.requirePermission));
 }
 
 export function getRoleLabel(user: any): string {
@@ -261,4 +284,17 @@ export function canAccess(path: string, user: any): boolean {
   if (!allowed) return true; // un-listed paths (profile, kyc, etc.) are open
   const t: UserType = user.userType || 'exporter';
   return allowed.includes(t);
+}
+
+/**
+ * Permission gate for fine-grained admin capabilities. Admin role implicitly
+ * has every permission (mirrors backend defaults in security-middleware.ts).
+ * Non-admin users may carry an explicit `permissions` array (slug strings).
+ * Backend remains the source of truth via requirePermission middleware.
+ */
+export function hasPermission(user: any, permission: string): boolean {
+  if (!user) return false;
+  if (user.role === 'admin' || user.role === 'super_admin') return true;
+  const perms: string[] = Array.isArray(user.permissions) ? user.permissions : [];
+  return perms.includes(permission);
 }

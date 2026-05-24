@@ -239,6 +239,7 @@ export const AVAILABLE_PERMISSIONS = [
   'view_reports',
   'generate_reports',
   'manage_fees',
+  'moderate_marketplace',
 ] as const;
 
 export type Permission = typeof AVAILABLE_PERMISSIONS[number];

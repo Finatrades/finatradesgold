@@ -190,6 +190,7 @@ import marketplaceRouter from "./routes/marketplace";
 import counterpartyRouter from "./routes/counterparty";
 import { loadCounterpartyByUserId } from "./lib/counterparty";
 import adminConsignmentsRouter from "./routes/admin-consignments";
+import adminMarketplaceRouter from "./routes/admin-marketplace";
 import adminEmailQueuesRouter from "./routes/admin-email-queues";
 import warehouseRouter from "./routes/warehouse";
 // unified-tally-routes, physical-deposit-routes and wingold-user-sync-service
@@ -690,6 +691,9 @@ const LEGACY_TO_RBAC_MAP: Record<string, { components: string[]; action: RbacAct
   // Support
   'view_support': { components: ['support'], action: 'view' },
   'manage_support': { components: ['support'], action: 'edit' },
+
+  // Marketplace moderation (Task #169)
+  'moderate_marketplace': { components: ['marketplace-moderation', 'cms-management'], action: 'edit' },
 };
 
 // Middleware to require specific employee permissions
@@ -1244,6 +1248,7 @@ export async function registerRoutes(
   registerAdminStaffRoutes(app, ensureAdminAsync, requirePermission);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
+  app.use("/api/admin/marketplace", ensureAdminAsync, requirePermission('moderate_marketplace'), adminMarketplaceRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);
   app.use("/api/b2b/warehouse", warehouseRouter);
   app.use("/api/b2b/marketplace", marketplaceRouter);

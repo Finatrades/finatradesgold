@@ -55,9 +55,14 @@ import AdminHubs from "@/pages/dashboard/AdminHubs";
 import AdminCarriers from "@/pages/dashboard/AdminCarriers";
 import AdminShippingRoutes from "@/pages/dashboard/AdminShippingRoutes";
 import AdminShipments from "@/pages/dashboard/AdminShipments";
+import AdminListings from "@/pages/admin/AdminListings";
+import AdminListingDetail from "@/pages/admin/AdminListingDetail";
+import AdminCategories from "@/pages/admin/AdminCategories";
+import AdminBanners from "@/pages/admin/AdminBanners";
+import AdminSellers from "@/pages/admin/AdminSellers";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
 import { Suspense, useEffect } from "react";
-import { canAccess } from "@/lib/roleMenus";
+import { canAccess, hasPermission } from "@/lib/roleMenus";
 
 function PageLoader() {
   return (
@@ -106,14 +111,16 @@ function ProtectedRoute({ component: Component, path }: { component: React.Compo
   );
 }
 
-function AdminRoute({ component: Component }: { component: React.ComponentType }) {
+function AdminRoute({ component: Component, requirePermission }: { component: React.ComponentType; requirePermission?: string }) {
   const { user, loading } = useAuth();
   const [, setLocation] = useLocation();
   useEffect(() => {
     if (!loading && !user) setLocation('/login');
   }, [user, loading, setLocation]);
   if (loading || !user) return <PageLoader />;
-  if (user.role !== 'admin') {
+  const isAdmin = user.role === 'admin' || (user.role as string) === 'super_admin';
+  const permOk = !requirePermission || hasPermission(user, requirePermission);
+  if (!isAdmin || !permOk) {
     return (
       <DashboardLayout>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
@@ -122,7 +129,11 @@ function AdminRoute({ component: Component }: { component: React.ComponentType }
             <span className="text-2xl">🔒</span>
           </div>
           <h2 className="text-xl font-bold mb-2" style={{ color: '#1A1A1A' }}>Admin Access Required</h2>
-          <p className="text-sm max-w-sm" style={{ color: '#888880' }}>This page is for platform administrators only.</p>
+          <p className="text-sm max-w-sm" style={{ color: '#888880' }}>
+            {requirePermission
+              ? `This page requires the "${requirePermission}" permission.`
+              : 'This page is for platform administrators only.'}
+          </p>
         </div>
       </DashboardLayout>
     );
@@ -305,6 +316,21 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/staff">
         <AdminRoute component={AdminStaffRoles} />
+      </Route>
+      <Route path="/admin/listings">
+        <AdminRoute component={AdminListings} requirePermission="moderate_marketplace" />
+      </Route>
+      <Route path="/admin/listings/:id">
+        <AdminRoute component={AdminListingDetail} requirePermission="moderate_marketplace" />
+      </Route>
+      <Route path="/admin/categories">
+        <AdminRoute component={AdminCategories} requirePermission="moderate_marketplace" />
+      </Route>
+      <Route path="/admin/banners">
+        <AdminRoute component={AdminBanners} requirePermission="moderate_marketplace" />
+      </Route>
+      <Route path="/admin/sellers">
+        <AdminRoute component={AdminSellers} requirePermission="moderate_marketplace" />
       </Route>
 
       {/* Account */}
