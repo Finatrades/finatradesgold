@@ -3,8 +3,32 @@ import { Tabs } from "expo-router";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
 import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { useQuery } from "@tanstack/react-query";
 
 import { useColors } from "@/hooks/useColors";
+import { useAuth } from "@/context/AuthContext";
+
+const domain = process.env.EXPO_PUBLIC_DOMAIN;
+const API_BASE = domain ? `https://${domain}` : "";
+
+function useUnreadNotificationCount(userId: string | undefined) {
+  const { data } = useQuery({
+    queryKey: ["notifications", userId],
+    queryFn: async () => {
+      const res = await fetch(`${API_BASE}/api/notifications/${userId}`, {
+        credentials: "include",
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!userId,
+    staleTime: 15000,
+    refetchInterval: 30000,
+  });
+  const list: Array<{ read?: boolean }> = data?.notifications ?? [];
+  return list.filter((n) => !n.read).length;
+}
 
 export default function TabLayout() {
   const colors = useColors();
@@ -12,6 +36,8 @@ export default function TabLayout() {
   const isDark = colorScheme === "dark";
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
+  const { user } = useAuth();
+  const unreadCount = useUnreadNotificationCount(user?.id);
 
   return (
     <Tabs
@@ -104,6 +130,13 @@ export default function TabLayout() {
         name="notifications"
         options={{
           title: "Inbox",
+          tabBarBadge: unreadCount > 0 ? (unreadCount > 99 ? "99+" : unreadCount) : undefined,
+          tabBarBadgeStyle: {
+            backgroundColor: colors.primary,
+            color: "#fff",
+            fontFamily: "Inter_600SemiBold",
+            fontSize: 10,
+          },
           tabBarIcon: ({ color, focused }) => (
             <Ionicons
               name={focused ? "notifications" : "notifications-outline"}
