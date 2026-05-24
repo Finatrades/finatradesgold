@@ -20,23 +20,106 @@ const DOC_STYLES: Record<string, { bg: string; color: string; icon: React.ReactN
   'Approved':          { bg: 'rgba(5,150,105,0.10)',  color: '#047857', icon: <CheckCircle2 size={13} /> },
   'Pending Review':    { bg: 'rgba(217,119,6,0.10)',  color: '#D97706', icon: <Clock size={13} /> },
   'In Review':         { bg: 'rgba(217,119,6,0.10)',  color: '#D97706', icon: <Clock size={13} /> },
-  'AI Review':         { bg: 'rgba(59,130,246,0.10)', color: '#1D4ED8', icon: <Clock size={13} /> },
+  'AI Review':         { bg: 'rgba(217,119,6,0.10)',  color: '#D97706', icon: <Clock size={13} /> },
   'In Progress':       { bg: 'rgba(217,119,6,0.10)',  color: '#D97706', icon: <Clock size={13} /> },
   'Escalated':         { bg: 'rgba(217,119,6,0.10)',  color: '#D97706', icon: <AlertCircle size={13} /> },
   'Changes Requested': { bg: 'rgba(220,38,38,0.10)',  color: '#DC2626', icon: <AlertCircle size={13} /> },
   'Rejected':          { bg: 'rgba(220,38,38,0.10)',  color: '#DC2626', icon: <X size={13} /> },
-  'AI Rejected':       { bg: 'rgba(220,38,38,0.10)',  color: '#DC2626', icon: <AlertCircle size={13} /> },
+  'AI Rejected':       { bg: 'rgba(220,38,38,0.10)',  color: '#DC2626', icon: <X size={13} /> },
   'Not Started':       { bg: 'rgba(120,113,108,0.10)', color: '#78716C', icon: <Upload size={13} /> },
   'Pending':           { bg: 'rgba(120,113,108,0.10)', color: '#78716C', icon: <Upload size={13} /> },
 };
 
+// Client-facing labels — internal AI/admin pipeline is hidden from users.
+// Anything still being processed simply reads "Under compliance review".
+const CLIENT_STATUS_LABEL: Record<string, string> = {
+  'Approved':          'Verified',
+  'Pending Review':    'Under compliance review',
+  'In Review':         'Under compliance review',
+  'AI Review':         'Under compliance review',
+  'In Progress':       'Under compliance review',
+  'Escalated':         'Under compliance review',
+  'Changes Requested': 'Changes requested',
+  'Rejected':          'Not approved',
+  'AI Rejected':       'Not approved',
+  'Not Started':       'Not started',
+  'Pending':           'Awaiting submission',
+};
+
 function StatusPill({ status }: { status: string }) {
   const s = DOC_STYLES[status] || DOC_STYLES['Pending'];
+  const label = CLIENT_STATUS_LABEL[status] || status;
   return (
     <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold"
       style={{ background: s.bg, color: s.color }} data-testid="badge-kyc-status-pill">
-      {s.icon} {status}
+      {s.icon} {label}
     </span>
+  );
+}
+
+// Friendly document slot labels — kept in sync with PersonalKycForm / CorporateKycForm.
+const DOC_LABELS: Record<string, string> = {
+  idFront: 'Government ID — front',
+  idBack: 'Government ID — back',
+  passport: 'Passport',
+  addressProof: 'Proof of address',
+  incorporationCertificate: 'Certificate of Incorporation',
+  tradeLicense: 'Trade License',
+  memorandum: 'Memorandum & Articles of Association',
+  bankReference: 'Bank reference letter',
+  directorPassport: 'Authorized signatory passport',
+};
+
+function prettifyDocKey(key: string) {
+  if (DOC_LABELS[key]) return DOC_LABELS[key];
+  return key.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase());
+}
+
+function fileNameFromUrl(url: string): string {
+  try {
+    const u = new URL(url, window.location.origin);
+    const last = u.pathname.split('/').filter(Boolean).pop() || url;
+    return decodeURIComponent(last);
+  } catch {
+    return url.split('/').filter(Boolean).pop() || url;
+  }
+}
+
+function SubmittedDocList({ documents }: { documents: any }) {
+  if (!documents || typeof documents !== 'object') {
+    return <p className="text-xs italic text-[#888880]">No documents on file yet.</p>;
+  }
+  const entries = Object.entries(documents)
+    .map(([key, val]: [string, any]) => {
+      const url = typeof val === 'string' ? val : val?.url;
+      return url ? { key, url: String(url) } : null;
+    })
+    .filter(Boolean) as { key: string; url: string }[];
+  if (entries.length === 0) {
+    return <p className="text-xs italic text-[#888880]">No documents on file yet.</p>;
+  }
+  return (
+    <div className="space-y-2" data-testid="list-submitted-docs">
+      {entries.map(({ key, url }) => (
+        <div key={key}
+          className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[#FAFAF8] border border-[#F0EBE6]">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <FileText size={14} className="text-[#B0AAA4] shrink-0" />
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-[#1A1410] truncate">{prettifyDocKey(key)}</p>
+              <p className="text-xs text-[#888880] truncate" title={fileNameFromUrl(url)}>
+                {fileNameFromUrl(url)}
+              </p>
+            </div>
+          </div>
+          <a href={url} target="_blank" rel="noopener noreferrer"
+            data-testid={`link-view-doc-${key}`}
+            className="text-xs font-semibold underline text-[#C73B22] hover:opacity-80 shrink-0">
+            View
+          </a>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -567,10 +650,15 @@ export default function KycPage() {
                 : 'Personal verification unlocks marketplace browsing, RFQ submission, and individual buying.'}
             </p>
             {isApproved && !editing && (
-              <p className="text-sm mt-2 text-[#059669] font-semibold">Your KYC is approved. All platform features are unlocked.</p>
+              <p className="text-sm mt-2 text-[#059669] font-semibold">Your KYC is verified. All platform features are unlocked.</p>
             )}
             {isUnderReview && (
-              <p className="text-sm mt-2 text-[#D97706]">Your submission is under review by the Finatrades compliance team.</p>
+              <p className="text-sm mt-2 text-[#D97706]">
+                Your submission is with the Finatrades AML &amp; Compliance team.{' '}
+                {requiredKind === 'personal'
+                  ? 'You will be notified within 24–72 hours, 7 days a week.'
+                  : 'You will be notified within 3–5 business days.'}
+              </p>
             )}
             {submissionStatus === 'Rejected' && submission?.rejectionReason && (
               <p className="text-sm mt-2 text-[#DC2626]"><strong>Reason:</strong> {submission.rejectionReason}</p>
@@ -637,7 +725,7 @@ export default function KycPage() {
                 {selectedKind === 'personal' ? 'Personal KYC' : 'Corporate KYC'} — {showForm ? (submission ? 'Update submission' : 'Required information') : 'Submission summary'}
               </p>
               <p className="text-xs text-[#5A4838]">
-                Reviewed by the Finatrades compliance team. Single-stage admin review.
+                Reviewed by the Finatrades AML &amp; KYC team.
               </p>
             </div>
           </div>
@@ -660,35 +748,53 @@ export default function KycPage() {
             />
           )}
           {!kycQuery.isLoading && !showForm && submission && (
-            <div className="space-y-2 text-sm text-[#1A1410]">
-              {selectedKind === 'personal' ? (
-                <>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Full Name</span><span>{submission.fullName}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Email</span><span>{submission.email}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Country</span><span>{submission.country}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Submitted</span><span>{new Date(submission.createdAt).toLocaleString()}</span></div>
-                </>
-              ) : (
-                <>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Company</span><span>{submission.companyName}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Reg. Number</span><span>{submission.registrationNumber}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Country</span><span>{submission.countryOfIncorporation}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Role</span><span>{submission.corporateRole}</span></div>
-                  <div className="flex justify-between"><span className="text-[#5A4838]">Submitted</span><span>{new Date(submission.createdAt).toLocaleString()}</span></div>
-                </>
-              )}
+            <div className="space-y-5 text-sm text-[#1A1410]">
+              <div className="space-y-2">
+                {selectedKind === 'personal' ? (
+                  <>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Full Name</span><span>{submission.fullName}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Email</span><span>{submission.email}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Phone</span><span>{submission.phone || '—'}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Country</span><span>{submission.country}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Submitted</span><span>{new Date(submission.createdAt).toLocaleString()}</span></div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Company</span><span>{submission.companyName}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Reg. Number</span><span>{submission.registrationNumber}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Country</span><span>{submission.countryOfIncorporation}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Role</span><span>{submission.corporateRole}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Company Email</span><span>{submission.emailAddress || '—'}</span></div>
+                    <div className="flex justify-between"><span className="text-[#5A4838]">Submitted</span><span>{new Date(submission.createdAt).toLocaleString()}</span></div>
+                  </>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-[#5A4838] mb-2">
+                  Documents you submitted
+                </p>
+                <SubmittedDocList documents={submission.documents} />
+              </div>
             </div>
           )}
         </div>
       </div>
 
-      {/* Review pipeline info */}
+      {/* Client-friendly review info */}
       <div className="rounded-2xl bg-[#FFFAF3] p-5 border border-[#E8D9C8]">
         <div className="flex items-start gap-3">
           <Info size={16} className="text-[#C73B22] mt-0.5" />
           <div className="text-xs space-y-1 text-[#5A4838]">
-            <p><strong className="text-[#1A1410]">Review pipeline:</strong> Pending Review → AI Review → Admin Decision → Approved / Changes Requested / Rejected.</p>
-            <p>Personal KYC SLA: 24 hours. Corporate KYC SLA: 5 business days.</p>
+            <p>
+              <strong className="text-[#1A1410]">How review works:</strong>{' '}
+              Once you submit, the Finatrades AML &amp; KYC team checks your documents and confirms
+              the outcome by email and in-app — verified, changes requested, or not approved.
+            </p>
+            <p>
+              <strong className="text-[#1A1410]">Turnaround:</strong>{' '}
+              Personal KYC within <strong>24–72 hours (7 days a week)</strong>. Corporate KYC within{' '}
+              <strong>3–5 business days</strong>.
+            </p>
           </div>
         </div>
       </div>
