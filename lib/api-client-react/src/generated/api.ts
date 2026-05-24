@@ -37,6 +37,7 @@ import type {
   BankDetails,
   BarterRequest,
   BarterRequestInput,
+  CarrierInput,
   Commodity,
   CompanyProfileInput,
   Consignment,
@@ -46,7 +47,13 @@ import type {
   ConsignmentInput,
   ConsignmentRequirements,
   ConsignmentStatusUpdate,
+  CreateAdminCarrier201,
+  CreateAdminHub201,
+  CreateAdminShippingRoute201,
   DashboardSummary,
+  DeactivateAdminCarrier200,
+  DeactivateAdminHub200,
+  DeactivateAdminShippingRoute200,
   DepositIntentInput,
   DepositIntentResponse,
   DocumentSubmissionInput,
@@ -54,9 +61,15 @@ import type {
   EscrowReleaseInput,
   GetConsignmentRequirementsParams,
   HealthStatus,
+  HubInput,
   InventoryItem,
   InventoryStatusUpdate,
   InventorySummary,
+  ListAdminCarriers200,
+  ListAdminHubs200,
+  ListAdminShippingRoutes200,
+  ListPublicHubs200,
+  ListPublicShippingRoutes200,
   ListWalletHoldsParams,
   ListWalletTransactionsParams,
   Listing,
@@ -72,9 +85,13 @@ import type {
   PlatformStats,
   Rfq,
   RfqInput,
+  ShippingRouteInput,
   StablecoinWebhookEvent,
   StripeWebhookEvent,
   TradeHub,
+  UpdateAdminCarrier200,
+  UpdateAdminHub200,
+  UpdateAdminShippingRoute200,
   WalletAccount,
   WalletHold,
   WalletHoldConvertInput,
@@ -5532,3 +5549,1107 @@ export function useListWarehouses<
 
   return { ...query, queryKey: queryOptions.queryKey };
 }
+
+/**
+ * @summary List active warehouse hubs (auth-only, for dropdowns)
+ */
+export const getListPublicHubsUrl = () => {
+  return `/api/hubs`;
+};
+
+export const listPublicHubs = async (
+  options?: RequestInit,
+): Promise<ListPublicHubs200> => {
+  return customFetch<ListPublicHubs200>(getListPublicHubsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListPublicHubsQueryKey = () => {
+  return [`/api/hubs`] as const;
+};
+
+export const getListPublicHubsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPublicHubs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicHubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListPublicHubsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listPublicHubs>>> = ({
+    signal,
+  }) => listPublicHubs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicHubs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPublicHubsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPublicHubs>>
+>;
+export type ListPublicHubsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active warehouse hubs (auth-only, for dropdowns)
+ */
+
+export function useListPublicHubs<
+  TData = Awaited<ReturnType<typeof listPublicHubs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicHubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPublicHubsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary List active shipping routes (auth-only, for dropdowns)
+ */
+export const getListPublicShippingRoutesUrl = () => {
+  return `/api/shipping-routes`;
+};
+
+export const listPublicShippingRoutes = async (
+  options?: RequestInit,
+): Promise<ListPublicShippingRoutes200> => {
+  return customFetch<ListPublicShippingRoutes200>(
+    getListPublicShippingRoutesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListPublicShippingRoutesQueryKey = () => {
+  return [`/api/shipping-routes`] as const;
+};
+
+export const getListPublicShippingRoutesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listPublicShippingRoutes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicShippingRoutes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListPublicShippingRoutesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listPublicShippingRoutes>>
+  > = ({ signal }) => listPublicShippingRoutes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicShippingRoutes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListPublicShippingRoutesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listPublicShippingRoutes>>
+>;
+export type ListPublicShippingRoutesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List active shipping routes (auth-only, for dropdowns)
+ */
+
+export function useListPublicShippingRoutes<
+  TData = Awaited<ReturnType<typeof listPublicShippingRoutes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listPublicShippingRoutes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListPublicShippingRoutesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin — list all hubs with utilisation
+ */
+export const getListAdminHubsUrl = () => {
+  return `/api/admin/hubs`;
+};
+
+export const listAdminHubs = async (
+  options?: RequestInit,
+): Promise<ListAdminHubs200> => {
+  return customFetch<ListAdminHubs200>(getListAdminHubsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminHubsQueryKey = () => {
+  return [`/api/admin/hubs`] as const;
+};
+
+export const getListAdminHubsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminHubs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminHubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminHubsQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminHubs>>> = ({
+    signal,
+  }) => listAdminHubs({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminHubs>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminHubsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminHubs>>
+>;
+export type ListAdminHubsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Admin — list all hubs with utilisation
+ */
+
+export function useListAdminHubs<
+  TData = Awaited<ReturnType<typeof listAdminHubs>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminHubs>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminHubsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Admin — create a warehouse hub
+ */
+export const getCreateAdminHubUrl = () => {
+  return `/api/admin/hubs`;
+};
+
+export const createAdminHub = async (
+  hubInput: HubInput,
+  options?: RequestInit,
+): Promise<CreateAdminHub201> => {
+  return customFetch<CreateAdminHub201>(getCreateAdminHubUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(hubInput),
+  });
+};
+
+export const getCreateAdminHubMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminHub>>,
+    TError,
+    { data: BodyType<HubInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAdminHub>>,
+  TError,
+  { data: BodyType<HubInput> },
+  TContext
+> => {
+  const mutationKey = ["createAdminHub"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAdminHub>>,
+    { data: BodyType<HubInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAdminHub(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAdminHubMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAdminHub>>
+>;
+export type CreateAdminHubMutationBody = BodyType<HubInput>;
+export type CreateAdminHubMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Admin — create a warehouse hub
+ */
+export const useCreateAdminHub = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminHub>>,
+    TError,
+    { data: BodyType<HubInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAdminHub>>,
+  TError,
+  { data: BodyType<HubInput> },
+  TContext
+> => {
+  return useMutation(getCreateAdminHubMutationOptions(options));
+};
+
+export const getUpdateAdminHubUrl = (id: string) => {
+  return `/api/admin/hubs/${id}`;
+};
+
+export const updateAdminHub = async (
+  id: string,
+  hubInput: HubInput,
+  options?: RequestInit,
+): Promise<UpdateAdminHub200> => {
+  return customFetch<UpdateAdminHub200>(getUpdateAdminHubUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(hubInput),
+  });
+};
+
+export const getUpdateAdminHubMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminHub>>,
+    TError,
+    { id: string; data: BodyType<HubInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminHub>>,
+  TError,
+  { id: string; data: BodyType<HubInput> },
+  TContext
+> => {
+  const mutationKey = ["updateAdminHub"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminHub>>,
+    { id: string; data: BodyType<HubInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminHub(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminHubMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminHub>>
+>;
+export type UpdateAdminHubMutationBody = BodyType<HubInput>;
+export type UpdateAdminHubMutationError = ErrorType<unknown>;
+
+export const useUpdateAdminHub = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminHub>>,
+    TError,
+    { id: string; data: BodyType<HubInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminHub>>,
+  TError,
+  { id: string; data: BodyType<HubInput> },
+  TContext
+> => {
+  return useMutation(getUpdateAdminHubMutationOptions(options));
+};
+
+export const getDeactivateAdminHubUrl = (id: string) => {
+  return `/api/admin/hubs/${id}`;
+};
+
+export const deactivateAdminHub = async (
+  id: string,
+  options?: RequestInit,
+): Promise<DeactivateAdminHub200> => {
+  return customFetch<DeactivateAdminHub200>(getDeactivateAdminHubUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeactivateAdminHubMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminHub>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deactivateAdminHub>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deactivateAdminHub"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deactivateAdminHub>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deactivateAdminHub(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeactivateAdminHubMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deactivateAdminHub>>
+>;
+
+export type DeactivateAdminHubMutationError = ErrorType<unknown>;
+
+export const useDeactivateAdminHub = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminHub>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deactivateAdminHub>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeactivateAdminHubMutationOptions(options));
+};
+
+export const getListAdminCarriersUrl = () => {
+  return `/api/admin/carriers`;
+};
+
+export const listAdminCarriers = async (
+  options?: RequestInit,
+): Promise<ListAdminCarriers200> => {
+  return customFetch<ListAdminCarriers200>(getListAdminCarriersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListAdminCarriersQueryKey = () => {
+  return [`/api/admin/carriers`] as const;
+};
+
+export const getListAdminCarriersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminCarriers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCarriers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListAdminCarriersQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminCarriers>>
+  > = ({ signal }) => listAdminCarriers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCarriers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminCarriersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminCarriers>>
+>;
+export type ListAdminCarriersQueryError = ErrorType<unknown>;
+
+export function useListAdminCarriers<
+  TData = Awaited<ReturnType<typeof listAdminCarriers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminCarriers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminCarriersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateAdminCarrierUrl = () => {
+  return `/api/admin/carriers`;
+};
+
+export const createAdminCarrier = async (
+  carrierInput: CarrierInput,
+  options?: RequestInit,
+): Promise<CreateAdminCarrier201> => {
+  return customFetch<CreateAdminCarrier201>(getCreateAdminCarrierUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(carrierInput),
+  });
+};
+
+export const getCreateAdminCarrierMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminCarrier>>,
+    TError,
+    { data: BodyType<CarrierInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAdminCarrier>>,
+  TError,
+  { data: BodyType<CarrierInput> },
+  TContext
+> => {
+  const mutationKey = ["createAdminCarrier"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAdminCarrier>>,
+    { data: BodyType<CarrierInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAdminCarrier(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAdminCarrierMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAdminCarrier>>
+>;
+export type CreateAdminCarrierMutationBody = BodyType<CarrierInput>;
+export type CreateAdminCarrierMutationError = ErrorType<unknown>;
+
+export const useCreateAdminCarrier = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminCarrier>>,
+    TError,
+    { data: BodyType<CarrierInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAdminCarrier>>,
+  TError,
+  { data: BodyType<CarrierInput> },
+  TContext
+> => {
+  return useMutation(getCreateAdminCarrierMutationOptions(options));
+};
+
+export const getUpdateAdminCarrierUrl = (id: string) => {
+  return `/api/admin/carriers/${id}`;
+};
+
+export const updateAdminCarrier = async (
+  id: string,
+  carrierInput: CarrierInput,
+  options?: RequestInit,
+): Promise<UpdateAdminCarrier200> => {
+  return customFetch<UpdateAdminCarrier200>(getUpdateAdminCarrierUrl(id), {
+    ...options,
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(carrierInput),
+  });
+};
+
+export const getUpdateAdminCarrierMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminCarrier>>,
+    TError,
+    { id: string; data: BodyType<CarrierInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminCarrier>>,
+  TError,
+  { id: string; data: BodyType<CarrierInput> },
+  TContext
+> => {
+  const mutationKey = ["updateAdminCarrier"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminCarrier>>,
+    { id: string; data: BodyType<CarrierInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminCarrier(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminCarrierMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminCarrier>>
+>;
+export type UpdateAdminCarrierMutationBody = BodyType<CarrierInput>;
+export type UpdateAdminCarrierMutationError = ErrorType<unknown>;
+
+export const useUpdateAdminCarrier = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminCarrier>>,
+    TError,
+    { id: string; data: BodyType<CarrierInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminCarrier>>,
+  TError,
+  { id: string; data: BodyType<CarrierInput> },
+  TContext
+> => {
+  return useMutation(getUpdateAdminCarrierMutationOptions(options));
+};
+
+export const getDeactivateAdminCarrierUrl = (id: string) => {
+  return `/api/admin/carriers/${id}`;
+};
+
+export const deactivateAdminCarrier = async (
+  id: string,
+  options?: RequestInit,
+): Promise<DeactivateAdminCarrier200> => {
+  return customFetch<DeactivateAdminCarrier200>(
+    getDeactivateAdminCarrierUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeactivateAdminCarrierMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminCarrier>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deactivateAdminCarrier>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deactivateAdminCarrier"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deactivateAdminCarrier>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deactivateAdminCarrier(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeactivateAdminCarrierMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deactivateAdminCarrier>>
+>;
+
+export type DeactivateAdminCarrierMutationError = ErrorType<unknown>;
+
+export const useDeactivateAdminCarrier = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminCarrier>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deactivateAdminCarrier>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeactivateAdminCarrierMutationOptions(options));
+};
+
+export const getListAdminShippingRoutesUrl = () => {
+  return `/api/admin/shipping-routes`;
+};
+
+export const listAdminShippingRoutes = async (
+  options?: RequestInit,
+): Promise<ListAdminShippingRoutes200> => {
+  return customFetch<ListAdminShippingRoutes200>(
+    getListAdminShippingRoutesUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getListAdminShippingRoutesQueryKey = () => {
+  return [`/api/admin/shipping-routes`] as const;
+};
+
+export const getListAdminShippingRoutesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listAdminShippingRoutes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminShippingRoutes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListAdminShippingRoutesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listAdminShippingRoutes>>
+  > = ({ signal }) => listAdminShippingRoutes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminShippingRoutes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListAdminShippingRoutesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listAdminShippingRoutes>>
+>;
+export type ListAdminShippingRoutesQueryError = ErrorType<unknown>;
+
+export function useListAdminShippingRoutes<
+  TData = Awaited<ReturnType<typeof listAdminShippingRoutes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listAdminShippingRoutes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListAdminShippingRoutesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getCreateAdminShippingRouteUrl = () => {
+  return `/api/admin/shipping-routes`;
+};
+
+export const createAdminShippingRoute = async (
+  shippingRouteInput: ShippingRouteInput,
+  options?: RequestInit,
+): Promise<CreateAdminShippingRoute201> => {
+  return customFetch<CreateAdminShippingRoute201>(
+    getCreateAdminShippingRouteUrl(),
+    {
+      ...options,
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(shippingRouteInput),
+    },
+  );
+};
+
+export const getCreateAdminShippingRouteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminShippingRoute>>,
+    TError,
+    { data: BodyType<ShippingRouteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createAdminShippingRoute>>,
+  TError,
+  { data: BodyType<ShippingRouteInput> },
+  TContext
+> => {
+  const mutationKey = ["createAdminShippingRoute"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createAdminShippingRoute>>,
+    { data: BodyType<ShippingRouteInput> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createAdminShippingRoute(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateAdminShippingRouteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createAdminShippingRoute>>
+>;
+export type CreateAdminShippingRouteMutationBody = BodyType<ShippingRouteInput>;
+export type CreateAdminShippingRouteMutationError = ErrorType<unknown>;
+
+export const useCreateAdminShippingRoute = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createAdminShippingRoute>>,
+    TError,
+    { data: BodyType<ShippingRouteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createAdminShippingRoute>>,
+  TError,
+  { data: BodyType<ShippingRouteInput> },
+  TContext
+> => {
+  return useMutation(getCreateAdminShippingRouteMutationOptions(options));
+};
+
+export const getUpdateAdminShippingRouteUrl = (id: string) => {
+  return `/api/admin/shipping-routes/${id}`;
+};
+
+export const updateAdminShippingRoute = async (
+  id: string,
+  shippingRouteInput: ShippingRouteInput,
+  options?: RequestInit,
+): Promise<UpdateAdminShippingRoute200> => {
+  return customFetch<UpdateAdminShippingRoute200>(
+    getUpdateAdminShippingRouteUrl(id),
+    {
+      ...options,
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", ...options?.headers },
+      body: JSON.stringify(shippingRouteInput),
+    },
+  );
+};
+
+export const getUpdateAdminShippingRouteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminShippingRoute>>,
+    TError,
+    { id: string; data: BodyType<ShippingRouteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateAdminShippingRoute>>,
+  TError,
+  { id: string; data: BodyType<ShippingRouteInput> },
+  TContext
+> => {
+  const mutationKey = ["updateAdminShippingRoute"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateAdminShippingRoute>>,
+    { id: string; data: BodyType<ShippingRouteInput> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateAdminShippingRoute(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateAdminShippingRouteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateAdminShippingRoute>>
+>;
+export type UpdateAdminShippingRouteMutationBody = BodyType<ShippingRouteInput>;
+export type UpdateAdminShippingRouteMutationError = ErrorType<unknown>;
+
+export const useUpdateAdminShippingRoute = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateAdminShippingRoute>>,
+    TError,
+    { id: string; data: BodyType<ShippingRouteInput> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateAdminShippingRoute>>,
+  TError,
+  { id: string; data: BodyType<ShippingRouteInput> },
+  TContext
+> => {
+  return useMutation(getUpdateAdminShippingRouteMutationOptions(options));
+};
+
+export const getDeactivateAdminShippingRouteUrl = (id: string) => {
+  return `/api/admin/shipping-routes/${id}`;
+};
+
+export const deactivateAdminShippingRoute = async (
+  id: string,
+  options?: RequestInit,
+): Promise<DeactivateAdminShippingRoute200> => {
+  return customFetch<DeactivateAdminShippingRoute200>(
+    getDeactivateAdminShippingRouteUrl(id),
+    {
+      ...options,
+      method: "DELETE",
+    },
+  );
+};
+
+export const getDeactivateAdminShippingRouteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminShippingRoute>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deactivateAdminShippingRoute>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  const mutationKey = ["deactivateAdminShippingRoute"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deactivateAdminShippingRoute>>,
+    { id: string }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deactivateAdminShippingRoute(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeactivateAdminShippingRouteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deactivateAdminShippingRoute>>
+>;
+
+export type DeactivateAdminShippingRouteMutationError = ErrorType<unknown>;
+
+export const useDeactivateAdminShippingRoute = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deactivateAdminShippingRoute>>,
+    TError,
+    { id: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deactivateAdminShippingRoute>>,
+  TError,
+  { id: string },
+  TContext
+> => {
+  return useMutation(getDeactivateAdminShippingRouteMutationOptions(options));
+};

@@ -2103,3 +2103,531 @@ export const ListWarehousesResponseItem = zod.object({
   lng: zod.number().nullish(),
 });
 export const ListWarehousesResponse = zod.array(ListWarehousesResponseItem);
+
+/**
+ * @summary List active warehouse hubs (auth-only, for dropdowns)
+ */
+export const ListPublicHubsResponse = zod.object({
+  hubs: zod.array(
+    zod.object({
+      id: zod.string(),
+      code: zod.string(),
+      name: zod.string(),
+      city: zod.string(),
+      country: zod.string(),
+      capacityMT: zod.number().nullish(),
+      commodityTypes: zod.array(zod.string()),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    }),
+  ),
+});
+
+/**
+ * @summary List active shipping routes (auth-only, for dropdowns)
+ */
+export const ListPublicShippingRoutesResponse = zod.object({
+  routes: zod.array(
+    zod.object({
+      id: zod.string(),
+      code: zod.string().nullish(),
+      originHubId: zod.string(),
+      destinationName: zod.string(),
+      destinationCountry: zod.string(),
+      mode: zod.enum(["sea", "road", "rail", "air"]),
+      transitDays: zod.number().nullish(),
+      baseFreightRateCents: zod.number().nullish(),
+      freightCurrency: zod.string(),
+      freightPerUnit: zod.string(),
+      carrierId: zod.string().nullish(),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    }),
+  ),
+});
+
+/**
+ * @summary Admin — list all hubs with utilisation
+ */
+export const ListAdminHubsResponse = zod.object({
+  hubs: zod.array(
+    zod
+      .object({
+        id: zod.string(),
+        code: zod.string(),
+        name: zod.string(),
+        city: zod.string(),
+        country: zod.string(),
+        capacityMT: zod.number().nullish(),
+        commodityTypes: zod.array(zod.string()),
+        status: zod.enum(["active", "inactive", "under_maintenance"]),
+      })
+      .and(
+        zod.object({
+          address: zod.string().nullish(),
+          latitude: zod.string().nullish(),
+          longitude: zod.string().nullish(),
+          contactEmail: zod.string().nullish(),
+          contactPhone: zod.string().nullish(),
+          hubInchargeUserId: zod.string().nullish(),
+          operatorName: zod.string().nullish(),
+          photos: zod.array(zod.string()).optional(),
+          openConsignments: zod.number().optional(),
+          lastActivityAt: zod.coerce.date().nullish(),
+          inchargeName: zod.string().nullish(),
+          inchargeEmail: zod.string().nullish(),
+        }),
+      ),
+  ),
+});
+
+/**
+ * @summary Admin — create a warehouse hub
+ */
+export const createAdminHubBodyCodeMin = 2;
+export const createAdminHubBodyCodeMax = 10;
+
+export const createAdminHubBodyCodeRegExp = new RegExp("^[A-Z0-9-]+$");
+export const createAdminHubBodyNameMin = 2;
+export const createAdminHubBodyNameMax = 255;
+
+export const createAdminHubBodyCityMax = 100;
+
+export const createAdminHubBodyCountryMax = 100;
+
+export const createAdminHubBodyLatitudeMin = -90;
+export const createAdminHubBodyLatitudeMax = 90;
+
+export const createAdminHubBodyLongitudeMin = -180;
+export const createAdminHubBodyLongitudeMax = 180;
+
+export const CreateAdminHubBody = zod.object({
+  code: zod
+    .string()
+    .min(createAdminHubBodyCodeMin)
+    .max(createAdminHubBodyCodeMax)
+    .regex(createAdminHubBodyCodeRegExp),
+  name: zod
+    .string()
+    .min(createAdminHubBodyNameMin)
+    .max(createAdminHubBodyNameMax),
+  city: zod.string().min(1).max(createAdminHubBodyCityMax),
+  country: zod.string().min(1).max(createAdminHubBodyCountryMax),
+  address: zod.string().nullish(),
+  capacityMT: zod.number().min(1).nullish(),
+  latitude: zod
+    .number()
+    .min(createAdminHubBodyLatitudeMin)
+    .max(createAdminHubBodyLatitudeMax)
+    .nullish(),
+  longitude: zod
+    .number()
+    .min(createAdminHubBodyLongitudeMin)
+    .max(createAdminHubBodyLongitudeMax)
+    .nullish(),
+  commodityTypes: zod.array(zod.string()).optional(),
+  contactEmail: zod.string().email().nullish(),
+  contactPhone: zod.string().nullish(),
+  hubInchargeUserId: zod.string().nullish(),
+  operatorName: zod.string().nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  photos: zod.array(zod.string().url()).optional(),
+});
+
+export const UpdateAdminHubParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const updateAdminHubBodyCodeMin = 2;
+export const updateAdminHubBodyCodeMax = 10;
+
+export const updateAdminHubBodyCodeRegExp = new RegExp("^[A-Z0-9-]+$");
+export const updateAdminHubBodyNameMin = 2;
+export const updateAdminHubBodyNameMax = 255;
+
+export const updateAdminHubBodyCityMax = 100;
+
+export const updateAdminHubBodyCountryMax = 100;
+
+export const updateAdminHubBodyLatitudeMin = -90;
+export const updateAdminHubBodyLatitudeMax = 90;
+
+export const updateAdminHubBodyLongitudeMin = -180;
+export const updateAdminHubBodyLongitudeMax = 180;
+
+export const UpdateAdminHubBody = zod.object({
+  code: zod
+    .string()
+    .min(updateAdminHubBodyCodeMin)
+    .max(updateAdminHubBodyCodeMax)
+    .regex(updateAdminHubBodyCodeRegExp),
+  name: zod
+    .string()
+    .min(updateAdminHubBodyNameMin)
+    .max(updateAdminHubBodyNameMax),
+  city: zod.string().min(1).max(updateAdminHubBodyCityMax),
+  country: zod.string().min(1).max(updateAdminHubBodyCountryMax),
+  address: zod.string().nullish(),
+  capacityMT: zod.number().min(1).nullish(),
+  latitude: zod
+    .number()
+    .min(updateAdminHubBodyLatitudeMin)
+    .max(updateAdminHubBodyLatitudeMax)
+    .nullish(),
+  longitude: zod
+    .number()
+    .min(updateAdminHubBodyLongitudeMin)
+    .max(updateAdminHubBodyLongitudeMax)
+    .nullish(),
+  commodityTypes: zod.array(zod.string()).optional(),
+  contactEmail: zod.string().email().nullish(),
+  contactPhone: zod.string().nullish(),
+  hubInchargeUserId: zod.string().nullish(),
+  operatorName: zod.string().nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  photos: zod.array(zod.string().url()).optional(),
+});
+
+export const UpdateAdminHubResponse = zod.object({
+  hub: zod
+    .object({
+      id: zod.string(),
+      code: zod.string(),
+      name: zod.string(),
+      city: zod.string(),
+      country: zod.string(),
+      capacityMT: zod.number().nullish(),
+      commodityTypes: zod.array(zod.string()),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    })
+    .and(
+      zod.object({
+        address: zod.string().nullish(),
+        latitude: zod.string().nullish(),
+        longitude: zod.string().nullish(),
+        contactEmail: zod.string().nullish(),
+        contactPhone: zod.string().nullish(),
+        hubInchargeUserId: zod.string().nullish(),
+        operatorName: zod.string().nullish(),
+        photos: zod.array(zod.string()).optional(),
+        openConsignments: zod.number().optional(),
+        lastActivityAt: zod.coerce.date().nullish(),
+        inchargeName: zod.string().nullish(),
+        inchargeEmail: zod.string().nullish(),
+      }),
+    ),
+});
+
+export const DeactivateAdminHubParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const DeactivateAdminHubResponse = zod.object({
+  hub: zod
+    .object({
+      id: zod.string(),
+      code: zod.string(),
+      name: zod.string(),
+      city: zod.string(),
+      country: zod.string(),
+      capacityMT: zod.number().nullish(),
+      commodityTypes: zod.array(zod.string()),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    })
+    .and(
+      zod.object({
+        address: zod.string().nullish(),
+        latitude: zod.string().nullish(),
+        longitude: zod.string().nullish(),
+        contactEmail: zod.string().nullish(),
+        contactPhone: zod.string().nullish(),
+        hubInchargeUserId: zod.string().nullish(),
+        operatorName: zod.string().nullish(),
+        photos: zod.array(zod.string()).optional(),
+        openConsignments: zod.number().optional(),
+        lastActivityAt: zod.coerce.date().nullish(),
+        inchargeName: zod.string().nullish(),
+        inchargeEmail: zod.string().nullish(),
+      }),
+    ),
+});
+
+export const ListAdminCarriersResponse = zod.object({
+  carriers: zod.array(
+    zod.object({
+      id: zod.string(),
+      name: zod.string(),
+      carrierType: zod.enum(["sea", "road", "rail", "air"]),
+      registrationNo: zod.string().nullish(),
+      contactName: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      contactPhone: zod.string().nullish(),
+      supportedLanes: zod.array(zod.string()),
+      onTimeScore: zod.string().nullish(),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+      notes: zod.string().nullish(),
+    }),
+  ),
+});
+
+export const createAdminCarrierBodyNameMin = 2;
+export const createAdminCarrierBodyNameMax = 255;
+
+export const createAdminCarrierBodyOnTimeScoreMin = 0;
+export const createAdminCarrierBodyOnTimeScoreMax = 100;
+
+export const CreateAdminCarrierBody = zod.object({
+  name: zod
+    .string()
+    .min(createAdminCarrierBodyNameMin)
+    .max(createAdminCarrierBodyNameMax),
+  carrierType: zod.enum(["sea", "road", "rail", "air"]),
+  registrationNo: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+  contactEmail: zod.string().email().nullish(),
+  contactPhone: zod.string().nullish(),
+  supportedLanes: zod.array(zod.string()).optional(),
+  onTimeScore: zod
+    .number()
+    .min(createAdminCarrierBodyOnTimeScoreMin)
+    .max(createAdminCarrierBodyOnTimeScoreMax)
+    .nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateAdminCarrierParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const updateAdminCarrierBodyNameMin = 2;
+export const updateAdminCarrierBodyNameMax = 255;
+
+export const updateAdminCarrierBodyOnTimeScoreMin = 0;
+export const updateAdminCarrierBodyOnTimeScoreMax = 100;
+
+export const UpdateAdminCarrierBody = zod.object({
+  name: zod
+    .string()
+    .min(updateAdminCarrierBodyNameMin)
+    .max(updateAdminCarrierBodyNameMax),
+  carrierType: zod.enum(["sea", "road", "rail", "air"]),
+  registrationNo: zod.string().nullish(),
+  contactName: zod.string().nullish(),
+  contactEmail: zod.string().email().nullish(),
+  contactPhone: zod.string().nullish(),
+  supportedLanes: zod.array(zod.string()).optional(),
+  onTimeScore: zod
+    .number()
+    .min(updateAdminCarrierBodyOnTimeScoreMin)
+    .max(updateAdminCarrierBodyOnTimeScoreMax)
+    .nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateAdminCarrierResponse = zod.object({
+  carrier: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    carrierType: zod.enum(["sea", "road", "rail", "air"]),
+    registrationNo: zod.string().nullish(),
+    contactName: zod.string().nullish(),
+    contactEmail: zod.string().nullish(),
+    contactPhone: zod.string().nullish(),
+    supportedLanes: zod.array(zod.string()),
+    onTimeScore: zod.string().nullish(),
+    status: zod.enum(["active", "inactive", "under_maintenance"]),
+    notes: zod.string().nullish(),
+  }),
+});
+
+export const DeactivateAdminCarrierParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const DeactivateAdminCarrierResponse = zod.object({
+  carrier: zod.object({
+    id: zod.string(),
+    name: zod.string(),
+    carrierType: zod.enum(["sea", "road", "rail", "air"]),
+    registrationNo: zod.string().nullish(),
+    contactName: zod.string().nullish(),
+    contactEmail: zod.string().nullish(),
+    contactPhone: zod.string().nullish(),
+    supportedLanes: zod.array(zod.string()),
+    onTimeScore: zod.string().nullish(),
+    status: zod.enum(["active", "inactive", "under_maintenance"]),
+    notes: zod.string().nullish(),
+  }),
+});
+
+export const ListAdminShippingRoutesResponse = zod.object({
+  routes: zod.array(
+    zod
+      .object({
+        id: zod.string(),
+        code: zod.string().nullish(),
+        originHubId: zod.string(),
+        destinationName: zod.string(),
+        destinationCountry: zod.string(),
+        mode: zod.enum(["sea", "road", "rail", "air"]),
+        transitDays: zod.number().nullish(),
+        baseFreightRateCents: zod.number().nullish(),
+        freightCurrency: zod.string(),
+        freightPerUnit: zod.string(),
+        carrierId: zod.string().nullish(),
+        status: zod.enum(["active", "inactive", "under_maintenance"]),
+      })
+      .and(
+        zod.object({
+          customsBroker: zod.string().nullish(),
+          notes: zod.string().nullish(),
+        }),
+      ),
+  ),
+});
+
+export const createAdminShippingRouteBodyDestinationNameMax = 255;
+
+export const createAdminShippingRouteBodyDestinationCountryMax = 100;
+
+export const createAdminShippingRouteBodyTransitDaysMin = 0;
+export const createAdminShippingRouteBodyTransitDaysMax = 365;
+
+export const createAdminShippingRouteBodyBaseFreightRateCentsMin = 0;
+
+export const createAdminShippingRouteBodyFreightCurrencyMin = 3;
+export const createAdminShippingRouteBodyFreightCurrencyMax = 3;
+
+export const CreateAdminShippingRouteBody = zod.object({
+  code: zod.string().nullish(),
+  originHubId: zod.string(),
+  destinationName: zod
+    .string()
+    .min(1)
+    .max(createAdminShippingRouteBodyDestinationNameMax),
+  destinationCountry: zod
+    .string()
+    .min(1)
+    .max(createAdminShippingRouteBodyDestinationCountryMax),
+  mode: zod.enum(["sea", "road", "rail", "air"]),
+  transitDays: zod
+    .number()
+    .min(createAdminShippingRouteBodyTransitDaysMin)
+    .max(createAdminShippingRouteBodyTransitDaysMax)
+    .nullish(),
+  baseFreightRateCents: zod
+    .number()
+    .min(createAdminShippingRouteBodyBaseFreightRateCentsMin)
+    .nullish(),
+  freightCurrency: zod
+    .string()
+    .min(createAdminShippingRouteBodyFreightCurrencyMin)
+    .max(createAdminShippingRouteBodyFreightCurrencyMax)
+    .optional(),
+  freightPerUnit: zod.string().optional(),
+  customsBroker: zod.string().nullish(),
+  carrierId: zod.string().nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateAdminShippingRouteParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const updateAdminShippingRouteBodyDestinationNameMax = 255;
+
+export const updateAdminShippingRouteBodyDestinationCountryMax = 100;
+
+export const updateAdminShippingRouteBodyTransitDaysMin = 0;
+export const updateAdminShippingRouteBodyTransitDaysMax = 365;
+
+export const updateAdminShippingRouteBodyBaseFreightRateCentsMin = 0;
+
+export const updateAdminShippingRouteBodyFreightCurrencyMin = 3;
+export const updateAdminShippingRouteBodyFreightCurrencyMax = 3;
+
+export const UpdateAdminShippingRouteBody = zod.object({
+  code: zod.string().nullish(),
+  originHubId: zod.string(),
+  destinationName: zod
+    .string()
+    .min(1)
+    .max(updateAdminShippingRouteBodyDestinationNameMax),
+  destinationCountry: zod
+    .string()
+    .min(1)
+    .max(updateAdminShippingRouteBodyDestinationCountryMax),
+  mode: zod.enum(["sea", "road", "rail", "air"]),
+  transitDays: zod
+    .number()
+    .min(updateAdminShippingRouteBodyTransitDaysMin)
+    .max(updateAdminShippingRouteBodyTransitDaysMax)
+    .nullish(),
+  baseFreightRateCents: zod
+    .number()
+    .min(updateAdminShippingRouteBodyBaseFreightRateCentsMin)
+    .nullish(),
+  freightCurrency: zod
+    .string()
+    .min(updateAdminShippingRouteBodyFreightCurrencyMin)
+    .max(updateAdminShippingRouteBodyFreightCurrencyMax)
+    .optional(),
+  freightPerUnit: zod.string().optional(),
+  customsBroker: zod.string().nullish(),
+  carrierId: zod.string().nullish(),
+  status: zod.enum(["active", "inactive", "under_maintenance"]).optional(),
+  notes: zod.string().nullish(),
+});
+
+export const UpdateAdminShippingRouteResponse = zod.object({
+  route: zod
+    .object({
+      id: zod.string(),
+      code: zod.string().nullish(),
+      originHubId: zod.string(),
+      destinationName: zod.string(),
+      destinationCountry: zod.string(),
+      mode: zod.enum(["sea", "road", "rail", "air"]),
+      transitDays: zod.number().nullish(),
+      baseFreightRateCents: zod.number().nullish(),
+      freightCurrency: zod.string(),
+      freightPerUnit: zod.string(),
+      carrierId: zod.string().nullish(),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    })
+    .and(
+      zod.object({
+        customsBroker: zod.string().nullish(),
+        notes: zod.string().nullish(),
+      }),
+    ),
+});
+
+export const DeactivateAdminShippingRouteParams = zod.object({
+  id: zod.coerce.string(),
+});
+
+export const DeactivateAdminShippingRouteResponse = zod.object({
+  route: zod
+    .object({
+      id: zod.string(),
+      code: zod.string().nullish(),
+      originHubId: zod.string(),
+      destinationName: zod.string(),
+      destinationCountry: zod.string(),
+      mode: zod.enum(["sea", "road", "rail", "air"]),
+      transitDays: zod.number().nullish(),
+      baseFreightRateCents: zod.number().nullish(),
+      freightCurrency: zod.string(),
+      freightPerUnit: zod.string(),
+      carrierId: zod.string().nullish(),
+      status: zod.enum(["active", "inactive", "under_maintenance"]),
+    })
+    .and(
+      zod.object({
+        customsBroker: zod.string().nullish(),
+        notes: zod.string().nullish(),
+      }),
+    ),
+});

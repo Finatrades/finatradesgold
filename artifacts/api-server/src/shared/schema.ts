@@ -3359,6 +3359,11 @@ export const tradeShipments = pgTable("trade_shipments", {
 
   // LGPW/FGPW wallet selection - which wallet gold is used for settlement
   goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
+
+  // Task #168 — Hub & Logistics Master wiring
+  carrierId: varchar("carrier_id", { length: 255 }).references((): AnyPgColumn => carriers.id),
+  shippingRouteId: varchar("shipping_route_id", { length: 255 }).references((): AnyPgColumn => shippingRoutes.id),
+
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -5110,7 +5115,7 @@ export const insertCommoditySchema = createInsertSchema(commodities).omit({ id: 
 export type InsertCommodity = z.infer<typeof insertCommoditySchema>;
 export type Commodity = typeof commodities.$inferSelect;
 
-// --- Warehouse Hubs (admin-managed, 14 African hubs) ---
+// --- Warehouse Hubs (admin-managed) — extended by Task #168 ---
 export const warehouseHubs = pgTable("warehouse_hubs", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   code: varchar("code", { length: 10 }).notNull().unique(),
@@ -5121,6 +5126,16 @@ export const warehouseHubs = pgTable("warehouse_hubs", {
   capacityMT: integer("capacity_mt"),
   operatorName: varchar("operator_name", { length: 255 }),
   isActive: boolean("is_active").notNull().default(true),
+  // Task #168 — Hub & Logistics Master extensions
+  latitude: decimal("latitude", { precision: 10, scale: 7 }),
+  longitude: decimal("longitude", { precision: 10, scale: 7 }),
+  commodityTypes: jsonb("commodity_types").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  hubInchargeUserId: varchar("hub_incharge_user_id", { length: 255 }).references((): AnyPgColumn => users.id),
+  status: varchar("status", { length: 32 }).notNull().default('active'), // active | inactive | under_maintenance
+  photos: jsonb("photos").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  lastActivityAt: timestamp("last_activity_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -5128,6 +5143,51 @@ export const warehouseHubs = pgTable("warehouse_hubs", {
 export const insertWarehouseHubSchema = createInsertSchema(warehouseHubs).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertWarehouseHub = z.infer<typeof insertWarehouseHubSchema>;
 export type WarehouseHub = typeof warehouseHubs.$inferSelect;
+
+// --- Carriers (Task #168) ---
+export const carriers = pgTable("carriers", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  name: varchar("name", { length: 255 }).notNull(),
+  carrierType: varchar("carrier_type", { length: 20 }).notNull(), // sea | road | rail | air
+  registrationNo: varchar("registration_no", { length: 100 }),
+  contactName: varchar("contact_name", { length: 255 }),
+  contactEmail: varchar("contact_email", { length: 255 }),
+  contactPhone: varchar("contact_phone", { length: 50 }),
+  supportedLanes: jsonb("supported_lanes").$type<string[]>().notNull().default(sql`'[]'::jsonb`),
+  onTimeScore: decimal("on_time_score", { precision: 5, scale: 2 }),
+  status: varchar("status", { length: 32 }).notNull().default('active'),
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type Carrier = typeof carriers.$inferSelect;
+export type InsertCarrier = typeof carriers.$inferInsert;
+
+// --- Shipping Routes (Task #168) ---
+export const shippingRoutes = pgTable("shipping_routes", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  code: varchar("code", { length: 40 }).unique(),
+  originHubId: varchar("origin_hub_id", { length: 255 }).notNull().references((): AnyPgColumn => warehouseHubs.id),
+  destinationName: varchar("destination_name", { length: 255 }).notNull(),
+  destinationCountry: varchar("destination_country", { length: 100 }).notNull(),
+  mode: varchar("mode", { length: 20 }).notNull(), // sea | road | rail | air
+  transitDays: integer("transit_days"),
+  baseFreightRateCents: bigint("base_freight_rate_cents", { mode: "number" }),
+  freightCurrency: varchar("freight_currency", { length: 10 }).notNull().default('USD'),
+  freightPerUnit: varchar("freight_per_unit", { length: 20 }).notNull().default('MT'),
+  customsBroker: varchar("customs_broker", { length: 255 }),
+  carrierId: varchar("carrier_id", { length: 255 }).references((): AnyPgColumn => carriers.id),
+  status: varchar("status", { length: 32 }).notNull().default('active'),
+  notes: text("notes"),
+  createdBy: varchar("created_by", { length: 255 }).references((): AnyPgColumn => users.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type ShippingRoute = typeof shippingRoutes.$inferSelect;
+export type InsertShippingRoute = typeof shippingRoutes.$inferInsert;
 
 // --- Consignments (Step 2) ---
 export const consignments = pgTable("consignments", {

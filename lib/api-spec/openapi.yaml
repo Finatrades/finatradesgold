@@ -38,6 +38,11 @@ tags:
     description: B2B wallet — admin reconciliation & withdrawal queue
   - name: admin-email-queues
     description: Admin view of BullMQ background queues (failed jobs + retry)
+  - name: network
+    description: |
+      Hub & Logistics Master (Task #168). Admin CRUD for warehouse hubs,
+      carriers, and shipping routes. Public read endpoints expose only the
+      `active` subset for use in consignment/shipment dropdowns.
   - name: wallet-webhooks
     description: |
       Inbound webhooks from third-party money-movement providers (Stripe card top-ups,
@@ -1312,8 +1317,401 @@ paths:
                 items:
                   $ref: "#/components/schemas/Warehouse"
 
+  # ── Network: Hub & Logistics Master (Task #168) ─────────────────────────
+  /hubs:
+    get:
+      tags: [network]
+      operationId: listPublicHubs
+      summary: List active warehouse hubs (auth-only, for dropdowns)
+      responses:
+        '200':
+          description: Active hubs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hubs]
+                properties:
+                  hubs:
+                    type: array
+                    items: { $ref: "#/components/schemas/PublicHub" }
+  /shipping-routes:
+    get:
+      tags: [network]
+      operationId: listPublicShippingRoutes
+      summary: List active shipping routes (auth-only, for dropdowns)
+      responses:
+        '200':
+          description: Active routes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [routes]
+                properties:
+                  routes:
+                    type: array
+                    items: { $ref: "#/components/schemas/PublicShippingRoute" }
+  /admin/hubs:
+    get:
+      tags: [network]
+      operationId: listAdminHubs
+      summary: Admin — list all hubs with utilisation
+      responses:
+        '200':
+          description: Hubs
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hubs]
+                properties:
+                  hubs:
+                    type: array
+                    items: { $ref: "#/components/schemas/AdminHub" }
+    post:
+      tags: [network]
+      operationId: createAdminHub
+      summary: Admin — create a warehouse hub
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HubInput" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hub]
+                properties: { hub: { $ref: "#/components/schemas/AdminHub" } }
+  /admin/hubs/{id}:
+    patch:
+      tags: [network]
+      operationId: updateAdminHub
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/HubInput" }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hub]
+                properties: { hub: { $ref: "#/components/schemas/AdminHub" } }
+    delete:
+      tags: [network]
+      operationId: deactivateAdminHub
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hub]
+                properties: { hub: { $ref: "#/components/schemas/AdminHub" } }
+  /admin/carriers:
+    get:
+      tags: [network]
+      operationId: listAdminCarriers
+      responses:
+        '200':
+          description: Carriers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [carriers]
+                properties:
+                  carriers:
+                    type: array
+                    items: { $ref: "#/components/schemas/Carrier" }
+    post:
+      tags: [network]
+      operationId: createAdminCarrier
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CarrierInput" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [carrier]
+                properties: { carrier: { $ref: "#/components/schemas/Carrier" } }
+  /admin/carriers/{id}:
+    patch:
+      tags: [network]
+      operationId: updateAdminCarrier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CarrierInput" }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [carrier]
+                properties: { carrier: { $ref: "#/components/schemas/Carrier" } }
+    delete:
+      tags: [network]
+      operationId: deactivateAdminCarrier
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [carrier]
+                properties: { carrier: { $ref: "#/components/schemas/Carrier" } }
+  /admin/shipping-routes:
+    get:
+      tags: [network]
+      operationId: listAdminShippingRoutes
+      responses:
+        '200':
+          description: Routes
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [routes]
+                properties:
+                  routes:
+                    type: array
+                    items: { $ref: "#/components/schemas/ShippingRoute" }
+    post:
+      tags: [network]
+      operationId: createAdminShippingRoute
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShippingRouteInput" }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [route]
+                properties: { route: { $ref: "#/components/schemas/ShippingRoute" } }
+  /admin/shipping-routes/{id}:
+    patch:
+      tags: [network]
+      operationId: updateAdminShippingRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ShippingRouteInput" }
+      responses:
+        '200':
+          description: Updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [route]
+                properties: { route: { $ref: "#/components/schemas/ShippingRoute" } }
+    delete:
+      tags: [network]
+      operationId: deactivateAdminShippingRoute
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Deactivated
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [route]
+                properties: { route: { $ref: "#/components/schemas/ShippingRoute" } }
+
 components:
   schemas:
+    NetworkStatus:
+      type: string
+      enum: [active, inactive, under_maintenance]
+    TransportMode:
+      type: string
+      enum: [sea, road, rail, air]
+    PublicHub:
+      type: object
+      required: [id, code, name, city, country, commodityTypes, status]
+      properties:
+        id: { type: string }
+        code: { type: string }
+        name: { type: string }
+        city: { type: string }
+        country: { type: string }
+        capacityMT: { type: ["integer", "null"] }
+        commodityTypes:
+          type: array
+          items: { type: string }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+    AdminHub:
+      allOf:
+        - $ref: "#/components/schemas/PublicHub"
+        - type: object
+          properties:
+            address: { type: ["string", "null"] }
+            latitude: { type: ["string", "null"] }
+            longitude: { type: ["string", "null"] }
+            contactEmail: { type: ["string", "null"] }
+            contactPhone: { type: ["string", "null"] }
+            hubInchargeUserId: { type: ["string", "null"] }
+            operatorName: { type: ["string", "null"] }
+            photos:
+              type: array
+              items: { type: string }
+            openConsignments: { type: integer }
+            lastActivityAt: { type: ["string", "null"], format: date-time }
+            inchargeName: { type: ["string", "null"] }
+            inchargeEmail: { type: ["string", "null"] }
+    HubInput:
+      type: object
+      required: [code, name, city, country]
+      properties:
+        code: { type: string, pattern: "^[A-Z0-9-]+$", minLength: 2, maxLength: 10 }
+        name: { type: string, minLength: 2, maxLength: 255 }
+        city: { type: string, minLength: 1, maxLength: 100 }
+        country: { type: string, minLength: 1, maxLength: 100 }
+        address: { type: ["string", "null"] }
+        capacityMT: { type: ["integer", "null"], minimum: 1 }
+        latitude: { type: ["number", "null"], minimum: -90, maximum: 90 }
+        longitude: { type: ["number", "null"], minimum: -180, maximum: 180 }
+        commodityTypes:
+          type: array
+          items: { type: string }
+        contactEmail: { type: ["string", "null"], format: email }
+        contactPhone: { type: ["string", "null"] }
+        hubInchargeUserId: { type: ["string", "null"] }
+        operatorName: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+        photos:
+          type: array
+          items: { type: string, format: uri }
+    Carrier:
+      type: object
+      required: [id, name, carrierType, status, supportedLanes]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        carrierType: { $ref: "#/components/schemas/TransportMode" }
+        registrationNo: { type: ["string", "null"] }
+        contactName: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"] }
+        contactPhone: { type: ["string", "null"] }
+        supportedLanes:
+          type: array
+          items: { type: string }
+        onTimeScore: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+        notes: { type: ["string", "null"] }
+    CarrierInput:
+      type: object
+      required: [name, carrierType]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 255 }
+        carrierType: { $ref: "#/components/schemas/TransportMode" }
+        registrationNo: { type: ["string", "null"] }
+        contactName: { type: ["string", "null"] }
+        contactEmail: { type: ["string", "null"], format: email }
+        contactPhone: { type: ["string", "null"] }
+        supportedLanes:
+          type: array
+          items: { type: string }
+        onTimeScore: { type: ["number", "null"], minimum: 0, maximum: 100 }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+        notes: { type: ["string", "null"] }
+    PublicShippingRoute:
+      type: object
+      required: [id, originHubId, destinationName, destinationCountry, mode, freightCurrency, freightPerUnit, status]
+      properties:
+        id: { type: string }
+        code: { type: ["string", "null"] }
+        originHubId: { type: string }
+        destinationName: { type: string }
+        destinationCountry: { type: string }
+        mode: { $ref: "#/components/schemas/TransportMode" }
+        transitDays: { type: ["integer", "null"] }
+        baseFreightRateCents: { type: ["integer", "null"] }
+        freightCurrency: { type: string }
+        freightPerUnit: { type: string }
+        carrierId: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+    ShippingRoute:
+      allOf:
+        - $ref: "#/components/schemas/PublicShippingRoute"
+        - type: object
+          properties:
+            customsBroker: { type: ["string", "null"] }
+            notes: { type: ["string", "null"] }
+    ShippingRouteInput:
+      type: object
+      required: [originHubId, destinationName, destinationCountry, mode]
+      properties:
+        code: { type: ["string", "null"] }
+        originHubId: { type: string }
+        destinationName: { type: string, minLength: 1, maxLength: 255 }
+        destinationCountry: { type: string, minLength: 1, maxLength: 100 }
+        mode: { $ref: "#/components/schemas/TransportMode" }
+        transitDays: { type: ["integer", "null"], minimum: 0, maximum: 365 }
+        baseFreightRateCents: { type: ["integer", "null"], minimum: 0 }
+        freightCurrency: { type: string, minLength: 3, maxLength: 3 }
+        freightPerUnit: { type: string }
+        customsBroker: { type: ["string", "null"] }
+        carrierId: { type: ["string", "null"] }
+        status: { $ref: "#/components/schemas/NetworkStatus" }
+        notes: { type: ["string", "null"] }
+
     HealthStatus:
       type: object
       properties:

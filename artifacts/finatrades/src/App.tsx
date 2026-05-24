@@ -42,6 +42,10 @@ import AdminMilestonePresets from "@/pages/admin/AdminMilestonePresets";
 import AdminEscrowConfig from "@/pages/admin/AdminEscrowConfig";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
+import AdminHubs from "@/pages/dashboard/AdminHubs";
+import AdminCarriers from "@/pages/dashboard/AdminCarriers";
+import AdminShippingRoutes from "@/pages/dashboard/AdminShippingRoutes";
+import AdminShipments from "@/pages/dashboard/AdminShipments";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
 import { Suspense, useEffect } from "react";
 import { canAccess } from "@/lib/roleMenus";
@@ -258,6 +262,18 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/risk">
         <AdminRoute component={AdminRisk} />
+      </Route>
+      <Route path="/admin/hubs">
+        <AdminRoute component={AdminHubs} />
+      </Route>
+      <Route path="/admin/carriers">
+        <AdminRoute component={AdminCarriers} />
+      </Route>
+      <Route path="/admin/shipping-routes">
+        <AdminRoute component={AdminShippingRoutes} />
+      </Route>
+      <Route path="/admin/shipments">
+        <AdminRoute component={AdminShipments} />
       </Route>
 
       {/* Account */}

@@ -5,6 +5,228 @@
  * Finatrades B2B Commodity Trade Platform API
  * OpenAPI spec version: 0.1.0
  */
+export type NetworkStatus = (typeof NetworkStatus)[keyof typeof NetworkStatus];
+
+export const NetworkStatus = {
+  active: "active",
+  inactive: "inactive",
+  under_maintenance: "under_maintenance",
+} as const;
+
+export type TransportMode = (typeof TransportMode)[keyof typeof TransportMode];
+
+export const TransportMode = {
+  sea: "sea",
+  road: "road",
+  rail: "rail",
+  air: "air",
+} as const;
+
+export interface PublicHub {
+  id: string;
+  code: string;
+  name: string;
+  city: string;
+  country: string;
+  /** @nullable */
+  capacityMT?: number | null;
+  commodityTypes: string[];
+  status: NetworkStatus;
+}
+
+export type AdminHub = PublicHub & {
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  latitude?: string | null;
+  /** @nullable */
+  longitude?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  hubInchargeUserId?: string | null;
+  /** @nullable */
+  operatorName?: string | null;
+  photos?: string[];
+  openConsignments?: number;
+  /** @nullable */
+  lastActivityAt?: string | null;
+  /** @nullable */
+  inchargeName?: string | null;
+  /** @nullable */
+  inchargeEmail?: string | null;
+};
+
+export interface HubInput {
+  /**
+   * @minLength 2
+   * @maxLength 10
+   * @pattern ^[A-Z0-9-]+$
+   */
+  code: string;
+  /**
+   * @minLength 2
+   * @maxLength 255
+   */
+  name: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  city: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  country: string;
+  /** @nullable */
+  address?: string | null;
+  /**
+   * @minimum 1
+   * @nullable
+   */
+  capacityMT?: number | null;
+  /**
+   * @minimum -90
+   * @maximum 90
+   * @nullable
+   */
+  latitude?: number | null;
+  /**
+   * @minimum -180
+   * @maximum 180
+   * @nullable
+   */
+  longitude?: number | null;
+  commodityTypes?: string[];
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  /** @nullable */
+  hubInchargeUserId?: string | null;
+  /** @nullable */
+  operatorName?: string | null;
+  status?: NetworkStatus;
+  photos?: string[];
+}
+
+export interface Carrier {
+  id: string;
+  name: string;
+  carrierType: TransportMode;
+  /** @nullable */
+  registrationNo?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  supportedLanes: string[];
+  /** @nullable */
+  onTimeScore?: string | null;
+  status: NetworkStatus;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface CarrierInput {
+  /**
+   * @minLength 2
+   * @maxLength 255
+   */
+  name: string;
+  carrierType: TransportMode;
+  /** @nullable */
+  registrationNo?: string | null;
+  /** @nullable */
+  contactName?: string | null;
+  /** @nullable */
+  contactEmail?: string | null;
+  /** @nullable */
+  contactPhone?: string | null;
+  supportedLanes?: string[];
+  /**
+   * @minimum 0
+   * @maximum 100
+   * @nullable
+   */
+  onTimeScore?: number | null;
+  status?: NetworkStatus;
+  /** @nullable */
+  notes?: string | null;
+}
+
+export interface PublicShippingRoute {
+  id: string;
+  /** @nullable */
+  code?: string | null;
+  originHubId: string;
+  destinationName: string;
+  destinationCountry: string;
+  mode: TransportMode;
+  /** @nullable */
+  transitDays?: number | null;
+  /** @nullable */
+  baseFreightRateCents?: number | null;
+  freightCurrency: string;
+  freightPerUnit: string;
+  /** @nullable */
+  carrierId?: string | null;
+  status: NetworkStatus;
+}
+
+export type ShippingRoute = PublicShippingRoute & {
+  /** @nullable */
+  customsBroker?: string | null;
+  /** @nullable */
+  notes?: string | null;
+};
+
+export interface ShippingRouteInput {
+  /** @nullable */
+  code?: string | null;
+  originHubId: string;
+  /**
+   * @minLength 1
+   * @maxLength 255
+   */
+  destinationName: string;
+  /**
+   * @minLength 1
+   * @maxLength 100
+   */
+  destinationCountry: string;
+  mode: TransportMode;
+  /**
+   * @minimum 0
+   * @maximum 365
+   * @nullable
+   */
+  transitDays?: number | null;
+  /**
+   * @minimum 0
+   * @nullable
+   */
+  baseFreightRateCents?: number | null;
+  /**
+   * @minLength 3
+   * @maxLength 3
+   */
+  freightCurrency?: string;
+  freightPerUnit?: string;
+  /** @nullable */
+  customsBroker?: string | null;
+  /** @nullable */
+  carrierId?: string | null;
+  status?: NetworkStatus;
+  /** @nullable */
+  notes?: string | null;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -1341,4 +1563,60 @@ export type AdminListWalletsParams = {
 
 export type AdminListWithdrawalsParams = {
   status?: string;
+};
+
+export type ListPublicHubs200 = {
+  hubs: PublicHub[];
+};
+
+export type ListPublicShippingRoutes200 = {
+  routes: PublicShippingRoute[];
+};
+
+export type ListAdminHubs200 = {
+  hubs: AdminHub[];
+};
+
+export type CreateAdminHub201 = {
+  hub: AdminHub;
+};
+
+export type UpdateAdminHub200 = {
+  hub: AdminHub;
+};
+
+export type DeactivateAdminHub200 = {
+  hub: AdminHub;
+};
+
+export type ListAdminCarriers200 = {
+  carriers: Carrier[];
+};
+
+export type CreateAdminCarrier201 = {
+  carrier: Carrier;
+};
+
+export type UpdateAdminCarrier200 = {
+  carrier: Carrier;
+};
+
+export type DeactivateAdminCarrier200 = {
+  carrier: Carrier;
+};
+
+export type ListAdminShippingRoutes200 = {
+  routes: ShippingRoute[];
+};
+
+export type CreateAdminShippingRoute201 = {
+  route: ShippingRoute;
+};
+
+export type UpdateAdminShippingRoute200 = {
+  route: ShippingRoute;
+};
+
+export type DeactivateAdminShippingRoute200 = {
+  route: ShippingRoute;
 };

@@ -12,7 +12,8 @@ interface ListCommodityWizardProps {
   onCreated?: (consignment: any) => void;
 }
 
-const HUBS = [
+type HubOption = { code: string; name: string; city?: string; country?: string };
+const FALLBACK_HUBS: HubOption[] = [
   { code: 'LOS', name: 'Lagos, Nigeria' },
   { code: 'NBI', name: 'Nairobi, Kenya' },
   { code: 'ACC', name: 'Accra, Ghana' },
@@ -23,6 +24,28 @@ const HUBS = [
   { code: 'CMN', name: 'Casablanca, Morocco' },
   { code: 'JNB', name: 'Johannesburg, South Africa' },
 ];
+
+function useLiveHubs(): HubOption[] {
+  const [hubs, setHubs] = React.useState<HubOption[]>(FALLBACK_HUBS);
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch('/api/hubs', { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (!cancelled && d?.hubs?.length) {
+          setHubs(d.hubs.map((h: any) => ({
+            code: h.code,
+            name: `${h.city ?? ''}${h.city && h.country ? ', ' : ''}${h.country ?? h.name}`,
+            city: h.city,
+            country: h.country,
+          })));
+        }
+      })
+      .catch(() => { /* keep fallback */ });
+    return () => { cancelled = true; };
+  }, []);
+  return hubs;
+}
 
 const COMMODITIES = [
   { name: 'Cocoa Beans', hsCode: '1801.00', unit: 'MT', category: 'Agricultural' },
@@ -380,6 +403,7 @@ function CommodityStep({ data, set, onPick }: any) {
 }
 
 function LogisticsStep({ data, set }: any) {
+  const HUBS = useLiveHubs();
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Field label="Origin Country" required>

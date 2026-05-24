@@ -286,6 +286,7 @@ import { queueTradeEmail } from "./jobs/trade-emails.job";
 import { registerWalletRoutes } from "./routes/wallet";
 import { registerTradeFinanceRoutes, pushImporterMilestoneReady } from "./routes/trade-finance";
 import { registerAdminAnalyticsRoutes } from "./routes/admin-analytics";
+import { registerNetworkRoutes } from "./routes/network";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -636,6 +637,10 @@ const LEGACY_TO_RBAC_MAP: Record<string, { components: string[]; action: RbacAct
   
   // Platform settings
   'manage_settings': { components: ['platform-settings', 'security-settings', 'branding'], action: 'edit' },
+
+  // Task #168 — Hub & Logistics Master (Network admin)
+  'manage_network': { components: ['platform-settings'], action: 'edit' },
+  'view_network': { components: ['platform-settings'], action: 'view' },
   
   // Reports
   'view_reports': { components: ['financial-reports', 'audit-logs', 'treasury', 'compliance-dashboard'], action: 'view' },
@@ -1202,6 +1207,7 @@ export async function registerRoutes(
   registerWalletRoutes(app);
   registerTradeFinanceRoutes(app);
   registerAdminAnalyticsRoutes(app);
+  registerNetworkRoutes(app, ensureAdminAsync, requirePermission);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);
@@ -9193,13 +9199,29 @@ export async function registerRoutes(
     }
   });
 
+  // List recent shipments (admin) — Task #168: surface carrier/route wiring
+  app.get("/api/admin/finabridge/shipments", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
+    try {
+      const limit = Math.min(parseInt(String(req.query.limit ?? '50'), 10) || 50, 200);
+      const rows = await db.select().from(tradeShipments)
+        .orderBy(desc(tradeShipments.updatedAt))
+        .limit(limit);
+      return res.json({ shipments: rows });
+    } catch (err) {
+      console.error('[Shipments] list failed:', err);
+      return res.status(500).json({ message: 'Failed to load shipments' });
+    }
+  });
+
   // Create/update shipment (admin)
   app.post("/api/admin/finabridge/shipments", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { 
         tradeRequestId, dealRoomId, trackingNumber, courierName, status,
         estimatedShipDate, actualShipDate, estimatedArrivalDate, actualArrivalDate,
-        originPort, destinationPort, currentLocation, customsStatus, notes
+        originPort, destinationPort, currentLocation, customsStatus, notes,
+        // Task #168 — Hub & Logistics Master wiring
+        carrierId, shippingRouteId,
       } = req.body;
       
       const [existing] = await db.select().from(tradeShipments)
@@ -9210,6 +9232,8 @@ export async function registerRoutes(
           trackingNumber, courierName, status, estimatedShipDate: estimatedShipDate ? new Date(estimatedShipDate) : null,
           actualShipDate: actualShipDate ? new Date(actualShipDate) : null, estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate) : null,
           actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null, originPort, destinationPort, currentLocation, customsStatus, notes,
+          ...(carrierId !== undefined ? { carrierId: carrierId || null } : {}),
+          ...(shippingRouteId !== undefined ? { shippingRouteId: shippingRouteId || null } : {}),
           updatedAt: new Date()
         }).where(eq(tradeShipments.id, existing.id)).returning();
 
@@ -9293,7 +9317,8 @@ export async function registerRoutes(
           id: crypto.randomUUID(), tradeRequestId, dealRoomId, trackingNumber, courierName, status: status || 'Pending',
           estimatedShipDate: estimatedShipDate ? new Date(estimatedShipDate) : null, actualShipDate: actualShipDate ? new Date(actualShipDate) : null,
           estimatedArrivalDate: estimatedArrivalDate ? new Date(estimatedArrivalDate) : null, actualArrivalDate: actualArrivalDate ? new Date(actualArrivalDate) : null,
-          originPort, destinationPort, currentLocation, customsStatus, notes
+          originPort, destinationPort, currentLocation, customsStatus, notes,
+          carrierId: carrierId || null, shippingRouteId: shippingRouteId || null,
         }).returning();
         
         // Notify both parties of new shipment tracking (bell + email)

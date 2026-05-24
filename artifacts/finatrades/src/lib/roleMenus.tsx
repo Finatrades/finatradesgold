@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale, Landmark, Workflow, Vault,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
-  Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox, Mail,
+  Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox, Mail, Truck, Route as RouteIcon,
 } from 'lucide-react';
 
 export type UserType = 'exporter' | 'importer' | 'government' | 'warehouse';
@@ -142,6 +142,22 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
       { icon: <Mail size={16} />, label: 'Email Queues', href: '/admin/email-queues' },
+    ],
+  },
+  {
+    key: 'network',
+    label: 'Network',
+    items: [
+      { icon: <Warehouse size={16} />, label: 'Warehouse Hubs', href: '/admin/hubs' },
+      { icon: <Truck size={16} />, label: 'Carriers', href: '/admin/carriers' },
+      { icon: <RouteIcon size={16} />, label: 'Shipping Routes', href: '/admin/shipping-routes' },
+      { icon: <Truck size={16} />, label: 'Shipments', href: '/admin/shipments' },
+    ],
+  },
+  {
+    key: 'ops2',
+    label: 'Risk & Insights',
+    items: [
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },
       { icon: <AlertTriangle size={16} />, label: 'Risk & AML', href: '/admin/risk' },
       { icon: <BarChart3 size={16} />, label: 'Analytics', href: '/admin/analytics' },
