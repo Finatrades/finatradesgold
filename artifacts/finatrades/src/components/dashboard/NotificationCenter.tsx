@@ -175,6 +175,7 @@ export default function NotificationCenter() {
 
   const getIcon = (type: string) => {
     switch (type) {
+      case 'trade': return <ArrowRightLeft className="w-4 h-4 text-blue-500" />;
       case 'transaction': return <Wallet className="w-4 h-4 text-blue-500" />;
       case 'kyc': return <Shield className="w-4 h-4 text-purple-500" />;
       case 'bnsl': return <TrendingUp className="w-4 h-4 text-green-500" />;
@@ -266,7 +267,7 @@ export default function NotificationCenter() {
 
             <div className="px-3 py-2 border-b border-border bg-muted/30">
               <div className="flex gap-1 overflow-x-auto scrollbar-hide">
-                {['all', 'unread', 'transaction', 'security', 'system'].map((f) => (
+                {['all', 'unread', 'trade', 'transaction', 'security', 'system'].map((f) => (
                   <button
                     key={f}
                     onClick={() => setFilter(f)}
