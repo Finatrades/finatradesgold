@@ -5,9 +5,10 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocation, Link } from 'wouter';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import {
-  Menu, Bell, Search, ChevronDown, LogOut, User, Settings,
+  Menu, Search, ChevronDown, LogOut, User, Settings,
   ShieldCheck, TrendingUp, X,
 } from 'lucide-react';
+import NotificationCenter from '@/components/dashboard/NotificationCenter';
 import { getRoleLabel } from '@/lib/roleMenus';
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
@@ -157,16 +158,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </button>
 
           {/* Notifications */}
-          <button
-            className="relative w-9 h-9 rounded-lg flex items-center justify-center transition-colors"
-            style={{ background: '#FAFAF8', border: '1px solid #E8E2DC', color: '#888880' }}
-          >
-            <Bell size={16} />
-            <span
-              className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full"
-              style={{ background: '#C73B22' }}
-            />
-          </button>
+          <NotificationCenter />
 
           {/* User menu */}
           <DropdownMenu>

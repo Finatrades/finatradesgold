@@ -3,6 +3,7 @@ import { Bell, Check, CheckCheck, Trash2, X, Info, CheckCircle2, AlertTriangle, 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { useLocation } from 'wouter';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
@@ -14,11 +15,12 @@ import { apiRequest } from '@/lib/queryClient';
 interface Notification {
   id: string;
   userId: string;
-  type: 'transaction' | 'kyc' | 'bnsl' | 'vault' | 'security' | 'system' | 'referral';
+  type: 'transaction' | 'kyc' | 'bnsl' | 'vault' | 'security' | 'system' | 'referral' | 'info' | 'success' | 'warning' | 'error' | 'trade';
   title: string;
   message: string;
   read: boolean;
-  priority: 'low' | 'medium' | 'high';
+  priority?: 'low' | 'medium' | 'high';
+  link?: string;
   actionUrl?: string;
   createdAt: string;
 }
@@ -26,6 +28,7 @@ interface Notification {
 export default function NotificationCenter() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<string>('all');
   const [clearingAll, setClearingAll] = useState(false);
@@ -145,7 +148,7 @@ export default function NotificationCenter() {
     }
   };
 
-  const getPriorityDot = (priority: string) => {
+  const getPriorityDot = (priority?: string) => {
     if (priority === 'high') return 'bg-red-50 dark:bg-red-950/200';
     if (priority === 'medium') return 'bg-yellow-50 dark:bg-yellow-950/200';
     return null;
@@ -267,8 +270,18 @@ export default function NotificationCenter() {
                         animate={{ opacity: 1, x: 0, height: 'auto' }}
                         exit={{ opacity: 0, x: 300, height: 0, paddingTop: 0, paddingBottom: 0, marginTop: 0, marginBottom: 0 }}
                         transition={{ type: 'spring', stiffness: 500, damping: 35, mass: 0.8 }}
-                        className={`p-3 hover:bg-muted/50 transition-colors group overflow-hidden ${!notification.read ? 'bg-primary/5' : ''}`}
+                        className={`p-3 hover:bg-muted/50 transition-colors group overflow-hidden ${!notification.read ? 'bg-primary/5' : ''} ${(notification.link || notification.actionUrl) ? 'cursor-pointer' : ''}`}
                         data-testid={`notification-item-${notification.id}`}
+                        onClick={() => {
+                          const target = notification.link || notification.actionUrl;
+                          if (!notification.read) {
+                            markAsReadMutation.mutate(notification.id);
+                          }
+                          if (target) {
+                            setIsOpen(false);
+                            setLocation(target);
+                          }
+                        }}
                       >
                         <div className="flex gap-3">
                           <div className="shrink-0 mt-0.5 w-8 h-8 rounded-lg bg-muted flex items-center justify-center">

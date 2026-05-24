@@ -13,6 +13,7 @@ import {
 } from "../shared/schema";
 import { isR2Configured, getSignedDownloadUrl } from "../r2-storage";
 import { EMAIL_TEMPLATES, queueEmailWithTemplate } from "../email";
+import { notifyExporterOfStatusChange } from "../lib/consignment-notifications";
 
 // ─── Admin guard (lightweight; full ensureAdminAsync lives in routes.ts) ───
 async function requireAdmin(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -402,6 +403,11 @@ router.patch("/:id/status", requireAdmin, async (req: Request, res: Response): P
     // Fire-and-forget email (sendEmail enqueues via Bull when Redis configured)
     queueStatusEmail(c.id, status, note).catch((err) => {
       console.error("[admin-consignments.email]", err?.message || err);
+    });
+
+    // Fire-and-forget in-app notification for the exporter
+    notifyExporterOfStatusChange(c.id, status, note).catch((err) => {
+      console.error("[admin-consignments.notify]", err?.message || err);
     });
 
     res.json(serializeConsignment(updated));
