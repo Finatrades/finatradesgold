@@ -8,8 +8,8 @@ import {
   AlertTriangle, Scale, FileSearch,
 } from 'lucide-react';
 import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Line,
+  Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Line, ComposedChart,
 } from 'recharts';
 import {
   motion, AnimatePresence, useReducedMotion, useSpring, useTransform, useMotionValue,
@@ -657,7 +657,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                   </div>
                   <div className="h-[280px] w-full bg-[#FFFFFF] rounded-2xl p-4 border border-black/5 shadow-inner">
                     <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart data={config.revenueTrend} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
+                      <ComposedChart data={config.revenueTrend} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
                         <defs>
                           <linearGradient id="colorRev" x1="0" y1="0" x2="0" y2="1">
                             <stop offset="5%" stopColor={theme.primary} stopOpacity={0.15} />
@@ -676,7 +676,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                         />
                         <Area yAxisId="left" type="monotone" dataKey="rev" name="Revenue" stroke={theme.primary} strokeWidth={3} fill="url(#colorRev)" animationDuration={1000} />
                         <Line yAxisId="right" type="monotone" dataKey="vol" name="Volume" stroke={theme.info} strokeWidth={2} dot={false} animationDuration={1000} />
-                      </AreaChart>
+                      </ComposedChart>
                     </ResponsiveContainer>
                   </div>
                 </TiltCard>
