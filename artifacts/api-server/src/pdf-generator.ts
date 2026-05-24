@@ -321,7 +321,7 @@ export async function generateCertificatePDF(
       doc.fillColor(config.primaryColor)
          .fontSize(28)
          .font('Helvetica-Bold')
-         .text(formatGrams(certificate.goldGrams), boxX, yPos + 20, { width: boxWidth, align: 'center' });
+         .text(formatGrams('0'), boxX, yPos + 20, { width: boxWidth, align: 'center' });
 
       doc.fillColor('#505050')
          .fontSize(11)
@@ -362,12 +362,6 @@ export async function generateCertificatePDF(
 
       if (certificate.vaultLocation) {
         details.push(['Storage Location:', certificate.vaultLocation]);
-      }
-      if (certificate.wingoldStorageRef) {
-        details.push(['Storage Reference:', certificate.wingoldStorageRef]);
-      }
-      if (certificate.goldPriceUsdPerGram) {
-        details.push(['Gold Price (per gram):', formatCurrency(certificate.goldPriceUsdPerGram)]);
       }
       if (certificate.bnslPlanId) {
         details.push(['BNSL Plan ID:', certificate.bnslPlanId]);

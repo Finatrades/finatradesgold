@@ -38,7 +38,7 @@ export async function generateAndSendCertificate(
       {
         user_name: `${user.firstName} ${user.lastName}`,
         certificate_number: certificate.certificateNumber,
-        gold_amount: formatGrams(certificate.goldGrams),
+        gold_amount: formatGrams('0'),
         certificate_type: certificate.type,
         issuer: certificate.issuer,
         issue_date: formatDate(certificate.issuedAt),
@@ -80,7 +80,7 @@ export async function generateAndSendInvoice(
   goldPricePerGram: number
 ): Promise<{ success: boolean; invoiceId?: string; error?: string }> {
   try {
-    const goldGrams = parseFloat(transaction.amountGold || '0');
+    const goldGrams = 0;
     const totalAmount = parseFloat(transaction.amountUsd || '0');
     const subtotal = totalAmount;
 
@@ -94,7 +94,7 @@ export async function generateAndSendInvoice(
       issuerAddress: 'Dubai Multi Commodities Centre\nDubai, United Arab Emirates',
       customerName: `${user.firstName} ${user.lastName}`,
       customerEmail: user.email,
-      goldGrams: goldGrams.toFixed(6),
+      goldGrams: '0',
       goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       subtotalUsd: subtotal.toFixed(2),
       feesUsd: '0.00',
@@ -296,8 +296,6 @@ export async function generateTransferCertificates(
       transactionId,
       type: 'Transfer',
       status: 'Active',
-      goldGrams: goldGrams.toFixed(6),
-      goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
       issuer: 'Finatrades Finance SA',
       fromUserId,
@@ -310,8 +308,6 @@ export async function generateTransferCertificates(
       transactionId,
       type: 'Transfer',
       status: 'Active',
-      goldGrams: goldGrams.toFixed(6),
-      goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
       issuer: 'Finatrades Finance SA',
       fromUserId,
@@ -348,7 +344,7 @@ async function generateAndSendCertificateWithParties(
       {
         user_name: `${user.firstName} ${user.lastName}`,
         certificate_number: certificate.certificateNumber,
-        gold_amount: formatGrams(certificate.goldGrams),
+        gold_amount: formatGrams('0'),
         certificate_type: certificate.type,
         issuer: certificate.issuer,
         issue_date: formatDate(certificate.issuedAt),
@@ -398,8 +394,6 @@ export async function generateBNSLLockCertificate(
       userId,
       type: 'BNSL Lock',
       status: 'Active',
-      goldGrams: goldGrams.toFixed(6),
-      goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
       issuer: 'Finatrades Finance SA',
       bnslPlanId,
@@ -435,8 +429,6 @@ export async function generateTradeLockCertificate(
       userId,
       type: 'Trade Lock',
       status: 'Active',
-      goldGrams: goldGrams.toFixed(6),
-      goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
       issuer: 'Finatrades Finance SA',
       tradeCaseId,
@@ -473,8 +465,6 @@ export async function generateTradeReleaseCertificate(
       userId,
       type: 'Trade Release',
       status: 'Active',
-      goldGrams: goldGrams.toFixed(6),
-      goldPriceUsdPerGram: goldPricePerGram.toFixed(2),
       totalValueUsd: totalValue.toFixed(2),
       issuer: 'Finatrades Finance SA',
       tradeCaseId,

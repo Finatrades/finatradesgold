@@ -12,15 +12,13 @@ import {
   insertTradeDocumentSchema, insertChatSessionSchema, insertChatMessageSchema,
   insertAuditLogSchema, insertContentPageSchema, insertContentBlockSchema,
   insertTemplateSchema, insertMediaAssetSchema, 
-  insertPlatformBankAccountSchema, insertDepositRequestSchema, insertWithdrawalRequestSchema,
-  insertPeerTransferSchema, insertPeerRequestSchema,
+  insertPlatformBankAccountSchema,
   insertTradeRequestSchema, insertTradeProposalSchema, insertForwardedProposalSchema,
   insertTradeConfirmationSchema, insertSettlementHoldSchema, insertFinabridgeWalletSchema,
   User, paymentGatewaySettings, insertPaymentGatewaySettingsSchema,
   insertSecuritySettingsSchema,
   wallets, transactions, auditLogs, certificates, platformConfig, systemLogs, users, tradeCases,
-  withdrawalRequests, cryptoPaymentRequests,
-  goldRequests, qrPaymentInvoices, walletAdjustments, userAccountStatus,
+  userAccountStatus,
   partialSettlements, tradeDisputes, tradeDisputeComments, dealRoomDocuments, dealMilestones, dealDiscrepancies, dealRooms as dealRoomsTable,
   lcTerms, dealRoomDocumentMetadata, dealRoomInternalNotes, kycSubmissions, userRiskProfiles,
   physicalDeliveryRequests, goldBars, storageFees, vaultLocations, vaultTransfers, goldGifts, insuranceCertificates,
@@ -28,18 +26,13 @@ import {
   tradeRequests, tradeProposals, settlementHolds, tradeDocuments,
   geoRestrictions, geoRestrictionSettings, insertGeoRestrictionSchema,
   sarReports, fraudAlerts, reconciliationReports, regulatoryReports, announcements, amlCases,
-  depositRequests as depositRequestsTable,
   wallets as walletsTable, transactions as transactionsTable,
-  withdrawalRequests as withdrawalRequestsTable,
   priceAlerts, insertPriceAlertSchema,
   dcaPlans, dcaExecutions, insertDcaPlanSchema,
   savingsGoals, insertSavingsGoalSchema,
   beneficiaries, insertBeneficiarySchema,
   userActivityLogs, insertUserActivityLogSchema, InsertUserActivityLog,
   reportExports, insertReportExportSchema,
-  finacardTransfers,
-  finacardCards,
-  finacardSpending,
   emailLogs,
   orgPositions
 } from "@shared/schema";
@@ -1330,9 +1323,8 @@ export async function registerRoutes(
       });
       
       // Create wallet for new user
-      const newWallet = await storage.createWallet({
+      await storage.createWallet({
         userId: user.id,
-        goldGrams: "0",
         usdBalance: "0",
         eurBalance: "0",
       });
@@ -1340,123 +1332,8 @@ export async function registerRoutes(
       // Sync new user to Wingold (non-blocking)
       /* WingoldUserSyncService removed */
       
-      // Check for pending invitation transfers to this email
+      // Pending-invite/peer-transfer claiming removed with the legacy gold stack (task #144).
       let inviteSenderReferralCode: string | undefined;
-      try {
-        const pendingInvites = await storage.getPendingInvitesByEmail(user.email);
-        for (const invite of pendingInvites) {
-          // getPendingInvitesByEmail already filters to only return actual invites (memo contains isInvite:true)
-          if (invite.status === 'Pending') {
-            // Parse memo to get invite metadata (isInvite, invitationToken, senderReferralCode)
-            let inviteMetadata: { isInvite?: boolean; invitationToken?: string; senderReferralCode?: string | null; originalMemo?: string } = {};
-            try {
-              if (invite.memo && invite.memo.startsWith('{')) {
-                inviteMetadata = JSON.parse(invite.memo);
-              }
-            } catch (e) {
-              // memo is not JSON, skip
-              continue;
-            }
-            
-            // Double-check this is actually an invite
-            if (!inviteMetadata.isInvite) {
-              continue;
-            }
-            
-            // Extract sender's referral code for registration bonus
-            if (inviteMetadata.senderReferralCode) {
-              inviteSenderReferralCode = inviteMetadata.senderReferralCode;
-            }
-            
-            // Claim the invitation transfer
-            const goldAmount = parseFloat(invite.amountGold || '0');
-            const goldPrice = parseFloat(invite.goldPriceUsdPerGram || '0');
-            
-            // Credit the new user's wallet
-            const currentGold = parseFloat(newWallet.goldGrams?.toString() || '0');
-            await storage.updateWallet(newWallet.id, {
-              goldGrams: (currentGold + goldAmount).toFixed(6)
-            });
-            
-            // Create recipient transaction
-            const recipientTx = await storage.createTransaction({
-              userId: user.id,
-              type: 'Receive',
-              status: 'Completed',
-              amountGold: goldAmount.toFixed(6),
-              amountUsd: (goldAmount * goldPrice).toFixed(2),
-              goldPriceUsdPerGram: goldPrice.toFixed(2),
-              senderEmail: invite.recipientIdentifier,
-              description: inviteMetadata.originalMemo || `Claimed invitation transfer from registration`,
-              referenceId: invite.referenceNumber,
-              sourceModule: 'finapay',
-            goldWalletType: 'LGPW',
-              completedAt: new Date(),
-            });
-            
-            // Update sender's transaction to completed
-            if (invite.senderTransactionId) {
-              await storage.updateTransaction(invite.senderTransactionId, {
-                status: 'Completed',
-                recipientUserId: user.id,
-                completedAt: new Date(),
-              });
-            }
-            
-            // Update the invite transfer
-            await storage.updatePeerTransfer(invite.id, {
-              recipientId: user.id,
-              recipientTransactionId: recipientTx.id,
-              status: 'Completed',
-              respondedAt: new Date(),
-            });
-            
-            // Vault-ledger recording removed with the rest of the legacy gold stack.
-
-            // Create notification
-            await storage.createNotification({
-              userId: user.id,
-              title: 'Gold Claimed!',
-              message: `You received ${goldAmount.toFixed(4)}g gold from an invitation transfer.`,
-              type: 'success',
-              link: '/finapay',
-            });
-            
-            // Notify sender (bell)
-            await storage.createNotification({
-              userId: invite.senderId,
-              title: 'Transfer Claimed',
-              message: `Your invitation transfer of ${goldAmount.toFixed(4)}g gold was claimed by ${user.email}.`,
-              type: 'success',
-              link: '/finapay',
-            });
-
-            // Send transfer_completed email to the new user (recipient)
-            if (user.email) {
-              sendEmail(user.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
-                user_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Member',
-                recipient_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || 'Valued Member',
-                gold_amount: goldAmount.toFixed(4),
-              }, { userId: user.id, recipientName: user.firstName || undefined }).catch(e => console.error('[Email] Invite claim transfer_completed (recipient) failed:', e));
-            }
-
-            // Send transfer_completed email to original sender confirming delivery
-            const inviteSender = await storage.getUser(invite.senderId).catch(() => null);
-            if (inviteSender?.email) {
-              sendEmail(inviteSender.email, EMAIL_TEMPLATES.TRANSFER_COMPLETED, {
-                user_name: `${inviteSender.firstName || ''} ${inviteSender.lastName || ''}`.trim() || 'Valued Client',
-                recipient_name: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email,
-                gold_amount: goldAmount.toFixed(4),
-              }, { userId: inviteSender.id, recipientName: inviteSender.firstName || undefined }).catch(e => console.error('[Email] Invite claim transfer_completed (sender) failed:', e));
-            }
-
-            console.log(`[Registration] Claimed invitation transfer ${invite.referenceNumber} for ${user.email}`);
-          }
-        }
-      } catch (inviteError) {
-        console.error('[Registration] Invitation claiming failed:', inviteError);
-        // Don't fail registration if invitation claiming fails
-      }
       
       // Use sender's referral code from invitation if user didn't provide one
       const effectiveReferralCode = referralCode || inviteSenderReferralCode;
@@ -3744,7 +3621,7 @@ export async function registerRoutes(
           storage.getAllUsers().catch(() => []),
           storage.getAllKycSubmissions().catch(() => []),
           storage.getAllTransactions().catch(() => []),
-          storage.getAllDepositRequests().catch(() => [])
+          Promise.resolve([] as any[])
         ]);
       } catch (e) {
         console.error('[admin/stats] Core data fetch failed:', e);
@@ -3927,7 +3804,7 @@ export async function registerRoutes(
       
       // Pending withdrawal requests
       try {
-        const allWithdrawals = await db.select().from(withdrawalRequests);
+        const allWithdrawals: any[] = []; // withdrawal_requests dropped (task #144)
         const pendingWithdrawReqs = allWithdrawals.filter((w: any) => 
           w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing'
         ).map((w: any) => ({
@@ -3948,7 +3825,7 @@ export async function registerRoutes(
       
       // Pending crypto payment requests
       try {
-        const allCryptoReqs = await db.select().from(cryptoPaymentRequests);
+        const allCryptoReqs: any[] = []; // crypto_payment_requests dropped (task #144)
         const pendingCryptoReqs = allCryptoReqs.filter((c: any) => 
           c.status === 'Pending' || c.status === 'Under Review' || c.status === 'pending'
         ).map((c: any) => ({
@@ -4063,7 +3940,7 @@ export async function registerRoutes(
       const [kycSubmissions, allTransactions, allDepositRequests, allUsers] = await Promise.all([
         storage.getAllKycSubmissions().catch(() => []),
         storage.getAllTransactions().catch(() => []),
-        storage.getAllDepositRequests().catch(() => []),
+        Promise.resolve([] as any[]),
         storage.getAllUsers().catch(() => [])
       ]);
       const pendingKycSubmissions = kycSubmissions.filter((k: any) => k.status === 'In Progress' || k.status === 'Pending Review').length;
@@ -4074,7 +3951,7 @@ export async function registerRoutes(
 
       let pendingWithdrawals = 0, pendingTradeCases = 0, pendingAccountDeletions = 0, openAmlCases = 0;
       try {
-        const allWithdrawals = await db.select().from(withdrawalRequests);
+        const allWithdrawals: any[] = []; // withdrawal_requests dropped (task #144)
         pendingWithdrawals = allWithdrawals.filter((w: any) => w.status === 'Pending' || w.status === 'Under Review' || w.status === 'Processing').length;
       } catch {}
       try {
@@ -8706,7 +8583,6 @@ export async function registerRoutes(
         userId: hold.exporterUserId,
         type: 'Receive',
         status: 'Completed',
-        amountGold: lockedAmount.toFixed(6),
         amountUsd: tradeValue.toFixed(2),
         description: `Trade Settlement - ${tradeRequest?.tradeRefId || 'FinaBridge'}`,
         sourceModule: 'FinaBridge',
@@ -8916,7 +8792,6 @@ export async function registerRoutes(
         userId: hold.exporterUserId,
         type: 'Receive',
         status: 'Completed',
-        amountGold: releaseGrams.toFixed(6),
         amountUsd: tradeValue.toFixed(2),
         description: `Partial Trade Settlement (${percentage}%) - ${tradeRequest?.tradeRefId || 'FinaBridge'}${milestone ? ': ' + milestone : ''}`,
         sourceModule: 'FinaBridge',

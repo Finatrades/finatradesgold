@@ -7,11 +7,8 @@ import {
   finabridgeWallets, settlementHolds, dealRooms, dealRoomMessages,
   chatSessions, chatMessages, auditLogs, certificates, allocations,
   contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
-  platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
-  peerTransfers, peerRequests,
-  
-  binanceTransactions, reconciliationReports,
-  ngeniusTransactions,
+  platformBankAccounts, platformFees,
+  reconciliationReports,
   paymentGatewaySettings,
   brandingSettings,
   employees, rolePermissions,
@@ -55,12 +52,6 @@ import {
   type CmsLabel, type InsertCmsLabel,
   type PlatformBankAccount, type InsertPlatformBankAccount,
   type PlatformFee, type InsertPlatformFee,
-  type DepositRequest, type InsertDepositRequest,
-  type WithdrawalRequest, type InsertWithdrawalRequest,
-  type PeerTransfer, type InsertPeerTransfer,
-  type PeerRequest, type InsertPeerRequest,
-  type BinanceTransaction, type InsertBinanceTransaction,
-  type NgeniusTransaction, type InsertNgeniusTransaction,
   type PaymentGatewaySettings, type InsertPaymentGatewaySettings,
   type BrandingSettings, type InsertBrandingSettings,
   type Employee, type InsertEmployee,
@@ -91,9 +82,6 @@ import {
   type Notification, type InsertNotification,
   userPreferences,
   type UserPreferences, type InsertUserPreferences,
-  cryptoWalletConfigs, cryptoPaymentRequests,
-  type CryptoWalletConfig, type InsertCryptoWalletConfig,
-  type CryptoPaymentRequest, type InsertCryptoPaymentRequest,
   platformConfig,
   type PlatformConfig, type InsertPlatformConfig,
   emailNotificationSettings,
@@ -142,11 +130,9 @@ export interface TransactionalStorage {
   getWallet(userId: string): Promise<Wallet | undefined>;
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
-  createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer>;
   createInvoice(insertInvoice: InsertInvoice): Promise<Invoice>;
   createCertificateDelivery(insertDelivery: InsertCertificateDelivery): Promise<CertificateDelivery>;
   generateInvoiceNumber(): Promise<string>;
-  updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
   getDbClient(): DbClient;
 }
 
@@ -197,10 +183,6 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const [user] = await txDb.select().from(users).where(eq(users.email, email));
       return user || undefined;
     },
-    async createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer> {
-      const [transfer] = await txDb.insert(peerTransfers).values(insertTransfer).returning();
-      return transfer;
-    },
     async createInvoice(insertInvoice: InsertInvoice): Promise<Invoice> {
       const [invoice] = await txDb.insert(invoices).values(insertInvoice).returning();
       return invoice;
@@ -214,10 +196,6 @@ function createTransactionalStorage(txDb: DbClient): TransactionalStorage {
       const timestamp = Date.now().toString(36).toUpperCase();
       const random = Math.random().toString(36).substring(2, 6).toUpperCase();
       return `${prefix}-${timestamp}-${random}`;
-    },
-    async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
-      const [transfer] = await txDb.update(peerTransfers).set({ ...updates, updatedAt: new Date() }).where(eq(peerTransfers.id, id)).returning();
-      return transfer || undefined;
     },
     getDbClient(): DbClient {
       return txDb;
@@ -259,15 +237,6 @@ export interface IStorage {
   // BNSL Plans
   
   // BNSL Payouts
-  
-  // Peer Transfers
-  getPeerTransfers(userId: string): Promise<PeerTransfer[]>;
-  getPeerTransfer(id: string): Promise<PeerTransfer | undefined>;
-  updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined>;
-  getPendingIncomingTransfers(userId: string): Promise<PeerTransfer[]>;
-  getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]>;
-  getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]>;
-  getExpiredInviteTransfers(): Promise<PeerTransfer[]>;
   
   // FinaBridge Agreements
   getFinabridgeAgreement(id: string): Promise<FinabridgeAgreement | undefined>;
@@ -434,20 +403,6 @@ export interface IStorage {
   updatePlatformFee(id: string, updates: Partial<PlatformFee>): Promise<PlatformFee | undefined>;
   deletePlatformFee(id: string): Promise<boolean>;
   seedDefaultFees(): Promise<void>;
-  
-  // FinaPay - Deposit Requests
-  getDepositRequest(id: string): Promise<DepositRequest | undefined>;
-  getUserDepositRequests(userId: string): Promise<DepositRequest[]>;
-  getAllDepositRequests(): Promise<DepositRequest[]>;
-  createDepositRequest(request: InsertDepositRequest): Promise<DepositRequest>;
-  updateDepositRequest(id: string, updates: Partial<DepositRequest>): Promise<DepositRequest | undefined>;
-  
-  // FinaPay - Withdrawal Requests
-  getWithdrawalRequest(id: string): Promise<WithdrawalRequest | undefined>;
-  getUserWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]>;
-  getAllWithdrawalRequests(): Promise<WithdrawalRequest[]>;
-  createWithdrawalRequest(request: InsertWithdrawalRequest): Promise<WithdrawalRequest>;
-  updateWithdrawalRequest(id: string, updates: Partial<WithdrawalRequest>): Promise<WithdrawalRequest | undefined>;
   
   // CMS - Content Pages
   getContentPage(id: string): Promise<ContentPage | undefined>;
@@ -873,9 +828,7 @@ export class DatabaseStorage implements IStorage {
       userId: transactions.userId,
       type: transactions.type,
       status: transactions.status,
-      amountGold: transactions.amountGold,
       amountUsd: transactions.amountUsd,
-      goldPriceUsdPerGram: transactions.goldPriceUsdPerGram,
       recipientEmail: transactions.recipientEmail,
       referenceId: transactions.referenceId,
       sourceModule: transactions.sourceModule,
@@ -911,9 +864,7 @@ export class DatabaseStorage implements IStorage {
       userId: transactions.userId,
       type: transactions.type,
       status: transactions.status,
-      amountGold: transactions.amountGold,
       amountUsd: transactions.amountUsd,
-      goldPriceUsdPerGram: transactions.goldPriceUsdPerGram,
       recipientEmail: transactions.recipientEmail,
       referenceId: transactions.referenceId,
       sourceModule: transactions.sourceModule,
@@ -943,44 +894,6 @@ export class DatabaseStorage implements IStorage {
 
 
 
-
-
-
-  async getPeerTransfers(userId: string): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers).where(
-      or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId))
-    ).orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async getPeerTransfersPaginated(userId: string, options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<PeerTransfer>[]; total: number }> {
-    const { status, limit = 20, offset = 0 } = options;
-    const lightweightColumns = {
-      id: peerTransfers.id,
-      referenceNumber: peerTransfers.referenceNumber,
-      senderId: peerTransfers.senderId,
-      recipientId: peerTransfers.recipientId,
-      amountUsd: peerTransfers.amountUsd,
-      amountGold: peerTransfers.amountGold,
-      goldPriceUsdPerGram: peerTransfers.goldPriceUsdPerGram,
-      channel: peerTransfers.channel,
-      recipientIdentifier: peerTransfers.recipientIdentifier,
-      status: peerTransfers.status,
-      requiresApproval: peerTransfers.requiresApproval,
-      expiresAt: peerTransfers.expiresAt,
-      respondedAt: peerTransfers.respondedAt,
-      createdAt: peerTransfers.createdAt,
-    };
-    const userCondition = or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId));
-    const conditions: any[] = [userCondition!];
-    if (status && status !== "all") conditions.push(eq(peerTransfers.status, status as never));
-    
-    const whereClause = and(...conditions);
-    const [data, countResult] = await Promise.all([
-      db.select(lightweightColumns).from(peerTransfers).where(whereClause).orderBy(desc(peerTransfers.createdAt)).limit(limit).offset(offset),
-      db.select({ count: sql<number>`count(*)` }).from(peerTransfers).where(whereClause)
-    ]);
-    return { data, total: Number(countResult[0]?.count || 0) };
-  }
 
 
 
@@ -1704,10 +1617,6 @@ export class DatabaseStorage implements IStorage {
         or(
           eq(certificates.type, 'Digital Ownership'),
           eq(certificates.type, 'Physical Storage')
-        ),
-        or(
-          sql`${certificates.remainingGrams} IS NULL`,
-          gt(certificates.remainingGrams, '0')
         )
       )
     ).orderBy(certificates.issuedAt);
@@ -1718,20 +1627,8 @@ export class DatabaseStorage implements IStorage {
     return created;
   }
 
-  async getActiveDOCGramsByUser(userId: string): Promise<number> {
-    const result = await db.select({
-      total: sql<string>`COALESCE(SUM(COALESCE(${certificates.remainingGrams}, ${certificates.goldGrams})), 0)`
-    }).from(certificates).where(
-      and(
-        eq(certificates.userId, userId),
-        eq(certificates.status, 'Active'),
-        or(
-          eq(certificates.type, 'Digital Ownership'),
-          eq(certificates.type, 'Physical Storage')
-        )
-      )
-    );
-    return parseFloat(result[0]?.total || '0');
+  async getActiveDOCGramsByUser(_userId: string): Promise<number> {
+    return 0;
   }
 
   async getCertificateEventsByCertId(certificateId: string): Promise<CertificateEvent[]> {
@@ -2052,60 +1949,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // FinaPay - Deposit Requests
-  async getDepositRequest(id: string): Promise<DepositRequest | undefined> {
-    const [request] = await db.select().from(depositRequests).where(eq(depositRequests.id, id));
-    return request || undefined;
-  }
-
-  async getUserDepositRequests(userId: string): Promise<DepositRequest[]> {
-    return await db.select().from(depositRequests).where(eq(depositRequests.userId, userId)).orderBy(desc(depositRequests.createdAt));
-  }
-
-  async getAllDepositRequests(): Promise<DepositRequest[]> {
-    return await db.select().from(depositRequests).orderBy(desc(depositRequests.createdAt));
-  }
-
-  async createDepositRequest(insertRequest: InsertDepositRequest): Promise<DepositRequest> {
-    // InsertDepositRequest is derived from a zod schema that omits some
-    // server-defaulted fields (e.g. id/timestamps). Drizzle's `values` infers
-    // a stricter shape; cast preserves runtime behavior and is validated by
-    // the zod insert schema at the route layer.
-    const [request] = await db.insert(depositRequests).values(insertRequest as never).returning();
-    return request;
-  }
-
-  async updateDepositRequest(id: string, updates: Partial<DepositRequest>, tx?: typeof db): Promise<DepositRequest | undefined> {
-    const dbClient = tx || db;
-    const [request] = await dbClient.update(depositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(depositRequests.id, id)).returning();
-    return request || undefined;
-  }
-
-  // FinaPay - Withdrawal Requests
-  async getWithdrawalRequest(id: string): Promise<WithdrawalRequest | undefined> {
-    const [request] = await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.id, id));
-    return request || undefined;
-  }
-
-  async getUserWithdrawalRequests(userId: string): Promise<WithdrawalRequest[]> {
-    return await db.select().from(withdrawalRequests).where(eq(withdrawalRequests.userId, userId)).orderBy(desc(withdrawalRequests.createdAt));
-  }
-
-  async getAllWithdrawalRequests(): Promise<WithdrawalRequest[]> {
-    return await db.select().from(withdrawalRequests).orderBy(desc(withdrawalRequests.createdAt));
-  }
-
-  async createWithdrawalRequest(insertRequest: InsertWithdrawalRequest): Promise<WithdrawalRequest> {
-    const [request] = await db.insert(withdrawalRequests).values(insertRequest).returning();
-    return request;
-  }
-
-  async updateWithdrawalRequest(id: string, updates: Partial<WithdrawalRequest>): Promise<WithdrawalRequest | undefined> {
-    const [request] = await db.update(withdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(withdrawalRequests.id, id)).returning();
-    return request || undefined;
-  }
-
-  // Peer Transfers (Send Money)
+  // Peer / Finatrades user lookup helpers
   async getUserByFinatradesId(finatradesId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.finatradesId, finatradesId));
     return user || undefined;
@@ -2120,138 +1964,6 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
-  async getPeerTransfer(id: string): Promise<PeerTransfer | undefined> {
-    const [transfer] = await db.select().from(peerTransfers).where(eq(peerTransfers.id, id));
-    return transfer || undefined;
-  }
-
-  async getUserSentTransfers(userId: string): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers).where(eq(peerTransfers.senderId, userId)).orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async getUserReceivedTransfers(userId: string): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers).where(eq(peerTransfers.recipientId, userId)).orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async getAllPeerTransfers(): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers).orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async createPeerTransfer(insertTransfer: InsertPeerTransfer): Promise<PeerTransfer> {
-    const [transfer] = await db.insert(peerTransfers).values(insertTransfer).returning();
-    return transfer;
-  }
-
-  async updatePeerTransfer(id: string, updates: Partial<PeerTransfer>): Promise<PeerTransfer | undefined> {
-    const [transfer] = await db.update(peerTransfers).set(updates).where(eq(peerTransfers.id, id)).returning();
-    return transfer || undefined;
-  }
-
-  async getPendingIncomingTransfers(userId: string): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers)
-      .where(and(
-        eq(peerTransfers.recipientId, userId),
-        eq(peerTransfers.status, 'Pending')
-      ))
-      .orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async getPendingOutgoingTransfers(userId: string): Promise<PeerTransfer[]> {
-    return await db.select().from(peerTransfers)
-      .where(and(
-        eq(peerTransfers.senderId, userId),
-        eq(peerTransfers.status, 'Pending')
-      ))
-      .orderBy(desc(peerTransfers.createdAt));
-  }
-
-  async getPendingInvitesByEmail(email: string): Promise<PeerTransfer[]> {
-    // Detect invitation transfers by memo containing isInvite:true JSON
-    // Query all pending transfers for this email, then filter by memo in JS
-    const transfers = await db.select().from(peerTransfers)
-      .where(and(
-        eq(peerTransfers.recipientIdentifier, email.toLowerCase()),
-        eq(peerTransfers.status, 'Pending')
-      ))
-      .orderBy(desc(peerTransfers.createdAt));
-    
-    // Filter to only include actual invitation transfers (memo contains isInvite:true)
-    return transfers.filter(t => {
-      if (!t.memo) return false;
-      try {
-        const metadata = JSON.parse(t.memo);
-        return metadata.isInvite === true;
-      } catch {
-        return false;
-      }
-    });
-  }
-
-  async getExpiredInviteTransfers(): Promise<PeerTransfer[]> {
-    // Detect invitation transfers by memo containing isInvite:true JSON
-    const now = new Date();
-    const transfers = await db.select().from(peerTransfers)
-      .where(and(
-        eq(peerTransfers.status, 'Pending'),
-        sql`${peerTransfers.expiresAt} < ${now}`
-      ))
-      .orderBy(desc(peerTransfers.createdAt));
-    
-    // Filter to only include actual invitation transfers (memo contains isInvite:true)
-    return transfers.filter(t => {
-      if (!t.memo) return false;
-      try {
-        const metadata = JSON.parse(t.memo);
-        return metadata.isInvite === true;
-      } catch {
-        return false;
-      }
-    });
-  }
-
-  // Peer Requests (Request Money)
-  async getPeerRequest(id: string): Promise<PeerRequest | undefined> {
-    const [request] = await db.select().from(peerRequests).where(eq(peerRequests.id, id));
-    return request || undefined;
-  }
-
-  async getPeerRequestByQrPayload(qrPayload: string): Promise<PeerRequest | undefined> {
-    const [request] = await db.select().from(peerRequests).where(eq(peerRequests.qrPayload, qrPayload));
-    return request || undefined;
-  }
-
-  async getUserPeerRequests(userId: string): Promise<PeerRequest[]> {
-    return await db.select().from(peerRequests).where(eq(peerRequests.requesterId, userId)).orderBy(desc(peerRequests.createdAt));
-  }
-
-  async getUserReceivedPeerRequests(userId: string, userEmail?: string, userFinatradesId?: string): Promise<PeerRequest[]> {
-    // Match by targetId OR by targetIdentifier (email/finatrades ID)
-    const conditions = [eq(peerRequests.targetId, userId)];
-    
-    if (userEmail) {
-      conditions.push(sql`LOWER(${peerRequests.targetIdentifier}) = LOWER(${userEmail})`);
-    }
-    if (userFinatradesId) {
-      conditions.push(sql`UPPER(${peerRequests.targetIdentifier}) = UPPER(${userFinatradesId})`);
-    }
-    
-    return await db.select().from(peerRequests).where(or(...conditions)).orderBy(desc(peerRequests.createdAt));
-  }
-
-  async getAllPeerRequests(): Promise<PeerRequest[]> {
-    return await db.select().from(peerRequests).orderBy(desc(peerRequests.createdAt));
-  }
-
-  async createPeerRequest(insertRequest: InsertPeerRequest): Promise<PeerRequest> {
-    const [request] = await db.insert(peerRequests).values(insertRequest).returning();
-    return request;
-  }
-
-  async updatePeerRequest(id: string, updates: Partial<PeerRequest>): Promise<PeerRequest | undefined> {
-    const [request] = await db.update(peerRequests).set(updates).where(eq(peerRequests.id, id)).returning();
-    return request || undefined;
-  }
-
   // Generate Finatrades ID for new users
   generateFinatradesId(): string {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -2260,93 +1972,6 @@ export class DatabaseStorage implements IStorage {
       id += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return id;
-  }
-
-  // VAULT DEPOSIT / WITHDRAWAL REQUEST helpers (FinaVault gold-stack) removed.
-  // Schema tables `vault_deposit_requests` and `vault_withdrawal_requests`
-  // remain in the database for now; drop them in a follow-up migration once any
-  // remaining rows are exported / archived.
-  // ============================================
-
-  async createBinanceTransaction(insertTransaction: InsertBinanceTransaction): Promise<BinanceTransaction> {
-    const [transaction] = await db.insert(binanceTransactions).values(insertTransaction).returning();
-    return transaction;
-  }
-
-  async getBinanceTransaction(id: string): Promise<BinanceTransaction | undefined> {
-    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.id, id));
-    return transaction || undefined;
-  }
-
-  async getBinanceTransactionByMerchantTradeNo(merchantTradeNo: string): Promise<BinanceTransaction | undefined> {
-    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.merchantTradeNo, merchantTradeNo));
-    return transaction || undefined;
-  }
-
-  async getBinanceTransactionByPrepayId(prepayId: string): Promise<BinanceTransaction | undefined> {
-    const [transaction] = await db.select().from(binanceTransactions).where(eq(binanceTransactions.prepayId, prepayId));
-    return transaction || undefined;
-  }
-
-  async getUserBinanceTransactions(userId: string): Promise<BinanceTransaction[]> {
-    return await db.select().from(binanceTransactions).where(eq(binanceTransactions.userId, userId)).orderBy(desc(binanceTransactions.createdAt));
-  }
-
-  async getAllBinanceTransactions(): Promise<BinanceTransaction[]> {
-    return await db.select().from(binanceTransactions).orderBy(desc(binanceTransactions.createdAt));
-  }
-
-  async updateBinanceTransaction(id: string, updates: Partial<BinanceTransaction>): Promise<BinanceTransaction | undefined> {
-    const [transaction] = await db.update(binanceTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(binanceTransactions.id, id)).returning();
-    return transaction || undefined;
-  }
-
-  async updateBinanceTransactionByMerchantTradeNo(merchantTradeNo: string, updates: Partial<BinanceTransaction>): Promise<BinanceTransaction | undefined> {
-    const [transaction] = await db.update(binanceTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(binanceTransactions.merchantTradeNo, merchantTradeNo)).returning();
-    return transaction || undefined;
-  }
-
-  // ============================================
-  // NGENIUS TRANSACTIONS
-  // ============================================
-
-  async createNgeniusTransaction(insertTransaction: InsertNgeniusTransaction): Promise<NgeniusTransaction> {
-    const [transaction] = await db.insert(ngeniusTransactions).values(insertTransaction).returning();
-    return transaction;
-  }
-
-  async getNgeniusTransaction(id: string): Promise<NgeniusTransaction | undefined> {
-    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.id, id));
-    return transaction || undefined;
-  }
-
-  async getNgeniusTransactionByOrderReference(orderReference: string): Promise<NgeniusTransaction | undefined> {
-    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.orderReference, orderReference));
-    return transaction || undefined;
-  }
-
-  async getNgeniusTransactionByNgeniusOrderId(ngeniusOrderId: string): Promise<NgeniusTransaction | undefined> {
-    const [transaction] = await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.ngeniusOrderId, ngeniusOrderId));
-    return transaction || undefined;
-  }
-
-  async getUserNgeniusTransactions(userId: string): Promise<NgeniusTransaction[]> {
-    return await db.select().from(ngeniusTransactions).where(eq(ngeniusTransactions.userId, userId)).orderBy(desc(ngeniusTransactions.createdAt));
-  }
-
-  async getAllNgeniusTransactions(): Promise<NgeniusTransaction[]> {
-    return await db.select().from(ngeniusTransactions).orderBy(desc(ngeniusTransactions.createdAt));
-  }
-
-  async updateNgeniusTransaction(id: string, updates: Partial<NgeniusTransaction>, tx?: typeof db): Promise<NgeniusTransaction | undefined> {
-    const dbClient = tx || db;
-    const [transaction] = await dbClient.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.id, id)).returning();
-    return transaction || undefined;
-  }
-
-  async updateNgeniusTransactionByOrderReference(orderReference: string, updates: Partial<NgeniusTransaction>): Promise<NgeniusTransaction | undefined> {
-    const [transaction] = await db.update(ngeniusTransactions).set({ ...updates, updatedAt: new Date() }).where(eq(ngeniusTransactions.orderReference, orderReference)).returning();
-    return transaction || undefined;
   }
 
   // ============================================
@@ -3281,76 +2906,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // ============================================
-  // CRYPTO WALLET CONFIGURATIONS
-  // ============================================
-
-  async getCryptoWalletConfig(id: string): Promise<CryptoWalletConfig | undefined> {
-    const [config] = await db.select().from(cryptoWalletConfigs).where(eq(cryptoWalletConfigs.id, id));
-    return config || undefined;
-  }
-
-  async getAllCryptoWalletConfigs(): Promise<CryptoWalletConfig[]> {
-    return await db.select().from(cryptoWalletConfigs).orderBy(cryptoWalletConfigs.displayOrder);
-  }
-
-  async getActiveCryptoWalletConfigs(): Promise<CryptoWalletConfig[]> {
-    return await db.select().from(cryptoWalletConfigs)
-      .where(eq(cryptoWalletConfigs.isActive, true))
-      .orderBy(cryptoWalletConfigs.displayOrder);
-  }
-
-  async createCryptoWalletConfig(config: InsertCryptoWalletConfig): Promise<CryptoWalletConfig> {
-    const [newConfig] = await db.insert(cryptoWalletConfigs).values(config).returning();
-    return newConfig;
-  }
-
-  async updateCryptoWalletConfig(id: string, updates: Partial<CryptoWalletConfig>): Promise<CryptoWalletConfig | undefined> {
-    const [config] = await db.update(cryptoWalletConfigs).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoWalletConfigs.id, id)).returning();
-    return config || undefined;
-  }
-
-  async deleteCryptoWalletConfig(id: string): Promise<boolean> {
-    const result = await db.delete(cryptoWalletConfigs).where(eq(cryptoWalletConfigs.id, id)).returning();
-    return result.length > 0;
-  }
-
-  // ============================================
-  // CRYPTO PAYMENT REQUESTS
-  // ============================================
-
-  async getCryptoPaymentRequest(id: string): Promise<CryptoPaymentRequest | undefined> {
-    const [request] = await db.select().from(cryptoPaymentRequests).where(eq(cryptoPaymentRequests.id, id));
-    return request || undefined;
-  }
-
-  async getUserCryptoPaymentRequests(userId: string): Promise<CryptoPaymentRequest[]> {
-    return await db.select().from(cryptoPaymentRequests)
-      .where(eq(cryptoPaymentRequests.userId, userId))
-      .orderBy(desc(cryptoPaymentRequests.createdAt));
-  }
-
-  async getAllCryptoPaymentRequests(): Promise<CryptoPaymentRequest[]> {
-    return await db.select().from(cryptoPaymentRequests).orderBy(desc(cryptoPaymentRequests.createdAt));
-  }
-
-  async getCryptoPaymentRequestsByStatus(status: string): Promise<CryptoPaymentRequest[]> {
-    return await db.select().from(cryptoPaymentRequests)
-      .where(eq(cryptoPaymentRequests.status, status as never))
-      .orderBy(desc(cryptoPaymentRequests.createdAt));
-  }
-
-  async createCryptoPaymentRequest(request: InsertCryptoPaymentRequest): Promise<CryptoPaymentRequest> {
-    const [newRequest] = await db.insert(cryptoPaymentRequests).values(request).returning();
-    return newRequest;
-  }
-
-  async updateCryptoPaymentRequest(id: string, updates: Partial<CryptoPaymentRequest>, tx?: typeof db): Promise<CryptoPaymentRequest | undefined> {
-    const dbClient = tx || db;
-    const [request] = await dbClient.update(cryptoPaymentRequests).set({ ...updates, updatedAt: new Date() }).where(eq(cryptoPaymentRequests.id, id)).returning();
-    return request || undefined;
-  }
-
-  // ============================================
   // BUY GOLD REQUESTS (Wingold & Metals)
   // ============================================
 
@@ -3743,36 +3298,10 @@ export class DatabaseStorage implements IStorage {
     kycStatus: string;
     accountType: string;
   }>> {
-    const results = await db.select({
-      userId: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      finatradesId: users.finatradesId,
-      goldGrams: wallets.goldGrams,
-      kycStatus: users.kycStatus,
-      accountType: users.accountType,
-    })
-    .from(wallets)
-    .innerJoin(users, eq(wallets.userId, users.id))
-    .where(sql`${wallets.goldGrams}::numeric > 0`)
-    .orderBy(sql`${wallets.goldGrams}::numeric DESC`);
-
-    return results.map(r => ({
-      userId: r.userId,
-      email: r.email,
-      firstName: r.firstName,
-      lastName: r.lastName,
-      finatradesId: r.finatradesId,
-      goldGrams: r.goldGrams ? parseFloat(r.goldGrams) : 0,
-      kycStatus: r.kycStatus,
-      accountType: r.accountType,
-    }));
+    return [];
   }
 
-
-
-  async getUsersByVaultLocation(vaultLocation: string): Promise<Array<{
+  async getUsersByVaultLocation(_vaultLocation: string): Promise<Array<{
     userId: string;
     email: string;
     firstName: string;
@@ -3784,35 +3313,7 @@ export class DatabaseStorage implements IStorage {
     kycStatus: string;
     accountType: string;
   }>> {
-    const results = await db.select({
-      userId: users.id,
-      email: users.email,
-      firstName: users.firstName,
-      lastName: users.lastName,
-      finatradesId: users.finatradesId,
-      goldGrams: certificates.goldGrams,
-      certificateNumber: certificates.certificateNumber,
-      status: certificates.status,
-      kycStatus: users.kycStatus,
-      accountType: users.accountType,
-    })
-    .from(certificates)
-    .innerJoin(users, eq(certificates.userId, users.id))
-    .where(eq(certificates.vaultLocation, vaultLocation))
-    .orderBy(sql`${certificates.goldGrams}::numeric DESC`);
-
-    return results.map(r => ({
-      userId: r.userId,
-      email: r.email,
-      firstName: r.firstName,
-      lastName: r.lastName,
-      finatradesId: r.finatradesId,
-      goldGrams: r.goldGrams ? parseFloat(r.goldGrams) : 0,
-      certificateNumber: r.certificateNumber,
-      status: r.status,
-      kycStatus: r.kycStatus,
-      accountType: r.accountType,
-    }));
+    return [];
   }
 
 

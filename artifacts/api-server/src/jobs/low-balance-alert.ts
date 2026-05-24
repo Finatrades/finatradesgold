@@ -23,7 +23,9 @@ export async function checkAndSendLowBalanceAlert(
   const wallet = await storage.getWallet(userId);
   const prefs = await storage.getUserPreferences(userId);
   const threshold = parseFloat(prefs?.lowBalanceThresholdGrams?.toString() || '0.1');
-  const remainingGrams = parseFloat(wallet?.goldGrams?.toString() || '0');
+  // Legacy gold-balance concept removed in task #144; always 0 now.
+  void wallet;
+  const remainingGrams = 0;
 
   if (threshold <= 0 || remainingGrams >= threshold || remainingGrams < 0) return;
 

@@ -1053,8 +1053,6 @@ export type KycDecisionRecord = typeof kycDecisionRecords.$inferSelect;
 export const wallets = pgTable("wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  // PRIMARY SOURCE OF TRUTH - gold grams owned
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   // @deprecated - DO NOT USE. Will be removed. Compute USD from gold × price instead.
   usdBalance: decimal("usd_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   // @deprecated - DO NOT USE. Will be removed. Compute EUR from gold × price instead.
@@ -1064,7 +1062,6 @@ export const wallets = pgTable("wallets", {
   aedBalance: decimal("aed_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   chfBalance: decimal("chf_balance", { precision: 18, scale: 2 }).notNull().default('0'),
   sarBalance: decimal("sar_balance", { precision: 18, scale: 2 }).notNull().default('0'),
-  finacardGoldGrams: decimal("finacard_gold_grams", { precision: 18, scale: 6 }).notNull().default('0'),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
@@ -1073,98 +1070,22 @@ export const insertWalletSchema = createInsertSchema(wallets).omit({ id: true, c
 export type InsertWallet = z.infer<typeof insertWalletSchema>;
 export type Wallet = typeof wallets.$inferSelect;
 
-export const finacardTransferTypeEnum = pgEnum("finacard_transfer_type", ["fund", "withdraw"]);
-
-export const finacardTransfers = pgTable("finacard_transfers", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  type: finacardTransferTypeEnum("type").notNull(),
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }),
-  usdEquivalent: decimal("usd_equivalent", { precision: 18, scale: 2 }),
-  note: text("note"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertFinacardTransferSchema = createInsertSchema(finacardTransfers).omit({ id: true, createdAt: true });
-export type InsertFinacardTransfer = z.infer<typeof insertFinacardTransferSchema>;
-export type FinacardTransfer = typeof finacardTransfers.$inferSelect;
-
-export const finacardCardStatusEnum = pgEnum("finacard_card_status", ["applied", "under_review", "approved", "active", "frozen", "cancelled"]);
-export const finacardCardTypeEnum = pgEnum("finacard_card_type", ["virtual", "physical"]);
-export const finacardSpendingStatusEnum = pgEnum("finacard_spending_status", ["completed", "reversed", "pending"]);
-
-export const finacardCards = pgTable("finacard_cards", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  cardType: finacardCardTypeEnum("card_type").notNull().default("virtual"),
-  cardStatus: finacardCardStatusEnum("card_status").notNull().default("applied"),
-  last4Digits: varchar("last4_digits", { length: 4 }),
-  expiryMonth: integer("expiry_month"),
-  expiryYear: integer("expiry_year"),
-  dailyLimitGrams: decimal("daily_limit_grams", { precision: 18, scale: 6 }).notNull().default('5'),
-  monthlyLimitGrams: decimal("monthly_limit_grams", { precision: 18, scale: 6 }).notNull().default('50'),
-  isFrozen: boolean("is_frozen").notNull().default(false),
-  frozenAt: timestamp("frozen_at"),
-  frozenReason: text("frozen_reason"),
-  adminNotes: text("admin_notes"),
-  appliedAt: timestamp("applied_at").notNull().defaultNow(),
-  reviewedAt: timestamp("reviewed_at"),
-  reviewedBy: varchar("reviewed_by", { length: 255 }),
-  issuedAt: timestamp("issued_at"),
-  activatedAt: timestamp("activated_at"),
-  cancelledAt: timestamp("cancelled_at"),
-});
-
-export const insertFinacardCardSchema = createInsertSchema(finacardCards).omit({ id: true, appliedAt: true });
-export type InsertFinacardCard = z.infer<typeof insertFinacardCardSchema>;
-export type FinacardCard = typeof finacardCards.$inferSelect;
-
-export const finacardSpending = pgTable("finacard_spending", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  cardId: varchar("card_id", { length: 255 }).notNull().references(() => finacardCards.id),
-  merchantName: varchar("merchant_name", { length: 500 }).notNull(),
-  merchantCategory: varchar("merchant_category", { length: 255 }),
-  merchantCountry: varchar("merchant_country", { length: 100 }),
-  amountLocal: decimal("amount_local", { precision: 18, scale: 2 }).notNull(),
-  currencyLocal: varchar("currency_local", { length: 10 }).notNull().default('USD'),
-  goldGramsDeducted: decimal("gold_grams_deducted", { precision: 18, scale: 6 }).notNull(),
-  goldPriceAtTime: decimal("gold_price_at_time", { precision: 18, scale: 6 }).notNull(),
-  usdEquivalent: decimal("usd_equivalent", { precision: 18, scale: 2 }).notNull(),
-  fxRate: decimal("fx_rate", { precision: 18, scale: 6 }),
-  fxFeeGrams: decimal("fx_fee_grams", { precision: 18, scale: 6 }).notNull().default('0'),
-  status: finacardSpendingStatusEnum("status").notNull().default("completed"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertFinacardSpendingSchema = createInsertSchema(finacardSpending).omit({ id: true, createdAt: true });
-export type InsertFinacardSpending = z.infer<typeof insertFinacardSpendingSchema>;
-export type FinacardSpending = typeof finacardSpending.$inferSelect;
-
 /**
- * TRANSACTIONS TABLE - GOLD-ONLY COMPLIANCE
- * 
- * amountGold and goldPriceUsdPerGram are the source of truth.
- * amountUsd/amountEur are stored for HISTORICAL RECORD only (the price at transaction time).
- * For display, recalculate if showing "current value" vs "transaction value".
+ * TRANSACTIONS TABLE
+ *
+ * amountUsd/amountEur store the value at transaction time (historical record).
  */
 export const transactions = pgTable("transactions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   type: transactionTypeEnum("type").notNull(),
   status: transactionStatusEnum("status").notNull().default('Pending'),
-  
-  // PRIMARY: Gold amount transferred
-  amountGold: decimal("amount_gold", { precision: 18, scale: 6 }),
+
   // HISTORICAL RECORD: USD value at time of transaction (for audit purposes)
   amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
   // HISTORICAL RECORD: EUR value at time of transaction (for audit purposes)
   amountEur: decimal("amount_eur", { precision: 18, scale: 2 }),
-  
-  // Gold price at transaction time (for historical value calculation)
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
-  
+
   // Legacy columns (preserved for production data compatibility)
   exchangeRateId: varchar("exchange_rate_id", { length: 255 }),
   exchangeRateToUsd: decimal("exchange_rate_to_usd", { precision: 18, scale: 6 }),
@@ -1204,8 +1125,6 @@ export type Transaction = typeof transactions.$inferSelect;
 // ============================================
 
 export const bankAccountStatusEnum = pgEnum('bank_account_status', ['Active', 'Inactive']);
-export const depositRequestStatusEnum = pgEnum('deposit_request_status', ['Pending', 'Under Review', 'Confirmed', 'Rejected', 'Cancelled']);
-export const withdrawalRequestStatusEnum = pgEnum('withdrawal_request_status', ['Pending', 'Processing', 'Completed', 'Rejected', 'Cancelled']);
 
 // Admin-managed bank accounts for receiving deposits
 export const platformBankAccounts = pgTable("platform_bank_accounts", {
@@ -1261,190 +1180,13 @@ export const insertPlatformFeeSchema = createInsertSchema(platformFees).omit({ i
 export type InsertPlatformFee = z.infer<typeof insertPlatformFeeSchema>;
 export type PlatformFee = typeof platformFees.$inferSelect;
 
-// User deposit requests (fiat to wallet)
-export const depositRequests = pgTable("deposit_requests", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  bankAccountId: varchar("bank_account_id", { length: 255 }), // Optional - no FK constraint to allow JSON-stored bank accounts
-  // Snapshot of target bank account details (for audit trail)
-  targetBankName: varchar("target_bank_name", { length: 255 }),
-  targetAccountName: varchar("target_account_name", { length: 255 }),
-  targetAccountNumber: varchar("target_account_number", { length: 255 }),
-  targetSwiftCode: varchar("target_swift_code", { length: 100 }),
-  targetIban: varchar("target_iban", { length: 100 }),
-  targetCurrency: varchar("target_currency", { length: 10 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  paymentMethod: varchar("payment_method", { length: 100 }).notNull().default('Bank Transfer'),
-  senderBankName: varchar("sender_bank_name", { length: 255 }), // User's sending bank
-  senderAccountName: varchar("sender_account_name", { length: 255 }), // Name on user's bank account
-  transactionReference: varchar("transaction_reference", { length: 255 }), // User's bank transfer reference
-  proofOfPayment: text("proof_of_payment"), // Base64 or URL to uploaded receipt image
-  notes: text("notes"),
-  
-  // Expected gold calculation snapshot (informational - final calculated at approval)
-  expectedGoldGrams: decimal("expected_gold_grams", { precision: 18, scale: 6 }), // Gold grams after fee deduction at submission time
-  priceSnapshotUsdPerGram: decimal("price_snapshot_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at submission time
-  feePercentSnapshot: decimal("fee_percent_snapshot", { precision: 5, scale: 2 }), // Fee percentage at submission time
 
-  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
-  status: depositRequestStatusEnum("status").notNull().default('Pending'),
-  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
-  processedAt: timestamp("processed_at"),
-  rejectionReason: text("rejection_reason"),
-  adminNotes: text("admin_notes"), // Admin notes for processing
-  
-  // Gold Bar Purchase Integration (for Buy Gold Bar flow via Wingold)
-  goldBarPurchase: json("gold_bar_purchase").$type<{
-    isGoldBarPurchase: boolean;
-    barSize: '1g' | '10g' | '100g' | '1kg';
-    barCount: number;
-    totalGrams: number;
-    vaultLocationId: string;
-    vaultLocationName: string;
-    estimatedPricePerGram: number;
-  } | null>().default(null),
-  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).default(sql`NULL`),
-  
-  // Crypto Payment Fields (when paymentMethod = 'Crypto')
-  cryptoTransactionHash: varchar("crypto_transaction_hash", { length: 255 }), // Blockchain TX hash
-  cryptoNetwork: varchar("crypto_network", { length: 50 }), // BTC, ETH, USDT_TRC20, etc.
-  cryptoWalletConfigId: varchar("crypto_wallet_config_id", { length: 255 }), // Reference to crypto_wallet_configs
-  cryptoAmount: varchar("crypto_amount", { length: 100 }), // Expected crypto amount
-  
-  // Card Payment Fields (when paymentMethod = 'Card Payment')
-  cardTransactionRef: varchar("card_transaction_ref", { length: 255 }), // N-Genius order reference
-  cardPaymentStatus: varchar("card_payment_status", { length: 50 }), // CAPTURED, FAILED, etc.
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertDepositRequestSchema = createInsertSchema(depositRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertDepositRequest = z.infer<typeof insertDepositRequestSchema>;
-export type DepositRequest = typeof depositRequests.$inferSelect;
-
-// User withdrawal requests (wallet to bank)
-export const withdrawalRequests = pgTable("withdrawal_requests", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  // User's bank account details
-  bankName: varchar("bank_name", { length: 255 }).notNull(),
-  accountName: varchar("account_name", { length: 255 }).notNull(),
-  accountNumber: varchar("account_number", { length: 100 }).notNull(),
-  iban: varchar("iban", { length: 100 }),
-  swiftCode: varchar("swift_code", { length: 50 }),
-  routingNumber: varchar("routing_number", { length: 50 }),
-  bankCountry: varchar("bank_country", { length: 100 }),
-  notes: text("notes"),
-
-  // LGPW/FGPW wallet selection - which wallet gold is used for settlement
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).notNull().default('LGPW'), // 'LGPW' or 'FGPW'
-  status: withdrawalRequestStatusEnum("status").notNull().default('Pending'),
-  // Gold amount being withdrawn
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  goldPriceAtRequest: decimal("gold_price_at_request", { precision: 12, scale: 2 }),
-  processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
-  processedAt: timestamp("processed_at"),
-  transactionReference: varchar("transaction_reference", { length: 255 }), // Admin's transfer reference
-  rejectionReason: text("rejection_reason"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertWithdrawalRequestSchema = createInsertSchema(withdrawalRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertWithdrawalRequest = z.infer<typeof insertWithdrawalRequestSchema>;
-export type WithdrawalRequest = typeof withdrawalRequests.$inferSelect;
 
 // ============================================
-// FINAPAY - GOLD REQUESTS (P2P Request Money)
-// ============================================
-
-export const goldRequestStatusEnum = pgEnum('gold_request_status', ['Pending', 'Fulfilled', 'Cancelled', 'Expired', 'Rejected']);
-
-export const goldRequests = pgTable("gold_requests", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  requesterId: varchar("requester_id", { length: 255 }).notNull().references(() => users.id),
-  payerId: varchar("payer_id", { length: 255 }).references(() => users.id), // Who is being asked to pay
-  payerEmail: varchar("payer_email", { length: 255 }), // If payer is not yet a user
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }), // USD equivalent at time of request
-  goldPriceAtRequest: decimal("gold_price_at_request", { precision: 12, scale: 2 }),
-  reason: text("reason"),
-  memo: text("memo"),
-  status: goldRequestStatusEnum("status").notNull().default('Pending'),
-  expiresAt: timestamp("expires_at"), // Request expiration
-  fulfilledAt: timestamp("fulfilled_at"),
-  fulfilledTransactionId: varchar("fulfilled_transaction_id", { length: 255 }).references(() => transactions.id),
-  cancelledAt: timestamp("cancelled_at"),
-  cancelReason: text("cancel_reason"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertGoldRequestSchema = createInsertSchema(goldRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertGoldRequest = z.infer<typeof insertGoldRequestSchema>;
-export type GoldRequest = typeof goldRequests.$inferSelect;
 
 // ============================================
-// FINAPAY - QR PAYMENT INVOICES
-// ============================================
-
-export const qrPaymentStatusEnum = pgEnum('qr_payment_status', ['Active', 'Paid', 'Expired', 'Cancelled']);
-
-export const qrPaymentInvoices = pgTable("qr_payment_invoices", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  invoiceCode: varchar("invoice_code", { length: 100 }).notNull().unique(), // Short code for QR
-  merchantId: varchar("merchant_id", { length: 255 }).notNull().references(() => users.id),
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
-  goldPriceAtCreation: decimal("gold_price_at_creation", { precision: 12, scale: 2 }),
-  description: text("description"),
-  status: qrPaymentStatusEnum("status").notNull().default('Active'),
-  payerId: varchar("payer_id", { length: 255 }).references(() => users.id),
-  paidAt: timestamp("paid_at"),
-  paidTransactionId: varchar("paid_transaction_id", { length: 255 }).references(() => transactions.id),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertQrPaymentInvoiceSchema = createInsertSchema(qrPaymentInvoices).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertQrPaymentInvoice = z.infer<typeof insertQrPaymentInvoiceSchema>;
-export type QrPaymentInvoice = typeof qrPaymentInvoices.$inferSelect;
 
 // ============================================
-// ADMIN - WALLET ADJUSTMENTS
-// ============================================
-
-export const walletAdjustmentTypeEnum = pgEnum('wallet_adjustment_type', ['Credit', 'Debit', 'Freeze', 'Unfreeze', 'Correction']);
-
-export const walletAdjustments = pgTable("wallet_adjustments", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  adjustmentType: walletAdjustmentTypeEnum("adjustment_type").notNull(),
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
-  reason: text("reason").notNull(),
-  internalNotes: text("internal_notes"),
-  approvedBy: varchar("approved_by", { length: 255 }).references(() => users.id),
-  approvedAt: timestamp("approved_at"),
-  executedBy: varchar("executed_by", { length: 255 }).notNull().references(() => users.id),
-  transactionId: varchar("transaction_id", { length: 255 }).references(() => transactions.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertWalletAdjustmentSchema = createInsertSchema(walletAdjustments).omit({ id: true, createdAt: true });
-export type InsertWalletAdjustment = z.infer<typeof insertWalletAdjustmentSchema>;
-export type WalletAdjustment = typeof walletAdjustments.$inferSelect;
 
 // ============================================
 // USER ACCOUNT STATUS (Freeze/Suspend)
@@ -1495,14 +1237,10 @@ export const certificates = pgTable("certificates", {
   
   type: certificateTypeEnum("type").notNull(),
   status: certificateStatusEnum("status").notNull().default('Active'),
-  
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }).notNull(),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
   totalValueUsd: decimal("total_value_usd", { precision: 18, scale: 2 }),
   
   issuer: varchar("issuer", { length: 255 }).notNull(), // "Finatrades" or "Wingold & Metals DMCC"
   vaultLocation: varchar("vault_location", { length: 255 }),
-  wingoldStorageRef: varchar("wingold_storage_ref", { length: 100 }),
   
   // Transfer-related fields
   fromUserId: varchar("from_user_id", { length: 255 }).references(() => users.id), // Sender for transfers
@@ -1525,7 +1263,6 @@ export const certificates = pgTable("certificates", {
   conversionPriceUsd: decimal("conversion_price_usd", { precision: 12, scale: 2 }), // Price at time of conversion
   
   // Certificate lineage - track remaining grams after partial conversions
-  remainingGrams: decimal("remaining_grams", { precision: 18, scale: 6 }), // Current active grams (may be less than goldGrams due to conversions)
   parentCertificateId: varchar("parent_certificate_id", { length: 255 }), // For child certificates created from partial surrender
   
   issuedAt: timestamp("issued_at").notNull().defaultNow(),
@@ -2691,195 +2428,12 @@ export type InsertMediaAsset = z.infer<typeof insertMediaAssetSchema>;
 export type MediaAsset = typeof mediaAssets.$inferSelect;
 
 // ============================================
-// PEER TRANSFERS (Send/Receive Money)
-// ============================================
-
-export const peerTransferStatusEnum = pgEnum('peer_transfer_status', ['Pending', 'Completed', 'Rejected', 'Expired', 'Failed', 'Reversed']);
-export const peerTransferChannelEnum = pgEnum('peer_transfer_channel', ['email', 'finatrades_id', 'qr_code']);
-
-export const peerTransfers = pgTable("peer_transfers", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  senderId: varchar("sender_id", { length: 255 }).notNull().references(() => users.id),
-  recipientId: varchar("recipient_id", { length: 255 }).references(() => users.id), // Nullable for invitation transfers
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold transfers
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }), // Gold price at time of transfer
-  channel: peerTransferChannelEnum("channel").notNull(), // How the transfer was initiated
-  recipientIdentifier: varchar("recipient_identifier", { length: 255 }).notNull(), // email, finatrades_id, or qr token
-  memo: text("memo"), // For invitations: stores JSON with {isInvite, invitationToken, senderReferralCode}
-  status: peerTransferStatusEnum("status").notNull().default('Completed'),
-  requiresApproval: boolean("requires_approval").notNull().default(false), // Whether recipient needs to accept
-  senderTransactionId: varchar("sender_transaction_id", { length: 255 }).references(() => transactions.id),
-  recipientTransactionId: varchar("recipient_transaction_id", { length: 255 }).references(() => transactions.id),
-  expiresAt: timestamp("expires_at"), // When pending transfer expires (auto-reject)
-  respondedAt: timestamp("responded_at"), // When recipient accepted/rejected
-  rejectionReason: text("rejection_reason"), // Optional reason for rejection
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertPeerTransferSchema = createInsertSchema(peerTransfers).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertPeerTransfer = z.infer<typeof insertPeerTransferSchema>;
-export type PeerTransfer = typeof peerTransfers.$inferSelect;
 
 // ============================================
-// PEER REQUESTS (Request Money)
-// ============================================
-
-export const peerRequestStatusEnum = pgEnum('peer_request_status', ['Pending', 'Fulfilled', 'Declined', 'Expired', 'Cancelled']);
-
-export const peerRequests = pgTable("peer_requests", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 100 }).notNull().unique(),
-  requesterId: varchar("requester_id", { length: 255 }).notNull().references(() => users.id),
-  targetId: varchar("target_id", { length: 255 }).references(() => users.id), // If known
-  targetIdentifier: varchar("target_identifier", { length: 255 }), // email or finatrades_id if target unknown
-  channel: peerTransferChannelEnum("channel").notNull(),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  amountGold: decimal("amount_gold", { precision: 18, scale: 6 }), // Gold amount for gold requests
-  assetType: varchar("asset_type", { length: 20 }).notNull().default('GOLD'), // GOLD or USD
-  memo: text("memo"),
-  qrPayload: varchar("qr_payload", { length: 500 }), // Unique token for QR code requests
-  status: peerRequestStatusEnum("status").notNull().default('Pending'),
-  fulfilledTransferId: varchar("fulfilled_transfer_id", { length: 255 }).references(() => peerTransfers.id),
-  declineReason: text("decline_reason"), // Optional reason for declining
-  attachmentUrl: text("attachment_url"), // Base64 or storage URL for invoice attachment
-  attachmentName: varchar("attachment_name", { length: 255 }), // Original filename
-  attachmentMime: varchar("attachment_mime", { length: 100 }), // MIME type (pdf, png, jpg)
-  attachmentSize: integer("attachment_size"), // File size in bytes
-  expiresAt: timestamp("expires_at"),
-  respondedAt: timestamp("responded_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertPeerRequestSchema = createInsertSchema(peerRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertPeerRequest = z.infer<typeof insertPeerRequestSchema>;
-export type PeerRequest = typeof peerRequests.$inferSelect;
 
 // ============================================
-// BINANCE PAY TRANSACTIONS
-// ============================================
-
-export const binanceOrderTypeEnum = pgEnum('binance_order_type', ['Buy', 'Payout']);
-export const binanceOrderStatusEnum = pgEnum('binance_order_status', [
-  'Created',      // Order created, awaiting payment
-  'Processing',   // Payment in progress
-  'Paid',         // Payment confirmed
-  'Completed',    // Fully processed (gold credited/payout sent)
-  'Expired',      // Order expired
-  'Failed',       // Payment failed
-  'Cancelled'     // User cancelled
-]);
-
-export const binanceTransactions = pgTable("binance_transactions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  
-  // Binance Pay Order Info
-  merchantTradeNo: varchar("merchant_trade_no", { length: 100 }).notNull().unique(), // Our order ID
-  prepayId: varchar("prepay_id", { length: 100 }),  // Binance's order ID
-  transactionId: varchar("transaction_id", { length: 100 }), // Binance's transaction ID (after payment)
-  
-  orderType: binanceOrderTypeEnum("order_type").notNull(), // Buy gold or Payout
-  status: binanceOrderStatusEnum("status").notNull().default('Created'),
-  
-  // Order amounts
-  orderAmountUsd: decimal("order_amount_usd", { precision: 18, scale: 2 }).notNull(),
-  cryptoCurrency: varchar("crypto_currency", { length: 20 }), // USDT, BTC, etc.
-  cryptoAmount: decimal("crypto_amount", { precision: 18, scale: 8 }),
-  
-  // Gold details (for Buy orders)
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 6 }),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 12, scale: 2 }),
-  
-  // Payout details (for withdrawals)
-  payoutWalletAddress: varchar("payout_wallet_address", { length: 255 }),
-  payoutNetwork: varchar("payout_network", { length: 50 }), // BSC, ETH, TRX, etc.
-  
-  // Binance response data
-  checkoutUrl: text("checkout_url"),
-  qrcodeLink: text("qrcode_link"),
-  expireTime: timestamp("expire_time"),
-  
-  // Related records
-  walletTransactionId: varchar("wallet_transaction_id", { length: 255 }).references(() => transactions.id),
-  vaultWithdrawalId: varchar("vault_withdrawal_id", { length: 255 }),
-  
-  // Webhook tracking
-  webhookReceivedAt: timestamp("webhook_received_at"),
-  webhookPayload: json("webhook_payload"),
-  
-  // Metadata
-  description: text("description"),
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertBinanceTransactionSchema = createInsertSchema(binanceTransactions).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertBinanceTransaction = z.infer<typeof insertBinanceTransactionSchema>;
-export type BinanceTransaction = typeof binanceTransactions.$inferSelect;
 
 // ============================================
-// NGENIUS CARD PAYMENT TRANSACTIONS
-// ============================================
-
-export const ngeniusOrderStatusEnum = pgEnum('ngenius_order_status', [
-  'Created',      // Order created, awaiting payment
-  'Pending',      // Payment pending
-  'Awaiting3DS',  // Awaiting 3D Secure authentication
-  'Authorised',   // Payment authorized
-  'Captured',     // Payment captured/completed
-  'Failed',       // Payment failed
-  'Cancelled',    // Order cancelled
-  'Refunded'      // Payment refunded
-]);
-
-export const ngeniusTransactions = pgTable("ngenius_transactions", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  
-  // Order reference
-  orderReference: varchar("order_reference", { length: 100 }).notNull().unique(), // Our unique order ID
-  ngeniusOrderId: varchar("ngenius_order_id", { length: 100 }), // NGenius order ID (from response)
-  ngeniusPaymentId: varchar("ngenius_payment_id", { length: 100 }), // NGenius payment ID
-  
-  status: ngeniusOrderStatusEnum("status").notNull().default('Created'),
-  
-  // Order amounts
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  
-  // Payment details (populated after payment)
-  cardBrand: varchar("card_brand", { length: 50 }), // VISA, Mastercard, etc.
-  cardLast4: varchar("card_last4", { length: 4 }), // Last 4 digits
-  cardholderName: varchar("cardholder_name", { length: 255 }),
-  
-  // URLs
-  paymentUrl: text("payment_url"), // Redirect URL for hosted payment page
-  
-  // Related records
-  walletTransactionId: varchar("wallet_transaction_id", { length: 255 }).references(() => transactions.id),
-  
-  // Webhook/callback tracking
-  webhookReceivedAt: timestamp("webhook_received_at"),
-  webhookPayload: json("webhook_payload"),
-  
-  // Dual-wallet support
-  goldWalletType: varchar("gold_wallet_type", { length: 10 }).default('LGPW'), // LGPW or FGPW
-  
-  // Metadata
-  description: text("description"),
-  errorMessage: text("error_message"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertNgeniusTransactionSchema = createInsertSchema(ngeniusTransactions).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertNgeniusTransaction = z.infer<typeof insertNgeniusTransactionSchema>;
-export type NgeniusTransaction = typeof ngeniusTransactions.$inferSelect;
 
 // ============================================
 // BRANDING & THEME SETTINGS
@@ -3371,63 +2925,8 @@ export type InsertPushDeviceToken = z.infer<typeof insertPushDeviceTokenSchema>;
 export type PushDeviceToken = typeof pushDeviceTokens.$inferSelect;
 
 // ============================================
-// CRYPTO WALLET CONFIGURATIONS (Admin managed)
-// ============================================
-
-export const cryptoNetworkEnum = pgEnum('crypto_network', [
-  'Bitcoin', 'Ethereum', 'USDT_TRC20', 'USDT_ERC20', 'USDC', 'BNB', 'Solana', 'Polygon', 'Other'
-]);
-
-export const cryptoWalletConfigs = pgTable("crypto_wallet_configs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  network: cryptoNetworkEnum("network").notNull(),
-  networkLabel: varchar("network_label", { length: 100 }).notNull(), // Display name like "Bitcoin (BTC)"
-  walletAddress: text("wallet_address").notNull(),
-  memo: varchar("memo", { length: 255 }), // Optional memo/tag for some networks
-  instructions: text("instructions"), // Optional instructions for users
-  qrCodeImage: text("qr_code_image"), // Base64 encoded QR code image for users to scan
-  isActive: boolean("is_active").notNull().default(true),
-  displayOrder: integer("display_order").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertCryptoWalletConfigSchema = createInsertSchema(cryptoWalletConfigs).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCryptoWalletConfig = z.infer<typeof insertCryptoWalletConfigSchema>;
-export type CryptoWalletConfig = typeof cryptoWalletConfigs.$inferSelect;
 
 // ============================================
-// CRYPTO PAYMENT REQUESTS (Manual payments)
-// ============================================
-
-export const cryptoPaymentStatusEnum = pgEnum('crypto_payment_status', [
-  'Pending', 'Under Review', 'Approved', 'Rejected', 'Credited', 'Expired', 'Cancelled'
-]);
-
-export const cryptoPaymentRequests = pgTable("crypto_payment_requests", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  walletConfigId: varchar("wallet_config_id", { length: 255 }).notNull().references(() => cryptoWalletConfigs.id),
-  amountUsd: decimal("amount_usd", { precision: 18, scale: 2 }).notNull(),
-  goldGrams: decimal("gold_grams", { precision: 18, scale: 8 }).notNull(),
-  goldPriceAtTime: decimal("gold_price_at_time", { precision: 18, scale: 2 }).notNull(), // Lock the price at time of request
-  cryptoAmount: varchar("crypto_amount", { length: 100 }), // Expected crypto amount (optional)
-  transactionHash: varchar("transaction_hash", { length: 255 }), // User submits their tx hash
-  proofImageUrl: text("proof_image_url"), // Screenshot/proof upload
-  status: cryptoPaymentStatusEnum("status").notNull().default('Pending'),
-  reviewerId: varchar("reviewer_id", { length: 255 }).references(() => users.id),
-  reviewedAt: timestamp("reviewed_at"),
-  reviewNotes: text("review_notes"),
-  rejectionReason: text("rejection_reason"),
-  creditedTransactionId: varchar("credited_transaction_id", { length: 255 }), // Reference to transaction when credited
-  expiresAt: timestamp("expires_at"), // Optional expiry for pending payments
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertCryptoPaymentRequestSchema = createInsertSchema(cryptoPaymentRequests).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertCryptoPaymentRequest = z.infer<typeof insertCryptoPaymentRequestSchema>;
-export type CryptoPaymentRequest = typeof cryptoPaymentRequests.$inferSelect;
 
 // ============================================
 // BUY GOLD REQUESTS (Manual via Wingold & Metals)
@@ -3777,261 +3276,6 @@ export type InsertInsuranceCertificate = z.infer<typeof insertInsuranceCertifica
 export type InsuranceCertificate = typeof insuranceCertificates.$inferSelect;
 
 // ============================================
-// WINGOLD INTEGRATION - B2B GOLD PURCHASING
-// ============================================
-
-export const wingoldBarSizeEnum = pgEnum('wingold_bar_size', ['1g', '10g', '100g', '1kg']);
-export const wingoldOrderStatusEnum = pgEnum('wingold_order_status', [
-  'pending', 'submitted', 'confirmed', 'processing', 'wingold_approved', 'fulfilled', 'cancelled', 'failed'
-]);
-export const wingoldBarCustodyStatusEnum = pgEnum('wingold_bar_custody_status', [
-  'in_vault', 'reserved', 'released', 'transferred'
-]);
-export const wingoldCertificateTypeEnum = pgEnum('wingold_certificate_type', ['bar', 'storage']);
-
-// Wingold purchase orders - orders sent to Wingold for physical gold
-export const wingoldPurchaseOrders = pgTable("wingold_purchase_orders", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  referenceNumber: varchar("reference_number", { length: 50 }).notNull().unique(),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  transactionId: varchar("transaction_id", { length: 255 }),
-  
-  barSize: wingoldBarSizeEnum("bar_size").notNull(),
-  barCount: integer("bar_count").notNull(),
-  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
-  usdAmount: decimal("usd_amount", { precision: 18, scale: 2 }).notNull(),
-  goldPriceUsdPerGram: decimal("gold_price_usd_per_gram", { precision: 18, scale: 6 }).notNull(),
-  
-  status: wingoldOrderStatusEnum("status").notNull().default('pending'),
-  wingoldOrderId: varchar("wingold_order_id", { length: 255 }),
-  wingoldVaultLocationId: varchar("wingold_vault_location_id", { length: 255 }),
-  
-  submittedAt: timestamp("submitted_at"),
-  confirmedAt: timestamp("confirmed_at"),
-  fulfilledAt: timestamp("fulfilled_at"),
-  cancelledAt: timestamp("cancelled_at"),
-  
-  errorMessage: text("error_message"),
-  metadata: json("metadata"),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertWingoldPurchaseOrderSchema = createInsertSchema(wingoldPurchaseOrders).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertWingoldPurchaseOrder = z.infer<typeof insertWingoldPurchaseOrderSchema>;
-export type WingoldPurchaseOrder = typeof wingoldPurchaseOrders.$inferSelect;
-
-// Wingold bar lots - individual bars received from Wingold
-export const wingoldBarLots = pgTable("wingold_bar_lots", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id", { length: 255 }).notNull().references(() => wingoldPurchaseOrders.id),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  
-  barId: varchar("bar_id", { length: 100 }).notNull().unique(),
-  serialNumber: varchar("serial_number", { length: 100 }).notNull(),
-  barSize: wingoldBarSizeEnum("bar_size").notNull(),
-  weightGrams: decimal("weight_grams", { precision: 18, scale: 6 }).notNull(),
-  purity: decimal("purity", { precision: 5, scale: 4 }).notNull().default('0.9999'),
-  mint: varchar("mint", { length: 100 }),
-  
-  vaultLocationId: varchar("vault_location_id", { length: 255 }),
-  vaultLocationName: varchar("vault_location_name", { length: 255 }),
-  
-  custodyStatus: wingoldBarCustodyStatusEnum("custody_status").notNull().default('in_vault'),
-  
-  barCertificateId: varchar("bar_certificate_id", { length: 255 }),
-  storageCertificateId: varchar("storage_certificate_id", { length: 255 }),
-  
-  ledgerEntryId: varchar("ledger_entry_id", { length: 255 }),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertWingoldBarLotSchema = createInsertSchema(wingoldBarLots).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertWingoldBarLot = z.infer<typeof insertWingoldBarLotSchema>;
-export type WingoldBarLot = typeof wingoldBarLots.$inferSelect;
-
-// Wingold certificates - bar and storage certificates from Wingold
-export const wingoldCertificates = pgTable("wingold_certificates", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  orderId: varchar("order_id", { length: 255 }).notNull().references(() => wingoldPurchaseOrders.id),
-  barLotId: varchar("bar_lot_id", { length: 255 }).references(() => wingoldBarLots.id),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  
-  certificateType: wingoldCertificateTypeEnum("certificate_type").notNull(),
-  certificateNumber: varchar("certificate_number", { length: 100 }).notNull().unique(),
-  
-  providerHash: varchar("provider_hash", { length: 255 }),
-  pdfUrl: text("pdf_url"),
-  jsonData: json("json_data"),
-  signature: text("signature"),
-  
-  issuedAt: timestamp("issued_at").notNull(),
-  verifiedAt: timestamp("verified_at"),
-  verifiedBy: varchar("verified_by", { length: 255 }),
-  
-  metadata: json("metadata"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertWingoldCertificateSchema = createInsertSchema(wingoldCertificates).omit({ id: true, createdAt: true });
-export type InsertWingoldCertificate = z.infer<typeof insertWingoldCertificateSchema>;
-export type WingoldCertificate = typeof wingoldCertificates.$inferSelect;
-
-// Wingold vault locations - cache of Wingold's vault locations
-export const wingoldApiCredentials = pgTable("wingold_api_credentials", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  apiKeyId: varchar("api_key_id", { length: 255 }).notNull().unique(),
-  description: varchar("description", { length: 255 }),
-  publicKey: text("public_key"),
-  allowedIps: text("allowed_ips"),
-  isActive: boolean("is_active").notNull().default(true),
-  lastUsedAt: timestamp("last_used_at"),
-  lastRotatedAt: timestamp("last_rotated_at"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertWingoldApiCredentialSchema = createInsertSchema(wingoldApiCredentials).omit({ id: true, createdAt: true });
-export type InsertWingoldApiCredential = z.infer<typeof insertWingoldApiCredentialSchema>;
-export type WingoldApiCredential = typeof wingoldApiCredentials.$inferSelect;
-
-// Wingold reconciliation records - for daily reconciliation with Wingold
-export const wingoldReconciliations = pgTable("wingold_reconciliations", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  reconciliationDate: date("reconciliation_date").notNull(),
-  
-  wingoldTotalBars: integer("wingold_total_bars"),
-  wingoldTotalGrams: decimal("wingold_total_grams", { precision: 18, scale: 6 }),
-  finatradesTotalBars: integer("finatrades_total_bars"),
-  finatradesTotalGrams: decimal("finatrades_total_grams", { precision: 18, scale: 6 }),
-  
-  isMatched: boolean("is_matched").notNull().default(false),
-  discrepancyGrams: decimal("discrepancy_grams", { precision: 18, scale: 6 }),
-  discrepancyNotes: text("discrepancy_notes"),
-  
-  rawPayload: json("raw_payload"),
-  reviewedBy: varchar("reviewed_by", { length: 255 }),
-  reviewedAt: timestamp("reviewed_at"),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertWingoldReconciliationSchema = createInsertSchema(wingoldReconciliations).omit({ id: true, createdAt: true });
-export type InsertWingoldReconciliation = z.infer<typeof insertWingoldReconciliationSchema>;
-export type WingoldReconciliation = typeof wingoldReconciliations.$inferSelect;
-
-// Wingold checkout sessions - for redirect checkout flow (production-ready)
-
-export const wingoldPaymentMethodEnum = pgEnum('wingold_payment_method', ['CARD', 'BANK', 'CRYPTO']);
-export const wingoldPaymentStatusEnum = pgEnum('wingold_payment_status', ['PENDING', 'PAID', 'VERIFIED', 'FAILED', 'REFUNDED']);
-
-export const wingoldOrderEvents = pgTable("wingold_order_events", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  eventId: varchar("event_id", { length: 255 }).notNull().unique(), // For idempotency
-  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).notNull(),
-  // Nullable to allow storing events for idempotency even when user is unknown
-  userId: varchar("user_id", { length: 255 }),
-  finatradesIdFromPayload: varchar("finatrades_id_from_payload", { length: 255 }), // Store the ID from payload for later lookup
-  
-  eventType: varchar("event_type", { length: 100 }).notNull(), // order.confirmed, order.fulfilled, etc.
-  
-  // Amounts - may not be available for all event types
-  amount: decimal("amount", { precision: 18, scale: 2 }),
-  currency: varchar("currency", { length: 10 }).default('USD'),
-  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }),
-  
-  // Payment info - optional, not all events have this
-  paymentMethod: wingoldPaymentMethodEnum("payment_method"),
-  paymentStatus: wingoldPaymentStatusEnum("payment_status"),
-  
-  bankReference: varchar("bank_reference", { length: 255 }),
-  cryptoTxHash: varchar("crypto_tx_hash", { length: 255 }),
-  gatewayRef: varchar("gateway_ref", { length: 255 }),
-  
-  goldItems: json("gold_items").$type<Array<{
-    sku: string;
-    weightGrams: number;
-    purity: string;
-    quantity: number;
-  }>>(),
-  
-  payloadJson: json("payload_json"), // Full webhook payload for audit
-  
-  processedAt: timestamp("processed_at"),
-  walletCredited: boolean("wallet_credited").notNull().default(false),
-  creditedGrams: decimal("credited_grams", { precision: 18, scale: 6 }),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertWingoldOrderEventSchema = createInsertSchema(wingoldOrderEvents).omit({ id: true, createdAt: true });
-export type InsertWingoldOrderEvent = z.infer<typeof insertWingoldOrderEventSchema>;
-export type WingoldOrderEvent = typeof wingoldOrderEvents.$inferSelect;
-
-// External Purchase References - for CARD payments (no wallet credit, reference only)
-export const externalPurchaseRefs = pgTable("external_purchase_refs", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
-  wingoldOrderId: varchar("wingold_order_id", { length: 255 }).notNull(),
-  
-  paymentMethod: varchar("payment_method", { length: 50 }).notNull().default('CARD'),
-  gatewayRef: varchar("gateway_ref", { length: 255 }),
-  
-  amount: decimal("amount", { precision: 18, scale: 2 }).notNull(),
-  currency: varchar("currency", { length: 10 }).notNull().default('AED'),
-  totalGrams: decimal("total_grams", { precision: 18, scale: 6 }).notNull(),
-  
-  goldItems: json("gold_items").$type<Array<{
-    sku: string;
-    weightGrams: number;
-    purity: string;
-    quantity: number;
-  }>>(),
-  
-  note: text("note").default('External purchase via Wingold - Card'),
-  
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
-
-export const insertExternalPurchaseRefSchema = createInsertSchema(externalPurchaseRefs).omit({ id: true, createdAt: true });
-export type InsertExternalPurchaseRef = z.infer<typeof insertExternalPurchaseRefSchema>;
-export type ExternalPurchaseRef = typeof externalPurchaseRefs.$inferSelect;
-
-// Wingold products catalog - synced from B2B API
-export const wingoldProducts = pgTable("wingold_products", {
-  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  wingoldProductId: varchar("wingold_product_id", { length: 255 }).notNull().unique(),
-  name: varchar("name", { length: 255 }).notNull(),
-  weight: varchar("weight", { length: 50 }).notNull(), // e.g., "1kg", "100g"
-  weightGrams: decimal("weight_grams", { precision: 18, scale: 4 }).notNull(),
-  purity: varchar("purity", { length: 20 }).notNull().default('999.9'),
-  livePrice: decimal("live_price", { precision: 18, scale: 2 }),
-  pricePerGram: decimal("price_per_gram", { precision: 18, scale: 6 }),
-  currency: varchar("currency", { length: 10 }).notNull().default('USD'),
-  stock: integer("stock").notNull().default(0),
-  inStock: boolean("in_stock").notNull().default(true),
-  category: varchar("category", { length: 100 }).default('bars'),
-  imageUrl: text("image_url"),
-  thumbnailUrl: text("thumbnail_url"),
-  galleryUrls: json("gallery_urls").$type<string[]>(),
-  certificationImageUrl: text("certification_image_url"),
-  description: text("description"),
-  metadata: json("metadata"),
-  // Fee fields for pricing breakdown
-  makingFee: decimal("making_fee", { precision: 18, scale: 2 }).default('0'), // Flat USD amount per bar
-  premiumFeePercent: decimal("premium_fee_percent", { precision: 5, scale: 2 }).default('0'), // Premium as % of gold price
-  vatPercent: decimal("vat_percent", { precision: 5, scale: 2 }).default('0'), // VAT percentage
-  syncedAt: timestamp("synced_at").notNull().defaultNow(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
-
-export const insertWingoldProductSchema = createInsertSchema(wingoldProducts).omit({ id: true, createdAt: true, updatedAt: true });
-export type InsertWingoldProduct = z.infer<typeof insertWingoldProductSchema>;
-export type WingoldProduct = typeof wingoldProducts.$inferSelect;
 
 // ============================================
 // FINABRIDGE - SHIPMENT TRACKING
@@ -4748,6 +3992,9 @@ export type WorkflowExpectedStep = typeof workflowExpectedSteps.$inferSelect;
 // ============================================
 // B2B INTEGRATION - Wingold Receiving Orders from Finatrades
 // ============================================
+
+// Kept for b2bOrders / b2bOrderBars (originally defined for legacy wingold_purchase_orders)
+export const wingoldBarSizeEnum = pgEnum('wingold_bar_size', ['1g', '10g', '100g', '1kg']);
 
 export const b2bOrderStatusEnum = pgEnum('b2b_order_status', [
   'pending', 'confirmed', 'processing', 'partially_fulfilled', 'fulfilled', 'cancelled', 'failed'
@@ -5604,7 +4851,6 @@ export const treasuryGoldVault = pgTable("treasury_gold_vault", {
   // Supplier/storage tracking
   supplier: varchar("supplier", { length: 100 }), // 'Wingold', etc.
   storageLocation: varchar("storage_location", { length: 255 }),
-  wingoldOrderId: varchar("wingold_order_id", { length: 255 }),
   
   // Admin tracking
   processedBy: varchar("processed_by", { length: 255 }).references(() => users.id),
@@ -5707,7 +4953,10 @@ export const insertUserBankAccountSchema = createInsertSchema(userBankAccounts).
 export type InsertUserBankAccount = z.infer<typeof insertUserBankAccountSchema>;
 export type UserBankAccount = typeof userBankAccounts.$inferSelect;
 
-// User Crypto Wallets - for crypto withdrawal destinations (uses existing cryptoNetworkEnum)
+// Kept for userCryptoWallets (originally defined for legacy cryptoPaymentRequests)
+export const cryptoNetworkEnum = pgEnum('crypto_network', ['Bitcoin', 'Ethereum', 'USDT_TRC20', 'USDT_ERC20', 'USDC', 'BNB', 'Solana', 'Polygon', 'Other']);
+
+// User Crypto Wallets - for crypto withdrawal destinations
 export const userCryptoWallets = pgTable("user_crypto_wallets", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),

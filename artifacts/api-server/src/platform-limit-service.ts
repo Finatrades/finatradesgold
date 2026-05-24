@@ -650,8 +650,8 @@ export class PlatformLimitService {
     return { dailyTotal, monthlyTotal };
   }
 
-  static async getUserDepositTotals(userId: string): Promise<TransactionTotals> {
-    const deposits = await storage.getUserDepositRequests(userId);
+  static async getUserDepositTotals(_userId: string): Promise<TransactionTotals> {
+    const deposits: Array<{ status: string; createdAt: Date; amountUsd: string | null }> = []; // deposit_requests dropped (task #144)
     
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -677,8 +677,8 @@ export class PlatformLimitService {
     return { dailyTotal, monthlyTotal };
   }
 
-  static async getUserWithdrawalTotals(userId: string): Promise<{ dailyTotal: number }> {
-    const withdrawals = await storage.getUserWithdrawalRequests(userId);
+  static async getUserWithdrawalTotals(_userId: string): Promise<{ dailyTotal: number }> {
+    const withdrawals: Array<{ status: string; createdAt: Date; amountUsd: string | null }> = []; // withdrawal_requests dropped (task #144)
     
     const now = new Date();
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
