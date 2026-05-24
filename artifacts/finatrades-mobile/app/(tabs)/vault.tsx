@@ -14,9 +14,25 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { router } from "expo-router";
+
 import { useAuth } from "@/context/AuthContext";
-import { useGoldPrice, useWallet } from "@/hooks/useApi";
+import { useGoldPrice, useWallet, useWalletBalances, type WalletBalanceRow } from "@/hooks/useApi";
 import { useColors } from "@/hooks/useColors";
+
+const CURRENCY_META: Record<string, { prefix: string; label: string }> = {
+  USD: { prefix: "$", label: "US Dollar" },
+  EUR: { prefix: "€", label: "Euro" },
+  GBP: { prefix: "£", label: "British Pound" },
+};
+
+function formatMoney(cents: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
+  } catch {
+    return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
+}
 
 export default function VaultScreen() {
   const colors = useColors();
@@ -24,11 +40,17 @@ export default function VaultScreen() {
   const { user } = useAuth();
   const { data: wallet, isLoading, refetch, isRefetching } = useWallet(user?.id);
   const { data: goldPrice } = useGoldPrice();
+  const balancesQ = useWalletBalances();
 
   const onRefresh = useCallback(async () => {
     await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    await refetch();
-  }, [refetch]);
+    await Promise.all([refetch(), balancesQ.refetch()]);
+  }, [refetch, balancesQ]);
+
+  const supportedCurrencies = ["USD", "EUR", "GBP"];
+  const balanceByCurrency = new Map<string, WalletBalanceRow>(
+    (balancesQ.data?.balances ?? []).map((b) => [b.currency, b]),
+  );
 
   const pricePerGram = goldPrice?.pricePerGram || 0;
   const totalGrams = parseFloat(wallet?.goldGrams || "0");
@@ -56,8 +78,77 @@ export default function VaultScreen() {
       <View style={styles.pageHeader}>
         <Text style={[styles.pageTitle, { color: colors.foreground }]}>FinaVault</Text>
         <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-          Your gold holdings
+          Your wallets, escrow & gold
         </Text>
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.sectionTitle, { color: colors.foreground }]}>
+            Trade Finance Wallet
+          </Text>
+          <Pressable
+            onPress={() => router.push("/deals" as any)}
+            hitSlop={8}
+            style={({ pressed }) => [{ opacity: pressed ? 0.6 : 1, flexDirection: "row", alignItems: "center", gap: 2 }]}
+          >
+            <Text style={{ color: colors.primary, fontWeight: "600", fontSize: 13 }}>Deals</Text>
+            <Ionicons name="chevron-forward" size={14} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        {balancesQ.isLoading ? (
+          <View style={[styles.priceRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <ActivityIndicator color={colors.primary} />
+          </View>
+        ) : balancesQ.error ? (
+          <View style={[styles.priceRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={{ color: colors.destructive }}>
+              {(balancesQ.error as Error).message}
+            </Text>
+          </View>
+        ) : (
+          supportedCurrencies.map((cur) => {
+            const meta = CURRENCY_META[cur];
+            const bal = balanceByCurrency.get(cur);
+            const available = bal?.availableCents ?? 0;
+            const locked = bal?.lockedCents ?? 0;
+            return (
+              <View
+                key={cur}
+                style={[styles.currencyCard, { backgroundColor: colors.card, borderColor: colors.border }]}
+              >
+                <View style={styles.currencyHead}>
+                  <View style={[styles.currencyBadge, { backgroundColor: colors.primary + "20" }]}>
+                    <Text style={{ color: colors.primary, fontWeight: "700" }}>{meta.prefix}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: colors.foreground, fontWeight: "700", fontSize: 15 }}>{cur}</Text>
+                    <Text style={{ color: colors.mutedForeground, fontSize: 12 }}>{meta.label}</Text>
+                  </View>
+                </View>
+                <View style={styles.currencySplit}>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.splitLabel, { color: colors.mutedForeground }]}>Available</Text>
+                    <Text style={[styles.splitValue, { color: colors.foreground }]}>
+                      {formatMoney(available, cur)}
+                    </Text>
+                  </View>
+                  <View style={[styles.splitDivider, { backgroundColor: colors.border }]} />
+                  <View style={{ flex: 1 }}>
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                      <Ionicons name="lock-closed" size={11} color={colors.warning} />
+                      <Text style={[styles.splitLabel, { color: colors.mutedForeground }]}>Locked in escrow</Text>
+                    </View>
+                    <Text style={[styles.splitValue, { color: locked > 0 ? colors.warning : colors.foreground }]}>
+                      {formatMoney(locked, cur)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })
+        )}
       </View>
 
       <LinearGradient
@@ -210,10 +301,55 @@ const styles = StyleSheet.create({
     color: "rgba(0,0,0,0.7)",
   },
   section: { paddingHorizontal: 20, marginBottom: 28 },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 14,
+  },
   sectionTitle: {
     fontSize: 18,
     fontFamily: "Inter_700Bold",
     marginBottom: 14,
+  },
+  currencyCard: {
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 10,
+  },
+  currencyHead: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 12,
+  },
+  currencyBadge: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  currencySplit: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+  },
+  splitDivider: {
+    width: StyleSheet.hairlineWidth,
+    alignSelf: "stretch",
+  },
+  splitLabel: {
+    fontSize: 11,
+    fontFamily: "Inter_500Medium",
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  splitValue: {
+    fontSize: 16,
+    fontFamily: "Inter_700Bold",
+    marginTop: 4,
   },
   allocationCard: {
     flexDirection: "row",

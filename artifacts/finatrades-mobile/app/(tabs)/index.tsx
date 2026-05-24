@@ -126,14 +126,14 @@ export default function DashboardScreen() {
           colors={colors}
         />
         <QuickActionBtn
-          icon="file-tray-full"
-          label="Certs"
+          icon="briefcase"
+          label="Deals"
           color={colors.gold}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push("/(tabs)/certificates");
+            router.push("/deals" as any);
           }}
-          testID="button-certs"
+          testID="button-deals"
           colors={colors}
         />
       </View>

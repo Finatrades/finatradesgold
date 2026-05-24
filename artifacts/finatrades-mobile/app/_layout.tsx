@@ -39,6 +39,8 @@ function RootLayoutNav() {
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="consignments/[id]" options={{ headerShown: false }} />
+      <Stack.Screen name="deals/index" options={{ headerShown: false }} />
+      <Stack.Screen name="deals/[id]" options={{ headerShown: false }} />
     </Stack>
   );
 }

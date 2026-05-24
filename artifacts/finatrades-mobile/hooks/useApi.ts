@@ -128,3 +128,104 @@ export function useUserProfile(userId: string | undefined) {
   });
 }
 
+// ───────────────── Trade Finance (Task #146/#149) ─────────────────
+
+export type WalletBalanceRow = {
+  currency: string;
+  availableCents: number;
+  lockedCents: number;
+  pendingCents?: number;
+};
+
+export function useWalletBalances() {
+  return useQuery({
+    queryKey: ["walletBalances"],
+    queryFn: async () => {
+      const r = await apiFetch("/api/wallet/balances");
+      return r as { balances: WalletBalanceRow[] };
+    },
+    staleTime: 30000,
+  });
+}
+
+export type TradeCaseRow = {
+  id: string;
+  caseNumber?: string | null;
+  companyName?: string | null;
+  commodityType?: string | null;
+  tradeType?: string | null;
+  status: string;
+  tradeValueUsd?: string | number | null;
+  settlementCurrency?: string | null;
+  settlementAmountCents?: number | null;
+  escrowFundedAt?: string | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
+};
+
+export function useTradeCases(userId: string | undefined) {
+  return useQuery({
+    queryKey: ["tradeCases", userId],
+    queryFn: async () => {
+      const r = await apiFetch(`/api/trade/cases/${userId}`);
+      return r as { cases: TradeCaseRow[] };
+    },
+    enabled: !!userId,
+    staleTime: 30000,
+  });
+}
+
+export type MilestoneRow = {
+  id: string;
+  sequence: number;
+  label: string;
+  trigger: string;
+  percent: string;
+  amountCents: number;
+  currency: string;
+  status: "pending" | "released" | "released_reserved" | "disputed" | string;
+  releasedAt?: string | null;
+};
+
+export function useCaseMilestones(caseId: string | undefined) {
+  return useQuery({
+    queryKey: ["caseMilestones", caseId],
+    queryFn: async () => {
+      const r = await apiFetch(`/api/trade/cases/${caseId}/milestones`);
+      return r as { milestones: MilestoneRow[]; caseId?: string };
+    },
+    enabled: !!caseId,
+    staleTime: 15000,
+  });
+}
+
+export function useReleaseMilestone(caseId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ milestoneId, reason }: { milestoneId: string; reason: string }) =>
+      apiFetch(`/api/trade/cases/${caseId}/milestones/${milestoneId}/release`, {
+        method: "POST",
+        body: JSON.stringify({ reason }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["caseMilestones", caseId] });
+      qc.invalidateQueries({ queryKey: ["walletBalances"] });
+    },
+  });
+}
+
+export function useConfirmGoodsReceived(caseId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () =>
+      apiFetch(`/api/trade/cases/${caseId}/goods-received`, {
+        method: "POST",
+        body: JSON.stringify({ reason: "Importer confirmed goods received (mobile)" }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["caseMilestones", caseId] });
+      qc.invalidateQueries({ queryKey: ["walletBalances"] });
+    },
+  });
+}
+
