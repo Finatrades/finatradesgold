@@ -904,7 +904,6 @@ export class DatabaseStorage implements IStorage {
       id: kycSubmissions.id,
       userId: kycSubmissions.userId,
       accountType: kycSubmissions.accountType,
-      tier: kycSubmissions.tier,
       fullName: kycSubmissions.fullName,
       status: kycSubmissions.status,
       screeningStatus: kycSubmissions.screeningStatus,

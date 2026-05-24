@@ -19,7 +19,7 @@ export interface VerifyDocumentJobData {
   companyName?: string | null;
 }
 
-type DocumentStatus = 'Pending' | 'Approved' | 'Rejected' | 'AI Review' | 'Tier 1 Review' | 'AI Rejected';
+type DocumentStatus = 'Pending' | 'Approved' | 'Rejected' | 'AI Review' | 'Pending Review' | 'AI Rejected';
 
 function cleanRedisUrl(rawUrl: string): string {
   let url = rawUrl.trim();
@@ -137,7 +137,7 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
     const fraudResult = calculateFraudScore(extracted, tradeData);
     console.log(`[VerifyDoc] Fraud score: ${fraudResult.totalScore} for ${documentId}`);
 
-    const newDocStatus: DocumentStatus = fraudResult.recommendation === 'reject' ? 'AI Rejected' : 'Tier 1 Review';
+    const newDocStatus: DocumentStatus = fraudResult.recommendation === 'reject' ? 'AI Rejected' : 'Pending Review';
 
     await db.update(tradeDocuments)
       .set({
@@ -170,7 +170,7 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
         .set({
           aiVerificationStatus: 'failed',
           aiRejectionReason: 'AI verification failed after 3 attempts — flagged for manual review',
-          status: 'Tier 1 Review',
+          status: 'Pending Review',
           aiRetryCount: attemptNumber,
         })
         .where(eq(tradeDocuments.id, documentId));

@@ -8,7 +8,8 @@ import {
   consignmentDocuments,
   consignmentListings,
   warehouseReceipts,
-  kycSubmissions,
+  finatradesPersonalKyc,
+  finatradesCorporateKyc,
   rfqs,
   rfqOffers,
   tradeOrders,
@@ -48,7 +49,8 @@ function requireUserType(...allowed: UT[]) {
 }
 
 // ─── Importer KYC gate ─────────────────────────────────────────────────────
-// Importers must have at least Tier 1 (Basic) approved to transact.
+// Importers may transact with either an Approved Personal KYC (individuals)
+// or an Approved Corporate KYC (companies).
 async function getImporterEligibility(userId: string, user: any): Promise<{
   eligible: boolean;
   reason?: string;
@@ -59,19 +61,29 @@ async function getImporterEligibility(userId: string, user: any): Promise<{
   if (user?.userType !== "importer") {
     return { eligible: false, reason: "Buyer actions require importer account", kycStatus: user?.kycStatus };
   }
-  const [sub] = await db
-    .select({ tier: kycSubmissions.tier, status: kycSubmissions.status })
-    .from(kycSubmissions)
-    .where(eq(kycSubmissions.userId, userId))
-    .orderBy(desc(kycSubmissions.createdAt))
+  const [corp] = await db
+    .select({ status: finatradesCorporateKyc.status })
+    .from(finatradesCorporateKyc)
+    .where(eq(finatradesCorporateKyc.userId, userId))
+    .orderBy(desc(finatradesCorporateKyc.createdAt))
     .limit(1);
-  if (!sub) {
+  if (corp?.status === "Approved") {
+    return { eligible: true, kycStatus: corp.status, kycTier: "corporate" };
+  }
+  const [personal] = await db
+    .select({ status: finatradesPersonalKyc.status })
+    .from(finatradesPersonalKyc)
+    .where(eq(finatradesPersonalKyc.userId, userId))
+    .orderBy(desc(finatradesPersonalKyc.createdAt))
+    .limit(1);
+  if (personal?.status === "Approved") {
+    return { eligible: true, kycStatus: personal.status, kycTier: "personal" };
+  }
+  const latestStatus = corp?.status || personal?.status;
+  if (!latestStatus) {
     return { eligible: false, reason: "KYC required before transacting — no submission found", kycStatus: user?.kycStatus };
   }
-  if (sub.status !== "Approved") {
-    return { eligible: false, reason: `KYC must be Approved — current status: ${sub.status}`, kycStatus: sub.status, kycTier: sub.tier };
-  }
-  return { eligible: true, kycStatus: sub.status, kycTier: sub.tier };
+  return { eligible: false, reason: `KYC must be Approved — current status: ${latestStatus}`, kycStatus: latestStatus };
 }
 
 const TRADE_MARGIN_BPS = Number(process.env.TRADE_MARGIN_BPS || 1000); // 10% default

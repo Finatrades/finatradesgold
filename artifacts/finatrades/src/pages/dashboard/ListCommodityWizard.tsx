@@ -232,10 +232,9 @@ export default function ListCommodityWizard({ open, onClose, onCreated }: ListCo
         ) : !kycOk ? (
           <div className="p-8 text-center">
             <AlertCircle size={32} className="mx-auto mb-3" style={{ color: '#D97706' }} />
-            <p className="font-semibold" style={{ color: '#1A1A1A' }}>KYC Tier 3 required</p>
+            <p className="font-semibold" style={{ color: '#1A1A1A' }}>Corporate KYC required</p>
             <p className="text-sm mt-1" style={{ color: '#888880' }}>
-              {kycReason || 'Complete corporate KYB (Tier 3) to submit consignments.'}
-              {kycTier && <> Current tier: <strong>{kycTier}</strong>.</>}
+              {kycReason || 'Complete Finatrades Corporate KYC to submit consignments.'}
             </p>
             <a href="/kyc" className="inline-block mt-4 px-4 py-2 rounded-lg font-semibold text-white"
                style={{ background: '#C73B22' }} data-testid="wizard-goto-kyc">Go to KYC</a>

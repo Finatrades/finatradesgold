@@ -126,7 +126,7 @@ router.post('/vc/issue', ensureAdmin, async (req: Request, res: Response) => {
     }
 
     const defaultClaims = {
-      kycLevel: 'tier_1_basic',
+      kycLevel: 'finatrades',
       kycStatus: 'Approved',
       idVerified: true,
       addressVerified: true,

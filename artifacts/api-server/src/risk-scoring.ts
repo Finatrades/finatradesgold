@@ -1,5 +1,5 @@
 import { storage } from "./storage";
-import type { User, KycSubmission, Transaction, UserRiskProfile } from "@shared/schema";
+import type { User, KycSubmission, Transaction, UserRiskProfile, FinatradesPersonalKyc, FinatradesCorporateKyc } from "@shared/schema";
 
 const HIGH_RISK_COUNTRIES = [
   'AF', 'BY', 'MM', 'CF', 'CU', 'CD', 'IR', 'IQ', 'LB', 'LY',
@@ -57,13 +57,6 @@ export function calculateDocumentRisk(kycSubmission: KycSubmission | undefined):
     score += 30;
   }
   
-  if (kycSubmission.tier === 'tier_1_basic') {
-    score += 20;
-  } else if (kycSubmission.tier === 'tier_2_enhanced') {
-    score += 10;
-  } else if (kycSubmission.tier === 'tier_3_corporate') {
-    score += 5;
-  }
   
   const docs = kycSubmission.documents as Record<string, unknown> | null;
   if (!docs || Object.keys(docs).length === 0) {
@@ -238,10 +231,40 @@ function calculateTransactionLimits(riskLevel: RiskLevel): { daily: string; mont
   }
 }
 
+// Adapt a Finatrades Personal/Corporate KYC row into the legacy KycSubmission shape
+// used by document-risk and screening-risk calculators. Only the fields actually
+// read by those calculators are populated.
+function asKycSubmissionShape(
+  personal: FinatradesPersonalKyc | undefined,
+  corporate: FinatradesCorporateKyc | undefined,
+): KycSubmission | undefined {
+  const row = corporate ?? personal;
+  if (!row) return undefined;
+  const docs: Record<string, unknown> = {};
+  if (corporate?.documents) {
+    for (const [k, v] of Object.entries(corporate.documents as Record<string, unknown>)) {
+      if (v) docs[k] = v;
+    }
+  }
+  if (personal) {
+    if (personal.idFrontUrl) docs.idFront = personal.idFrontUrl;
+    if (personal.idBackUrl) docs.idBack = personal.idBackUrl;
+    if (personal.passportUrl) docs.passport = personal.passportUrl;
+    if (personal.addressProofUrl) docs.addressProof = personal.addressProofUrl;
+  }
+  return {
+    status: row.status,
+    documents: docs as any,
+    idExpiryDate: personal?.passportExpiryDate ?? corporate?.directorPassportExpiryDate ?? null,
+  } as unknown as KycSubmission;
+}
+
 export async function calculateUserRiskScore(userId: string): Promise<RiskScoreResult> {
   const user = await storage.getUser(userId);
-  const kycSubmission = await storage.getKycSubmission(userId);
-  
+  const personal = await storage.getFinatradesPersonalKyc(userId);
+  const corporate = await storage.getFinatradesCorporateKyc(userId);
+  const kycSubmission = asKycSubmissionShape(personal, corporate);
+
   const geographyRisk = calculateGeographyRisk(user?.country);
   const documentRisk = calculateDocumentRisk(kycSubmission);
   const transactionRisk = await calculateTransactionRisk(userId);

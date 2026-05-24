@@ -11,7 +11,7 @@ import {
   consignmentTally,
   consignmentTallies,
   warehouseReceipts,
-  kycSubmissions,
+  finatradesCorporateKyc,
   consignmentListings,
   users,
 } from "../shared/schema";
@@ -19,7 +19,8 @@ import { serializeTally } from "./warehouse";
 import { uploadToR2, isR2Configured, generateR2Key, getSignedDownloadUrl } from "../r2-storage";
 import { sendEmailDirect } from "../email";
 
-// ─── KYC Tier-3 eligibility ────────────────────────────────────────────────
+// ─── Corporate KYC eligibility ─────────────────────────────────────────────
+// Exporters must complete Finatrades Corporate KYC (Approved) to list goods.
 async function getExporterEligibility(userId: string, user: any): Promise<{
   eligible: boolean;
   reason?: string;
@@ -27,27 +28,23 @@ async function getExporterEligibility(userId: string, user: any): Promise<{
   kycTier?: string;
 }> {
   // Admins always eligible
-  if (user?.role === "admin") return { eligible: true, kycTier: "admin" };
+  if (user?.role === "admin") return { eligible: true, kycTier: "corporate" };
   if (user?.userType !== "exporter") {
     return { eligible: false, reason: "User type must be 'exporter'", kycStatus: user?.kycStatus };
   }
-  // Look up the most recent KYC submission for the user; require tier_3_corporate + Approved
   const [sub] = await db
-    .select({ tier: kycSubmissions.tier, status: kycSubmissions.status })
-    .from(kycSubmissions)
-    .where(eq(kycSubmissions.userId, userId))
-    .orderBy(desc(kycSubmissions.createdAt))
+    .select({ status: finatradesCorporateKyc.status })
+    .from(finatradesCorporateKyc)
+    .where(eq(finatradesCorporateKyc.userId, userId))
+    .orderBy(desc(finatradesCorporateKyc.createdAt))
     .limit(1);
   if (!sub) {
-    return { eligible: false, reason: "KYC Tier 3 (Corporate) required — no submission found", kycStatus: user?.kycStatus };
-  }
-  if (sub.tier !== "tier_3_corporate") {
-    return { eligible: false, reason: `KYC Tier 3 (Corporate) required — current tier: ${sub.tier}`, kycStatus: sub.status, kycTier: sub.tier };
+    return { eligible: false, reason: "Corporate KYC required — no submission found", kycStatus: user?.kycStatus };
   }
   if (sub.status !== "Approved") {
-    return { eligible: false, reason: `KYC Tier 3 must be Approved — current status: ${sub.status}`, kycStatus: sub.status, kycTier: sub.tier };
+    return { eligible: false, reason: `Corporate KYC must be Approved — current status: ${sub.status}`, kycStatus: sub.status, kycTier: "corporate" };
   }
-  return { eligible: true, kycStatus: sub.status, kycTier: sub.tier };
+  return { eligible: true, kycStatus: sub.status, kycTier: "corporate" };
 }
 
 // ─── Auth helpers (mirror routes.ts) ───────────────────────────────────────

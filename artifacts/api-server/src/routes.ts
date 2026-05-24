@@ -6087,16 +6087,14 @@ export async function registerRoutes(
   // Submit tiered KYC with SLA tracking
   app.post("/api/kyc/submit-tiered", ensureAuthenticated, async (req, res) => {
     try {
-      const { userId, tier, accountType, ...kycData } = req.body;
-      
-      // Calculate SLA deadline based on tier
-      const slaDays = tier === 'tier_3_corporate' ? 5 : tier === 'tier_2_enhanced' ? 3 : 1;
+      const { userId, accountType, ...kycData } = req.body;
+
+      // Single-stage Finatrades review SLA (5 business days max)
       const slaDeadline = new Date();
-      slaDeadline.setDate(slaDeadline.getDate() + slaDays);
-      
+      slaDeadline.setDate(slaDeadline.getDate() + 5);
+
       const submission = await storage.createKycSubmission({
         userId,
-        tier: tier || 'tier_1_basic',
         accountType: accountType || 'personal',
         status: 'Pending Review',
         screeningStatus: 'Pending',
@@ -6117,15 +6115,15 @@ export async function registerRoutes(
         actionType: "create",
         actor: userId,
         actorRole: "user",
-        details: `Tiered KYC (${tier}) submitted - SLA deadline: ${slaDeadline.toISOString()}`,
+        details: `Finatrades KYC (${accountType}) submitted - SLA deadline: ${slaDeadline.toISOString()}`,
       });
-      
+
       // Log platform activity
       logActivity({
         type: 'kyc_submission',
         title: 'KYC Submission',
-        description: `${tier} verification submitted`,
-        details: { tier, accountType, slaDeadline: slaDeadline.toISOString() },
+        description: `Finatrades ${accountType} KYC submitted`,
+        details: { accountType, slaDeadline: slaDeadline.toISOString() },
         severity: 'info',
       });
       
@@ -7463,7 +7461,7 @@ export async function registerRoutes(
       if (requiresDocument) {
         requestData.status = 'AI Review';
       } else {
-        requestData.status = 'Tier 1 Review';
+        requestData.status = 'Pending Review';
       }
 
       // Validate FinaBridge trade case value limits using PARSED data
@@ -8422,7 +8420,7 @@ export async function registerRoutes(
       if (aiStatus === 'Pass') {
         // Update request to Tier 1 Review
         await storage.updateTradeRequest(req.params.id, {
-          status: 'Tier 1 Review',
+          status: 'Pending Review',
           aiVerificationStatus: 'Pass',
           aiFraudScore: fraudScore?.toString() || null,
           aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
@@ -8506,7 +8504,7 @@ export async function registerRoutes(
         }
       }
 
-      return res.json({ message: `AI callback processed — status updated to ${aiStatus === 'Pass' ? 'Tier 1 Review' : 'AI Rejected'}` });
+      return res.json({ message: `AI callback processed — status updated to ${aiStatus === 'Pass' ? 'Pending Review' : 'AI Rejected'}` });
     } catch (error) {
       return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to process AI callback" });
     }
@@ -8523,7 +8521,7 @@ export async function registerRoutes(
   app.get("/api/admin/finabridge/tier-review", ensureAdminAsync, requirePermission('view_finabridge', 'manage_finabridge'), async (req, res) => {
     try {
       const allRequests = await storage.getAllTradeRequests();
-      const tierStatuses = ['AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review'];
+      const tierStatuses = ['AI Review', 'AI Rejected', 'Pending Review', 'Pending Review', 'Pending Review'];
       const tierRequests = allRequests.filter(r => tierStatuses.includes(r.status));
 
       const enriched = await Promise.all(tierRequests.map(async (request) => {
@@ -8548,61 +8546,63 @@ export async function registerRoutes(
     }
   });
 
-  // Tier 1 Approve (Macy → move to Tier 2 Review, notify Farah)
+  // Single-stage FinaBridge approve (Task #124): one admin reviewer takes the
+  // Pending Review request straight to Open and publishes it to exporters.
+  // The legacy tier1 endpoint slug is retained so existing admin UIs keep
+  // working, but the behavior is now single-stage (no Farah/Reda escalation).
   app.post("/api/admin/finabridge/requests/:id/tier1-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { notes, reviewedBy } = req.body;
       if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
       const request = await storage.getTradeRequest(req.params.id);
       if (!request) return res.status(404).json({ message: "Trade request not found" });
-      if (request.status !== 'Tier 1 Review') return res.status(400).json({ message: "Request is not in Tier 1 Review status" });
+      if (request.status !== 'Pending Review') return res.status(400).json({ message: "Request is not in Pending Review status" });
 
+      const reviewerName = reviewedBy || 'Compliance';
       await storage.updateTradeRequest(req.params.id, {
-        status: 'Tier 2 Review',
+        status: 'Open',
+        publishedToExporters: true,
         tier1Status: 'Approved',
         tier1Notes: notes || '',
-        tier1ReviewedBy: reviewedBy || 'Macy',
+        tier1ReviewedBy: reviewerName,
       } as any);
 
-      // Email #5 — notify Farah (Tier 2) with Macy's notes; Reda and Macy get CC awareness copies
       const importer = await storage.getUser(request.importerUserId);
       const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
-      const tier1ReviewerName = reviewedBy || 'Macy';
-      const tier1NotesSafe = notes || 'No notes provided';
-      const tier1TradeRef = request.tradeRefId;
-      const tier1TradeValue = parseFloat(request.tradeValueUsd.toString()).toLocaleString();
-      const tier1InstrumentType = (request as any).paymentInstrumentType || 'Not specified';
+      const tradeValue = parseFloat(request.tradeValueUsd.toString()).toLocaleString();
 
-      // Farah — ACTION REQUIRED
-      sendEmailViaTemplate('farah@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED, {
-        admin_name: 'Farah Hashim',
-        trade_ref: tier1TradeRef,
-        importer_name: importerName,
-        trade_value: tier1TradeValue,
-        instrument_type: tier1InstrumentType,
-        tier1_reviewer: tier1ReviewerName,
-        tier1_notes: tier1NotesSafe,
-        admin_url: '/admin/finabridge',
-      }).catch(err => console.error('[Email] Tier1 approve email to Farah failed:', err));
-
-      // Reda and Macy — CC awareness (no action required)
-      for (const cc of [{ email: 'reda@finatrades.com', name: 'Reda' }, { email: 'macy@finatrades.com', name: 'Macy' }]) {
-        sendEmailViaTemplate(cc.email, EMAIL_TEMPLATES.FINABRIDGE_TIER1_APPROVED_CC, {
-          admin_name: cc.name,
-          trade_ref: tier1TradeRef,
-          importer_name: importerName,
-          trade_value: tier1TradeValue,
-          tier1_reviewer: tier1ReviewerName,
-          tier1_notes: tier1NotesSafe,
-          admin_url: '/admin/finabridge',
-        }).catch(err => console.error(`[Email] Tier1 approve CC to ${cc.name} failed:`, err));
+      // Notify importer their trade is live on the marketplace
+      if (importer?.email) {
+        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE, {
+          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
+          trade_ref: request.tradeRefId,
+          goods_name: request.goodsName,
+          trade_value: tradeValue,
+          dashboard_url: '/finabridge',
+        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Trade live importer email failed:', err));
       }
 
-      return res.json({ message: "Tier 1 approved — escalated to Tier 2 (Farah)" });
+      // FYI to the rest of the compliance team
+      for (const teamMember of [
+        { email: 'macy@finatrades.com', name: 'Macy' },
+        { email: 'farah@finatrades.com', name: 'Farah Hashim' },
+        { email: 'reda@finatrades.com', name: 'Reda' },
+      ]) {
+        sendEmail(teamMember.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE_TEAM, {
+          admin_name: teamMember.name,
+          trade_ref: request.tradeRefId,
+          importer_name: importerName,
+          trade_value: tradeValue,
+          director_name: reviewerName,
+          director_notes: notes || 'No notes',
+        }).catch(err => console.error('[Email] Trade live team FYI email failed:', err));
+      }
+
+      return res.json({ message: "Approved — trade request is now live on exporter marketplace" });
     } catch (error) {
-      console.error('[FinaBridge] tier1-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 1 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-approve` });
-      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 1" });
+      console.error('[FinaBridge] approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
+      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier1-approve` });
+      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve request" });
     }
   });
 
@@ -8643,196 +8643,19 @@ export async function registerRoutes(
     }
   });
 
-  // Tier 2 Approve (Farah → move to Tier 3 Review, notify Reda)
-  app.post("/api/admin/finabridge/requests/:id/tier2-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
-    try {
-      const { notes, reviewedBy } = req.body;
-      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
-      const request = await storage.getTradeRequest(req.params.id);
-      if (!request) return res.status(404).json({ message: "Trade request not found" });
-      if (request.status !== 'Tier 2 Review') return res.status(400).json({ message: "Request is not in Tier 2 Review status" });
-
-      await storage.updateTradeRequest(req.params.id, {
-        status: 'Tier 3 Review',
-        tier2Status: 'Approved',
-        tier2Notes: notes || '',
-        tier2ReviewedBy: reviewedBy || 'Farah',
-      } as any);
-
-      // Email #6 — notify Reda (Director) for final approval with full trail; Farah and Macy get CC copies
-      const importer = await storage.getUser(request.importerUserId);
-      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
-      const tier2ReviewerName = reviewedBy || 'Farah';
-      const tier2NotesSafe = notes || 'No notes provided';
-      const tier2TradeRef = request.tradeRefId;
-      const tier2TradeValue = parseFloat(request.tradeValueUsd.toString()).toLocaleString();
-      const tier2InstrumentType = (request as any).paymentInstrumentType || 'Not specified';
-      const aiScore = (request as any).aiFraudScore || 'N/A';
-      const tier1NotesSaved = (request as any).tier1Notes || 'No notes recorded';
-      const tier1ReviewerSaved = (request as any).tier1ReviewedBy || 'Macy';
-
-      // Reda — FINAL DECISION REQUIRED with full compliance trail
-      sendEmailViaTemplate('reda@finatrades.com', EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED, {
-        admin_name: 'Reda',
-        trade_ref: tier2TradeRef,
-        importer_name: importerName,
-        trade_value: tier2TradeValue,
-        instrument_type: tier2InstrumentType,
-        ai_fraud_score: aiScore,
-        tier1_reviewer: tier1ReviewerSaved,
-        tier1_notes: tier1NotesSaved,
-        tier2_reviewer: tier2ReviewerName,
-        tier2_notes: tier2NotesSafe,
-        admin_url: '/admin/finabridge',
-      }).catch(err => console.error('[Email] Tier2 approve email to Reda failed:', err));
-
-      // Farah and Macy — CC awareness (no action required)
-      for (const cc of [{ email: 'farah@finatrades.com', name: 'Farah Hashim' }, { email: 'macy@finatrades.com', name: 'Macy' }]) {
-        sendEmailViaTemplate(cc.email, EMAIL_TEMPLATES.FINABRIDGE_TIER2_APPROVED_CC, {
-          admin_name: cc.name,
-          trade_ref: tier2TradeRef,
-          importer_name: importerName,
-          trade_value: tier2TradeValue,
-          tier2_reviewer: tier2ReviewerName,
-          tier2_notes: tier2NotesSafe,
-          admin_url: '/admin/finabridge',
-        }).catch(err => console.error(`[Email] Tier2 approve CC to ${cc.name} failed:`, err));
-      }
-
-      return res.json({ message: "Tier 2 approved — escalated to Director (Reda)" });
-    } catch (error) {
-      console.error('[FinaBridge] tier2-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-approve` });
-      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 2" });
-    }
+  // Legacy tier-2 escalation endpoint — removed in Task #124 (single-stage review).
+  // Returns 410 Gone so any stale clients fail loudly instead of silently.
+  app.post("/api/admin/finabridge/requests/:id/tier2-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (_req, res) => {
+    return res.status(410).json({ message: "Tier 2 review removed. FinaBridge now uses a single-stage admin review — use /tier1-approve." });
   });
-
-  // Tier 2 Reject (Farah → reject and notify importer)
-  app.post("/api/admin/finabridge/requests/:id/tier2-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
-    try {
-      const { notes, reviewedBy } = req.body;
-      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Rejection reason is required" });
-      const request = await storage.getTradeRequest(req.params.id);
-      if (!request) return res.status(404).json({ message: "Trade request not found" });
-
-      await storage.updateTradeRequest(req.params.id, {
-        status: 'Rejected',
-        tier2Status: 'Rejected',
-        tier2Notes: notes || '',
-        tier2ReviewedBy: reviewedBy || 'Farah',
-      } as any);
-
-      // Terminal pre-escrow outcome — release any open USD wallet margin hold.
-      await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 2 Rejected');
-
-      const importer = await storage.getUser(request.importerUserId);
-      if (importer?.email) {
-        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
-          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
-          trade_ref: request.tradeRefId,
-          rejection_reason: notes || 'Application did not meet senior compliance requirements',
-          dashboard_url: '/finabridge',
-        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier2 rejection importer email failed:', err));
-      }
-
-      return res.json({ message: "Tier 2 rejected — importer notified" });
-    } catch (error) {
-      console.error('[FinaBridge] tier2-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 2 Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier2-reject` });
-      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 2" });
-    }
+  app.post("/api/admin/finabridge/requests/:id/tier2-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (_req, res) => {
+    return res.status(410).json({ message: "Tier 2 review removed. FinaBridge now uses a single-stage admin review — use /tier1-reject." });
   });
-
-  // Tier 3 (Director) Approve (Reda → trade goes live on exporter marketplace)
-  app.post("/api/admin/finabridge/requests/:id/tier3-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
-    try {
-      const { notes, reviewedBy } = req.body;
-      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Approval notes are required" });
-      const request = await storage.getTradeRequest(req.params.id);
-      if (!request) return res.status(404).json({ message: "Trade request not found" });
-      if (request.status !== 'Tier 3 Review') return res.status(400).json({ message: "Request is not in Tier 3 Review status" });
-
-      await storage.updateTradeRequest(req.params.id, {
-        status: 'Open',
-        publishedToExporters: true,
-        tier3Status: 'Approved',
-        tier3Notes: notes || '',
-        tier3ReviewedBy: reviewedBy || 'Reda',
-      } as any);
-
-      const importer = await storage.getUser(request.importerUserId);
-      const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
-      const directorName = reviewedBy || 'Reda';
-
-      // Email #7 — notify importer trade is now live
-      if (importer?.email) {
-        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE, {
-          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
-          trade_ref: request.tradeRefId,
-          goods_name: request.goodsName,
-          trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-          dashboard_url: '/finabridge',
-        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Trade live importer email failed:', err));
-      }
-
-      // Email #7B — notify Macy and Farah (FYI)
-      const teamEmails = [
-        { email: 'macy@finatrades.com', name: 'Macy' },
-        { email: 'farah@finatrades.com', name: 'Farah Hashim' },
-      ];
-      for (const teamMember of teamEmails) {
-        sendEmail(teamMember.email, EMAIL_TEMPLATES.FINABRIDGE_TRADE_LIVE_TEAM, {
-          admin_name: teamMember.name,
-          trade_ref: request.tradeRefId,
-          importer_name: importerName,
-          trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-          director_name: directorName,
-          director_notes: notes || 'No notes',
-        }).catch(err => console.error('[Email] Trade live team FYI email failed:', err));
-      }
-
-      return res.json({ message: "Director approved — trade request is now live on exporter marketplace" });
-    } catch (error) {
-      console.error('[FinaBridge] tier3-approve failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Approve Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-approve` });
-      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to approve Tier 3" });
-    }
+  app.post("/api/admin/finabridge/requests/:id/tier3-approve", ensureAdminAsync, requirePermission('manage_finabridge'), async (_req, res) => {
+    return res.status(410).json({ message: "Director (tier 3) review removed. FinaBridge now uses a single-stage admin review — use /tier1-approve." });
   });
-
-  // Tier 3 (Director) Reject
-  app.post("/api/admin/finabridge/requests/:id/tier3-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
-    try {
-      const { notes, reviewedBy } = req.body;
-      if (!notes || !notes.toString().trim()) return res.status(400).json({ message: "Rejection reason is required" });
-      const request = await storage.getTradeRequest(req.params.id);
-      if (!request) return res.status(404).json({ message: "Trade request not found" });
-
-      await storage.updateTradeRequest(req.params.id, {
-        status: 'Rejected',
-        tier3Status: 'Rejected',
-        tier3Notes: notes || '',
-        tier3ReviewedBy: reviewedBy || 'Reda',
-      } as any);
-
-      // Terminal pre-escrow outcome — release any open USD wallet margin hold.
-      await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 3 Rejected');
-
-      const importer = await storage.getUser(request.importerUserId);
-      if (importer?.email) {
-        sendEmail(importer.email, EMAIL_TEMPLATES.FINABRIDGE_AI_REJECTED_IMPORTER, {
-          user_name: `${importer.firstName || ''} ${importer.lastName || ''}`.trim() || 'Valued Partner',
-          trade_ref: request.tradeRefId,
-          rejection_reason: notes || 'Application did not receive Director approval at this time',
-          dashboard_url: '/finabridge',
-        }, { userId: importer.id, recipientName: importer.firstName || undefined }).catch(err => console.error('[Email] Tier3 rejection importer email failed:', err));
-      }
-
-      return res.json({ message: "Director rejected — importer notified" });
-    } catch (error) {
-      console.error('[FinaBridge] tier3-reject failed for request', req.params.id, ':', error instanceof Error ? error.message : error);
-      notifyError({ error: error instanceof Error ? error : new Error(String(error)), context: 'FinaBridge Tier 3 (Director) Reject Failed', route: `POST /api/admin/finabridge/requests/${req.params.id}/tier3-reject` });
-      return res.status(400).json({ message: error instanceof Error ? error.message : "Failed to reject Tier 3" });
-    }
+  app.post("/api/admin/finabridge/requests/:id/tier3-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (_req, res) => {
+    return res.status(410).json({ message: "Director (tier 3) review removed. FinaBridge now uses a single-stage admin review — use /tier1-reject." });
   });
 
   // ——————————————————————————————————————————————
@@ -9871,7 +9694,7 @@ export async function registerRoutes(
         allCases.map(async (tc) => {
           const docs = await storage.getCaseDocuments(tc.id);
           const aiDocs = docs.filter(d =>
-            d.status === 'Tier 1 Review' || d.status === 'AI Rejected'
+            d.status === 'Pending Review' || d.status === 'AI Rejected'
           );
           return { ...tc, documents: aiDocs };
         })
@@ -13718,18 +13541,30 @@ export async function registerRoutes(
   });
 
   // Submit Finatrades Personal KYC (personal info + documents + liveness)
+  // SECURITY: userId is derived from session (never trusted from body).
+  // Personal KYC is only valid for individual importers; exporters/government must use corporate.
   app.post("/api/finatrades-kyc/personal", ensureAuthenticated, async (req, res) => {
     try {
-      console.log(`[KYC] Personal KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
-      const { userId, personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate, isResubmit, lockedSections } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({ message: "userId is required" });
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
       }
-      
+      console.log(`[KYC] Personal KYC submission received from user ${sessionUserId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
+      const { personalInformation, documents, livenessCapture, livenessVerified, passportExpiryDate, isResubmit, lockedSections } = req.body;
+      const userId = sessionUserId;
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      if (user.role !== 'admin') {
+        const ut = (user as any).userType as 'exporter' | 'importer' | 'government' | null | undefined;
+        if (ut && ut !== 'importer') {
+          return res.status(403).json({
+            message: "Personal KYC is only available for individual importers. Use Corporate KYC.",
+            actualUserType: ut,
+          });
+        }
       }
       
       const existing = await storage.getFinatradesPersonalKyc(userId);
@@ -13912,11 +13747,16 @@ export async function registerRoutes(
   });
 
   // Submit Finatrades Corporate KYC (questionnaire)
+  // SECURITY: userId is derived from session (never trusted from body).
+  // Corporate KYC is required for exporters, business importers, and government.
   app.post("/api/finatrades-kyc/corporate", ensureAuthenticated, async (req, res) => {
     try {
-      console.log(`[KYC] Corporate KYC submission received from user ${req.session?.userId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
-      const { 
-        userId, 
+      const sessionUserId = req.session?.userId;
+      if (!sessionUserId) {
+        return res.status(401).json({ message: "Authentication required" });
+      }
+      console.log(`[KYC] Corporate KYC submission received from user ${sessionUserId}, body size: ${JSON.stringify(req.body || {}).length} bytes`);
+      const {
         representativeLiveness,
         companyName,
         registrationNumber,
@@ -13947,14 +13787,20 @@ export async function registerRoutes(
         lockedSections,
         status
       } = req.body;
-      
-      if (!userId) {
-        return res.status(400).json({ message: "userId is required" });
-      }
-      
+      const userId = sessionUserId;
+
       const user = await storage.getUser(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
+      }
+      if (user.role !== 'admin') {
+        const ut = (user as any).userType as 'exporter' | 'importer' | 'government' | null | undefined;
+        if (ut && !['exporter', 'importer', 'government'].includes(ut)) {
+          return res.status(403).json({
+            message: "Corporate KYC is not available for this account type.",
+            actualUserType: ut,
+          });
+        }
       }
 
       const existing = await storage.getFinatradesCorporateKyc(userId);

@@ -954,13 +954,13 @@ export function calculateFraudScore(
   // Fraud score: 0 = clean document, 100 = highly fraudulent
   const fraudScore = Math.round(100 - (passScore / maxPossible) * 100);
 
-  // Score < 50 → Tier 1 Review (moderately suspicious, needs human review)
+  // Score < 50 → Pending Review (moderately suspicious, needs human review)
   // Score >= 50 → AI Rejected (highly suspicious, automatically rejected)
   const recommendation: 'pass' | 'reject' = fraudScore >= 50 ? 'reject' : 'pass';
 
   const summary = recommendation === 'reject'
     ? `Fraud score ${fraudScore}/100. Failed ${checks.filter(c => !c.passed).length} of ${checks.length} checks. Document automatically rejected by AI.`
-    : `Fraud score ${fraudScore}/100. Passed ${checks.filter(c => c.passed).length} of ${checks.length} checks. Forwarding to Tier 1 human review.`;
+    : `Fraud score ${fraudScore}/100. Passed ${checks.filter(c => c.passed).length} of ${checks.length} checks. Forwarding to human review.`;
 
   return { totalScore: fraudScore, checks, recommendation, summary };
 }

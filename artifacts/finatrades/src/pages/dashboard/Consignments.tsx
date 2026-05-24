@@ -137,10 +137,9 @@ export default function Consignments() {
              data-testid="kyc-gate-banner">
           <ShieldAlert size={20} style={{ color: '#B45309' }} className="mt-0.5 shrink-0" />
           <div className="flex-1">
-            <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>KYC Tier 3 required</p>
+            <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>Corporate KYC required</p>
             <p className="text-xs mt-0.5" style={{ color: '#7A6242' }}>
-              {kycReason || 'Complete corporate KYB (Tier 3) to submit consignments.'}
-              {kycTier && <> Current tier: <strong>{kycTier}</strong>.</>}
+              {kycReason || 'Complete Finatrades Corporate KYC to submit consignments.'}
             </p>
           </div>
           <Link href="/kyc" className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"

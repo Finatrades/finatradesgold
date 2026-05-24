@@ -176,7 +176,6 @@ async function sendUserData(user: typeof users.$inferSelect, res: Response) {
     } : null,
     kyc: kyc ? {
       status: kyc.status,
-      tier: kyc.tier,
       isApproved: kyc.status === 'Approved',
       // Personal info
       fullName: kyc.fullName,

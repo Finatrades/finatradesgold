@@ -43,6 +43,15 @@ See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and pa
 - Theme: redbrick `#C73B22` / cream `#FAFAF8` / dark `#1A1A1A` (rebranded from purple/gold)
 - Legacy gold features (BNSL, FinaPay, FinaVault, WinGold) stripped from main routes/sidebar — code remains in tree but unreachable
 
+### KYC Model
+- **Finatrades KYC** is the only active mode (`complianceSettings.activeKycMode = 'finatrades'`).
+- Two flavors stored in dedicated tables:
+  - `finatrades_personal_kyc` — individual importers (ID, address, selfie/liveness).
+  - `finatrades_corporate_kyc` — exporters, business importers, and government (incorporation, ownership, banking, signatories).
+- Eligibility: exporters/government require Approved Corporate KYC; importers accept Approved Personal **or** Corporate.
+- Single-stage admin review. Document statuses: `Pending → AI Review → Pending Review → Approved` (or `Rejected` / `AI Rejected`).
+- Legacy 3-tier (`tier_1_basic / tier_2_enhanced / tier_3_corporate`) was migrated and removed in migration `0016_finatrades_kyc.sql`.
+
 ### API Server (`artifacts/api-server/`)
 - **Kind**: api (Express)
 - **Port**: 8080 (default, reads `$PORT`)

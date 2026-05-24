@@ -15,7 +15,7 @@ import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import { db } from "./db";
 import { eq, lt, and } from "drizzle-orm";
-import { users, wingoldVaultLocations, wingoldCheckoutSessions, kycSubmissions, finatradesPersonalKyc, finatradesCorporateKyc } from "@shared/schema";
+import { users, wingoldVaultLocations, wingoldCheckoutSessions, finatradesPersonalKyc, finatradesCorporateKyc } from "@shared/schema";
 import { storage } from "./storage";
 import { WingoldIntegrationService } from "./wingold-integration-service";
 
@@ -58,14 +58,23 @@ function ensureAuthenticated(req: Request, res: Response, next: any) {
 
 async function getUserKycTier(userId: string): Promise<string | null> {
   try {
-    const [kycSubmission] = await db.select({ tier: kycSubmissions.tier })
-      .from(kycSubmissions)
+    const [corp] = await db.select({ status: finatradesCorporateKyc.status })
+      .from(finatradesCorporateKyc)
       .where(and(
-        eq(kycSubmissions.userId, userId),
-        eq(kycSubmissions.status, 'Approved')
+        eq(finatradesCorporateKyc.userId, userId),
+        eq(finatradesCorporateKyc.status, 'Approved')
       ))
       .limit(1);
-    return kycSubmission?.tier || null;
+    if (corp) return 'corporate';
+    const [personal] = await db.select({ status: finatradesPersonalKyc.status })
+      .from(finatradesPersonalKyc)
+      .where(and(
+        eq(finatradesPersonalKyc.userId, userId),
+        eq(finatradesPersonalKyc.status, 'Approved')
+      ))
+      .limit(1);
+    if (personal) return 'personal';
+    return null;
   } catch (error) {
     console.error("Error fetching KYC tier:", error);
     return null;
@@ -128,7 +137,7 @@ router.get("/api/sso/wingold", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
-        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+        tier: user.kycStatus === 'Approved' ? 'finatrades' : null,
       },
       iss: "finatrades.com",
     };
@@ -210,7 +219,7 @@ router.get("/sso/wingold", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
-        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+        tier: user.kycStatus === 'Approved' ? 'finatrades' : null,
       },
       iss: "finatrades.com",
     };
@@ -267,7 +276,7 @@ router.get("/api/sso/wingold/redirect", ensureAuthenticated, async (req, res) =>
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
-        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+        tier: user.kycStatus === 'Approved' ? 'finatrades' : null,
       },
       iss: "finatrades.com",
     };
@@ -407,7 +416,7 @@ router.get("/api/sso/wingold/shop", ensureAuthenticated, async (req, res) => {
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
-        tier: user.kycStatus === 'Approved' ? 'tier_1_basic' : null,
+        tier: user.kycStatus === 'Approved' ? 'finatrades' : null,
       },
       permitted_delivery: ['SECURE_VAULT'],
       source: 'finavault_buy_gold_bar',
@@ -586,7 +595,7 @@ router.post("/api/sso/wingold/checkout", ensureAuthenticated, async (req, res) =
         status: user.kycStatus,
         isApproved: user.kycStatus === 'Approved',
         emailVerified: user.isEmailVerified,
-        tier: kycTier || 'tier_1_basic',
+        tier: kycTier || 'finatrades',
       },
       permitted_delivery: ['SECURE_VAULT'],
       source: 'finatrades_redirect_checkout',
@@ -868,7 +877,7 @@ router.get("/api/partner/kyc/:finatradesId", async (req, res) => {
       email: user.email,
       accountType: user.accountType,
       kycStatus: user.kycStatus,
-      kycTier: kycTier || 'tier_1_basic',
+      kycTier: kycTier || 'finatrades',
       emailVerified: user.isEmailVerified,
       createdAt: user.createdAt,
     };

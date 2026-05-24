@@ -33,7 +33,7 @@ export const bnslTerminationStatusEnum = pgEnum('bnsl_termination_status', [
 export const tradeCaseStatusEnum = pgEnum('trade_case_status', [
   'Draft', 'Submitted', 'Under Review', 'Approved', 'Active', 'Settled', 'Cancelled', 'Rejected'
 ]);
-export const documentStatusEnum = pgEnum('document_status', ['Pending', 'Approved', 'Rejected', 'AI Review', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review', 'AI Rejected']);
+export const documentStatusEnum = pgEnum('document_status', ['Pending', 'AI Review', 'Pending Review', 'Approved', 'Rejected', 'AI Rejected']);
 
 export const chatMessageSenderEnum = pgEnum('chat_message_sender', ['user', 'admin', 'agent']);
 
@@ -472,7 +472,6 @@ export const kycSubmissions = pgTable("kyc_submissions", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
   userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id),
   accountType: accountTypeEnum("account_type").notNull(),
-  tier: kycTierEnum("tier").notNull().default('tier_1_basic'),
   
   // Personal Info
   fullName: varchar("full_name", { length: 255 }),
@@ -725,7 +724,7 @@ export const kycModeEnum = pgEnum('kyc_mode', ['kycAml', 'finatrades']);
 
 export const complianceSettings = pgTable("compliance_settings", {
   id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
-  activeKycMode: kycModeEnum("active_kyc_mode").notNull().default('kycAml'),
+  activeKycMode: kycModeEnum("active_kyc_mode").notNull().default('finatrades'),
   
   // Finatrades KYC settings for personal accounts
   finatradesPersonalConfig: json("finatrades_personal_config").$type<{
@@ -2340,7 +2339,7 @@ export type TradeDocument = typeof tradeDocuments.$inferSelect;
 
 export const tradeRequestStatusEnum = pgEnum('trade_request_status', [
   'Draft', 'Open', 'Proposal Review', 'Awaiting Importer', 'Active Trade', 'Completed', 'Cancelled',
-  'AI Review', 'AI Rejected', 'Tier 1 Review', 'Tier 2 Review', 'Tier 3 Review', 'Rejected'
+  'AI Review', 'AI Rejected', 'Pending Review', 'Rejected'
 ]);
 
 export const proposalStatusEnum = pgEnum('proposal_status', [

@@ -113,7 +113,7 @@ export default function ProfilePage() {
           <div className="mt-4 p-4 rounded-xl" style={{ background: 'rgba(199,59,34,0.04)', border: '1px solid rgba(199,59,34,0.12)' }}>
             <p className="text-xs font-semibold" style={{ color: '#C73B22' }}>Company Verification</p>
             <p className="text-xs mt-1" style={{ color: '#888880' }}>
-              Complete Tier 3 KYC to have your company fully verified on the Finatrades platform. Verified companies get priority matching on the marketplace and higher trade limits.
+              Complete Finatrades Corporate KYC to have your company fully verified on the platform. Verified companies get priority matching on the marketplace and higher trade limits.
             </p>
             <button className="mt-2 text-xs font-semibold flex items-center gap-1 hover:underline" style={{ color: '#C73B22' }}>
               Go to KYC <ChevronRight size={12} />
