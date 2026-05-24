@@ -162,8 +162,8 @@ export type PermissionCheck = string | string[] | ((req: Request) => boolean | P
 export function requirePermissions(...permissions: string[]) {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const adminUser = (req as any).adminUser;
-      const adminEmployee = (req as any).adminEmployee;
+      const adminUser = req.adminUser;
+      const adminEmployee = req.adminEmployee;
       
       if (!adminUser) {
         return res.status(401).json({ message: "Authentication required" });
@@ -231,7 +231,7 @@ export async function logSecurityEvent(
   const event: SecurityEvent = {
     type: eventType,
     details,
-    userId: req.session?.userId || (req as any).adminUser?.id,
+    userId: req.session?.userId || req.adminUser?.id,
     ip: req.ip || req.headers['x-forwarded-for'] as string,
     userAgent: req.headers['user-agent'],
     path: req.path,

@@ -912,8 +912,8 @@ export class DatabaseStorage implements IStorage {
     let query = db.select(lightweightColumns).from(kycSubmissions).$dynamic();
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(kycSubmissions).$dynamic();
     if (status && status !== "all") {
-      query = query.where(eq(kycSubmissions.status, status as any));
-      countQuery = countQuery.where(eq(kycSubmissions.status, status as any));
+      query = query.where(eq(kycSubmissions.status, status as never));
+      countQuery = countQuery.where(eq(kycSubmissions.status, status as never));
     }
     const [data, countResult] = await Promise.all([
       query.orderBy(desc(kycSubmissions.createdAt)).limit(limit).offset(offset),
@@ -975,8 +975,8 @@ export class DatabaseStorage implements IStorage {
       completedAt: transactions.completedAt,
     };
     const conditions: any[] = [];
-    if (status && status !== "all") conditions.push(eq(transactions.status, status as any));
-    if (type && type !== "all") conditions.push(eq(transactions.type, type as any));
+    if (status && status !== "all") conditions.push(eq(transactions.status, status as never));
+    if (type && type !== "all") conditions.push(eq(transactions.type, type as never));
     
     const baseQuery = conditions.length > 0 ? and(...conditions) : undefined;
     const [data, countResult] = await Promise.all([
@@ -1013,8 +1013,8 @@ export class DatabaseStorage implements IStorage {
       goldWalletType: transactions.goldWalletType,
     };
     const conditions: any[] = [eq(transactions.userId, userId)];
-    if (status && status !== "all") conditions.push(eq(transactions.status, status as any));
-    if (type && type !== "all") conditions.push(eq(transactions.type, type as any));
+    if (status && status !== "all") conditions.push(eq(transactions.status, status as never));
+    if (type && type !== "all") conditions.push(eq(transactions.type, type as never));
     
     const whereClause = and(...conditions);
     const [data, countResult] = await Promise.all([
@@ -1078,7 +1078,7 @@ export class DatabaseStorage implements IStorage {
       createdAt: bnslPlans.createdAt,
     };
     const conditions: any[] = [eq(bnslPlans.userId, userId)];
-    if (status && status !== "all") conditions.push(eq(bnslPlans.status, status as any));
+    if (status && status !== "all") conditions.push(eq(bnslPlans.status, status as never));
     
     const whereClause = and(...conditions);
     const [data, countResult] = await Promise.all([
@@ -1130,7 +1130,7 @@ export class DatabaseStorage implements IStorage {
     };
     const userCondition = or(eq(peerTransfers.senderId, userId), eq(peerTransfers.recipientId, userId));
     const conditions: any[] = [userCondition!];
-    if (status && status !== "all") conditions.push(eq(peerTransfers.status, status as any));
+    if (status && status !== "all") conditions.push(eq(peerTransfers.status, status as never));
     
     const whereClause = and(...conditions);
     const [data, countResult] = await Promise.all([
@@ -1354,7 +1354,7 @@ export class DatabaseStorage implements IStorage {
       createdAt: tradeCases.createdAt,
       updatedAt: tradeCases.updatedAt,
     };
-    const baseQuery = status && status !== "all" ? eq(tradeCases.status, status as any) : undefined;
+    const baseQuery = status && status !== "all" ? eq(tradeCases.status, status as never) : undefined;
     const [data, countResult] = await Promise.all([
       baseQuery
         ? db.select(lightweightColumns).from(tradeCases).where(baseQuery).orderBy(desc(tradeCases.createdAt)).limit(limit).offset(offset)
@@ -1641,7 +1641,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getChatAgentByType(type: string): Promise<ChatAgent | undefined> {
-    const [agent] = await db.select().from(chatAgents).where(eq(chatAgents.type, type as any)).limit(1);
+    const [agent] = await db.select().from(chatAgents).where(eq(chatAgents.type, type as never)).limit(1);
     return agent || undefined;
   }
 
@@ -1883,7 +1883,7 @@ export class DatabaseStorage implements IStorage {
       lastMessageAt: chatSessions.lastMessageAt,
       createdAt: chatSessions.createdAt,
     };
-    const baseQuery = status && status !== "all" ? eq(chatSessions.status, status as any) : undefined;
+    const baseQuery = status && status !== "all" ? eq(chatSessions.status, status as never) : undefined;
     const [data, countResult] = await Promise.all([
       baseQuery
         ? db.select(lightweightColumns).from(chatSessions).where(baseQuery).orderBy(desc(chatSessions.lastMessageAt)).limit(limit).offset(offset)
@@ -2179,7 +2179,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getTemplatesByType(type: string): Promise<Template[]> {
-    return await db.select().from(templates).where(eq(templates.type, type as any)).orderBy(templates.name);
+    return await db.select().from(templates).where(eq(templates.type, type as never)).orderBy(templates.name);
   }
 
   async createTemplate(insertTemplate: InsertTemplate): Promise<Template> {
@@ -2277,7 +2277,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPlatformFeeByKey(module: string, feeKey: string): Promise<PlatformFee | undefined> {
     const [fee] = await db.select().from(platformFees)
-      .where(and(eq(platformFees.module, module as any), eq(platformFees.feeKey, feeKey)));
+      .where(and(eq(platformFees.module, module as never), eq(platformFees.feeKey, feeKey)));
     return fee || undefined;
   }
 
@@ -2287,7 +2287,7 @@ export class DatabaseStorage implements IStorage {
 
   async getModuleFees(module: string): Promise<PlatformFee[]> {
     return await db.select().from(platformFees)
-      .where(eq(platformFees.module, module as any))
+      .where(eq(platformFees.module, module as never))
       .orderBy(platformFees.displayOrder);
   }
 
@@ -2360,7 +2360,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createDepositRequest(insertRequest: InsertDepositRequest): Promise<DepositRequest> {
-    const [request] = await db.insert(depositRequests).values(insertRequest as any).returning();
+    // InsertDepositRequest is derived from a zod schema that omits some
+    // server-defaulted fields (e.g. id/timestamps). Drizzle's `values` infers
+    // a stricter shape; cast preserves runtime behavior and is validated by
+    // the zod insert schema at the route layer.
+    const [request] = await db.insert(depositRequests).values(insertRequest as never).returning();
     return request;
   }
 
@@ -2555,9 +2559,6 @@ export class DatabaseStorage implements IStorage {
   // Schema tables `vault_deposit_requests` and `vault_withdrawal_requests`
   // remain in the database for now; drop them in a follow-up migration once any
   // remaining rows are exported / archived.
-
-  // ============================================
-  // BINANCE PAY TRANSACTIONS
   // ============================================
 
   async createBinanceTransaction(insertTransaction: InsertBinanceTransaction): Promise<BinanceTransaction> {
@@ -3242,7 +3243,9 @@ export class DatabaseStorage implements IStorage {
         enableLivenessCapture: true,
         requiredDocuments: ['certificate_of_incorporation', 'trade_license', 'memorandum_articles', 'ubo_passports', 'bank_reference', 'authorized_signatories']
       }
-    } as any).returning();
+      // Initial compliance settings include nested JSON config blobs whose
+      // shape isn't captured in the insert schema; cast preserves intent.
+    } as never).returning();
     return settings;
   }
 
@@ -3309,8 +3312,8 @@ export class DatabaseStorage implements IStorage {
     let query = db.select(lightweightColumns).from(finatradesPersonalKyc).$dynamic();
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesPersonalKyc).$dynamic();
     if (status && status !== "all") {
-      query = query.where(eq(finatradesPersonalKyc.status, status as any));
-      countQuery = countQuery.where(eq(finatradesPersonalKyc.status, status as any));
+      query = query.where(eq(finatradesPersonalKyc.status, status as never));
+      countQuery = countQuery.where(eq(finatradesPersonalKyc.status, status as never));
     }
     const [data, countResult] = await Promise.all([
       query.orderBy(desc(finatradesPersonalKyc.createdAt)).limit(limit).offset(offset),
@@ -3319,7 +3322,10 @@ export class DatabaseStorage implements IStorage {
     return { data, total: Number(countResult[0]?.count || 0) };
   }
   async createFinatradesPersonalKyc(kyc: InsertFinatradesPersonalKyc): Promise<FinatradesPersonalKyc> {
-    const [newKyc] = await db.insert(finatradesPersonalKyc).values(kyc as any).returning();
+    // InsertFinatradesPersonalKyc is the zod-derived insert shape; Drizzle
+    // infers a slightly stricter values type for `.values()`. Cast preserves
+    // runtime behavior; input is zod-validated upstream.
+    const [newKyc] = await db.insert(finatradesPersonalKyc).values(kyc as never).returning();
     return newKyc;
   }
 
@@ -3370,8 +3376,8 @@ export class DatabaseStorage implements IStorage {
     let query = db.select(lightweightColumns).from(finatradesCorporateKyc).$dynamic();
     let countQuery = db.select({ count: sql<number>`count(*)` }).from(finatradesCorporateKyc).$dynamic();
     if (status && status !== "all") {
-      query = query.where(eq(finatradesCorporateKyc.status, status as any));
-      countQuery = countQuery.where(eq(finatradesCorporateKyc.status, status as any));
+      query = query.where(eq(finatradesCorporateKyc.status, status as never));
+      countQuery = countQuery.where(eq(finatradesCorporateKyc.status, status as never));
     }
     const [data, countResult] = await Promise.all([
       query.orderBy(desc(finatradesCorporateKyc.createdAt)).limit(limit).offset(offset),
@@ -3622,7 +3628,7 @@ export class DatabaseStorage implements IStorage {
 
   async getCryptoPaymentRequestsByStatus(status: string): Promise<CryptoPaymentRequest[]> {
     return await db.select().from(cryptoPaymentRequests)
-      .where(eq(cryptoPaymentRequests.status, status as any))
+      .where(eq(cryptoPaymentRequests.status, status as never))
       .orderBy(desc(cryptoPaymentRequests.createdAt));
   }
 
@@ -3658,7 +3664,7 @@ export class DatabaseStorage implements IStorage {
 
   async getBuyGoldRequestsByStatus(status: string): Promise<BuyGoldRequest[]> {
     return await db.select().from(buyGoldRequests)
-      .where(eq(buyGoldRequests.status, status as any))
+      .where(eq(buyGoldRequests.status, status as never))
       .orderBy(desc(buyGoldRequests.createdAt));
   }
 
@@ -3683,7 +3689,7 @@ export class DatabaseStorage implements IStorage {
 
   async getPlatformConfigsByCategory(category: string): Promise<PlatformConfig[]> {
     return await db.select().from(platformConfig)
-      .where(eq(platformConfig.category, category as any))
+      .where(eq(platformConfig.category, category as never))
       .orderBy(platformConfig.displayOrder);
   }
 
@@ -4171,16 +4177,16 @@ export class DatabaseStorage implements IStorage {
 
     // Count users with LGPW vs FGPW - use raw SQL for reliability
     const mpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE mpgw_available_grams > 0 OR mpgw_pending_grams > 0`);
-    const mpgwCount = parseInt((mpgwCountResult.rows[0] as any)?.count || '0');
+    const mpgwCount = parseInt((mpgwCountResult.rows[0] as Record<string, any> | undefined)?.count || '0');
 
     const fpgwCountResult = await db.execute(sql`SELECT COUNT(*) as count FROM vault_ownership_summary WHERE fpgw_available_grams > 0 OR fpgw_pending_grams > 0`);
-    const fpgwCount = parseInt((fpgwCountResult.rows[0] as any)?.count || '0');
+    const fpgwCount = parseInt((fpgwCountResult.rows[0] as Record<string, any> | undefined)?.count || '0');
 
     // Get FGPW weighted average price from batches - use raw SQL for reliability
     const fpgwBatchResult = await db.execute(sql`SELECT COALESCE(SUM(remaining_gold_grams), 0) as total_grams, COALESCE(SUM(remaining_gold_grams * purchase_price_usd_per_gram), 0) as total_value FROM fpgw_batches WHERE remaining_gold_grams > 0`);
 
-    const fpgwBatchGrams = parseFloat((fpgwBatchResult.rows[0] as any)?.total_grams || '0');
-    const fpgwBatchValue = parseFloat((fpgwBatchResult.rows[0] as any)?.total_value || '0');
+    const fpgwBatchGrams = parseFloat((fpgwBatchResult.rows[0] as Record<string, any> | undefined)?.total_grams || '0');
+    const fpgwBatchValue = parseFloat((fpgwBatchResult.rows[0] as Record<string, any> | undefined)?.total_value || '0');
     const fpgwWeightedAvgPrice = fpgwBatchGrams > 0 ? fpgwBatchValue / fpgwBatchGrams : 0;
 
     // Get BNSL wallet liabilities
@@ -4949,12 +4955,14 @@ export class DatabaseStorage implements IStorage {
       `);
 
       if (empResult.rows.length > 0) {
-        for (const row of empResult.rows as any[]) {
+        // Narrow raw SQL rows to the shape of the preceding SELECT.
+        type EmpRow = { role_id: string; user_id: string; assigned_by: string | null };
+        for (const row of empResult.rows as EmpRow[]) {
           await db.execute(sql`
             INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
-            VALUES (gen_random_uuid(), ${userId}, ${(row as any).role_id}, ${(row as any).assigned_by}, NOW(), true)
+            VALUES (gen_random_uuid(), ${userId}, ${row.role_id}, ${row.assigned_by}, NOW(), true)
           `);
-          console.log(`[RBAC] Auto-repaired missing role assignment: user=${userId}, role=${(row as any).role_id}`);
+          console.log(`[RBAC] Auto-repaired missing role assignment: user=${userId}, role=${row.role_id}`);
         }
         return empResult.rows;
       }
@@ -5061,7 +5069,16 @@ export class DatabaseStorage implements IStorage {
       'support': ['view_support', 'manage_support'],
     };
 
-    for (const row of result.rows as any[]) {
+    // Narrow raw SQL rows to the shape selected by the underlying join.
+    type ComponentPermRow = {
+      component_slug: string;
+      can_view: boolean | null;
+      can_create: boolean | null;
+      can_edit: boolean | null;
+      can_approve_l1: boolean | null;
+      can_approve_final: boolean | null;
+    };
+    for (const row of result.rows as ComponentPermRow[]) {
       const slug = row.component_slug;
       const mappedPerms = componentPermMap[slug] || [];
       
@@ -5078,7 +5095,7 @@ export class DatabaseStorage implements IStorage {
 
     return {
       permissions: Array.from(legacyPermissions),
-      components: result.rows as any[],
+      components: result.rows as unknown[],
       isSuperAdmin: false
     };
   }
@@ -5131,16 +5148,18 @@ export class DatabaseStorage implements IStorage {
       ORDER BY assigned_at DESC
     `);
 
-    for (const row of result.rows as any[]) {
+    // Narrow raw SQL rows to the shape selected by the preceding query.
+    type UserRoleRow = { id: string; assigned_by: string | null };
+    for (const row of result.rows as UserRoleRow[]) {
       const hasAssignment = await db.execute(sql`
-        SELECT 1 FROM user_role_assignments WHERE user_id = ${(row as any).id} AND role_id = ${roleId} AND is_active = true LIMIT 1
+        SELECT 1 FROM user_role_assignments WHERE user_id = ${row.id} AND role_id = ${roleId} AND is_active = true LIMIT 1
       `);
-      if ((hasAssignment.rows?.length || 0) === 0 && (row as any).id) {
+      if ((hasAssignment.rows?.length || 0) === 0 && row.id) {
         await db.execute(sql`
           INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
-          VALUES (gen_random_uuid(), ${(row as any).id}, ${roleId}, ${(row as any).assigned_by}, NOW(), true)
+          VALUES (gen_random_uuid(), ${row.id}, ${roleId}, ${row.assigned_by}, NOW(), true)
         `);
-        console.log(`[RBAC] Auto-repaired missing role assignment in getUsersByRoleId: user=${(row as any).id}, role=${roleId}`);
+        console.log(`[RBAC] Auto-repaired missing role assignment in getUsersByRoleId: user=${row.id}, role=${roleId}`);
       }
     }
 
@@ -5674,9 +5693,6 @@ export class DatabaseStorage implements IStorage {
   }
 
   // getVaultOverviewData (FinaVault gold-stack overview) removed.
-
-  // ============================================
-  // UNIFIED GOLD TALLY SYSTEM
   // ============================================
 
   async generateUnifiedTallyTxnId(): Promise<string> {
@@ -5685,7 +5701,7 @@ export class DatabaseStorage implements IStorage {
       SELECT COUNT(*) as count FROM unified_tally_transactions 
       WHERE EXTRACT(YEAR FROM created_at) = ${year}
     `);
-    const count = parseInt((result.rows[0] as any)?.count || '0') + 1;
+    const count = parseInt((result.rows[0] as Record<string, any> | undefined)?.count || '0') + 1;
     return `UGT-${year}-${String(count).padStart(6, '0')}`;
   }
 
@@ -5779,7 +5795,7 @@ export class DatabaseStorage implements IStorage {
     const countResult = await db.execute(sql`
       SELECT COUNT(*) as total FROM unified_tally_transactions ${whereClause}
     `);
-    const total = parseInt((countResult.rows[0] as any)?.total || '0');
+    const total = parseInt((countResult.rows[0] as Record<string, any> | undefined)?.total || '0');
 
     const items = await db.execute(sql`
       SELECT * FROM unified_tally_transactions 
@@ -5945,7 +5961,7 @@ export class DatabaseStorage implements IStorage {
     `);
 
     const mpgwGrams = parseFloat(wallet?.gold_grams || '0');
-    const fpgwGrams = parseFloat((fpgwResult.rows[0] as any)?.fpgw_grams || '0');
+    const fpgwGrams = parseFloat((fpgwResult.rows[0] as Record<string, any> | undefined)?.fpgw_grams || '0');
 
     return {
       user: {
@@ -5966,19 +5982,19 @@ export class DatabaseStorage implements IStorage {
         }
       },
       finavault: {
-        totalG: parseFloat((vaultResult.rows[0] as any)?.total_g || '0'),
-        barsCount: parseInt((barsResult.rows[0] as any)?.count || '0'),
-        custodians: (barsResult.rows[0] as any)?.locations?.filter(Boolean) || [],
-        certificatesCount: parseInt((certsResult.rows[0] as any)?.count || '0')
+        totalG: parseFloat((vaultResult.rows[0] as Record<string, any> | undefined)?.total_g || '0'),
+        barsCount: parseInt((barsResult.rows[0] as Record<string, any> | undefined)?.count || '0'),
+        custodians: (barsResult.rows[0] as Record<string, any> | undefined)?.locations?.filter(Boolean) || [],
+        certificatesCount: parseInt((certsResult.rows[0] as Record<string, any> | undefined)?.count || '0')
       },
       currency: {
         usdCashBalance: 0,
-        pendingDeposits: parseInt((pendingDeposits.rows[0] as any)?.count || '0'),
-        pendingWithdrawals: parseInt((pendingWithdrawals.rows[0] as any)?.count || '0')
+        pendingDeposits: parseInt((pendingDeposits.rows[0] as Record<string, any> | undefined)?.count || '0'),
+        pendingWithdrawals: parseInt((pendingWithdrawals.rows[0] as Record<string, any> | undefined)?.count || '0')
       },
       wingold: {
-        allocatedTotalGForUser: parseFloat((wingoldResult.rows[0] as any)?.total_g || '0'),
-        latestCertificateId: (wingoldResult.rows[0] as any)?.latest_cert || null
+        allocatedTotalGForUser: parseFloat((wingoldResult.rows[0] as Record<string, any> | undefined)?.total_g || '0'),
+        latestCertificateId: (wingoldResult.rows[0] as Record<string, any> | undefined)?.latest_cert || null
       }
     };
   }
@@ -6064,7 +6080,7 @@ export class DatabaseStorage implements IStorage {
   async getAllPhysicalDeposits(filters?: { status?: string }): Promise<PhysicalDepositRequest[]> {
     if (filters?.status) {
       return await db.select().from(physicalDepositRequests)
-        .where(eq(physicalDepositRequests.status, filters.status as any))
+        .where(eq(physicalDepositRequests.status, filters.status as never))
         .orderBy(desc(physicalDepositRequests.createdAt));
     }
     return await db.select().from(physicalDepositRequests)
@@ -6230,7 +6246,7 @@ export class DatabaseStorage implements IStorage {
     ];
     
     if (credentialType) {
-      conditions.push(eq(verifiableCredentials.credentialType, credentialType as any));
+      conditions.push(eq(verifiableCredentials.credentialType, credentialType as never));
     }
     
     const [result] = await db.select().from(verifiableCredentials)
@@ -6260,7 +6276,7 @@ export class DatabaseStorage implements IStorage {
     
     const [revocation] = await db.insert(credentialRevocations).values({
       credentialId,
-      reason: reason as any,
+      reason: reason as never,
       revokedBy,
       revokedBySystem: !revokedBy,
     }).returning();
@@ -6349,7 +6365,7 @@ export class DatabaseStorage implements IStorage {
 
   async getWorkflowExpectedSteps(flowType: string): Promise<WorkflowExpectedStep[]> {
     return await db.select().from(workflowExpectedSteps)
-      .where(eq(workflowExpectedSteps.flowType, flowType as any))
+      .where(eq(workflowExpectedSteps.flowType, flowType as never))
       .orderBy(workflowExpectedSteps.stepOrder);
   }
 

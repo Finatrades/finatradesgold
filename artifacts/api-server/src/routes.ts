@@ -491,10 +491,10 @@ function requireUserType(...allowed: UserTypeAllowed[]) {
         return res.status(401).json({ message: "Authentication required" });
       }
       if (user.role === 'admin') {
-        (req as any).currentUser = user;
+        req.currentUser = user;
         return next();
       }
-      const ut = (user as any).userType as UserTypeAllowed | null | undefined;
+      const ut = user.userType as UserTypeAllowed | null | undefined;
       if (!ut || !allowed.includes(ut)) {
         return res.status(403).json({
           message: "Access denied for your account type",
@@ -502,7 +502,7 @@ function requireUserType(...allowed: UserTypeAllowed[]) {
           actualUserType: ut ?? null,
         });
       }
-      (req as any).currentUser = user;
+      req.currentUser = user;
       return next();
     } catch (error: any) {
       console.error('[requireUserType]', error?.message || error);
@@ -554,7 +554,7 @@ async function ensureOwnerOrAdmin(req: Request, res: Response, next: NextFunctio
   // Allow if user is an admin
   const user = await storage.getUser(sessionUserId);
   if (user?.role === 'admin') {
-    (req as any).adminUser = user;
+    req.adminUser = user;
     return next();
   }
   
@@ -602,8 +602,8 @@ async function ensureAdminAsync(req: Request, res: Response, next: NextFunction)
     }
     
     // Attach the validated admin user and employee to the request
-    (req as any).adminUser = admin;
-    (req as any).adminEmployee = employee;
+    req.adminUser = admin;
+    req.adminEmployee = employee;
     return next();
   } catch (error: any) {
     console.error('[Admin Auth Error]', error?.message || error);
@@ -1108,7 +1108,10 @@ export async function registerRoutes(
     
     if (orphanedEmployees.rows.length > 0) {
       console.log(`[RBAC] Found ${orphanedEmployees.rows.length} employee(s) missing role assignments. Repairing...`);
-      for (const emp of orphanedEmployees.rows as any[]) {
+      // db.execute returns generic Record<string, unknown> rows; narrow to the
+      // shape selected by the preceding SELECT so emp.* are typed.
+      type OrphanRow = { user_id: string; rbac_role_id: string; created_by: string | null; employee_id: string };
+      for (const emp of orphanedEmployees.rows as OrphanRow[]) {
         await db.execute(sql`
           INSERT INTO user_role_assignments (id, user_id, role_id, assigned_by, assigned_at, is_active)
           VALUES (gen_random_uuid(), ${emp.user_id}, ${emp.rbac_role_id}, ${emp.created_by || 'system'}, NOW(), true)
@@ -1225,7 +1228,7 @@ export async function registerRoutes(
         console.log(`[R2] File uploaded: ${r2Key}`);
       } else {
         // Fallback to local disk storage
-        fileUrl = `/uploads/${(req.file as any).filename}`;
+        fileUrl = `/uploads/${req.file.filename}`;
       }
       
       return res.json({ 
@@ -4480,7 +4483,12 @@ export async function registerRoutes(
             idBackUrl: personalKyc.idBackUrl,
             passportUrl: personalKyc.passportUrl,
             addressProofUrl: personalKyc.addressProofUrl,
-            livenessCapture: (personalKyc as any).selfieUrl,
+            // selfieUrl is a legacy field name not present on the current
+            // schema; access via index until the field is renamed.
+            livenessCapture: (personalKyc as unknown as Record<string, unknown>).selfieUrl,
+            // The composed object adds derived fields (`tier`, `kycType`,
+            // `accountType`, `livenessCapture`) that are not part of the
+            // KycSubmission schema, so the union-cast is intentional.
           } as any;
         }
       }
@@ -4495,6 +4503,8 @@ export async function registerRoutes(
             kycType: 'finatrades_corporate',
             accountType: 'business',
             fullName: corporateKyc.companyName,
+            // See note above: the composed object intentionally includes
+            // derived fields not present on the KycSubmission schema.
           } as any;
         }
       }
@@ -4564,7 +4574,7 @@ export async function registerRoutes(
       }
       
       const updatedUser = await storage.updateUser(user.id, {
-        kycStatus: 'Rejected' as any,
+        kycStatus: 'Rejected',
       });
       
       await storage.createAuditLog({
@@ -4596,7 +4606,7 @@ export async function registerRoutes(
       }
       
       const updatedUser = await storage.updateUser(user.id, {
-        kycStatus: 'Approved' as any,
+        kycStatus: 'Approved',
       });
       
       await storage.createAuditLog({
@@ -4704,7 +4714,7 @@ export async function registerRoutes(
     try {
       const { userId: rawUserId, role, rbacRoleId, department, jobTitle, permissions } = req.body;
       const userId = rawUserId || null; // Convert empty string to null for FK constraint
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       // Validate permissions - require at least one permission
       if (!permissions || permissions.length === 0) {
@@ -4770,7 +4780,7 @@ export async function registerRoutes(
   app.patch("/api/admin/employees/:id", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { role, rbacRoleId, department, jobTitle, status, permissions } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
@@ -4843,7 +4853,7 @@ export async function registerRoutes(
   app.post("/api/admin/employees/:id/deactivate", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
       const { reason } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
@@ -4896,7 +4906,7 @@ export async function registerRoutes(
   // Reactivate employee
   app.post("/api/admin/employees/:id/activate", ensureAdminAsync, requirePermission('manage_employees'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const existingEmployee = await storage.getEmployee(req.params.id);
       if (!existingEmployee) {
@@ -4954,7 +4964,7 @@ export async function registerRoutes(
     try {
       const { permissions } = req.body;
       const role = req.params.role;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       // Check if role permission exists
       let rolePermission = await storage.getRolePermission(role);
@@ -4963,7 +4973,7 @@ export async function registerRoutes(
         rolePermission = await storage.updateRolePermission(rolePermission.id, { permissions, updatedBy: adminUser.id });
       } else {
         rolePermission = await storage.createRolePermission({
-          role: role as any,
+          role: role as 'admin' | 'super_admin' | 'manager' | 'support' | 'finance' | 'compliance',
           permissions,
           updatedBy: adminUser.id
         });
@@ -5004,7 +5014,7 @@ export async function registerRoutes(
   // Create a new backup (requires OTP verification)
   app.post("/api/admin/backups", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
@@ -5024,6 +5034,9 @@ export async function registerRoutes(
         });
       }
       
+      if (!adminUser.mfaSecret) {
+        return res.status(400).json({ message: "MFA is not configured for this admin." });
+      }
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
@@ -5091,7 +5104,7 @@ export async function registerRoutes(
   // Download backup file (requires OTP verification via POST body)
   app.post("/api/admin/backups/:id/download", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
@@ -5111,6 +5124,9 @@ export async function registerRoutes(
         });
       }
       
+      if (!adminUser.mfaSecret) {
+        return res.status(400).json({ message: "MFA is not configured for this admin." });
+      }
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
@@ -5155,7 +5171,7 @@ export async function registerRoutes(
   // Restore from backup (DANGEROUS - requires super admin or manage_settings permission + OTP)
   app.post("/api/admin/backups/:id/restore", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
@@ -5175,6 +5191,9 @@ export async function registerRoutes(
         });
       }
       
+      if (!adminUser.mfaSecret) {
+        return res.status(400).json({ message: "MFA is not configured for this admin." });
+      }
       const isValidOtp = authenticator.verify({ token: otpCode, secret: adminUser.mfaSecret });
       if (!isValidOtp) {
         return res.status(401).json({ message: "Invalid OTP code. Please try again." });
@@ -5230,7 +5249,7 @@ export async function registerRoutes(
   // Delete backup
   app.delete("/api/admin/backups/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const ipAddress = req.ip || req.connection.remoteAddress || 'unknown';
       const userAgent = req.headers['user-agent'] || 'unknown';
       
@@ -5601,7 +5620,7 @@ export async function registerRoutes(
   app.patch("/api/kyc/:id", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const updates = { ...req.body };
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       if (updates.reviewedAt && typeof updates.reviewedAt === 'string') {
         updates.reviewedAt = new Date(updates.reviewedAt);
@@ -5635,7 +5654,7 @@ export async function registerRoutes(
         if (latestVersion && (req.body.status === 'Approved' || req.body.status === 'Rejected' || req.body.status === 'Changes Requested')) {
           const versionStatus = req.body.status === 'Approved' ? 'approved' : req.body.status === 'Rejected' ? 'rejected' : 'changes_requested';
           await storage.updateKycVersion(latestVersion.id, {
-            status: versionStatus as any,
+            status: versionStatus,
             lockedAt: new Date(),
           });
 
@@ -5705,6 +5724,9 @@ export async function registerRoutes(
               sendFinancialPushNotification(submission.userId, 'kyc_approved', {}).catch(err => console.error('[Push] KYC approved notification failed:', err));
             });
 
+            // FIXME: issueKycCredential requires a `claims` argument that
+            // is not constructed here. The cast preserves prior behavior
+            // (the call rejects at runtime); fix tracked separately.
             (credentialIssuer.issueKycCredential as any)(user).then((credential: any) => {
               console.log("[VC] Verifiable credential issued on KYC approval for user:", submission.userId, "credentialId:", credential?.credentialId);
             }).catch((err: any) => console.error("[VC] Failed to issue verifiable credential on KYC approval:", err));
@@ -5760,6 +5782,10 @@ export async function registerRoutes(
           }
         }
         
+        // `kyc_update` is a domain-specific event type not in emitLedgerEvent's
+        // declared union, and timestamp/syncVersion are extra fields not in the
+        // declared shape. Cast is intentional pending a wider refactor of the
+        // socket event type to include KYC events.
         emitLedgerEvent(submission.userId, {
           type: 'kyc_update',
           module: 'system',
@@ -5827,7 +5853,7 @@ export async function registerRoutes(
   // Claim KYC review (Admin)
   app.post("/api/admin/kyc/:id/claim", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       let submission: any = await storage.updateKycSubmission(req.params.id, {
         status: 'In Review',
         reviewedBy: adminUser?.id || 'admin',
@@ -5865,7 +5891,7 @@ export async function registerRoutes(
 
       const latestVersion = await storage.getLatestKycVersion(req.params.id);
       if (latestVersion) {
-        await storage.updateKycVersion(latestVersion.id, { status: 'in_review' as any });
+        await storage.updateKycVersion(latestVersion.id, { status: 'in_review' });
       }
 
       await storage.createAuditLog({
@@ -5915,7 +5941,7 @@ export async function registerRoutes(
 
       const latestVersion = await storage.getLatestKycVersion(req.params.id);
       if (latestVersion) {
-        await storage.updateKycVersion(latestVersion.id, { status: 'submitted' as any });
+        await storage.updateKycVersion(latestVersion.id, { status: 'submitted' });
       }
 
       return res.json({ submission, kycType, message: "Review released" });
@@ -5975,19 +6001,19 @@ export async function registerRoutes(
       // Run all queries in PARALLEL with database-level limits
       const [kycAmlResult, personalResult, corporateResult] = await Promise.all([
         typeFilter === 'all' || typeFilter === 'kycAml' 
-          ? (storage as any).getKycSubmissionsPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+          ? storage.getKycSubmissionsPaginated({ status: statusFilter, limit: fetchLimit, offset: 0 })
               .catch((e: any) => { console.error("KYC AML error:", e); return { data: [], total: 0 }; })
             ?? storage.getAllKycSubmissions().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
           : Promise.resolve({ data: [], total: 0 }),
           
         typeFilter === 'all' || typeFilter === 'finatrades_personal'
-          ? (storage as any).getFinatradesPersonalKycPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+          ? storage.getFinatradesPersonalKycPaginated({ status: statusFilter, limit: fetchLimit, offset: 0 })
               .catch((e: any) => { console.error("Personal KYC error:", e); return { data: [], total: 0 }; })
             ?? storage.getAllFinatradesPersonalKyc().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
           : Promise.resolve({ data: [], total: 0 }),
           
         typeFilter === 'all' || typeFilter === 'finatrades_corporate'
-          ? (storage as any).getFinatradesCorporateKycPaginated?.({ status: statusFilter, limit: fetchLimit, offset: 0 })
+          ? storage.getFinatradesCorporateKycPaginated({ status: statusFilter, limit: fetchLimit, offset: 0 })
               .catch((e: any) => { console.error("Corporate KYC error:", e); return { data: [], total: 0 }; })
             ?? storage.getAllFinatradesCorporateKyc().then((data: any) => ({ data: data.slice(0, fetchLimit), total: data.length })).catch(() => ({ data: [], total: 0 }))
           : Promise.resolve({ data: [], total: 0 })
@@ -6327,7 +6353,7 @@ export async function registerRoutes(
   app.post("/api/admin/risk-profile/:userId/calculate", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const { userId } = req.params;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const user = await storage.getUser(userId);
       if (!user) {
@@ -6402,7 +6428,7 @@ export async function registerRoutes(
   // Batch calculate risk scores for all users (Admin)
   app.post("/api/admin/risk-profiles/batch-calculate", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const users = await storage.getAllUsers();
       
       const results = [];
@@ -7425,7 +7451,7 @@ export async function registerRoutes(
       }
       
       // Balance check: when submitting as Open, verify FinaBridge wallet has enough gold
-      if ((requestData.status as any) === 'Open') {
+      if ((requestData.status as string) === 'Open') {
         const settlementGrams = parseFloat(requestData.settlementGoldGrams || '0');
         if (settlementGrams > 0) {
           const fbWallet = await storage.getOrCreateFinabridgeWallet(requestData.importerUserId);
@@ -7572,7 +7598,7 @@ export async function registerRoutes(
             importer_name: importerName,
             goods_name: request.goodsName,
             trade_value: parseFloat(request.tradeValueUsd.toString()).toLocaleString(),
-            instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+            instrument_type: request.paymentInstrumentType || 'Not specified',
             submitted_at: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
             admin_url: '/admin/finabridge',
           }).catch(err => console.error('[Email] FinaBridge submission admin notification failed:', err));
@@ -8369,7 +8395,7 @@ export async function registerRoutes(
           aiVerificationStatus: 'Pass',
           aiFraudScore: fraudScore?.toString() || null,
           aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
-        } as any);
+        });
 
         // Email #3A — AI pass → Macy action required; Farah and Reda get CC awareness copies
         const aiExtractedSummary = extractedData
@@ -8379,7 +8405,7 @@ export async function registerRoutes(
           trade_ref: request.tradeRefId,
           importer_name: importerName,
           fraud_score: fraudScore?.toFixed(1) || '0',
-          instrument_type: (request as any).paymentInstrumentType || 'Not specified',
+          instrument_type: request.paymentInstrumentType || 'Not specified',
           admin_url: adminUrl,
         };
 
@@ -8417,7 +8443,7 @@ export async function registerRoutes(
           aiFraudScore: fraudScore?.toString() || null,
           aiRejectionReason: rejectionReason || 'Document verification failed',
           aiExtractedData: extractedData ? JSON.stringify(extractedData) : null,
-        } as any);
+        });
 
         // Terminal pre-escrow outcome — release any open USD wallet margin hold.
         await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'AI Rejected');
@@ -8510,7 +8536,7 @@ export async function registerRoutes(
         tier1Status: 'Approved',
         tier1Notes: notes || '',
         tier1ReviewedBy: reviewerName,
-      } as any);
+      });
 
       const importer = await storage.getUser(request.importerUserId);
       const importerName = importer?.companyName || `${importer?.firstName || ''} ${importer?.lastName || ''}`.trim() || 'Importer';
@@ -8564,7 +8590,7 @@ export async function registerRoutes(
         tier1Status: 'Rejected',
         tier1Notes: notes || '',
         tier1ReviewedBy: reviewedBy || 'Macy',
-      } as any);
+      });
 
       // Terminal pre-escrow outcome — release any open USD wallet margin hold.
       await releaseOpenTradeRequestMarginHold(req.params.id, request.importerUserId, 'Tier 1 Rejected');
@@ -8602,9 +8628,6 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/requests/:id/tier3-reject", ensureAdminAsync, requirePermission('manage_finabridge'), async (_req, res) => {
     return res.status(410).json({ message: "Director (tier 3) review removed. FinaBridge now uses a single-stage admin review — use /tier1-reject." });
   });
-
-  // ——————————————————————————————————————————————
-  // FINABRIDGE WALLET ENDPOINTS
   
 
   // Get FinaBridge ledger history for user - PROTECTED
@@ -8670,7 +8693,7 @@ export async function registerRoutes(
           goldGrams: entry.goldGrams,
           valueUsd: entry.valueUsd,
           balanceAfterGrams: '0',
-          notes: entry.notes || ((entry.action as any) === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
+          notes: entry.notes || ((entry.action as string) === 'FinaPay_To_Trade' ? 'Transfer from FinaPay' : 'Transfer to FinaPay'),
           createdAt: entry.createdAt,
         });
       }
@@ -8837,7 +8860,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/settlement-holds/:id/cancel", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { reason } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const hold = await storage.getSettlementHold(req.params.id);
       if (!hold) {
@@ -8892,13 +8915,13 @@ export async function registerRoutes(
       const { vaultLedgerService } = await import('./vault-ledger-service');
       await vaultLedgerService.recordLedgerEntry({
         userId: hold.importerUserId,
-        action: 'Unlock' as any,
+        action: 'Trade_Release',
         goldGrams: lockedAmount,
         goldPriceUsdPerGram: 0,
-        fromWallet: 'FinaBridge' as any,
-        toWallet: 'FinaBridge' as any,
-        fromStatus: 'Locked' as any,
-        toStatus: 'Available' as any,
+        fromWallet: 'FinaBridge',
+        toWallet: 'FinaBridge',
+        fromStatus: 'Reserved_Trade',
+        toStatus: 'Available',
         notes: `Settlement cancelled: ${reason || 'Trade cancelled'}`,
         createdBy: adminUser.id,
       });
@@ -8923,7 +8946,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/settlement-holds/:id/partial-release", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { percentage, reason, milestone } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       if (!percentage || percentage <= 0 || percentage > 100) {
         return res.status(400).json({ message: "Invalid release percentage (must be 1-100)" });
@@ -9000,8 +9023,8 @@ export async function registerRoutes(
         action: 'Transfer_Receive',
         goldGrams: releaseGrams,
         goldPriceUsdPerGram: releaseGrams > 0 ? tradeValue / releaseGrams : 0,
-        fromWallet: 'FinaBridge' as any,
-        toWallet: 'FinaBridge' as any,
+        fromWallet: 'FinaBridge',
+        toWallet: 'FinaBridge',
         toStatus: 'Available',
         transactionId: tx.id,
         counterpartyUserId: hold.importerUserId,
@@ -9155,9 +9178,14 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Dispute not found" });
       }
       
-      // Check if admin with FinaBridge permissions
+      // Check if admin with FinaBridge permissions.
+      // `permissions` lives on the `employees` table (string[]), not on `users`.
+      // Some legacy admin records also carry a `permissions` array on the user
+      // row, so we read it via an index access until the storage layer is
+      // refactored to always return the resolved employee permissions.
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && ((sessionUser as any).permissions?.includes('view_finabridge') || (sessionUser as any).permissions?.includes('manage_finabridge'));
+      const sessionPerms = (sessionUser as unknown as { permissions?: string[] } | undefined)?.permissions;
+      const isAdmin = sessionUser?.role === 'admin' && (sessionPerms?.includes('view_finabridge') || sessionPerms?.includes('manage_finabridge'));
       
       if (!isAdmin) {
         // Verify user is party to the trade or is the dispute raiser
@@ -9199,9 +9227,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Dispute not found" });
       }
       
-      // Check if admin with FinaBridge permissions
+      // Check if admin with FinaBridge permissions.
+      // See note above: `permissions` is not part of the typed User shape.
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && (sessionUser as any).permissions?.includes('manage_finabridge');
+      const sessionPerms = (sessionUser as unknown as { permissions?: string[] } | undefined)?.permissions;
+      const isAdmin = sessionUser?.role === 'admin' && sessionPerms?.includes('manage_finabridge');
       
       let userRole = '';
       if (isAdmin) {
@@ -9267,7 +9297,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/disputes/:id/status", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { status, assignedAdminId } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
@@ -9299,7 +9329,7 @@ export async function registerRoutes(
   app.post("/api/admin/finabridge/disputes/:id/resolve", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { resolution } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const [dispute] = await db.select().from(tradeDisputes).where(eq(tradeDisputes.id, req.params.id));
       if (!dispute) {
@@ -9606,7 +9636,7 @@ export async function registerRoutes(
   // Create/update risk assessment (admin)
   app.post("/api/admin/finabridge/risk-assessment", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { tradeRequestId, riskScore, riskLevel, importerKycStatus, exporterKycStatus, countryRisk, valueRisk, exporterHistoryRisk, riskFactors, mitigationNotes, isFlagged, flagReason } = req.body;
       
       const [existing] = await db.select().from(tradeRiskAssessments).where(eq(tradeRiskAssessments.tradeRequestId, tradeRequestId));
@@ -9694,8 +9724,8 @@ export async function registerRoutes(
       const disputes = await db.select().from(tradeDisputes);
       
       const totalTrades = tradeRequestsList.length;
-      const activeTrades = tradeRequestsList.filter(t => (t.status as any) === 'Submitted' || (t.status as any) === 'In Deal Room').length;
-      const completedTrades = tradeRequestsList.filter(t => (t.status as any) === 'Completed' || (t.status as any) === 'Settled').length;
+      const activeTrades = tradeRequestsList.filter(t => (t.status as string) === 'Submitted' || (t.status as string) === 'In Deal Room').length;
+      const completedTrades = tradeRequestsList.filter(t => (t.status as string) === 'Completed' || (t.status as string) === 'Settled').length;
       const totalValueUsd = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.tradeValueUsd || '0'), 0);
       const totalGoldGrams = tradeRequestsList.reduce((sum, t) => sum + parseFloat(t.settlementGoldGrams || '0'), 0);
       const avgTradeValue = totalTrades > 0 ? totalValueUsd / totalTrades : 0;
@@ -9705,7 +9735,7 @@ export async function registerRoutes(
         return res.json({
         analytics: {
           totalTrades, activeTrades, completedTrades, totalValueUsd, totalGoldGrams, avgTradeValue, successRate,
-          totalProposals: proposals.length, activeSettlements: settlements.filter(s => (s.status as any) === 'Locked').length,
+          totalProposals: proposals.length, activeSettlements: settlements.filter(s => (s.status as string) === 'Locked').length,
           openDisputes, monthlyTrends: []
         }
       });
@@ -9820,9 +9850,11 @@ export async function registerRoutes(
         return res.status(404).json({ message: "Deal room not found" });
       }
       
-      // Check if admin with FinaBridge permissions
+      // Check if admin with FinaBridge permissions.
+      // See note above: `permissions` is not part of the typed User shape.
       const sessionUser = await storage.getUser(sessionUserId);
-      const isAdmin = sessionUser?.role === 'admin' && ((sessionUser as any).permissions?.includes('view_finabridge') || (sessionUser as any).permissions?.includes('manage_finabridge'));
+      const sessionPerms = (sessionUser as unknown as { permissions?: string[] } | undefined)?.permissions;
+      const isAdmin = sessionUser?.role === 'admin' && (sessionPerms?.includes('view_finabridge') || sessionPerms?.includes('manage_finabridge'));
       
       // Verify user is party to the deal room or is admin
       if (!isAdmin && dealRoom.importerUserId !== sessionUserId && dealRoom.exporterUserId !== sessionUserId && dealRoom.assignedAdminId !== sessionUserId) {
@@ -9840,7 +9872,7 @@ export async function registerRoutes(
   app.post("/api/admin/deal-room-documents/:id/verify", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
       const { status, verificationNotes } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       if (!['Verified', 'Rejected'].includes(status)) {
         return res.status(400).json({ message: "Status must be Verified or Rejected" });
@@ -9952,6 +9984,9 @@ export async function registerRoutes(
                 const isPdf = updated.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25;
                 if (isPdf) {
                   try {
+                    // pdf-parse has no shipped types and ships as dual CJS/ESM,
+                    // so the dynamic import shape varies. The `as any` casts
+                    // are intentional bridges around the missing typings.
                     const pdfParse: any = (await import('pdf-parse' as any) as any).default || (await import('pdf-parse' as any));
                     extractedText = (await pdfParse(fileBuffer)).text || '';
                   } catch {
@@ -10957,7 +10992,7 @@ export async function registerRoutes(
       const notes = await db.select().from(dealRoomInternalNotes)
         .where(eq(dealRoomInternalNotes.dealRoomId, req.params.id))
         .orderBy(desc(dealRoomInternalNotes.createdAt));
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const enriched = await Promise.all(notes.map(async (n) => {
         const author = await storage.getUser(n.adminUserId);
         return { ...n, authorName: author ? `${author.firstName || ''} ${author.lastName || ''}`.trim() || author.email : 'Admin' };
@@ -10970,7 +11005,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/deal-rooms/:id/internal-notes", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { note, isEscalated } = req.body;
       if (!note?.trim()) return res.status(400).json({ message: "Note is required" });
       const [created] = await db.insert(dealRoomInternalNotes).values({
@@ -10989,7 +11024,7 @@ export async function registerRoutes(
   // Admin: Mark deal as escalated via flag
   app.patch("/api/admin/deal-rooms/:id/escalate", ensureAdminAsync, requirePermission('manage_finabridge'), async (req: Request, res: Response) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { reason } = req.body;
       // Insert an escalation note
       await db.insert(dealRoomInternalNotes).values({
@@ -11303,6 +11338,7 @@ export async function registerRoutes(
             const isPdf = doc.fileName?.toLowerCase().endsWith('.pdf') || fileBuffer[0] === 0x25; // '%PDF'
             if (isPdf) {
               try {
+                // See note above on pdf-parse import shape; cast is intentional.
                 const pdfParse: any = (await import('pdf-parse' as any) as any).default || (await import('pdf-parse' as any));
                 const pdfData = await pdfParse(fileBuffer);
                 extractedText = pdfData.text || '';
@@ -11567,7 +11603,7 @@ export async function registerRoutes(
   // Admin: Close deal room
   app.post("/api/admin/deal-rooms/:id/close", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
-      const adminId = (req as any).user?.id;
+      const adminId = req.adminUser!.id;
       const { closureNotes } = req.body;
 
       const room = await storage.getDealRoom(req.params.id);
@@ -11631,7 +11667,7 @@ export async function registerRoutes(
   // Admin: Update deal room disclaimer
   app.post("/api/admin/deal-rooms/:id/disclaimer", ensureAdminAsync, requirePermission('manage_finabridge'), async (req, res) => {
     try {
-      const adminId = (req as any).user?.id;
+      const adminId = req.adminUser!.id;
       const { disclaimer } = req.body;
 
       const room = await storage.getDealRoom(req.params.id);
@@ -12144,7 +12180,7 @@ export async function registerRoutes(
       if (!title || !content) {
         return res.status(400).json({ message: "Title and content are required" });
       }
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const article = await storage.createKnowledgeArticle({
         categoryId,
         title,
@@ -12167,7 +12203,7 @@ export async function registerRoutes(
   app.put("/api/knowledge/articles/:id", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
       const { categoryId, title, summary, content, keywords, status, agentTypes } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const updates: any = { updatedBy: adminUser?.id };
       
       if (categoryId !== undefined) updates.categoryId = categoryId;
@@ -12652,7 +12688,7 @@ export async function registerRoutes(
         console.log(`[R2] Logo uploaded: ${r2Key}`);
       } else {
         // Fallback to local disk storage
-        logoUrl = `/uploads/${(req.file as any).filename}`;
+        logoUrl = `/uploads/${req.file.filename}`;
       }
       
       return res.json({ 
@@ -12770,7 +12806,7 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const { freeze, reason } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const user = await storage.getUser(userId);
       if (!user) {
@@ -12846,7 +12882,7 @@ export async function registerRoutes(
     try {
       const { userId } = req.params;
       const { dailyLimit, monthlyLimit } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const user = await storage.getUser(userId);
       if (!user) {
@@ -12908,7 +12944,7 @@ export async function registerRoutes(
       let tradeVolumeUsd = 0;
       
       const casesData = tradeCases.map((tcAny: any) => {
-        const tc = tcAny as any;
+        const tc = tcAny;
         const goldGrams = parseFloat(tc.goldAmountGrams || '0');
         
         if (tc.status === 'Active') {
@@ -13046,7 +13082,7 @@ export async function registerRoutes(
   app.patch("/api/admin/security-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const updates = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       // Validate updates using partial schema
       const validatedUpdates = insertSecuritySettingsSchema.partial().parse(updates);
@@ -13390,7 +13426,7 @@ export async function registerRoutes(
   app.post("/api/admin/transaction-pin/unlock/:userId", ensureAdminAsync, requirePermission('manage_users'), async (req, res) => {
     try {
       const { userId } = req.params;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const pin = await storage.getTransactionPin(userId);
       if (!pin) {
@@ -13440,7 +13476,7 @@ export async function registerRoutes(
   app.patch("/api/admin/compliance-settings", ensureAdminAsync, requirePermission('manage_settings', 'manage_kyc'), async (req, res) => {
     try {
       const updates = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const settings = await storage.updateComplianceSettings({
         ...updates,
@@ -13549,7 +13585,7 @@ export async function registerRoutes(
       };
       
       if (existing) {
-        const updated = await storage.updateFinatradesPersonalKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
+        const updated = await storage.updateFinatradesPersonalKyc(existing.id, { ...kycData, status: 'Pending Review' });
         await storage.updateUser(userId, { kycStatus: 'Pending Review' });
 
         let nextVersion = 1;
@@ -13561,7 +13597,7 @@ export async function registerRoutes(
             userId,
             kycType: 'finatrades_personal',
             versionNumber: nextVersion,
-            snapshot: kycData as any,
+            snapshot: kycData as Record<string, any>,
             status: 'submitted',
             submittedAt: new Date(),
           });
@@ -13600,14 +13636,14 @@ export async function registerRoutes(
           // would fully eliminate any race.
           const priorOcrFlag = updated?.ocrMismatchFlag as { nameMismatch?: boolean; dobMismatch?: boolean } | null;
           const priorOcrDelta = (priorOcrFlag?.nameMismatch || priorOcrFlag?.dobMismatch) ? 10 : 0;
-          const priorRiskScore: number = typeof updated?.riskScore === 'number' ? ((updated as any).riskScore as number) : 0;
+          const priorRiskScore: number = updated?.riskScore ?? 0;
           checkKycOcrMismatch(docUrlForOcr, kycData.fullName, kycData.dateOfBirth || '')
             .then(async (ocrResult: KycOcrResult) => {
               const mismatch = ocrResult.nameMismatch || ocrResult.dobMismatch;
               const newOcrDelta = mismatch ? 10 : 0;
               // Additive idempotent: remove prior OCR contribution, add new OCR contribution
               const newRiskScore = Math.max(0, priorRiskScore - priorOcrDelta) + newOcrDelta;
-              await storage.updateFinatradesPersonalKyc((updated as any).id, {
+              await storage.updateFinatradesPersonalKyc(updated!.id, {
                 ocrMismatchFlag: ocrResult,
                 riskScore: newRiskScore,
               });
@@ -13625,7 +13661,7 @@ export async function registerRoutes(
             userId,
             kycType: 'finatrades_personal',
             versionNumber: 1,
-            snapshot: kycData as any,
+            snapshot: kycData as Record<string, any>,
             status: 'submitted',
             submittedAt: new Date(),
           });
@@ -13785,7 +13821,7 @@ export async function registerRoutes(
       };
       
       if (existing) {
-        const updated = await storage.updateFinatradesCorporateKyc(existing.id, { ...kycData, status: 'Pending Review' as any });
+        const updated = await storage.updateFinatradesCorporateKyc(existing.id, { ...kycData, status: 'Pending Review' });
         await storage.updateUser(userId, { kycStatus: 'Pending Review', accountType: 'business' });
 
         let nextVersion = 1;
@@ -13797,7 +13833,7 @@ export async function registerRoutes(
             userId,
             kycType: 'finatrades_corporate',
             versionNumber: nextVersion,
-            snapshot: kycData as any,
+            snapshot: kycData as Record<string, any>,
             status: 'submitted',
             submittedAt: new Date(),
           });
@@ -13839,7 +13875,7 @@ export async function registerRoutes(
             userId,
             kycType: 'finatrades_corporate',
             versionNumber: 1,
-            snapshot: kycData as any,
+            snapshot: kycData as Record<string, any>,
             status: 'submitted',
             submittedAt: new Date(),
           });
@@ -14655,7 +14691,7 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       const { configValue } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const updated = await storage.updatePlatformConfig(id, {
         configValue: String(configValue),
@@ -14694,7 +14730,7 @@ export async function registerRoutes(
   app.post("/api/admin/platform-config/bulk-update", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { updates } = req.body; // Array of { id, configValue }
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       if (!Array.isArray(updates)) {
         return res.status(400).json({ message: "Updates must be an array" });
@@ -14754,7 +14790,7 @@ export async function registerRoutes(
   app.post("/api/admin/platform-config", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { category, configKey, configValue, configType, displayName, description, displayOrder } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const config = await storage.createPlatformConfig({
         category,
@@ -14789,7 +14825,7 @@ export async function registerRoutes(
   app.delete("/api/admin/platform-config/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const config = await storage.getAllPlatformConfigs().then(configs => configs.find(c => c.id === id));
       
@@ -14852,7 +14888,7 @@ export async function registerRoutes(
     try {
       const { type } = req.params;
       const { isEnabled } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const setting = await storage.toggleEmailNotification(type, isEnabled, adminUser.id);
       
@@ -14883,7 +14919,7 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       const updates = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const setting = await storage.updateEmailNotificationSetting(id, {
         ...updates,
@@ -15175,7 +15211,7 @@ export async function registerRoutes(
   app.post("/api/admin/geo-restriction-settings", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { isEnabled, defaultMessage, showNoticeOnLanding, blockAccess } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       // Check if settings exist
       const [existing] = await db.select().from(geoRestrictionSettings).limit(1);
@@ -15239,7 +15275,7 @@ export async function registerRoutes(
   app.post("/api/admin/geo-restrictions", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { countryCode, countryName, isRestricted, restrictionMessage, allowRegistration, allowLogin, allowTransactions, reason } = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       // Check if country already exists
       const [existing] = await db.select()
@@ -15288,7 +15324,7 @@ export async function registerRoutes(
     try {
       const { id } = req.params;
       const updates = req.body;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const [updated] = await db.update(geoRestrictions)
         .set({
@@ -15325,7 +15361,7 @@ export async function registerRoutes(
   app.delete("/api/admin/geo-restrictions/:id", ensureAdminAsync, requirePermission('manage_settings'), async (req, res) => {
     try {
       const { id } = req.params;
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       
       const [deleted] = await db.delete(geoRestrictions)
         .where(eq(geoRestrictions.id, id))
@@ -15768,7 +15804,7 @@ export async function registerRoutes(
   // Create SAR Report
   app.post("/api/admin/sar-reports", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { userId, incidentType, incidentDate, description, amountInvolved } = req.body;
       
       const reportNumber = `SAR-${Date.now()}`;
@@ -15782,6 +15818,11 @@ export async function registerRoutes(
         amountInvolved: amountInvolved || null,
         status: 'draft',
         createdBy: adminUser?.id || '',
+        // The sarReports schema requires several additional fields
+        // (activityType, activityDescription, totalAmountInvolved,
+        // dateRangeStart/End, reportingOfficer) that this admin endpoint
+        // does not yet collect. Cast preserves prior runtime behavior
+        // pending a proper insert-schema-aligned implementation.
       } as any).returning();
       
 
@@ -15797,6 +15838,9 @@ export async function registerRoutes(
   app.post("/api/admin/sar-reports/:id/submit", ensureAdminAsync, requirePermission('manage_kyc'), async (req, res) => {
     try {
       const report = await db.update(sarReports)
+        // `submittedAt`/`submittedTo` are not part of the sarReports schema
+        // (the schema uses `filedAt`/`filedWithRegulator`/`regulatorReferenceNumber`).
+        // Cast preserves prior runtime behavior pending alignment with the schema.
         .set({ 
           status: 'submitted',
           submittedAt: new Date(),
@@ -15911,7 +15955,7 @@ export async function registerRoutes(
   // Generate Regulatory Report
   app.post("/api/admin/regulatory-reports/generate", ensureAdminAsync, requirePermission('generate_reports', 'manage_kyc'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { reportType, reportPeriodStart, reportPeriodEnd, title, description } = req.body;
       
       const report = await db.insert(regulatoryReports).values({
@@ -15977,7 +16021,7 @@ export async function registerRoutes(
   // Create announcement
   app.post("/api/admin/announcements", ensureAdminAsync, requirePermission('manage_cms'), async (req, res) => {
     try {
-      const adminUser = (req as any).adminUser;
+      const adminUser = req.adminUser!;
       const { title, message, type, target, showBanner, startDate, endDate } = req.body;
       
       const announcement = await db.insert(announcements).values({
@@ -16041,7 +16085,7 @@ export async function registerRoutes(
   // Get active announcements for users (public, filtered by target)
   app.get("/api/announcements", async (req, res) => {
     try {
-      const user = (req as any).user;
+      const user = req.user;
       const now = new Date();
       
       let targetFilters = ['all'];
@@ -16060,7 +16104,7 @@ export async function registerRoutes(
         .where(
           and(
             eq(announcements.isActive, true),
-            inArray(announcements.target, targetFilters as any),
+            inArray(announcements.target, targetFilters as ("business" | "users" | "all" | "admins")[]),
             or(
               isNull(announcements.startDate),
               lte(announcements.startDate, now)
