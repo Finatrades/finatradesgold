@@ -30,6 +30,7 @@ import Wallet from "@/pages/dashboard/Wallet";
 import AdminWallets from "@/pages/dashboard/AdminWallets";
 import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
+import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
 import { Suspense, useEffect } from "react";
 import { canAccess } from "@/lib/roleMenus";
@@ -209,6 +210,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/consignments/:id">
         <AdminRoute component={AdminConsignmentReview} />
+      </Route>
+      <Route path="/admin/email-queues">
+        <AdminRoute component={AdminEmailQueues} />
       </Route>
 
       {/* Account */}

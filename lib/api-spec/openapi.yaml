@@ -36,6 +36,8 @@ tags:
     description: B2B wallet — balances, holds, deposits, withdrawals
   - name: wallet-admin
     description: B2B wallet — admin reconciliation & withdrawal queue
+  - name: admin-email-queues
+    description: Admin view of BullMQ background queues (failed jobs + retry)
   - name: wallet-webhooks
     description: |
       Inbound webhooks from third-party money-movement providers (Stripe card top-ups,
@@ -465,6 +467,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ConsignmentDocument"
+
+  # ─── ADMIN EMAIL / JOB QUEUES ───────────────────────────────────────────────
+  /admin/email-queues:
+    get:
+      operationId: adminListEmailQueues
+      tags: [admin-email-queues]
+      summary: List background job queues with counts and recent failed jobs
+      responses:
+        "200":
+          description: Queue overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminEmailQueueOverview"
+
+  /admin/email-queues/{queue}/jobs/{jobId}/retry:
+    post:
+      operationId: adminRetryEmailQueueJob
+      tags: [admin-email-queues]
+      summary: Re-queue a failed job for another attempt
+      parameters:
+        - name: queue
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [trade-emails, verify-document]
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Job re-queued
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
 
   # ─── INVENTORY ──────────────────────────────────────────────────────────────
   /b2b/inventory:
@@ -1737,6 +1777,59 @@ components:
           enum: [approve, reject, request_replacement]
         reason: { type: string }
         notes: { type: string }
+
+    AdminEmailQueueFailedJob:
+      type: object
+      required: [id, name, attemptsMade, maxAttempts, failedAt, failedReason]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        attemptsMade: { type: integer }
+        maxAttempts: { type: integer }
+        failedAt: { type: ["string", "null"] }
+        processedAt: { type: ["string", "null"] }
+        failedReason: { type: string }
+        stacktrace: { type: ["string", "null"] }
+        kind: { type: ["string", "null"] }
+        targetLabel: { type: ["string", "null"] }
+        targetCaseId: { type: ["string", "null"] }
+        targetDocumentId: { type: ["string", "null"] }
+        data:
+          type: object
+          additionalProperties: true
+
+    AdminEmailQueueSummary:
+      type: object
+      required: [queue, available, counts, failed]
+      properties:
+        queue:
+          type: string
+          enum: [trade-emails, verify-document]
+        label: { type: string }
+        available: { type: boolean }
+        unavailableReason: { type: ["string", "null"] }
+        counts:
+          type: object
+          required: [waiting, active, completed, failed, delayed]
+          properties:
+            waiting: { type: integer }
+            active: { type: integer }
+            completed: { type: integer }
+            failed: { type: integer }
+            delayed: { type: integer }
+        failed:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEmailQueueFailedJob"
+
+    AdminEmailQueueOverview:
+      type: object
+      required: [queues]
+      properties:
+        queues:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminEmailQueueSummary"
 
     ConsignmentEligibility:
       type: object

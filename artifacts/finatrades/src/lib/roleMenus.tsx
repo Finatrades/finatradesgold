@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
-  Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox,
+  Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox, Mail,
 } from 'lucide-react';
 
 export type UserType = 'exporter' | 'importer' | 'government' | 'warehouse';
@@ -141,6 +141,7 @@ export const ADMIN_MENU: MenuSection[] = [
       { icon: <Warehouse size={16} />, label: 'Warehouse Tally', href: '/warehouse' },
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
       { icon: <Wallet size={16} />, label: 'Wallets', href: '/admin/wallets' },
+      { icon: <Mail size={16} />, label: 'Email Queues', href: '/admin/email-queues' },
       { icon: <Shield size={16} />, label: 'Escrow Oversight', href: '/escrow' },
       { icon: <AlertTriangle size={16} />, label: 'Risk & AML', href: '/admin/risk' },
       { icon: <BarChart3 size={16} />, label: 'Analytics', href: '/admin/analytics' },

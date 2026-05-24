@@ -437,6 +437,61 @@ export interface AdminConsignmentDocumentUpdate {
   notes?: string;
 }
 
+export type AdminEmailQueueFailedJobData = { [key: string]: unknown };
+
+export interface AdminEmailQueueFailedJob {
+  id: string;
+  name: string;
+  attemptsMade: number;
+  maxAttempts: number;
+  /** @nullable */
+  failedAt: string | null;
+  /** @nullable */
+  processedAt?: string | null;
+  failedReason: string;
+  /** @nullable */
+  stacktrace?: string | null;
+  /** @nullable */
+  kind?: string | null;
+  /** @nullable */
+  targetLabel?: string | null;
+  /** @nullable */
+  targetCaseId?: string | null;
+  /** @nullable */
+  targetDocumentId?: string | null;
+  data?: AdminEmailQueueFailedJobData;
+}
+
+export type AdminEmailQueueSummaryQueue =
+  (typeof AdminEmailQueueSummaryQueue)[keyof typeof AdminEmailQueueSummaryQueue];
+
+export const AdminEmailQueueSummaryQueue = {
+  "trade-emails": "trade-emails",
+  "verify-document": "verify-document",
+} as const;
+
+export type AdminEmailQueueSummaryCounts = {
+  waiting: number;
+  active: number;
+  completed: number;
+  failed: number;
+  delayed: number;
+};
+
+export interface AdminEmailQueueSummary {
+  queue: AdminEmailQueueSummaryQueue;
+  label?: string;
+  available: boolean;
+  /** @nullable */
+  unavailableReason?: string | null;
+  counts: AdminEmailQueueSummaryCounts;
+  failed: AdminEmailQueueFailedJob[];
+}
+
+export interface AdminEmailQueueOverview {
+  queues: AdminEmailQueueSummary[];
+}
+
 export interface ConsignmentEligibility {
   eligible: boolean;
   reason?: string;

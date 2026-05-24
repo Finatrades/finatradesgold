@@ -24,6 +24,7 @@ import type {
   AdminConsignmentQueue,
   AdminConsignmentStatusUpdate,
   AdminCreditInput,
+  AdminEmailQueueOverview,
   AdminListConsignmentsParams,
   AdminListWalletsParams,
   AdminListWithdrawalsParams,
@@ -2007,6 +2008,172 @@ export const useAdminUpdateConsignmentDocument = <
   TContext
 > => {
   return useMutation(getAdminUpdateConsignmentDocumentMutationOptions(options));
+};
+
+/**
+ * @summary List background job queues with counts and recent failed jobs
+ */
+export const getAdminListEmailQueuesUrl = () => {
+  return `/api/admin/email-queues`;
+};
+
+export const adminListEmailQueues = async (
+  options?: RequestInit,
+): Promise<AdminEmailQueueOverview> => {
+  return customFetch<AdminEmailQueueOverview>(getAdminListEmailQueuesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getAdminListEmailQueuesQueryKey = () => {
+  return [`/api/admin/email-queues`] as const;
+};
+
+export const getAdminListEmailQueuesQueryOptions = <
+  TData = Awaited<ReturnType<typeof adminListEmailQueues>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListEmailQueues>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getAdminListEmailQueuesQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminListEmailQueues>>
+  > = ({ signal }) => adminListEmailQueues({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof adminListEmailQueues>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type AdminListEmailQueuesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminListEmailQueues>>
+>;
+export type AdminListEmailQueuesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List background job queues with counts and recent failed jobs
+ */
+
+export function useAdminListEmailQueues<
+  TData = Awaited<ReturnType<typeof adminListEmailQueues>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof adminListEmailQueues>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getAdminListEmailQueuesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Re-queue a failed job for another attempt
+ */
+export const getAdminRetryEmailQueueJobUrl = (
+  queue: "trade-emails" | "verify-document",
+  jobId: string,
+) => {
+  return `/api/admin/email-queues/${queue}/jobs/${jobId}/retry`;
+};
+
+export const adminRetryEmailQueueJob = async (
+  queue: "trade-emails" | "verify-document",
+  jobId: string,
+  options?: RequestInit,
+): Promise<MessageResponse> => {
+  return customFetch<MessageResponse>(
+    getAdminRetryEmailQueueJobUrl(queue, jobId),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getAdminRetryEmailQueueJobMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRetryEmailQueueJob>>,
+    TError,
+    { queue: "trade-emails" | "verify-document"; jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof adminRetryEmailQueueJob>>,
+  TError,
+  { queue: "trade-emails" | "verify-document"; jobId: string },
+  TContext
+> => {
+  const mutationKey = ["adminRetryEmailQueueJob"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminRetryEmailQueueJob>>,
+    { queue: "trade-emails" | "verify-document"; jobId: string }
+  > = (props) => {
+    const { queue, jobId } = props ?? {};
+
+    return adminRetryEmailQueueJob(queue, jobId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type AdminRetryEmailQueueJobMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminRetryEmailQueueJob>>
+>;
+
+export type AdminRetryEmailQueueJobMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Re-queue a failed job for another attempt
+ */
+export const useAdminRetryEmailQueueJob = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof adminRetryEmailQueueJob>>,
+    TError,
+    { queue: "trade-emails" | "verify-document"; jobId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof adminRetryEmailQueueJob>>,
+  TError,
+  { queue: "trade-emails" | "verify-document"; jobId: string },
+  TContext
+> => {
+  return useMutation(getAdminRetryEmailQueueJobMutationOptions(options));
 };
 
 /**

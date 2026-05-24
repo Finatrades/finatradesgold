@@ -708,6 +708,56 @@ export const AdminUpdateConsignmentDocumentResponse = zod.object({
 });
 
 /**
+ * @summary List background job queues with counts and recent failed jobs
+ */
+export const AdminListEmailQueuesResponse = zod.object({
+  queues: zod.array(
+    zod.object({
+      queue: zod.enum(["trade-emails", "verify-document"]),
+      label: zod.string().optional(),
+      available: zod.boolean(),
+      unavailableReason: zod.string().nullish(),
+      counts: zod.object({
+        waiting: zod.number(),
+        active: zod.number(),
+        completed: zod.number(),
+        failed: zod.number(),
+        delayed: zod.number(),
+      }),
+      failed: zod.array(
+        zod.object({
+          id: zod.string(),
+          name: zod.string(),
+          attemptsMade: zod.number(),
+          maxAttempts: zod.number(),
+          failedAt: zod.string().nullable(),
+          processedAt: zod.string().nullish(),
+          failedReason: zod.string(),
+          stacktrace: zod.string().nullish(),
+          kind: zod.string().nullish(),
+          targetLabel: zod.string().nullish(),
+          targetCaseId: zod.string().nullish(),
+          targetDocumentId: zod.string().nullish(),
+          data: zod.record(zod.string(), zod.unknown()).optional(),
+        }),
+      ),
+    }),
+  ),
+});
+
+/**
+ * @summary Re-queue a failed job for another attempt
+ */
+export const AdminRetryEmailQueueJobParams = zod.object({
+  queue: zod.enum(["trade-emails", "verify-document"]),
+  jobId: zod.coerce.string(),
+});
+
+export const AdminRetryEmailQueueJobResponse = zod.object({
+  message: zod.string(),
+});
+
+/**
  * @summary List warehouse inventory items
  */
 export const ListInventoryResponseItem = zod.object({
