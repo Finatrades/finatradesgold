@@ -66,7 +66,7 @@ export default function Register() {
         username: form.email,
         fullName: `${form.firstName} ${form.lastName}`,
       });
-      setLocation('/dashboard');
+      // AuthContext.register() handles role-based landing redirect.
     } catch (err: any) {
       setError(err?.message || 'Registration failed. Please try again.');
     } finally {
