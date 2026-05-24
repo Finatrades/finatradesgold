@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isLive = goldPriceData?.source && !goldPriceData.source.includes('fallback');
 
   const pageTitle = ROUTE_TITLES[location] || 'Dashboard';
-  const sidebarW = sidebarCollapsed ? 68 : 240;
+  const sidebarW = sidebarCollapsed ? 76 : 256;
 
   if (!user) return null;
 
