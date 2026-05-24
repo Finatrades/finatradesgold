@@ -214,6 +214,27 @@ export function useReleaseMilestone(caseId: string | undefined) {
   });
 }
 
+export function useFundEscrow(caseId: string | undefined) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ amountCents }: { amountCents?: number } = {}) => {
+      const body: Record<string, unknown> = {};
+      if (typeof amountCents === "number" && Number.isFinite(amountCents) && amountCents > 0) {
+        body.amountCents = amountCents;
+      }
+      return apiFetch(`/api/trade/cases/${caseId}/escrow/fund`, {
+        method: "POST",
+        body: JSON.stringify(body),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["caseMilestones", caseId] });
+      qc.invalidateQueries({ queryKey: ["walletBalances"] });
+      qc.invalidateQueries({ queryKey: ["tradeCases"] });
+    },
+  });
+}
+
 export function useConfirmGoodsReceived(caseId: string | undefined) {
   const qc = useQueryClient();
   return useMutation({

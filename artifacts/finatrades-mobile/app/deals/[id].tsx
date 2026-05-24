@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import React from "react";
+import React, { useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -10,14 +10,18 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { useAuth } from "@/context/AuthContext";
 import {
   useCaseMilestones,
   useConfirmGoodsReceived,
+  useFundEscrow,
   useReleaseMilestone,
+  useTradeCases,
   useWalletBalances,
   type MilestoneRow,
 } from "@/hooks/useApi";
@@ -68,13 +72,23 @@ export default function DealDetailScreen() {
   const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
 
+  const { user } = useAuth();
   const milestonesQ = useCaseMilestones(id);
   const balancesQ = useWalletBalances();
+  const tradeCasesQ = useTradeCases(user?.id);
   const releaseM = useReleaseMilestone(id);
   const goodsReceivedM = useConfirmGoodsReceived(id);
+  const fundEscrowM = useFundEscrow(id);
+
+  const tradeCase = tradeCasesQ.data?.cases.find((c) => c.id === id);
+  const escrowFunded = Boolean(tradeCase?.escrowFundedAt);
+  const settlementAmountSet =
+    typeof tradeCase?.settlementAmountCents === "number" && tradeCase.settlementAmountCents > 0;
+  const [escrowAmount, setEscrowAmount] = useState("");
 
   const milestones = milestonesQ.data?.milestones ?? [];
-  const caseCurrency = milestones[0]?.currency ?? "USD";
+  const caseCurrency =
+    tradeCase?.settlementCurrency || milestones[0]?.currency || "USD";
   const totalCents = milestones.reduce((s, m) => s + Number(m.amountCents || 0), 0);
   const releasedCents = milestones
     .filter((m) => m.status === "released")
@@ -90,6 +104,51 @@ export default function DealDetailScreen() {
   const onRefresh = () => {
     void milestonesQ.refetch();
     void balancesQ.refetch();
+    void tradeCasesQ.refetch();
+  };
+
+  const handleFundEscrow = () => {
+    if (fundEscrowM.isPending) return;
+    const dollars = parseFloat(escrowAmount || "0");
+    const hasInput = Number.isFinite(dollars) && dollars > 0;
+    if (!settlementAmountSet && !hasInput) {
+      Alert.alert(
+        "Amount required",
+        `Enter the settlement amount in ${caseCurrency} to fund escrow.`,
+      );
+      return;
+    }
+    const amountCents = hasInput ? Math.round(dollars * 100) : undefined;
+    const displayCents = amountCents ?? tradeCase?.settlementAmountCents ?? 0;
+    const run = () =>
+      fundEscrowM.mutate(
+        { amountCents },
+        {
+          onSuccess: () => {
+            setEscrowAmount("");
+            Alert.alert(
+              "Escrow funded",
+              `${formatMoney(displayCents, caseCurrency)} locked in escrow pending milestone releases.`,
+            );
+          },
+          onError: (e: any) => {
+            const msg =
+              e?.message === "Insufficient balance to fund escrow"
+                ? `Your ${caseCurrency} wallet does not have enough available balance.`
+                : e?.message || "Could not fund escrow.";
+            Alert.alert("Funding failed", msg);
+          },
+        },
+      );
+    if (Platform.OS === "web") return run();
+    Alert.alert(
+      "Fund escrow?",
+      `${formatMoney(displayCents, caseCurrency)} will be locked from your ${caseCurrency} wallet until milestones are released.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { text: "Fund", onPress: run },
+      ],
+    );
   };
 
   const handleRelease = (m: MilestoneRow) => {
@@ -222,6 +281,72 @@ export default function DealDetailScreen() {
             </View>
           ) : null}
         </View>
+
+        {tradeCase && !escrowFunded ? (
+          <View
+            style={[
+              styles.card,
+              { backgroundColor: colors.card, borderColor: colors.border, marginTop: 12 },
+            ]}
+          >
+            <Text style={[styles.sectionTitle, { color: colors.foreground }]}>Fund escrow</Text>
+            <Text style={{ color: colors.mutedForeground, fontSize: 12, marginBottom: 12 }}>
+              {settlementAmountSet
+                ? `Lock ${formatMoney(tradeCase.settlementAmountCents ?? 0, caseCurrency)} from your ${caseCurrency} wallet so milestones can be released to the exporter.`
+                : `No settlement amount on file yet. Enter the amount in ${caseCurrency} to fund escrow.`}
+            </Text>
+
+            {!settlementAmountSet ? (
+              <View style={styles.amountRow}>
+                <Text style={[styles.currencyPrefix, { color: colors.mutedForeground }]}>
+                  {caseCurrency}
+                </Text>
+                <TextInput
+                  value={escrowAmount}
+                  onChangeText={setEscrowAmount}
+                  keyboardType="decimal-pad"
+                  placeholder="0.00"
+                  placeholderTextColor={colors.mutedForeground}
+                  editable={!fundEscrowM.isPending}
+                  style={[
+                    styles.amountInput,
+                    {
+                      color: colors.foreground,
+                      backgroundColor: colors.muted,
+                      borderColor: colors.border,
+                    },
+                  ]}
+                />
+              </View>
+            ) : null}
+
+            <Pressable
+              onPress={handleFundEscrow}
+              disabled={fundEscrowM.isPending}
+              style={({ pressed }) => [
+                styles.fundBtn,
+                {
+                  backgroundColor: colors.primary,
+                  opacity: pressed || fundEscrowM.isPending ? 0.7 : 1,
+                },
+              ]}
+            >
+              {fundEscrowM.isPending ? (
+                <ActivityIndicator color={colors.primaryForeground} size="small" />
+              ) : (
+                <>
+                  <Ionicons name="lock-closed" size={16} color={colors.primaryForeground} />
+                  <Text style={{ color: colors.primaryForeground, fontWeight: "700" }}>
+                    Fund escrow
+                  </Text>
+                </>
+              )}
+            </Pressable>
+            <Text style={[styles.footnote, { color: colors.mutedForeground }]}>
+              Funding is idempotent — repeated taps for the same case will not double-lock funds.
+            </Text>
+          </View>
+        ) : null}
 
         <View
           style={[
@@ -422,6 +547,34 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     minWidth: 90,
     justifyContent: "center",
+  },
+  amountRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginBottom: 12,
+  },
+  currencyPrefix: {
+    fontSize: 12,
+    fontWeight: "600",
+    minWidth: 36,
+  },
+  amountInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  fundBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    paddingVertical: 12,
+    borderRadius: 12,
   },
   goodsBtn: {
     flexDirection: "row",
