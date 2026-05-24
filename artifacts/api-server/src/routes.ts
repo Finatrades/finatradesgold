@@ -285,6 +285,7 @@ import { queueDocumentVerification } from "./jobs/verify-document.job";
 import { queueTradeEmail } from "./jobs/trade-emails.job";
 import { registerWalletRoutes } from "./routes/wallet";
 import { registerTradeFinanceRoutes, pushImporterMilestoneReady } from "./routes/trade-finance";
+import { registerAdminAnalyticsRoutes } from "./routes/admin-analytics";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -1200,6 +1201,7 @@ export async function registerRoutes(
   // Register B2B USD Wallet routes (Task #74)
   registerWalletRoutes(app);
   registerTradeFinanceRoutes(app);
+  registerAdminAnalyticsRoutes(app);
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/admin/email-queues", ensureAdminAsync, adminEmailQueuesRouter);

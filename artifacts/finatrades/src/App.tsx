@@ -33,6 +33,8 @@ import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
 import AdminLcQueue from "@/pages/admin/AdminLcQueue";
 import AdminDisputeQueue from "@/pages/admin/AdminDisputeQueue";
 import AdminKycQueue from "@/pages/admin/AdminKycQueue";
+import AdminAnalytics from "@/pages/admin/AdminAnalytics";
+import AdminRisk from "@/pages/admin/AdminRisk";
 import AdminUsers from "@/pages/admin/AdminUsers";
 import AdminBankPartners from "@/pages/admin/AdminBankPartners";
 import AdminLcTemplates from "@/pages/admin/AdminLcTemplates";
@@ -250,6 +252,12 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/trade-finance/escrow">
         <AdminRoute component={AdminEscrowConfig} />
+      </Route>
+      <Route path="/admin/analytics">
+        <AdminRoute component={AdminAnalytics} />
+      </Route>
+      <Route path="/admin/risk">
+        <AdminRoute component={AdminRisk} />
       </Route>
 
       {/* Account */}

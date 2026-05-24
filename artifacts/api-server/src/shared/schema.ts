@@ -239,6 +239,8 @@ export const AVAILABLE_PERMISSIONS = [
   'view_reports',
   'generate_reports',
   'manage_fees',
+  'view_analytics',
+  'view_risk',
 ] as const;
 
 export type Permission = typeof AVAILABLE_PERMISSIONS[number];
@@ -251,12 +253,12 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
     'manage_transactions', 'view_transactions', 'manage_withdrawals', 'manage_deposits',
     'manage_vault', 'view_vault', 'manage_bnsl', 'view_bnsl',
     'manage_finabridge', 'view_finabridge', 'manage_support', 'view_support',
-    'view_reports', 'manage_fees'
+    'view_reports', 'manage_fees', 'view_analytics', 'view_risk'
   ],
   manager: [
     'view_users', 'manage_kyc', 'view_kyc',
     'view_transactions', 'manage_vault', 'view_vault',
-    'view_bnsl', 'view_finabridge', 'view_support', 'view_reports'
+    'view_bnsl', 'view_finabridge', 'view_support', 'view_reports', 'view_analytics'
   ],
   support: [
     'view_users', 'view_kyc', 'view_transactions',
@@ -269,7 +271,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<string, string[]> = {
   ],
   compliance: [
     'view_users', 'manage_kyc', 'view_kyc',
-    'view_transactions', 'view_reports', 'generate_reports'
+    'view_transactions', 'view_reports', 'generate_reports',
+    'view_analytics', 'view_risk'
   ],
 };
 

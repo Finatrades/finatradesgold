@@ -66,6 +66,8 @@ const LEGACY_PERM_TO_COMPONENT: Record<string, { components: string[], action: '
   'manage_employees': { components: ['employees', 'role-management'], action: 'edit' },
   'view_reports': { components: ['financial-reports', 'audit-logs', 'treasury', 'compliance-dashboard'], action: 'view' },
   'generate_reports': { components: ['financial-reports', 'treasury'], action: 'edit' },
+  'view_analytics': { components: ['financial-reports', 'analytics-dashboard', 'compliance-dashboard'], action: 'view' },
+  'view_risk': { components: ['compliance-dashboard', 'audit-logs'], action: 'view' },
   'view_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'view' },
   'manage_vault': { components: ['vault-management', 'physical-deposits', 'unified-gold-tally'], action: 'edit' },
   'view_transactions': { components: ['payment-operations'], action: 'view' },
