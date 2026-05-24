@@ -26,8 +26,8 @@ const theme = {
   text: '#1A1A1A',
   textSecondary: '#4A4A48',
   textMuted: '#888880',
-  border: 'rgba(255, 255, 255, 0.6)',
-  subtle: 'rgba(255, 255, 255, 0.5)',
+  border: 'rgba(232, 226, 220, 0.9)',
+  subtle: 'rgba(250, 250, 248, 0.92)',
   gridline: '#F0EBE5',
   success: '#059669',
   warning: '#D97706',
@@ -74,10 +74,12 @@ const TiltCard: React.FC<{
   const handleMouseLeave = () => { x.set(0); y.set(0); };
 
   const glassStyle: React.CSSProperties = {
-    backdropFilter: hero ? 'blur(28px) saturate(160%)' : 'blur(20px) saturate(160%)',
-    backgroundColor: hero ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.72)',
-    border: `1px solid ${theme.border}`,
-    boxShadow: theme.shadowCard,
+    backdropFilter: hero ? 'blur(20px) saturate(140%)' : 'blur(14px) saturate(140%)',
+    WebkitBackdropFilter: hero ? 'blur(20px) saturate(140%)' : 'blur(14px) saturate(140%)',
+    backgroundColor: hero ? 'rgba(255,255,255,0.94)' : 'rgba(255,255,255,0.97)',
+    border: '1px solid rgba(26,26,26,0.06)',
+    boxShadow:
+      '0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 24px -10px rgba(26,26,26,0.18), 0 2px 6px -2px rgba(122,31,18,0.10)',
     ...style,
   };
 
@@ -122,7 +124,7 @@ const RadialGauge: React.FC<RadialGaugeConfig> = ({ value, max, label, subLabel,
     <div className="flex flex-col items-center justify-center p-4">
       <div className="relative w-[88px] h-[88px] flex items-center justify-center mb-3">
         <svg className="absolute inset-0 w-full h-full transform -rotate-90" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))' }}>
-          <circle cx="44" cy="44" r={radius} stroke="rgba(255,255,255,0.6)" strokeWidth="10" fill="none" />
+          <circle cx="44" cy="44" r={radius} stroke="#EAE3DA" strokeWidth="10" fill="none" />
           <motion.circle
             cx="44" cy="44" r={radius}
             stroke={color}
@@ -136,13 +138,13 @@ const RadialGauge: React.FC<RadialGaugeConfig> = ({ value, max, label, subLabel,
           />
         </svg>
         <div className="flex flex-col items-center z-10 text-center">
-          <span className="text-[20px] font-bold text-[#1A1A1A] tabular-nums leading-none mb-0.5" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{value}</span>
+          <span className="text-[20px] font-bold text-[#1A1A1A] tabular-nums leading-none mb-0.5">{value}</span>
         </div>
       </div>
       <div className="flex flex-col items-center text-center">
         <span className="text-[13px] font-semibold text-[#1A1A1A] mb-0.5">{label}</span>
         <span className="text-[12px] text-[#4A4A48] font-medium mb-1.5">{subLabel}</span>
-        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[rgba(255,255,255,0.5)] border border-[rgba(255,255,255,0.8)] text-[11px] font-medium">
+        <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-[#F4EFE9] border border-[#E8E2DC] text-[11px] font-medium">
           {delta.startsWith('+') ? <TrendingUp size={12} color={theme.success} /> : <span className="w-1" />}
           <span style={{ color: delta.startsWith('+') ? theme.success : theme.textSecondary }}>{delta}</span>
         </div>
@@ -162,7 +164,7 @@ const Speedometer: React.FC<{ value: number; label?: string }> = ({ value, label
   return (
     <div className="relative w-[140px] h-[80px] overflow-hidden flex flex-col items-center">
       <svg className="w-full h-full absolute inset-0 z-0" viewBox="0 0 140 80" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.05))' }}>
-        <path d="M 10 70 A 60 60 0 0 1 130 70" stroke="rgba(255,255,255,0.6)" strokeWidth="14" fill="none" strokeLinecap="round" />
+        <path d="M 10 70 A 60 60 0 0 1 130 70" stroke="#EAE3DA" strokeWidth="14" fill="none" strokeLinecap="round" />
         <motion.path
           d="M 10 70 A 60 60 0 0 1 130 70"
           stroke={theme.success}
@@ -185,7 +187,7 @@ const Speedometer: React.FC<{ value: number; label?: string }> = ({ value, label
         <div className="absolute -bottom-1.5 -left-1.5 w-3.5 h-3.5 rounded-full bg-[#1A1A1A] border-2 border-white shadow-sm" />
       </motion.div>
       <div className="absolute bottom-0 flex flex-col items-center z-20 translate-y-full pt-2">
-        <span className="text-[32px] font-bold text-[#1A1A1A] tabular-nums leading-none" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{value}</span>
+        <span className="text-[32px] font-bold text-[#1A1A1A] tabular-nums leading-none">{value}</span>
         <span className="text-[11px] font-semibold text-[#4A4A48] uppercase tracking-wider mt-1">{label}</span>
       </div>
     </div>
@@ -204,9 +206,9 @@ const ProgressMeter: React.FC<ProgressMeterConfig> = ({ label, value, color }) =
     <div className="flex flex-col gap-1.5 w-full">
       <div className="flex justify-between items-center text-[13px]">
         <span className="text-[#1A1A1A] font-medium">{label}</span>
-        <span className="text-[#1A1A1A] font-semibold tabular-nums" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{value}%</span>
+        <span className="text-[#1A1A1A] font-semibold tabular-nums">{value}%</span>
       </div>
-      <div className="h-1.5 w-full rounded-full bg-[rgba(255,255,255,0.6)] overflow-hidden shadow-inner border border-white/20">
+      <div className="h-1.5 w-full rounded-full bg-[#FAFAF8] overflow-hidden shadow-inner border border-[#E8E2DC]">
         <motion.div
           className="h-full rounded-full"
           style={{ backgroundColor: color }}
@@ -242,15 +244,15 @@ const WalletMeter: React.FC<WalletMeterConfig & { delay?: number }> = ({
     <div className="flex flex-col gap-2.5 mb-5">
       <div className="flex justify-between items-baseline">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-full bg-[rgba(255,255,255,0.8)] border border-white flex items-center justify-center text-[12px] font-bold text-[#1A1A1A] shadow-sm">
+          <div className="w-7 h-7 rounded-full bg-[#FAFAF8] border border-[#E8E2DC] flex items-center justify-center text-[12px] font-bold text-[#1A1A1A] shadow-sm">
             {currency}
           </div>
-          <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>
+          <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">
             {sym}{total.toLocaleString()}
           </span>
         </div>
       </div>
-      <div className="h-2 w-full flex rounded-full overflow-hidden shadow-inner border border-white/40 bg-[rgba(255,255,255,0.4)]">
+      <div className="h-2 w-full flex rounded-full overflow-hidden shadow-inner border border-[#E8E2DC] bg-[#F8F4EF]">
         <motion.div
           initial={{ width: prefersReducedMotion ? `${avPct}%` : '0%' }}
           animate={{ width: `${avPct}%` }}
@@ -399,7 +401,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
               <ShieldCheck size={14} />
               <span className="text-[11px] font-semibold uppercase tracking-wider">KYC Approved</span>
             </div>
-            <div className="flex items-center gap-2 bg-[rgba(255,255,255,0.5)] border border-white px-3 py-1.5 rounded-full shadow-sm">
+            <div className="flex items-center gap-2 bg-[#F4EFE9] border border-[#E8E2DC] px-3 py-1.5 rounded-full shadow-sm">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#059669] opacity-75"></span>
                 <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-[#059669]"></span>
@@ -420,13 +422,13 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                 >
                   <Activity size={16} color={theme.coral} />
                 </motion.div>
-                <span className="text-[12px] font-bold text-[#1A1A1A] uppercase tracking-wider" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>Live Markets</span>
+                <span className="text-[12px] font-bold text-[#1A1A1A] uppercase tracking-wider">Live Markets</span>
               </div>
               <div className="flex gap-8 overflow-x-auto no-scrollbar">
                 {config.ticker.map((tick, i) => (
                   <div key={i} className="flex items-center gap-3 shrink-0">
                     <span className="text-[13px] font-medium text-[#1A1A1A]">{tick.name}</span>
-                    <span className="text-[14px] font-bold font-mono text-[#1A1A1A]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{tick.price}</span>
+                    <span className="text-[14px] font-bold font-mono text-[#1A1A1A]">{tick.price}</span>
                     <span className={`text-[13px] font-medium flex items-center ${tick.up ? 'text-[#059669]' : 'text-[#D97706]'}`}>
                       {tick.up ? <ArrowUpRight size={14} className="mr-0.5" /> : <TrendingDown size={14} className="mr-0.5" />}
                       {tick.delta}
@@ -473,11 +475,11 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                   <div className="flex justify-between items-end mb-4 flex-wrap gap-3">
                     <div>
                       <h2 className="text-[14px] font-semibold text-[#4A4A48] uppercase tracking-wider mb-2">{casesTitle}</h2>
-                      <div className="text-[20px] lg:text-[24px] font-bold text-[#1A1A1A]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>
+                      <div className="text-[20px] lg:text-[24px] font-bold text-[#1A1A1A]">
                         {awaitingCount} {awaitingCount === 1 ? 'Case' : 'Cases'} Requiring Action
                       </div>
                     </div>
-                    <button className="h-[40px] px-4 text-[14px] font-semibold text-[#C73B22] flex items-center gap-1.5 hover:bg-[rgba(255,255,255,0.5)] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 rounded-xl transition-colors border border-transparent hover:border-white">
+                    <button className="h-[40px] px-4 text-[14px] font-semibold text-[#C73B22] flex items-center gap-1.5 hover:bg-[#F4EFE9] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 rounded-xl transition-colors border border-transparent hover:border-[#E8E2DC]">
                       View all <ArrowRight size={16} />
                     </button>
                   </div>
@@ -503,7 +505,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                               ? 'bg-[#D97706]/20 text-[#D97706] border-[#D97706]/20'
                               : isActive
                                 ? 'bg-[#C73B22]/20 text-[#C73B22] border-[#C73B22]/20'
-                                : 'bg-[rgba(255,255,255,0.6)] text-[#4A4A48] border-white'
+                                : 'bg-[#FAFAF8] text-[#4A4A48] border-[#E8E2DC]'
                           }`}>
                             {isDisputed && count > 0 && <AlertTriangle size={10} className="mr-1" />}
                             {count}
@@ -532,7 +534,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                             exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.2 } }}
                             whileHover={prefersReducedMotion ? {} : { y: -2, scale: 1.005 }}
                             transition={{ duration: 0.15 }}
-                            className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-white/60 bg-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.8)] transition-all relative overflow-hidden"
+                            className="group flex flex-col md:flex-row md:items-center justify-between p-5 rounded-2xl border border-[#E8E2DC] bg-[#F8F4EF] hover:bg-white transition-all relative overflow-hidden"
                             style={{ boxShadow: '0 2px 8px rgba(26,26,26,0.04), 0 1px 0 rgba(255,255,255,0.9) inset' }}
                           >
                             {c.tag === 'disputed' && <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#D97706]" />}
@@ -545,22 +547,22 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                                 {c.status === 'pending' && <Circle size={14} className="text-[#D97706]" />}
                                 {c.status === 'disputed' && <AlertCircle size={14} className="text-[#D97706]" />}
                               </div>
-                              <span className="text-[14px] font-bold text-[#1A1A1A] leading-tight" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{c.item}</span>
+                              <span className="text-[14px] font-bold text-[#1A1A1A] leading-tight">{c.item}</span>
                               <span className="text-[13px] text-[#4A4A48] font-medium">{c.qty}</span>
                             </div>
 
                             <div className="flex flex-col gap-1 w-full md:w-[20%] mb-4 md:mb-0">
                               <span className="text-[11px] font-semibold text-[#4A4A48] uppercase tracking-wider">Counterparty</span>
-                              <span className="text-[14px] font-mono font-bold text-[#1A1A1A]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{c.party}</span>
+                              <span className="text-[14px] font-mono font-bold text-[#1A1A1A]">{c.party}</span>
                               <span className="text-[12px] font-bold text-[#D97706]">★ {c.rating}/5.0</span>
                             </div>
 
                             <div className="flex flex-col gap-2 w-full md:w-[24%] mb-4 md:mb-0">
                               <span className="text-[11px] font-semibold text-[#4A4A48] uppercase tracking-wider">Milestone</span>
-                              <div className="flex items-center gap-1 mt-0.5 shadow-inner rounded-full p-0.5 bg-[rgba(255,255,255,0.3)] border border-white/30">
-                                <div className={`h-2 flex-1 rounded-l-full ${c.step >= 1 ? 'bg-[#059669]' : 'bg-[rgba(255,255,255,0.5)]'}`} />
-                                <div className={`h-2 flex-1 ${c.step >= 2 ? 'bg-[#059669]' : 'bg-[rgba(255,255,255,0.5)]'}`} />
-                                <div className={`h-2 flex-1 rounded-r-full ${c.step >= 3 ? 'bg-[#059669]' : 'bg-[rgba(255,255,255,0.5)]'}`} />
+                              <div className="flex items-center gap-1 mt-0.5 shadow-inner rounded-full p-0.5 bg-[#F4EFE9] border border-[#E8E2DC]">
+                                <div className={`h-2 flex-1 rounded-l-full ${c.step >= 1 ? 'bg-[#059669]' : 'bg-[#F4EFE9]'}`} />
+                                <div className={`h-2 flex-1 ${c.step >= 2 ? 'bg-[#059669]' : 'bg-[#F4EFE9]'}`} />
+                                <div className={`h-2 flex-1 rounded-r-full ${c.step >= 3 ? 'bg-[#059669]' : 'bg-[#F4EFE9]'}`} />
                               </div>
                               <div className="flex justify-between items-center text-[11px] font-bold">
                                 <span className={c.step >= 1 ? 'text-[#1A1A1A]' : 'text-[#4A4A48]'}>Contract</span>
@@ -571,11 +573,11 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
 
                             <div className="flex flex-col w-full md:w-[15%] text-left md:text-right pr-4 mb-4 md:mb-0">
                               <span className="text-[11px] font-semibold text-[#4A4A48] uppercase tracking-wider mb-1">Escrow</span>
-                              <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{c.escrow}</span>
+                              <span className="text-[16px] font-bold text-[#1A1A1A] tabular-nums">{c.escrow}</span>
                             </div>
 
                             <div className="flex w-full md:w-auto items-center justify-end gap-3">
-                              <button aria-label="View deal" className="h-[40px] w-[40px] flex items-center justify-center rounded-xl border border-white bg-[rgba(255,255,255,0.6)] shadow-sm text-[#1A1A1A] hover:bg-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40">
+                              <button aria-label="View deal" className="h-[40px] w-[40px] flex items-center justify-center rounded-xl border border-[#E8E2DC] bg-[#FAFAF8] shadow-sm text-[#1A1A1A] hover:bg-white transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40">
                                 <Eye size={18} />
                               </button>
                               <motion.button
@@ -584,7 +586,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                                   c.tag === 'disputed'
                                     ? 'bg-[#D97706] hover:bg-[#B45309] text-white border-[#B45309] focus-visible:ring-[#D97706]/40'
                                     : c.tag === 'completed'
-                                      ? 'bg-[rgba(255,255,255,0.6)] border-white text-[#1A1A1A] hover:bg-white focus-visible:ring-white/40'
+                                      ? 'bg-[#FAFAF8] border-white text-[#1A1A1A] hover:bg-white focus-visible:ring-white/40'
                                       : 'bg-[#C73B22] hover:bg-[#A82F1B] text-white border-[#A82F1B] focus-visible:ring-[#C73B22]/40'
                                 }`}
                               >
@@ -597,7 +599,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                         <motion.div
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
-                          className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl border border-dashed border-black/10 bg-[rgba(255,255,255,0.4)] h-[120px]"
+                          className="flex flex-col items-center justify-center py-10 px-4 text-center rounded-2xl border border-dashed border-black/10 bg-[#F8F4EF] h-[120px]"
                         >
                           {activeTab === 'disputed' ? (
                             <Scale size={24} className="text-[#4A4A48] mb-3" />
@@ -626,7 +628,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                     <div>
                       <h2 className="text-[14px] font-semibold text-[#4A4A48] uppercase tracking-wider mb-2">{revenueTitle}</h2>
                       <div className="flex items-baseline gap-3">
-                        <span className="text-[28px] font-bold text-[#1A1A1A] tabular-nums" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>
+                        <span className="text-[28px] font-bold text-[#1A1A1A] tabular-nums">
                           {config.revenueHeadline || '$3.4M'}
                         </span>
                         {config.revenueDelta && (
@@ -697,7 +699,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                     )}
                     {config.wallet.secondaryCta && (
                       <Link href={config.wallet.secondaryCta.href}>
-                        <a className="h-[44px] w-full bg-[rgba(255,255,255,0.6)] border border-white hover:bg-white text-[#1A1A1A] rounded-xl text-[14px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 shadow-sm flex items-center justify-center">
+                        <a className="h-[44px] w-full bg-[#FAFAF8] border border-[#E8E2DC] hover:bg-white text-[#1A1A1A] rounded-xl text-[14px] font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 shadow-sm flex items-center justify-center">
                           {config.wallet.secondaryCta.label}
                         </a>
                       </Link>
@@ -734,7 +736,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                     {config.commodityMix.map((item, i) => (
                       <div key={i} className="flex items-center justify-between text-[13px]">
                         <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full shadow-sm border border-white/20" style={{ backgroundColor: item.color }} />
+                          <div className="w-3 h-3 rounded-full shadow-sm border border-[#E8E2DC]" style={{ backgroundColor: item.color }} />
                           <span className="text-[#1A1A1A] font-bold">{item.name}</span>
                         </div>
                         <span className="font-bold text-[#1A1A1A] tabular-nums">{item.value}</span>
@@ -753,9 +755,9 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                       const Icon = action.icon;
                       return (
                         <Link key={i} href={action.href}>
-                          <a className="group flex items-center justify-between h-[44px] px-3 rounded-xl bg-[rgba(255,255,255,0.4)] hover:bg-white border border-transparent hover:border-white/60 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 text-left shadow-sm hover:shadow">
+                          <a className="group flex items-center justify-between h-[44px] px-3 rounded-xl bg-[#F8F4EF] hover:bg-white border border-transparent hover:border-[#E8E2DC] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40 text-left shadow-sm hover:shadow">
                             <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-full bg-[rgba(255,255,255,0.8)] border border-white shadow-sm flex items-center justify-center text-[#1A1A1A] group-hover:text-[#C73B22] group-hover:bg-[#C73B22]/10 transition-colors">
+                              <div className="w-8 h-8 rounded-full bg-[#FAFAF8] border border-[#E8E2DC] shadow-sm flex items-center justify-center text-[#1A1A1A] group-hover:text-[#C73B22] group-hover:bg-[#C73B22]/10 transition-colors">
                                 <Icon size={16} />
                               </div>
                               <span className="text-[14px] font-bold text-[#1A1A1A]">{action.label}</span>
@@ -782,15 +784,15 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                       key={i}
                       whileHover={prefersReducedMotion ? {} : { y: -2, scale: 1.005 }}
                       transition={{ duration: 0.15 }}
-                      className="flex items-center justify-between p-4 rounded-xl border border-white/60 bg-[rgba(255,255,255,0.4)] hover:bg-[rgba(255,255,255,0.8)] transition-all shadow-sm flex-wrap gap-3"
+                      className="flex items-center justify-between p-4 rounded-xl border border-[#E8E2DC] bg-[#F8F4EF] hover:bg-white transition-all shadow-sm flex-wrap gap-3"
                     >
                       <div className="flex flex-col w-[35%] min-w-[140px]">
-                        <span className="text-[14px] font-bold text-[#1A1A1A] mb-1" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{rfq.item}</span>
+                        <span className="text-[14px] font-bold text-[#1A1A1A] mb-1">{rfq.item}</span>
                         <span className="text-[13px] text-[#4A4A48] font-medium">{rfq.qty}</span>
                       </div>
                       <div className="flex flex-col w-[35%] min-w-[140px]">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-[13px] font-mono font-bold text-[#1A1A1A]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{rfq.party}</span>
+                          <span className="text-[13px] font-mono font-bold text-[#1A1A1A]">{rfq.party}</span>
                           <span className="text-[11px] font-bold text-[#D97706]">★ {rfq.rating}</span>
                         </div>
                         <div className="flex items-center gap-1.5 text-[12px] font-medium text-[#4A4A48]">
@@ -798,7 +800,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <button className="h-[40px] px-4 rounded-xl border border-white bg-[rgba(255,255,255,0.6)] text-[#1A1A1A] hover:bg-white shadow-sm text-[13px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40">
+                        <button className="h-[40px] px-4 rounded-xl border border-[#E8E2DC] bg-[#FAFAF8] text-[#1A1A1A] hover:bg-white shadow-sm text-[13px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#C73B22]/40">
                           Counter
                         </button>
                         <button className="h-[40px] px-4 rounded-xl border border-[#059669]/20 bg-[#059669]/10 text-[#059669] hover:bg-[#059669]/20 shadow-sm text-[13px] font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[#059669]/40">
@@ -829,7 +831,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                       <div key={i} className="flex flex-col gap-3">
                         <div className="flex justify-between items-start flex-wrap gap-2">
                           <div className="flex flex-col gap-1">
-                            <span className="text-[14px] font-bold text-[#1A1A1A]" style={{ textShadow: '0 1px 0 rgba(255,255,255,0.8)' }}>{log.route}</span>
+                            <span className="text-[14px] font-bold text-[#1A1A1A]">{log.route}</span>
                             <span className="text-[13px] text-[#4A4A48] font-medium flex items-center gap-1.5"><Anchor size={14} className="text-[#1A1A1A]" /> {log.vessel}</span>
                           </div>
                           <div className="flex flex-col items-end gap-1">
@@ -839,7 +841,7 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
                             <span className="text-[12px] font-bold text-[#4A4A48]">ETA {log.eta}</span>
                           </div>
                         </div>
-                        <div className="h-2 w-full rounded-full bg-[rgba(255,255,255,0.6)] overflow-hidden shadow-inner border border-white/20">
+                        <div className="h-2 w-full rounded-full bg-[#FAFAF8] overflow-hidden shadow-inner border border-[#E8E2DC]">
                           <motion.div
                             className="h-full rounded-full"
                             style={{ backgroundColor: log.color }}

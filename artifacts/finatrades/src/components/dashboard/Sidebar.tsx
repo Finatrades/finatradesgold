@@ -16,12 +16,12 @@ interface SidebarProps {
 }
 
 const GLASS_CARD: React.CSSProperties = {
-  background: 'rgba(255,255,255,0.55)',
-  backdropFilter: 'blur(14px) saturate(140%)',
-  WebkitBackdropFilter: 'blur(14px) saturate(140%)',
-  border: '1px solid rgba(255,255,255,0.7)',
+  background: 'rgba(255,255,255,0.96)',
+  backdropFilter: 'blur(12px) saturate(140%)',
+  WebkitBackdropFilter: 'blur(12px) saturate(140%)',
+  border: '1px solid rgba(26,26,26,0.06)',
   boxShadow:
-    '0 2px 6px rgba(26,26,26,0.05), 0 1px 0 rgba(255,255,255,0.9) inset, 0 -1px 0 rgba(26,26,26,0.03) inset',
+    '0 1px 0 rgba(255,255,255,0.9) inset, 0 6px 18px -8px rgba(26,26,26,0.18), 0 2px 4px -2px rgba(122,31,18,0.08)',
 };
 
 export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: SidebarProps) {
