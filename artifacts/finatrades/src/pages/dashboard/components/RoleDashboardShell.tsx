@@ -403,10 +403,33 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2 px-3 py-1.5 bg-[#059669]/10 text-[#059669] rounded-full border border-[#059669]/20 shadow-sm">
-              <ShieldCheck size={14} />
-              <span className="text-[11px] font-semibold uppercase tracking-wider">KYC Approved</span>
-            </div>
+            {(() => {
+            const kycStatus = ((user as any)?.kycStatus as string | undefined) || 'Not Started';
+            const palette: Record<string, { bg: string; fg: string; label: string }> = {
+              'Approved':          { bg: 'rgba(5,150,105,0.10)', fg: '#059669', label: 'KYC Approved' },
+              'Pending Review':    { bg: 'rgba(217,119,6,0.10)', fg: '#D97706', label: 'KYC Under Review' },
+              'AI Review':         { bg: 'rgba(217,119,6,0.10)', fg: '#D97706', label: 'KYC AI Review' },
+              'In Review':         { bg: 'rgba(217,119,6,0.10)', fg: '#D97706', label: 'KYC In Review' },
+              'In Progress':       { bg: 'rgba(217,119,6,0.10)', fg: '#D97706', label: 'KYC In Progress' },
+              'Escalated':         { bg: 'rgba(217,119,6,0.10)', fg: '#D97706', label: 'KYC Escalated' },
+              'Changes Requested': { bg: 'rgba(220,38,38,0.10)', fg: '#DC2626', label: 'KYC Changes Requested' },
+              'Rejected':          { bg: 'rgba(220,38,38,0.10)', fg: '#DC2626', label: 'KYC Rejected' },
+              'Not Started':       { bg: 'rgba(120,113,108,0.10)', fg: '#78716C', label: 'KYC Not Started' },
+            };
+            const p = palette[kycStatus] || palette['Not Started'];
+            return (
+              <a
+                href="/kyc"
+                data-testid="badge-kyc-status"
+                className="flex items-center gap-2 px-3 py-1.5 rounded-full border shadow-sm hover:opacity-90 transition-opacity"
+                style={{ background: p.bg, color: p.fg, borderColor: p.fg + '33' }}
+                title={`Current KYC status: ${kycStatus}`}
+              >
+                <ShieldCheck size={14} />
+                <span className="text-[11px] font-semibold uppercase tracking-wider">{p.label}</span>
+              </a>
+            );
+          })()}
             <div className="flex items-center gap-2 bg-black/5 border border-black/8 px-3 py-1.5 rounded-full shadow-sm">
               <span className="relative flex h-2.5 w-2.5">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#059669] opacity-75"></span>

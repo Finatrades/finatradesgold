@@ -31,6 +31,7 @@ import AdminWallets from "@/pages/dashboard/AdminWallets";
 import AdminConsignmentsQueue from "@/pages/dashboard/AdminConsignmentsQueue";
 import AdminLcQueue from "@/pages/admin/AdminLcQueue";
 import AdminDisputeQueue from "@/pages/admin/AdminDisputeQueue";
+import AdminKycQueue from "@/pages/admin/AdminKycQueue";
 import AdminConsignmentReview from "@/pages/dashboard/AdminConsignmentReview";
 import AdminEmailQueues from "@/pages/dashboard/AdminEmailQueues";
 import VerifyWarehouseReceipt from "@/pages/public/VerifyWarehouseReceipt";
@@ -221,6 +222,9 @@ function AppRoutes() {
       </Route>
       <Route path="/admin/disputes">
         <AdminRoute component={AdminDisputeQueue} />
+      </Route>
+      <Route path="/admin/kyc">
+        <AdminRoute component={AdminKycQueue} />
       </Route>
 
       {/* Account */}
