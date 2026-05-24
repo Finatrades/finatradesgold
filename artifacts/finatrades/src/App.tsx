@@ -14,6 +14,11 @@ import DashboardOverview from "@/pages/dashboard/DashboardOverview";
 import Consignments from "@/pages/dashboard/Consignments";
 import ConsignmentDetail from "@/pages/dashboard/ConsignmentDetail";
 import Marketplace from "@/pages/dashboard/Marketplace";
+import MarketplaceDetail from "@/pages/dashboard/MarketplaceDetail";
+import MyRfqs from "@/pages/dashboard/MyRfqs";
+import IncomingRfqs from "@/pages/dashboard/IncomingRfqs";
+import MyOrders from "@/pages/dashboard/MyOrders";
+import Watchlist from "@/pages/dashboard/Watchlist";
 import Inventory from "@/pages/dashboard/Inventory";
 import Warehouse from "@/pages/dashboard/Warehouse";
 import Orders from "@/pages/dashboard/Orders";
@@ -153,6 +158,21 @@ function AppRoutes() {
       </Route>
       <Route path="/marketplace">
         <ProtectedRoute path="/marketplace" component={Marketplace} />
+      </Route>
+      <Route path="/marketplace/:id">
+        <ProtectedRoute path="/marketplace/:id" component={MarketplaceDetail} />
+      </Route>
+      <Route path="/watchlist">
+        <ProtectedRoute path="/watchlist" component={Watchlist} />
+      </Route>
+      <Route path="/rfqs/mine">
+        <ProtectedRoute path="/rfqs/mine" component={MyRfqs} />
+      </Route>
+      <Route path="/rfqs/incoming">
+        <ProtectedRoute path="/rfqs/incoming" component={IncomingRfqs} />
+      </Route>
+      <Route path="/orders/mine">
+        <ProtectedRoute path="/orders/mine" component={MyOrders} />
       </Route>
       <Route path="/orders">
         <ProtectedRoute path="/orders" component={Orders} />

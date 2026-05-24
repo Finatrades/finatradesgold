@@ -176,6 +176,7 @@ import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
+import marketplaceRouter from "./routes/marketplace";
 import adminConsignmentsRouter from "./routes/admin-consignments";
 import warehouseRouter from "./routes/warehouse";
 import unifiedTallyRoutes from "./unified-tally-routes";
@@ -1104,6 +1105,7 @@ export async function registerRoutes(
   app.use("/api/b2b/consignments", consignmentsRouter);
   app.use("/api/admin/consignments", ensureAdminAsync, adminConsignmentsRouter);
   app.use("/api/b2b/warehouse", warehouseRouter);
+  app.use("/api/b2b/marketplace", marketplaceRouter);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

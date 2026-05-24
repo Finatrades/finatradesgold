@@ -7159,9 +7159,22 @@ export const tradeOrders = pgTable("trade_orders", {
   paymentMethod: varchar("payment_method", { length: 50 }),
   paidAt: timestamp("paid_at"),
   deliveredAt: timestamp("delivered_at"),
+  listingId: varchar("listing_id", { length: 255 }),
+  consignmentId: varchar("consignment_id", { length: 255 }).references((): AnyPgColumn => consignments.id),
+  walletHoldId: varchar("wallet_hold_id", { length: 255 }),
+  marginCents: bigint("margin_cents", { mode: "number" }),
+  notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
+
+export const b2bWatchlist = pgTable("b2b_watchlist", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id", { length: 255 }).notNull().references(() => users.id, { onDelete: 'cascade' }),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id, { onDelete: 'cascade' }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+export type B2bWatchlistItem = typeof b2bWatchlist.$inferSelect;
 
 export const insertTradeOrderSchema = createInsertSchema(tradeOrders).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertTradeOrder = z.infer<typeof insertTradeOrderSchema>;

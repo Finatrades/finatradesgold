@@ -2,7 +2,7 @@ import React from 'react';
 import {
   LayoutDashboard, Package, Warehouse, Store, FileText, Handshake, Scale,
   Shield, User, Settings, HelpCircle, ShieldCheck, Building2, Bell, History,
-  Users, BarChart3, AlertTriangle, Globe, Wallet,
+  Users, BarChart3, AlertTriangle, Globe, Wallet, Star, Inbox,
 } from 'lucide-react';
 
 export type UserType = 'exporter' | 'importer' | 'government' | 'warehouse';
@@ -50,7 +50,8 @@ export const EXPORTER_MENU: MenuSection[] = [
       { icon: <Package size={16} />, label: 'My Consignments', href: '/consignments' },
       { icon: <Warehouse size={16} />, label: 'Warehouse Inventory', href: '/inventory' },
       { icon: <Store size={16} />, label: 'My Listings', href: '/marketplace' },
-      { icon: <FileText size={16} />, label: 'Incoming RFQs', href: '/orders' },
+      { icon: <Inbox size={16} />, label: 'Incoming RFQs', href: '/rfqs/incoming' },
+      { icon: <Package size={16} />, label: 'Sales Orders', href: '/orders/mine' },
     ],
   },
   {
@@ -73,7 +74,9 @@ export const IMPORTER_MENU: MenuSection[] = [
     label: 'Buy-Side Operations',
     items: [
       { icon: <Store size={16} />, label: 'Marketplace', href: '/marketplace' },
-      { icon: <FileText size={16} />, label: 'My RFQs & Orders', href: '/orders' },
+      { icon: <Star size={16} />, label: 'Watchlist', href: '/watchlist' },
+      { icon: <FileText size={16} />, label: 'My RFQs', href: '/rfqs/mine' },
+      { icon: <Package size={16} />, label: 'My Orders', href: '/orders/mine' },
       { icon: <Package size={16} />, label: 'Incoming Shipments', href: '/consignments' },
     ],
   },
@@ -189,7 +192,12 @@ export const ROUTE_ACCESS: Record<string, UserType[]> = {
   '/consignments':  ['exporter', 'importer'],
   '/inventory':     ['exporter', 'government', 'warehouse'],
   '/marketplace':   ['exporter', 'importer'],
+  '/marketplace/:id': ['exporter', 'importer'],
   '/orders':        ['exporter', 'importer'],
+  '/orders/mine':   ['exporter', 'importer'],
+  '/rfqs/mine':     ['importer'],
+  '/rfqs/incoming': ['exporter'],
+  '/watchlist':     ['importer'],
   '/escrow':        ['exporter', 'importer', 'government'],
   '/finabridge':    ['exporter', 'importer', 'government'],
   '/certificates':  ['exporter', 'importer'],
