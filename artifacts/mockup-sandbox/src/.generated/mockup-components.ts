@@ -4,6 +4,7 @@ export const modules: ModuleMap = {
   "./components/mockups/exporter-dashboard/InstitutionalTrader.tsx": () => import("../components/mockups/exporter-dashboard/InstitutionalTrader.tsx"),
   "./components/mockups/exporter-dashboard/OperationsCockpit.tsx": () => import("../components/mockups/exporter-dashboard/OperationsCockpit.tsx"),
   "./components/mockups/exporter-dashboard/PremiumFintech.tsx": () => import("../components/mockups/exporter-dashboard/PremiumFintech.tsx"),
+  "./components/mockups/glass-themes/CreamLight.tsx": () => import("../components/mockups/glass-themes/CreamLight.tsx"),
   "./components/mockups/glass-themes/DarkRedbrick.tsx": () => import("../components/mockups/glass-themes/DarkRedbrick.tsx"),
   "./components/mockups/glass-themes/LightRedbrick.tsx": () => import("../components/mockups/glass-themes/LightRedbrick.tsx"),
   "./components/mockups/glass-themes/MidRedbrick.tsx": () => import("../components/mockups/glass-themes/MidRedbrick.tsx"),
