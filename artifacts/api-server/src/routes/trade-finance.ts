@@ -72,7 +72,7 @@ import {
   type MilestoneSpec,
 } from "../trade-finance-service";
 import { storage } from "../storage";
-import { loadCounterpartyByUserId } from "../lib/counterparty";
+import { loadCounterpartyByUserId, loadCounterpartiesByUserIds } from "../lib/counterparty";
 import { sendEmailDirect } from "../email";
 import { sendTradePushNotification } from "../push-notifications";
 
@@ -502,7 +502,56 @@ export function registerTradeFinanceRoutes(app: Express): void {
         .from(tradeMilestones)
         .where(eq(tradeMilestones.tradeCaseId, parties.resolvedCaseId))
         .orderBy(tradeMilestones.sequence);
-      res.json({ milestones: rows, caseId: parties.resolvedCaseId });
+
+      // Enrich each milestone's `releasedBy` userId with the actor's FT-ID
+      // (Task #145 — anonymity rules; never expose real names).
+      const actorIds = Array.from(
+        new Set(rows.map((r) => r.releasedBy).filter((v): v is string => !!v)),
+      );
+      const actors = actorIds.length
+        ? await loadCounterpartiesByUserIds(actorIds)
+        : new Map();
+      const enriched = rows.map((r) => ({
+        ...r,
+        releasedByFtId: r.releasedBy ? actors.get(r.releasedBy)?.displayId ?? null : null,
+      }));
+
+      // Load any disputes scoped to this case so disputed milestones can
+      // surface a read-only summary on mobile.
+      const disputes = await db
+        .select({
+          id: tradeDisputes.id,
+          disputeRefId: tradeDisputes.disputeRefId,
+          status: tradeDisputes.status,
+          disputeType: tradeDisputes.disputeType,
+          subject: tradeDisputes.subject,
+          raisedByUserId: tradeDisputes.raisedByUserId,
+          raisedByRole: tradeDisputes.raisedByRole,
+          createdAt: tradeDisputes.createdAt,
+          resolvedAt: tradeDisputes.resolvedAt,
+          decision: tradeDisputes.decision,
+        })
+        .from(tradeDisputes)
+        .where(eq(tradeDisputes.tradeCaseId, parties.resolvedCaseId))
+        .orderBy(desc(tradeDisputes.createdAt));
+      const raisedIds = Array.from(new Set(disputes.map((d) => d.raisedByUserId)));
+      const raisedBy = raisedIds.length
+        ? await loadCounterpartiesByUserIds(raisedIds)
+        : new Map();
+      const disputesOut = disputes.map((d) => ({
+        id: d.id,
+        disputeRefId: d.disputeRefId,
+        status: d.status,
+        disputeType: d.disputeType,
+        subject: d.subject,
+        raisedByFtId: raisedBy.get(d.raisedByUserId)?.displayId ?? null,
+        raisedByRole: d.raisedByRole,
+        createdAt: d.createdAt,
+        resolvedAt: d.resolvedAt,
+        decision: d.decision,
+      }));
+
+      res.json({ milestones: enriched, disputes: disputesOut, caseId: parties.resolvedCaseId });
     } catch (err: any) {
       res.status(500).json({ message: "Failed to load milestones" });
     }

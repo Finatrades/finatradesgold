@@ -23,6 +23,7 @@ import {
   useReleaseMilestone,
   useTradeCases,
   useWalletBalances,
+  type CaseDisputeSummary,
   type MilestoneRow,
 } from "@/hooks/useApi";
 import { useColors } from "@/hooks/useColors";
@@ -32,6 +33,21 @@ function formatMoney(cents: number, currency: string): string {
     return new Intl.NumberFormat("en-US", { style: "currency", currency }).format(cents / 100);
   } catch {
     return `${currency} ${(cents / 100).toFixed(2)}`;
+  }
+}
+
+function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  try {
+    return new Date(value).toLocaleString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return value;
   }
 }
 
@@ -87,6 +103,10 @@ export default function DealDetailScreen() {
   const [escrowAmount, setEscrowAmount] = useState("");
 
   const milestones = milestonesQ.data?.milestones ?? [];
+  const disputes = milestonesQ.data?.disputes ?? [];
+  const activeDispute = disputes.find(
+    (d) => d.status !== "Resolved" && d.status !== "Closed",
+  ) ?? disputes[0];
   const caseCurrency =
     tradeCase?.settlementCurrency || milestones[0]?.currency || "USD";
   const totalCents = milestones.reduce((s, m) => s + Number(m.amountCents || 0), 0);
@@ -372,6 +392,9 @@ export default function DealDetailScreen() {
             milestones.map((m) => {
               const c = milestoneStatusColor(m.status, colors);
               const canRelease = m.status === "pending";
+              const showHistory =
+                (m.status === "released" || m.status === "released_reserved") &&
+                (m.releasedAt || m.releaseReason || m.releasedByFtId);
               return (
                 <View key={m.id} style={styles.milestoneRow}>
                   <View style={[styles.seqBadge, { backgroundColor: c + "20" }]}>
@@ -393,6 +416,49 @@ export default function DealDetailScreen() {
                     <Text style={{ color: colors.foreground, fontWeight: "700", marginTop: 4 }}>
                       {formatMoney(m.amountCents, m.currency)}
                     </Text>
+                    {showHistory ? (
+                      <View
+                        style={[
+                          styles.historyBlock,
+                          { backgroundColor: colors.muted, borderColor: colors.border },
+                        ]}
+                      >
+                        {m.releasedAt ? (
+                          <View style={styles.historyLine}>
+                            <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
+                            <Text style={[styles.historyText, { color: colors.mutedForeground }]}>
+                              Released {formatDateTime(m.releasedAt)}
+                            </Text>
+                          </View>
+                        ) : null}
+                        {m.releasedByFtId ? (
+                          <View style={styles.historyLine}>
+                            <Ionicons name="person-outline" size={12} color={colors.mutedForeground} />
+                            <Text style={[styles.historyText, { color: colors.mutedForeground }]}>
+                              By{" "}
+                              <Text style={{ color: colors.foreground, fontWeight: "600" }}>
+                                {m.releasedByFtId}
+                              </Text>
+                            </Text>
+                          </View>
+                        ) : null}
+                        {m.releaseReason ? (
+                          <View style={styles.historyLine}>
+                            <Ionicons
+                              name="chatbubble-ellipses-outline"
+                              size={12}
+                              color={colors.mutedForeground}
+                            />
+                            <Text style={[styles.historyText, { color: colors.foreground }]}>
+                              {m.releaseReason}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </View>
+                    ) : null}
+                    {m.status === "disputed" && activeDispute ? (
+                      <DisputeSummary dispute={activeDispute} colors={colors} />
+                    ) : null}
                   </View>
                   {canRelease ? (
                     <Pressable
@@ -460,6 +526,59 @@ export default function DealDetailScreen() {
           </Text>
         </View>
       </ScrollView>
+    </View>
+  );
+}
+
+function DisputeSummary({
+  dispute,
+  colors,
+}: {
+  dispute: CaseDisputeSummary;
+  colors: ReturnType<typeof useColors>;
+}) {
+  const isResolved = !!dispute.resolvedAt || dispute.status === "Resolved" || dispute.status === "Closed";
+  return (
+    <View
+      style={[
+        styles.disputeBlock,
+        { backgroundColor: colors.muted, borderColor: colors.destructive },
+      ]}
+    >
+      <View style={styles.historyLine}>
+        <Ionicons name="alert-circle" size={14} color={colors.destructive} />
+        <Text style={{ color: colors.destructive, fontWeight: "700", fontSize: 12 }}>
+          Dispute {dispute.disputeRefId}
+        </Text>
+        <Text style={[styles.historyText, { color: colors.mutedForeground }]}>
+          • {dispute.status}
+        </Text>
+      </View>
+      <Text style={[styles.historyText, { color: colors.foreground, marginTop: 4 }]}>
+        {dispute.subject}
+      </Text>
+      <Text style={[styles.historyText, { color: colors.mutedForeground, marginTop: 2 }]}>
+        Type: {dispute.disputeType.replace(/_/g, " ")}
+      </Text>
+      {dispute.raisedByFtId ? (
+        <Text style={[styles.historyText, { color: colors.mutedForeground, marginTop: 2 }]}>
+          Raised by{" "}
+          <Text style={{ color: colors.foreground, fontWeight: "600" }}>
+            {dispute.raisedByFtId}
+          </Text>{" "}
+          ({dispute.raisedByRole}) on {formatDateTime(dispute.createdAt)}
+        </Text>
+      ) : (
+        <Text style={[styles.historyText, { color: colors.mutedForeground, marginTop: 2 }]}>
+          Opened {formatDateTime(dispute.createdAt)}
+        </Text>
+      )}
+      {isResolved ? (
+        <Text style={[styles.historyText, { color: colors.mutedForeground, marginTop: 2 }]}>
+          Resolved {formatDateTime(dispute.resolvedAt)}
+          {dispute.decision ? ` — ${dispute.decision.replace(/_/g, " ")}` : ""}
+        </Text>
+      ) : null}
     </View>
   );
 }
@@ -586,4 +705,24 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   footnote: { fontSize: 11, marginTop: 14, lineHeight: 16 },
+  historyBlock: {
+    marginTop: 8,
+    padding: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    gap: 4,
+  },
+  historyLine: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    flexWrap: "wrap",
+  },
+  historyText: { fontSize: 12, flexShrink: 1 },
+  disputeBlock: {
+    marginTop: 8,
+    padding: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
 });

@@ -185,6 +185,22 @@ export type MilestoneRow = {
   currency: string;
   status: "pending" | "released" | "released_reserved" | "disputed" | string;
   releasedAt?: string | null;
+  releaseReason?: string | null;
+  releasedBy?: string | null;
+  releasedByFtId?: string | null;
+};
+
+export type CaseDisputeSummary = {
+  id: string;
+  disputeRefId: string;
+  status: string;
+  disputeType: string;
+  subject: string;
+  raisedByFtId: string | null;
+  raisedByRole: string;
+  createdAt: string | null;
+  resolvedAt?: string | null;
+  decision?: string | null;
 };
 
 export function useCaseMilestones(caseId: string | undefined) {
@@ -192,7 +208,11 @@ export function useCaseMilestones(caseId: string | undefined) {
     queryKey: ["caseMilestones", caseId],
     queryFn: async () => {
       const r = await apiFetch(`/api/trade/cases/${caseId}/milestones`);
-      return r as { milestones: MilestoneRow[]; caseId?: string };
+      return r as {
+        milestones: MilestoneRow[];
+        disputes?: CaseDisputeSummary[];
+        caseId?: string;
+      };
     },
     enabled: !!caseId,
     staleTime: 15000,
