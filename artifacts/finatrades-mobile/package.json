@@ -57,6 +57,7 @@
   },
   "dependencies": {
     "expo-device": "~8.0.10",
-    "expo-notifications": "~0.32.17"
+    "expo-notifications": "~0.32.17",
+    "socket.io-client": "^4.8.3"
   }
 }
