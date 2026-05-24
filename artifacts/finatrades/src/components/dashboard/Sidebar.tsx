@@ -62,22 +62,34 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
       >
         {/* Logo card */}
         <div
-          className="flex items-center justify-between shrink-0 rounded-2xl px-3"
-          style={{ ...GLASS_CARD, minHeight: '56px' }}
+          className="relative flex items-center justify-center shrink-0 rounded-2xl px-3"
+          style={{ ...GLASS_CARD, minHeight: '72px' }}
         >
           {collapsed ? (
-            <img src={faviconIcon} alt="F" className="h-8 w-8 object-contain mx-auto" />
+            <img
+              src={faviconIcon}
+              alt="F"
+              className="h-10 w-10 object-contain"
+              style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }}
+            />
           ) : (
-            <img src={finatradesLogo} alt="Finatrades" className="h-6 w-auto" />
+            <img
+              src={finatradesLogo}
+              alt="Finatrades"
+              className="h-10 w-auto"
+              style={{ filter: 'brightness(0) saturate(100%) invert(27%) sepia(82%) saturate(1800%) hue-rotate(355deg) brightness(105%)' }}
+            />
           )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className={`hidden lg:flex items-center justify-center w-7 h-7 rounded-lg transition-colors shrink-0 hover:bg-black/5 ${collapsed ? 'hidden' : ''}`}
-            style={{ color: '#C73B22', border: '1px solid rgba(199,59,34,0.2)', background: 'rgba(255,255,255,0.55)' }}
-            aria-label="Collapse sidebar"
-          >
-            <PanelLeftClose size={14} />
-          </button>
+          {!collapsed && (
+            <button
+              onClick={() => setCollapsed(!collapsed)}
+              className="hidden lg:flex absolute right-2 top-1/2 -translate-y-1/2 items-center justify-center w-7 h-7 rounded-lg transition-colors hover:bg-black/5"
+              style={{ color: '#C73B22', border: '1px solid rgba(199,59,34,0.2)', background: 'rgba(255,255,255,0.55)' }}
+              aria-label="Collapse sidebar"
+            >
+              <PanelLeftClose size={14} />
+            </button>
+          )}
           {collapsed && (
             <button
               onClick={() => setCollapsed(false)}
