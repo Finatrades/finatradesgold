@@ -27,12 +27,16 @@ import type {
   Commodity,
   CompanyProfileInput,
   Consignment,
+  ConsignmentDetail,
+  ConsignmentEligibility,
   ConsignmentInput,
+  ConsignmentRequirements,
   ConsignmentStatusUpdate,
   DashboardSummary,
   DocumentSubmissionInput,
   EscrowAccount,
   EscrowReleaseInput,
+  GetConsignmentRequirementsParams,
   HealthStatus,
   InventoryItem,
   InventoryStatusUpdate,
@@ -1081,7 +1085,7 @@ export function useListConsignments<
 }
 
 /**
- * @summary Create new consignment
+ * @summary Create new consignment (multipart with documents)
  */
 export const getCreateConsignmentUrl = () => {
   return `/api/b2b/consignments`;
@@ -1090,17 +1094,79 @@ export const getCreateConsignmentUrl = () => {
 export const createConsignment = async (
   consignmentInput: ConsignmentInput,
   options?: RequestInit,
-): Promise<Consignment> => {
-  return customFetch<Consignment>(getCreateConsignmentUrl(), {
+): Promise<ConsignmentDetail> => {
+  const formData = new FormData();
+  formData.append(`commodityName`, consignmentInput.commodityName);
+  formData.append(`commodityCategory`, consignmentInput.commodityCategory);
+  if (
+    consignmentInput.hsCode !== undefined &&
+    consignmentInput.hsCode !== null
+  ) {
+    formData.append(`hsCode`, consignmentInput.hsCode);
+  }
+  formData.append(`quantity`, consignmentInput.quantity.toString());
+  formData.append(`unit`, consignmentInput.unit);
+  if (
+    consignmentInput.qualityGrade !== undefined &&
+    consignmentInput.qualityGrade !== null
+  ) {
+    formData.append(`qualityGrade`, consignmentInput.qualityGrade);
+  }
+  formData.append(`originCountry`, consignmentInput.originCountry);
+  if (
+    consignmentInput.packingType !== undefined &&
+    consignmentInput.packingType !== null
+  ) {
+    formData.append(`packingType`, consignmentInput.packingType);
+  }
+  formData.append(`targetHubCode`, consignmentInput.targetHubCode);
+  formData.append(`incoterms`, consignmentInput.incoterms);
+  if (consignmentInput.estimatedValueCents !== undefined) {
+    formData.append(
+      `estimatedValueCents`,
+      consignmentInput.estimatedValueCents.toString(),
+    );
+  }
+  if (consignmentInput.askingPriceCents !== undefined) {
+    formData.append(
+      `askingPriceCents`,
+      consignmentInput.askingPriceCents.toString(),
+    );
+  }
+  if (consignmentInput.askingCurrency !== undefined) {
+    formData.append(`askingCurrency`, consignmentInput.askingCurrency);
+  }
+  if (
+    consignmentInput.harvestDate !== undefined &&
+    consignmentInput.harvestDate !== null
+  ) {
+    formData.append(`harvestDate`, consignmentInput.harvestDate);
+  }
+  if (
+    consignmentInput.batchNumber !== undefined &&
+    consignmentInput.batchNumber !== null
+  ) {
+    formData.append(`batchNumber`, consignmentInput.batchNumber);
+  }
+  if (consignmentInput.notes !== undefined && consignmentInput.notes !== null) {
+    formData.append(`notes`, consignmentInput.notes);
+  }
+  if (consignmentInput.complianceDeclarations !== undefined) {
+    formData.append(
+      `complianceDeclarations`,
+      consignmentInput.complianceDeclarations,
+    );
+  }
+
+  return customFetch<ConsignmentDetail>(getCreateConsignmentUrl(), {
     ...options,
     method: "POST",
-    headers: { "Content-Type": "application/json", ...options?.headers },
-    body: JSON.stringify(consignmentInput),
+    body: formData,
   });
 };
 
 export const getCreateConsignmentMutationOptions = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<ConsignmentEligibility>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1141,13 +1207,13 @@ export type CreateConsignmentMutationResult = NonNullable<
   Awaited<ReturnType<typeof createConsignment>>
 >;
 export type CreateConsignmentMutationBody = BodyType<ConsignmentInput>;
-export type CreateConsignmentMutationError = ErrorType<unknown>;
+export type CreateConsignmentMutationError = ErrorType<ConsignmentEligibility>;
 
 /**
- * @summary Create new consignment
+ * @summary Create new consignment (multipart with documents)
  */
 export const useCreateConsignment = <
-  TError = ErrorType<unknown>,
+  TError = ErrorType<ConsignmentEligibility>,
   TContext = unknown,
 >(options?: {
   mutation?: UseMutationOptions<
@@ -1167,6 +1233,194 @@ export const useCreateConsignment = <
 };
 
 /**
+ * @summary Check whether the current user is KYC Tier-3 eligible to list commodities
+ */
+export const getGetConsignmentEligibilityUrl = () => {
+  return `/api/b2b/consignments/eligibility`;
+};
+
+export const getConsignmentEligibility = async (
+  options?: RequestInit,
+): Promise<ConsignmentEligibility> => {
+  return customFetch<ConsignmentEligibility>(
+    getGetConsignmentEligibilityUrl(),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetConsignmentEligibilityQueryKey = () => {
+  return [`/api/b2b/consignments/eligibility`] as const;
+};
+
+export const getGetConsignmentEligibilityQueryOptions = <
+  TData = Awaited<ReturnType<typeof getConsignmentEligibility>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getConsignmentEligibility>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetConsignmentEligibilityQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getConsignmentEligibility>>
+  > = ({ signal }) => getConsignmentEligibility({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getConsignmentEligibility>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetConsignmentEligibilityQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getConsignmentEligibility>>
+>;
+export type GetConsignmentEligibilityQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Check whether the current user is KYC Tier-3 eligible to list commodities
+ */
+
+export function useGetConsignmentEligibility<
+  TData = Awaited<ReturnType<typeof getConsignmentEligibility>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof getConsignmentEligibility>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetConsignmentEligibilityQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Get document requirements for a commodity category
+ */
+export const getGetConsignmentRequirementsUrl = (
+  params?: GetConsignmentRequirementsParams,
+) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/b2b/consignments/requirements?${stringifiedParams}`
+    : `/api/b2b/consignments/requirements`;
+};
+
+export const getConsignmentRequirements = async (
+  params?: GetConsignmentRequirementsParams,
+  options?: RequestInit,
+): Promise<ConsignmentRequirements> => {
+  return customFetch<ConsignmentRequirements>(
+    getGetConsignmentRequirementsUrl(params),
+    {
+      ...options,
+      method: "GET",
+    },
+  );
+};
+
+export const getGetConsignmentRequirementsQueryKey = (
+  params?: GetConsignmentRequirementsParams,
+) => {
+  return [
+    `/api/b2b/consignments/requirements`,
+    ...(params ? [params] : []),
+  ] as const;
+};
+
+export const getGetConsignmentRequirementsQueryOptions = <
+  TData = Awaited<ReturnType<typeof getConsignmentRequirements>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetConsignmentRequirementsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getConsignmentRequirements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getGetConsignmentRequirementsQueryKey(params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof getConsignmentRequirements>>
+  > = ({ signal }) =>
+    getConsignmentRequirements(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof getConsignmentRequirements>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type GetConsignmentRequirementsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof getConsignmentRequirements>>
+>;
+export type GetConsignmentRequirementsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Get document requirements for a commodity category
+ */
+
+export function useGetConsignmentRequirements<
+  TData = Awaited<ReturnType<typeof getConsignmentRequirements>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: GetConsignmentRequirementsParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof getConsignmentRequirements>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getGetConsignmentRequirementsQueryOptions(
+    params,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
  * @summary Get consignment detail
  */
 export const getGetConsignmentUrl = (id: string) => {
@@ -1176,8 +1430,8 @@ export const getGetConsignmentUrl = (id: string) => {
 export const getConsignment = async (
   id: string,
   options?: RequestInit,
-): Promise<Consignment> => {
-  return customFetch<Consignment>(getGetConsignmentUrl(id), {
+): Promise<ConsignmentDetail> => {
+  return customFetch<ConsignmentDetail>(getGetConsignmentUrl(id), {
     ...options,
     method: "GET",
   });

@@ -2,7 +2,7 @@
 
 
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, decimal, timestamp, boolean, pgEnum, json, jsonb, date, unique, type AnyPgColumn } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, bigint, decimal, timestamp, boolean, pgEnum, json, jsonb, date, unique, type AnyPgColumn } from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -6772,7 +6772,25 @@ export type OrgPosition = typeof orgPositions.$inferSelect;
 
 // --- Enums ---
 export const consignmentStatusEnum = pgEnum('consignment_status', [
-  'Draft', 'Submitted', 'Under Review', 'Approved', 'Rejected', 'In Transit', 'At Warehouse', 'Verified'
+  'Draft', 'Submitted', 'Pending Review', 'Under Review', 'Approved', 'Rejected', 'Needs More Info', 'In Transit', 'At Warehouse', 'Verified'
+]);
+
+export const consignmentDocTypeEnum = pgEnum('consignment_doc_type', [
+  'commercial_invoice',
+  'packing_list',
+  'phytosanitary_certificate',
+  'certificate_of_origin',
+  'quality_inspection_report',
+  'mining_license',
+  'export_license',
+  'bill_of_lading',
+  'fumigation_certificate',
+  'weight_certificate',
+  'other',
+]);
+
+export const consignmentDocStatusEnum = pgEnum('consignment_doc_status', [
+  'pending', 'uploaded', 'verified', 'rejected'
 ]);
 
 export const qualityGradeEnum = pgEnum('quality_grade', ['A+', 'A', 'B+', 'B', 'C', 'D']);
@@ -6844,6 +6862,15 @@ export const consignments = pgTable("consignments", {
   incoterms: varchar("incoterms", { length: 20 }),
   estimatedValue: decimal("estimated_value", { precision: 20, scale: 2 }),
   valueCurrency: varchar("value_currency", { length: 10 }).default('USD'),
+  // Money fields in cents (BIGINT — preferred going forward; legacy `estimated_value` decimal kept for back-compat)
+  askingPriceCents: bigint("asking_price_cents", { mode: "number" }),
+  askingCurrency: varchar("asking_currency", { length: 10 }).default('USD'),
+  estimatedValueCents: bigint("estimated_value_cents", { mode: "number" }),
+  harvestDate: date("harvest_date"),
+  batchNumber: varchar("batch_number", { length: 100 }),
+  commodityCategory: varchar("commodity_category", { length: 50 }),
+  complianceDeclarations: jsonb("compliance_declarations"),
+  metadata: jsonb("metadata"),
   status: consignmentStatusEnum("status").notNull().default('Draft'),
   notes: text("notes"),
   adminNotes: text("admin_notes"),
@@ -6857,6 +6884,46 @@ export const consignments = pgTable("consignments", {
 export const insertConsignmentSchema = createInsertSchema(consignments).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertConsignment = z.infer<typeof insertConsignmentSchema>;
 export type Consignment = typeof consignments.$inferSelect;
+
+// --- Consignment Documents (trade docs uploaded with the listing) ---
+export const consignmentDocuments = pgTable("consignment_documents", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id, { onDelete: 'cascade' }),
+  docType: consignmentDocTypeEnum("doc_type").notNull(),
+  docLabel: varchar("doc_label", { length: 255 }),
+  isRequired: boolean("is_required").notNull().default(false),
+  status: consignmentDocStatusEnum("status").notNull().default('pending'),
+  fileName: varchar("file_name", { length: 500 }),
+  fileSize: integer("file_size"),
+  mimeType: varchar("mime_type", { length: 100 }),
+  storageKey: text("storage_key"),
+  storageUrl: text("storage_url"),
+  uploadedAt: timestamp("uploaded_at"),
+  reviewedAt: timestamp("reviewed_at"),
+  reviewerId: varchar("reviewer_id", { length: 255 }).references((): AnyPgColumn => users.id),
+  reviewNotes: text("review_notes"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export const insertConsignmentDocumentSchema = createInsertSchema(consignmentDocuments).omit({ id: true, createdAt: true, updatedAt: true });
+export type InsertConsignmentDocument = z.infer<typeof insertConsignmentDocumentSchema>;
+export type ConsignmentDocument = typeof consignmentDocuments.$inferSelect;
+
+// --- Consignment Status History ---
+export const consignmentStatusHistory = pgTable("consignment_status_history", {
+  id: varchar("id", { length: 255 }).primaryKey().default(sql`gen_random_uuid()`),
+  consignmentId: varchar("consignment_id", { length: 255 }).notNull().references(() => consignments.id, { onDelete: 'cascade' }),
+  fromStatus: consignmentStatusEnum("from_status"),
+  toStatus: consignmentStatusEnum("to_status").notNull(),
+  actorId: varchar("actor_id", { length: 255 }).references((): AnyPgColumn => users.id),
+  note: text("note"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertConsignmentStatusHistorySchema = createInsertSchema(consignmentStatusHistory).omit({ id: true, createdAt: true });
+export type InsertConsignmentStatusHistory = z.infer<typeof insertConsignmentStatusHistorySchema>;
+export type ConsignmentStatusHistory = typeof consignmentStatusHistory.$inferSelect;
 
 // --- Inventory Items (Steps 3 & 4 — warehouse stock) ---
 export const inventoryItems = pgTable("inventory_items", {

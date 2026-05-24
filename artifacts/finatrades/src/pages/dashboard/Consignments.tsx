@@ -1,71 +1,49 @@
-import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { Link } from 'wouter';
 import {
-  Package, Plus, Search, Filter, ChevronRight, X, CheckCircle2,
-  Clock, AlertCircle, Truck, Warehouse, FileText, MoreVertical,
-  Upload, ChevronDown,
+  Package, Plus, Search, ChevronRight, CheckCircle2,
+  Clock, AlertCircle, Truck, Warehouse, FileText, X, ShieldAlert,
 } from 'lucide-react';
-
-const HUBS = [
-  { code: 'LOS', name: 'Lagos, Nigeria' },
-  { code: 'NBI', name: 'Nairobi, Kenya' },
-  { code: 'ACC', name: 'Accra, Ghana' },
-  { code: 'ABJ', name: 'Abidjan, Côte d\'Ivoire' },
-  { code: 'DKR', name: 'Dakar, Senegal' },
-  { code: 'ADD', name: 'Addis Ababa, Ethiopia' },
-  { code: 'CAI', name: 'Cairo, Egypt' },
-  { code: 'CMN', name: 'Casablanca, Morocco' },
-  { code: 'JNB', name: 'Johannesburg, South Africa' },
-  { code: 'DAR', name: 'Dar es Salaam, Tanzania' },
-  { code: 'KLA', name: 'Kampala, Uganda' },
-  { code: 'KAN', name: 'Kano, Nigeria' },
-  { code: 'DLA', name: 'Douala, Cameroon' },
-  { code: 'MBA', name: 'Mombasa, Kenya' },
-];
-
-const COMMODITIES = [
-  { name: 'Cocoa Beans', hsCode: '1801.00', unit: 'MT' },
-  { name: 'Cashew Nuts (Raw)', hsCode: '0801.31', unit: 'MT' },
-  { name: 'Sesame Seeds', hsCode: '1207.40', unit: 'MT' },
-  { name: 'Palm Oil (Crude)', hsCode: '1511.10', unit: 'MT' },
-  { name: 'Soybean', hsCode: '1201.90', unit: 'MT' },
-  { name: 'Cotton (Raw)', hsCode: '5201.00', unit: 'MT' },
-  { name: 'Coffee (Arabica)', hsCode: '0901.11', unit: 'MT' },
-  { name: 'Gold Ore', hsCode: '2616.90', unit: 'KG' },
-  { name: 'Groundnuts', hsCode: '1202.41', unit: 'MT' },
-  { name: 'Shea Butter', hsCode: '1515.90', unit: 'MT' },
-  { name: 'Ginger (Dried)', hsCode: '0910.11', unit: 'MT' },
-  { name: 'Copper Ore', hsCode: '2603.00', unit: 'MT' },
-];
-
-const INCOTERMS = ['FOB', 'CIF', 'DAP', 'EXW', 'FCA', 'CFR', 'DDP'];
-const GRADES = ['A+', 'A', 'B+', 'B', 'C'];
+import ListCommodityWizard from './ListCommodityWizard';
 
 const STATUS_STYLE: Record<string, { bg: string; color: string; icon: React.ReactNode }> = {
-  'Draft': { bg: 'rgba(136,136,128,0.1)', color: '#888880', icon: <FileText size={12} /> },
-  'Submitted': { bg: 'rgba(59,130,246,0.1)', color: '#2563EB', icon: <Clock size={12} /> },
-  'Under Review': { bg: 'rgba(245,158,11,0.1)', color: '#D97706', icon: <AlertCircle size={12} /> },
-  'Approved': { bg: 'rgba(16,185,129,0.1)', color: '#059669', icon: <CheckCircle2 size={12} /> },
-  'Rejected': { bg: 'rgba(239,68,68,0.1)', color: '#DC2626', icon: <X size={12} /> },
-  'In Transit': { bg: 'rgba(139,92,246,0.1)', color: '#7C3AED', icon: <Truck size={12} /> },
-  'At Warehouse': { bg: 'rgba(199,59,34,0.1)', color: '#C73B22', icon: <Warehouse size={12} /> },
-  'Verified': { bg: 'rgba(5,150,105,0.12)', color: '#047857', icon: <CheckCircle2 size={12} /> },
+  'Draft':            { bg: 'rgba(136,136,128,0.1)', color: '#888880', icon: <FileText size={12} /> },
+  'Submitted':        { bg: 'rgba(59,130,246,0.1)', color: '#2563EB', icon: <Clock size={12} /> },
+  'Pending Review':   { bg: 'rgba(59,130,246,0.1)', color: '#2563EB', icon: <Clock size={12} /> },
+  'Under Review':     { bg: 'rgba(245,158,11,0.1)', color: '#D97706', icon: <AlertCircle size={12} /> },
+  'Needs More Info':  { bg: 'rgba(245,158,11,0.12)', color: '#B45309', icon: <AlertCircle size={12} /> },
+  'Approved':         { bg: 'rgba(16,185,129,0.1)', color: '#059669', icon: <CheckCircle2 size={12} /> },
+  'Rejected':         { bg: 'rgba(239,68,68,0.1)', color: '#DC2626', icon: <X size={12} /> },
+  'In Transit':       { bg: 'rgba(139,92,246,0.1)', color: '#7C3AED', icon: <Truck size={12} /> },
+  'At Warehouse':     { bg: 'rgba(199,59,34,0.1)', color: '#C73B22', icon: <Warehouse size={12} /> },
+  'Verified':         { bg: 'rgba(5,150,105,0.12)', color: '#047857', icon: <CheckCircle2 size={12} /> },
 };
 
-const MOCK_CONSIGNMENTS = [
-  { id: 'FT-CSG-2025-001', commodity: 'Cocoa Beans', hsCode: '1801.00', quantity: '500', unit: 'MT', grade: 'A', origin: 'Nigeria', hub: 'LOS', incoterms: 'FOB', value: '1,250,000', currency: 'USD', status: 'Approved', submitted: '2025-05-10' },
-  { id: 'FT-CSG-2025-002', commodity: 'Sesame Seeds', hsCode: '1207.40', quantity: '200', unit: 'MT', grade: 'A+', origin: 'Ethiopia', hub: 'ADD', incoterms: 'CIF', value: '320,000', currency: 'USD', status: 'Under Review', submitted: '2025-05-15' },
-  { id: 'FT-CSG-2025-003', commodity: 'Cashew Nuts (Raw)', hsCode: '0801.31', quantity: '150', unit: 'MT', grade: 'A', origin: 'Ghana', hub: 'ACC', incoterms: 'FOB', value: '285,000', currency: 'USD', status: 'Submitted', submitted: '2025-05-18' },
-  { id: 'FT-CSG-2025-004', commodity: 'Palm Oil (Crude)', hsCode: '1511.10', quantity: '1000', unit: 'MT', grade: 'B+', origin: 'Nigeria', hub: 'LOS', incoterms: 'DAP', value: '900,000', currency: 'USD', status: 'At Warehouse', submitted: '2025-04-22' },
-  { id: 'FT-CSG-2025-005', commodity: 'Coffee (Arabica)', hsCode: '0901.11', quantity: '80', unit: 'MT', grade: 'A+', origin: 'Kenya', hub: 'NBI', incoterms: 'FOB', value: '384,000', currency: 'USD', status: 'Draft', submitted: '—' },
-];
+interface ConsignmentRow {
+  id: string;
+  referenceNo: string;
+  commodityName: string;
+  hsCode?: string | null;
+  quantity: number;
+  unit: string;
+  qualityGrade?: string | null;
+  originCountry: string;
+  targetHubCode?: string | null;
+  incoterms?: string | null;
+  estimatedValueCents?: number | null;
+  askingCurrency?: string | null;
+  status: string;
+  submittedAt?: string | null;
+  createdAt: string;
+}
 
 function StatusBadge({ status }: { status: string }) {
   const s = STATUS_STYLE[status] || STATUS_STYLE['Draft'];
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"
-      style={{ background: s.bg, color: s.color }}>
+          style={{ background: s.bg, color: s.color }} data-testid={`status-${status}`}>
       {s.icon} {status}
     </span>
   );
@@ -81,318 +59,185 @@ function StatCard({ label, value, sub, color = '#C73B22' }: { label: string; val
   );
 }
 
+function fmtMoney(cents: number | null | undefined, currency = 'USD'): string {
+  if (cents == null) return '—';
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency, maximumFractionDigits: 0 }).format(cents / 100);
+}
+
 export default function Consignments() {
   const { user } = useAuth();
+  const [wizardOpen, setWizardOpen] = useState(false);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    commodity: '', hsCode: '', quantity: '', unit: 'MT', grade: 'A',
-    origin: '', hub: 'LOS', incoterms: 'FOB', estimatedValue: '', notes: '',
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+
+  const userType = (user as any)?.userType;
+  const isExporter = userType === 'exporter' || (user as any)?.role === 'admin';
+
+  const { data: eligibility } = useQuery<{ eligible: boolean; reason?: string; kycStatus?: string; kycTier?: string }>({
+    queryKey: ['/api/b2b/consignments/eligibility'],
+    enabled: isExporter,
+  });
+  const kycOk = !!eligibility?.eligible;
+  const kycReason = eligibility?.reason;
+  const kycTier = eligibility?.kycTier;
+
+  const { data: rows = [], isLoading, error } = useQuery<ConsignmentRow[]>({
+    queryKey: ['/api/b2b/consignments'],
   });
 
-  const handleCommodityChange = (name: string) => {
-    const c = COMMODITIES.find(x => x.name === name);
-    setForm(f => ({ ...f, commodity: name, hsCode: c?.hsCode || '', unit: c?.unit || 'MT' }));
-  };
+  const filtered = useMemo(() => {
+    let list = rows;
+    if (statusFilter !== 'all') list = list.filter(r => r.status === statusFilter);
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(r =>
+        r.referenceNo?.toLowerCase().includes(q) ||
+        r.commodityName?.toLowerCase().includes(q) ||
+        r.originCountry?.toLowerCase().includes(q)
+      );
+    }
+    return list;
+  }, [rows, search, statusFilter]);
 
-  const filtered = MOCK_CONSIGNMENTS.filter(c => {
-    const matchSearch = c.id.toLowerCase().includes(search.toLowerCase()) ||
-      c.commodity.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === 'All' || c.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  const stats = {
-    total: MOCK_CONSIGNMENTS.length,
-    pending: MOCK_CONSIGNMENTS.filter(c => ['Submitted', 'Under Review'].includes(c.status)).length,
-    approved: MOCK_CONSIGNMENTS.filter(c => ['Approved', 'At Warehouse', 'Verified'].includes(c.status)).length,
-    draft: MOCK_CONSIGNMENTS.filter(c => c.status === 'Draft').length,
-  };
+  const counts = useMemo(() => {
+    const c = { total: rows.length, submitted: 0, approved: 0, inTransit: 0 };
+    for (const r of rows) {
+      if (['Submitted', 'Pending Review', 'Under Review'].includes(r.status)) c.submitted++;
+      if (['Approved', 'At Warehouse', 'Verified'].includes(r.status)) c.approved++;
+      if (r.status === 'In Transit') c.inTransit++;
+    }
+    return c;
+  }, [rows]);
 
   return (
-    <div className="space-y-6 max-w-[1400px]">
-      {/* Header */}
-      <div className="flex items-start justify-between">
+    <div className="space-y-6" data-testid="page-consignments">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-xl font-bold" style={{ color: '#1A1A1A' }}>Consignments</h1>
-          <p className="text-sm mt-0.5" style={{ color: '#888880' }}>
-            Step 2 — Register your commodity for warehouse onboarding
+          <h1 className="text-2xl font-bold" style={{ color: '#1A1A1A' }}>Consignments</h1>
+          <p className="text-sm mt-1" style={{ color: '#888880' }}>
+            List commodities and track them from submission to warehouse verification.
           </p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98]"
-          style={{ background: '#C73B22' }}>
-          <Plus size={16} /> New Consignment
-        </button>
+        {isExporter && (
+          <button
+            onClick={() => setWizardOpen(true)}
+            disabled={!kycOk}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-50"
+            style={{ background: '#C73B22' }}
+            data-testid="btn-list-commodity"
+          >
+            <Plus size={16} /> List a Commodity
+          </button>
+        )}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard label="Total Consignments" value={stats.total} />
-        <StatCard label="Pending Approval" value={stats.pending} sub="Requires action" color="#D97706" />
-        <StatCard label="Approved / Warehoused" value={stats.approved} sub="Active stock" color="#059669" />
-        <StatCard label="Drafts" value={stats.draft} sub="Incomplete" color="#888880" />
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex items-center gap-2 flex-1 min-w-[200px] px-3 py-2 rounded-xl bg-white"
-          style={{ border: '1px solid #E8E2DC' }}>
-          <Search size={15} style={{ color: '#B0AAA4' }} />
-          <input
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            placeholder="Search by ID or commodity..."
-            className="flex-1 text-sm outline-none bg-transparent"
-            style={{ color: '#1A1A1A' }}
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          {['All', 'Draft', 'Submitted', 'Under Review', 'Approved', 'At Warehouse'].map(s => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={statusFilter === s
-                ? { background: '#C73B22', color: '#fff' }
-                : { background: '#FAFAF8', color: '#888880', border: '1px solid #E8E2DC' }}>
-              {s}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-2xl overflow-hidden bg-white" style={{ border: '1px solid #E8E2DC' }}>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr style={{ borderBottom: '1px solid #E8E2DC', background: '#FAFAF8' }}>
-                {['Reference', 'Commodity', 'HS Code', 'Qty / Unit', 'Grade', 'Origin → Hub', 'Est. Value', 'Status', 'Submitted', ''].map(h => (
-                  <th key={h} className="text-left px-4 py-3 text-xs font-semibold" style={{ color: '#888880' }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.length === 0 && (
-                <tr>
-                  <td colSpan={9} className="text-center py-12 text-sm" style={{ color: '#B0AAA4' }}>
-                    No consignments found
-                  </td>
-                </tr>
-              )}
-              {filtered.map((c, i) => (
-                <tr key={c.id}
-                  className="hover:bg-[#FAFAF8] transition-colors cursor-pointer"
-                  style={{ borderBottom: i < filtered.length - 1 ? '1px solid #F0EBE6' : 'none' }}>
-                  <td className="px-4 py-3.5">
-                    <span className="font-mono text-xs font-semibold" style={{ color: '#C73B22' }}>{c.id}</span>
-                  </td>
-                  <td className="px-4 py-3.5 font-medium" style={{ color: '#1A1A1A' }}>{c.commodity}</td>
-                  <td className="px-4 py-3.5 font-mono text-xs" style={{ color: '#888880' }}>{c.hsCode}</td>
-                  <td className="px-4 py-3.5 font-semibold" style={{ color: '#1A1A1A' }}>{c.quantity} {c.unit}</td>
-                  <td className="px-4 py-3.5">
-                    <span className="px-2 py-0.5 rounded-md text-xs font-bold"
-                      style={{ background: 'rgba(199,59,34,0.08)', color: '#C73B22' }}>{c.grade}</span>
-                  </td>
-                  <td className="px-4 py-3.5 text-xs" style={{ color: '#888880' }}>
-                    {c.origin} <ChevronRight size={12} className="inline" /> <span className="font-semibold" style={{ color: '#1A1A1A' }}>{c.hub}</span>
-                  </td>
-                  <td className="px-4 py-3.5 font-semibold" style={{ color: '#1A1A1A' }}>
-                    <span className="text-xs" style={{ color: '#888880' }}>USD </span>{c.value}
-                  </td>
-                  <td className="px-4 py-3.5"><StatusBadge status={c.status} /></td>
-                  <td className="px-4 py-3.5 text-xs" style={{ color: '#B0AAA4' }}>{c.submitted}</td>
-                  <td className="px-4 py-3.5">
-                    <button className="p-1.5 rounded-lg hover:bg-[#F0EBE6] transition-colors">
-                      <MoreVertical size={15} style={{ color: '#B0AAA4' }} />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* New Consignment Modal */}
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm">
-          <div className="w-full max-w-2xl rounded-2xl bg-white shadow-2xl" style={{ border: '1px solid #E8E2DC' }}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6" style={{ borderBottom: '1px solid #E8E2DC' }}>
-              <div>
-                <h2 className="text-lg font-bold" style={{ color: '#1A1A1A' }}>New Consignment</h2>
-                <p className="text-sm" style={{ color: '#888880' }}>Register a commodity for warehouse onboarding</p>
-              </div>
-              <button onClick={() => setShowModal(false)} className="p-2 rounded-xl hover:bg-[#F0EBE6] transition-colors">
-                <X size={18} style={{ color: '#888880' }} />
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-              <div className="grid grid-cols-2 gap-4">
-                {/* Commodity */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Commodity *</label>
-                  <select
-                    value={form.commodity}
-                    onChange={e => handleCommodityChange(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}>
-                    <option value="">Select commodity...</option>
-                    {COMMODITIES.map(c => (
-                      <option key={c.name} value={c.name}>{c.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* HS Code */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>HS Code</label>
-                  <input
-                    value={form.hsCode}
-                    onChange={e => setForm(f => ({ ...f, hsCode: e.target.value }))}
-                    placeholder="e.g. 1801.00"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none font-mono"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}
-                  />
-                </div>
-
-                {/* Origin Country */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Origin Country *</label>
-                  <input
-                    value={form.origin}
-                    onChange={e => setForm(f => ({ ...f, origin: e.target.value }))}
-                    placeholder="e.g. Nigeria"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}
-                  />
-                </div>
-
-                {/* Quantity */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Quantity *</label>
-                  <input
-                    type="number"
-                    value={form.quantity}
-                    onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}
-                  />
-                </div>
-
-                {/* Unit */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Unit</label>
-                  <select
-                    value={form.unit}
-                    onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}>
-                    {['MT', 'KG', 'Litre', 'Barrel', 'Bag'].map(u => <option key={u}>{u}</option>)}
-                  </select>
-                </div>
-
-                {/* Quality Grade */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Quality Grade</label>
-                  <select
-                    value={form.grade}
-                    onChange={e => setForm(f => ({ ...f, grade: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}>
-                    {GRADES.map(g => <option key={g}>{g}</option>)}
-                  </select>
-                </div>
-
-                {/* Target Hub */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Target Warehouse Hub *</label>
-                  <select
-                    value={form.hub}
-                    onChange={e => setForm(f => ({ ...f, hub: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}>
-                    {HUBS.map(h => <option key={h.code} value={h.code}>[{h.code}] {h.name}</option>)}
-                  </select>
-                </div>
-
-                {/* Incoterms */}
-                <div>
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Incoterms</label>
-                  <select
-                    value={form.incoterms}
-                    onChange={e => setForm(f => ({ ...f, incoterms: e.target.value }))}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}>
-                    {INCOTERMS.map(i => <option key={i}>{i}</option>)}
-                  </select>
-                </div>
-
-                {/* Estimated Value */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Estimated Value (USD)</label>
-                  <input
-                    type="number"
-                    value={form.estimatedValue}
-                    onChange={e => setForm(f => ({ ...f, estimatedValue: e.target.value }))}
-                    placeholder="0.00"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}
-                  />
-                </div>
-
-                {/* Notes */}
-                <div className="col-span-2">
-                  <label className="block text-xs font-semibold mb-1.5" style={{ color: '#1A1A1A' }}>Notes (optional)</label>
-                  <textarea
-                    value={form.notes}
-                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                    placeholder="Packing details, inspection requirements, special instructions..."
-                    rows={3}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
-                    style={{ border: '1px solid #E8E2DC', color: '#1A1A1A', background: '#FAFAF8' }}
-                  />
-                </div>
-              </div>
-
-              {/* Document upload notice */}
-              <div className="flex items-start gap-3 p-3 rounded-xl" style={{ background: 'rgba(199,59,34,0.06)', border: '1px solid rgba(199,59,34,0.15)' }}>
-                <Upload size={16} style={{ color: '#C73B22', marginTop: 1 }} />
-                <p className="text-xs" style={{ color: '#888880' }}>
-                  Supporting documents (phytosanitary certificate, origin certificate, quality report) can be uploaded after submission via the consignment detail page.
-                </p>
-              </div>
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-end gap-3 p-6" style={{ borderTop: '1px solid #E8E2DC' }}>
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:bg-[#F0EBE6]"
-                style={{ color: '#888880' }}>
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: '#888880' }}>
-                Save Draft
-              </button>
-              <button
-                className="px-4 py-2 rounded-xl text-sm font-semibold text-white transition-all hover:opacity-90"
-                style={{ background: '#C73B22' }}>
-                Submit Consignment
-              </button>
-            </div>
+      {isExporter && !kycOk && (
+        <div className="rounded-xl p-4 flex items-start gap-3"
+             style={{ background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}
+             data-testid="kyc-gate-banner">
+          <ShieldAlert size={20} style={{ color: '#B45309' }} className="mt-0.5 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-semibold" style={{ color: '#1A1A1A' }}>KYC Tier 3 required</p>
+            <p className="text-xs mt-0.5" style={{ color: '#7A6242' }}>
+              {kycReason || 'Complete corporate KYB (Tier 3) to submit consignments.'}
+              {kycTier && <> Current tier: <strong>{kycTier}</strong>.</>}
+            </p>
           </div>
+          <Link href="/kyc" className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white"
+                style={{ background: '#C73B22' }}>Go to KYC</Link>
         </div>
       )}
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <StatCard label="Total" value={counts.total} />
+        <StatCard label="In Review" value={counts.submitted} color="#2563EB" />
+        <StatCard label="Approved / At Warehouse" value={counts.approved} color="#047857" />
+        <StatCard label="In Transit" value={counts.inTransit} color="#7C3AED" />
+      </div>
+
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 min-w-[220px]">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: '#888880' }} />
+          <input
+            value={search} onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search reference, commodity or origin…"
+            className="w-full pl-9 pr-3 py-2 rounded-lg text-sm"
+            style={{ border: '1px solid #E8E2DC', background: '#FAFAF8', color: '#1A1A1A' }}
+            data-testid="input-search"
+          />
+        </div>
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
+                className="px-3 py-2 rounded-lg text-sm"
+                style={{ border: '1px solid #E8E2DC', background: '#FAFAF8', color: '#1A1A1A' }}
+                data-testid="select-status">
+          <option value="all">All statuses</option>
+          {Object.keys(STATUS_STYLE).map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </div>
+
+      <div className="rounded-2xl bg-white overflow-hidden" style={{ border: '1px solid #E8E2DC' }}>
+        {isLoading ? (
+          <div className="p-10 text-center text-sm" style={{ color: '#888880' }}>Loading consignments…</div>
+        ) : error ? (
+          <div className="p-10 text-center text-sm" style={{ color: '#DC2626' }}>
+            Failed to load: {(error as any)?.message || 'unknown error'}
+          </div>
+        ) : filtered.length === 0 ? (
+          <div className="p-10 text-center" data-testid="empty-state">
+            <Package size={36} className="mx-auto mb-2" style={{ color: '#888880' }} />
+            <p className="font-semibold" style={{ color: '#1A1A1A' }}>No consignments yet</p>
+            <p className="text-sm mt-1" style={{ color: '#888880' }}>
+              {isExporter ? 'Click "List a Commodity" to submit your first one.' : 'Nothing to show here.'}
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead style={{ background: '#FAFAF8' }}>
+                <tr className="text-left" style={{ color: '#888880' }}>
+                  <th className="px-4 py-3 font-semibold">Reference</th>
+                  <th className="px-4 py-3 font-semibold">Commodity</th>
+                  <th className="px-4 py-3 font-semibold">Quantity</th>
+                  <th className="px-4 py-3 font-semibold">Origin → Hub</th>
+                  <th className="px-4 py-3 font-semibold">Value</th>
+                  <th className="px-4 py-3 font-semibold">Status</th>
+                  <th className="px-4 py-3" />
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(r => (
+                  <tr key={r.id} className="border-t" style={{ borderColor: '#E8E2DC' }}
+                      data-testid={`row-${r.referenceNo}`}>
+                    <td className="px-4 py-3 font-semibold" style={{ color: '#1A1A1A' }}>{r.referenceNo}</td>
+                    <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>
+                      {r.commodityName}
+                      {r.qualityGrade && <span className="ml-1 text-xs" style={{ color: '#888880' }}>· {r.qualityGrade}</span>}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>{r.quantity} {r.unit}</td>
+                    <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>
+                      {r.originCountry} → {r.targetHubCode ?? '—'}
+                    </td>
+                    <td className="px-4 py-3" style={{ color: '#1A1A1A' }}>
+                      {fmtMoney(r.estimatedValueCents, r.askingCurrency ?? 'USD')}
+                    </td>
+                    <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
+                    <td className="px-4 py-3 text-right">
+                      <Link href={`/consignments/${r.id}`}
+                            className="inline-flex items-center gap-1 text-xs font-semibold"
+                            style={{ color: '#C73B22' }}
+                            data-testid={`link-detail-${r.referenceNo}`}>
+                        View <ChevronRight size={14} />
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
+
+      <ListCommodityWizard open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   );
 }

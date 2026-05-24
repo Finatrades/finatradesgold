@@ -237,11 +237,11 @@ paths:
     post:
       operationId: createConsignment
       tags: [consignments]
-      summary: Create new consignment
+      summary: Create new consignment (multipart with documents)
       requestBody:
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: "#/components/schemas/ConsignmentInput"
       responses:
@@ -250,7 +250,45 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Consignment"
+                $ref: "#/components/schemas/ConsignmentDetail"
+        "403":
+          description: KYC Tier 3 (Corporate) required
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsignmentEligibility"
+
+  /b2b/consignments/eligibility:
+    get:
+      operationId: getConsignmentEligibility
+      tags: [consignments]
+      summary: Check whether the current user is KYC Tier-3 eligible to list commodities
+      responses:
+        "200":
+          description: Eligibility result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsignmentEligibility"
+
+  /b2b/consignments/requirements:
+    get:
+      operationId: getConsignmentRequirements
+      tags: [consignments]
+      summary: Get document requirements for a commodity category
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Requirements matrix
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ConsignmentRequirements"
 
   /b2b/consignments/{id}:
     get:
@@ -269,7 +307,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Consignment"
+                $ref: "#/components/schemas/ConsignmentDetail"
 
   /b2b/consignments/{id}/status:
     patch:
@@ -951,32 +989,46 @@ components:
     # ── CONSIGNMENT ──
     ConsignmentInput:
       type: object
-      required: [commodityType, quantity, unit, warehouseId, originCountry, incoterms, expectedArrival]
+      required: [commodityName, commodityCategory, quantity, unit, originCountry, targetHubCode, incoterms]
       properties:
-        commodityType:
+        commodityName:
           type: string
-        grade:
+        commodityCategory:
           type: string
+        hsCode:
+          type: ["string", "null"]
         quantity:
           type: number
         unit:
           type: string
-          enum: [MT, KG, Liters, Barrels]
-        packaging:
-          type: string
-        warehouseId:
-          type: string
+        qualityGrade:
+          type: ["string", "null"]
+          enum: ["A+", "A", "B+", "B", "C", "D", null]
         originCountry:
+          type: string
+        packingType:
+          type: ["string", "null"]
+        targetHubCode:
           type: string
         incoterms:
           type: string
-        transportMode:
+        estimatedValueCents:
+          type: integer
+        askingPriceCents:
+          type: integer
+        askingCurrency:
           type: string
-          enum: [sea_freight, air_cargo, road, rail]
-        expectedArrival:
+        harvestDate:
+          type: ["string", "null"]
+        batchNumber:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        complianceDeclarations:
           type: string
-        description:
-          type: string
+          description: JSON-encoded compliance declarations object
+        # Document files are additionally accepted as multipart fields keyed as `doc__<docType>`
+        # (e.g. doc__commercial_invoice). They are not enumerable in the schema.
 
     ConsignmentStatusUpdate:
       type: object
@@ -984,53 +1036,158 @@ components:
       properties:
         status:
           type: string
-          enum: [draft, submitted, awaiting_verification, compliance_check, booking_confirmed, in_transit, arrived, verified, ready_for_trade]
+          enum: [Draft, Submitted, Pending Review, Under Review, Approved, Rejected, At Warehouse, Verified, In Transit, Rejected at Warehouse]
         notes:
           type: string
 
     Consignment:
       type: object
-      required: [id, sellerId, commodityType, quantity, unit, status, warehouseId, createdAt]
+      required: [id, referenceNo, userId, commodityName, quantity, unit, originCountry, incoterms, status, createdAt]
       properties:
         id:
           type: string
-        consignmentRef:
+        referenceNo:
           type: string
-        sellerId:
+        userId:
           type: string
-        sellerName:
+        commodityName:
           type: string
-        commodityType:
-          type: string
-        grade:
+        commodityCategory:
+          type: ["string", "null"]
+        hsCode:
           type: ["string", "null"]
         quantity:
           type: number
         unit:
           type: string
-        packaging:
+        qualityGrade:
           type: ["string", "null"]
-        warehouseId:
-          type: string
-        warehouseName:
-          type: string
         originCountry:
           type: string
+        packingType:
+          type: ["string", "null"]
+        targetHubCode:
+          type: ["string", "null"]
         incoterms:
           type: string
-        transportMode:
+        askingPriceCents:
+          type: ["integer", "null"]
+        askingCurrency:
           type: ["string", "null"]
-        expectedArrival:
-          type: string
+        estimatedValueCents:
+          type: ["integer", "null"]
+        harvestDate:
+          type: ["string", "null"]
+        batchNumber:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
+        complianceDeclarations:
+          type: ["object", "null"]
+          additionalProperties: true
         status:
           type: string
-        documents:
-          type: array
-          items:
-            type: string
+        submittedAt:
+          type: ["string", "null"]
+        approvedAt:
+          type: ["string", "null"]
         createdAt:
           type: string
         updatedAt:
+          type: ["string", "null"]
+
+    ConsignmentDocument:
+      type: object
+      required: [id, consignmentId, docType, isRequired, status]
+      properties:
+        id:
+          type: string
+        consignmentId:
+          type: string
+        docType:
+          type: string
+        docLabel:
+          type: ["string", "null"]
+        isRequired:
+          type: boolean
+        status:
+          type: string
+          enum: [pending, uploaded, verified, rejected]
+        fileName:
+          type: ["string", "null"]
+        fileSize:
+          type: ["integer", "null"]
+        mimeType:
+          type: ["string", "null"]
+        downloadPath:
+          type: ["string", "null"]
+          description: API path that returns a short-lived signed URL (use GET to fetch a fresh one).
+        signedUrl:
+          type: ["string", "null"]
+          description: Short-lived signed URL for direct download (expires after `signedUrlExpiresIn` seconds).
+        signedUrlExpiresIn:
+          type: ["integer", "null"]
+        uploadedAt:
+          type: ["string", "null"]
+        reviewedAt:
+          type: ["string", "null"]
+        reviewNotes:
+          type: ["string", "null"]
+
+    ConsignmentDetail:
+      allOf:
+        - $ref: "#/components/schemas/Consignment"
+        - type: object
+          properties:
+            documents:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConsignmentDocument"
+            history:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
+            requirements:
+              type: array
+              items:
+                $ref: "#/components/schemas/ConsignmentDocumentRequirement"
+
+    ConsignmentDocumentRequirement:
+      type: object
+      required: [docType, label, required]
+      properties:
+        docType:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+
+    ConsignmentRequirements:
+      type: object
+      required: [documents]
+      properties:
+        category:
+          type: ["string", "null"]
+        documents:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConsignmentDocumentRequirement"
+
+    ConsignmentEligibility:
+      type: object
+      required: [eligible]
+      properties:
+        eligible:
+          type: boolean
+        reason:
+          type: string
+        kycStatus:
+          type: string
+        kycTier:
           type: string
 
     # ── INVENTORY ──

@@ -1,4 +1,5 @@
 import { S3Client, PutObjectCommand, GetObjectCommand, DeleteObjectCommand, HeadObjectCommand } from "@aws-sdk/client-s3";
+import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { Readable } from "stream";
 
 const R2_ACCOUNT_ID = process.env.R2_ACCOUNT_ID;
@@ -66,6 +67,21 @@ export async function uploadToR2(
     : `https://${R2_ACCOUNT_ID}.r2.cloudflarestorage.com/${R2_BUCKET_NAME}/${key}`;
   
   return { url, key };
+}
+
+/**
+ * Generate a short-lived signed URL for retrieving an R2 object.
+ * @param key the storage key
+ * @param expiresInSeconds default 15 minutes
+ */
+export async function getSignedDownloadUrl(key: string, expiresInSeconds = 900): Promise<string> {
+  if (!R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME not configured");
+  const client = getR2Client();
+  return getSignedUrl(
+    client,
+    new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
+    { expiresIn: expiresInSeconds },
+  );
 }
 
 export async function getFromR2(key: string): Promise<{ body: Readable; contentType: string }> {

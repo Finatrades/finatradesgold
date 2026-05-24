@@ -5,28 +5,47 @@
  * Finatrades B2B Commodity Trade Platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { ConsignmentComplianceDeclarations } from "./consignmentComplianceDeclarations";
 
 export interface Consignment {
   id: string;
-  consignmentRef?: string;
-  sellerId: string;
-  sellerName?: string;
-  commodityType: string;
+  referenceNo: string;
+  userId: string;
+  commodityName: string;
   /** @nullable */
-  grade?: string | null;
+  commodityCategory?: string | null;
+  /** @nullable */
+  hsCode?: string | null;
   quantity: number;
   unit: string;
   /** @nullable */
-  packaging?: string | null;
-  warehouseId: string;
-  warehouseName?: string;
-  originCountry?: string;
-  incoterms?: string;
+  qualityGrade?: string | null;
+  originCountry: string;
   /** @nullable */
-  transportMode?: string | null;
-  expectedArrival?: string;
+  packingType?: string | null;
+  /** @nullable */
+  targetHubCode?: string | null;
+  incoterms: string;
+  /** @nullable */
+  askingPriceCents?: number | null;
+  /** @nullable */
+  askingCurrency?: string | null;
+  /** @nullable */
+  estimatedValueCents?: number | null;
+  /** @nullable */
+  harvestDate?: string | null;
+  /** @nullable */
+  batchNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  complianceDeclarations?: ConsignmentComplianceDeclarations;
   status: string;
-  documents?: string[];
+  /** @nullable */
+  submittedAt?: string | null;
+  /** @nullable */
+  approvedAt?: string | null;
   createdAt: string;
-  updatedAt?: string;
+  /** @nullable */
+  updatedAt?: string | null;
 }

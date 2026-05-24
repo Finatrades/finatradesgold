@@ -10,13 +10,14 @@ export type ConsignmentStatusUpdateStatus =
   (typeof ConsignmentStatusUpdateStatus)[keyof typeof ConsignmentStatusUpdateStatus];
 
 export const ConsignmentStatusUpdateStatus = {
-  draft: "draft",
-  submitted: "submitted",
-  awaiting_verification: "awaiting_verification",
-  compliance_check: "compliance_check",
-  booking_confirmed: "booking_confirmed",
-  in_transit: "in_transit",
-  arrived: "arrived",
-  verified: "verified",
-  ready_for_trade: "ready_for_trade",
+  Draft: "Draft",
+  Submitted: "Submitted",
+  Pending_Review: "Pending Review",
+  Under_Review: "Under Review",
+  Approved: "Approved",
+  Rejected: "Rejected",
+  At_Warehouse: "At Warehouse",
+  Verified: "Verified",
+  In_Transit: "In Transit",
+  Rejected_at_Warehouse: "Rejected at Warehouse",
 } as const;

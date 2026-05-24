@@ -207,44 +207,96 @@ export const GetDashboardStatsResponse = zod.object({
  */
 export const ListConsignmentsResponseItem = zod.object({
   id: zod.string(),
-  consignmentRef: zod.string().optional(),
-  sellerId: zod.string(),
-  sellerName: zod.string().optional(),
-  commodityType: zod.string(),
-  grade: zod.string().nullish(),
+  referenceNo: zod.string(),
+  userId: zod.string(),
+  commodityName: zod.string(),
+  commodityCategory: zod.string().nullish(),
+  hsCode: zod.string().nullish(),
   quantity: zod.number(),
   unit: zod.string(),
-  packaging: zod.string().nullish(),
-  warehouseId: zod.string(),
-  warehouseName: zod.string().optional(),
-  originCountry: zod.string().optional(),
-  incoterms: zod.string().optional(),
-  transportMode: zod.string().nullish(),
-  expectedArrival: zod.string().optional(),
+  qualityGrade: zod.string().nullish(),
+  originCountry: zod.string(),
+  packingType: zod.string().nullish(),
+  targetHubCode: zod.string().nullish(),
+  incoterms: zod.string(),
+  askingPriceCents: zod.number().nullish(),
+  askingCurrency: zod.string().nullish(),
+  estimatedValueCents: zod.number().nullish(),
+  harvestDate: zod.string().nullish(),
+  batchNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  complianceDeclarations: zod.record(zod.string(), zod.unknown()).nullish(),
   status: zod.string(),
-  documents: zod.array(zod.string()).optional(),
+  submittedAt: zod.string().nullish(),
+  approvedAt: zod.string().nullish(),
   createdAt: zod.string(),
-  updatedAt: zod.string().optional(),
+  updatedAt: zod.string().nullish(),
 });
 export const ListConsignmentsResponse = zod.array(ListConsignmentsResponseItem);
 
 /**
- * @summary Create new consignment
+ * @summary Create new consignment (multipart with documents)
  */
 export const CreateConsignmentBody = zod.object({
-  commodityType: zod.string(),
-  grade: zod.string().optional(),
+  commodityName: zod.string(),
+  commodityCategory: zod.string(),
+  hsCode: zod.string().nullish(),
   quantity: zod.number(),
-  unit: zod.enum(["MT", "KG", "Liters", "Barrels"]),
-  packaging: zod.string().optional(),
-  warehouseId: zod.string(),
+  unit: zod.string(),
+  qualityGrade: zod
+    .union([
+      zod.literal("A+"),
+      zod.literal("A"),
+      zod.literal("B+"),
+      zod.literal("B"),
+      zod.literal("C"),
+      zod.literal("D"),
+      zod.literal(null),
+    ])
+    .nullish(),
   originCountry: zod.string(),
+  packingType: zod.string().nullish(),
+  targetHubCode: zod.string(),
   incoterms: zod.string(),
-  transportMode: zod
-    .enum(["sea_freight", "air_cargo", "road", "rail"])
-    .optional(),
-  expectedArrival: zod.string(),
-  description: zod.string().optional(),
+  estimatedValueCents: zod.number().optional(),
+  askingPriceCents: zod.number().optional(),
+  askingCurrency: zod.string().optional(),
+  harvestDate: zod.string().nullish(),
+  batchNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  complianceDeclarations: zod
+    .string()
+    .optional()
+    .describe("JSON-encoded compliance declarations object"),
+});
+
+/**
+ * @summary Check whether the current user is KYC Tier-3 eligible to list commodities
+ */
+export const GetConsignmentEligibilityResponse = zod.object({
+  eligible: zod.boolean(),
+  reason: zod.string().optional(),
+  kycStatus: zod.string().optional(),
+  kycTier: zod.string().optional(),
+});
+
+/**
+ * @summary Get document requirements for a commodity category
+ */
+export const GetConsignmentRequirementsQueryParams = zod.object({
+  category: zod.coerce.string().optional(),
+});
+
+export const GetConsignmentRequirementsResponse = zod.object({
+  category: zod.string().nullish(),
+  documents: zod.array(
+    zod.object({
+      docType: zod.string(),
+      label: zod.string(),
+      description: zod.string().optional(),
+      required: zod.boolean(),
+    }),
+  ),
 });
 
 /**
@@ -254,27 +306,80 @@ export const GetConsignmentParams = zod.object({
   id: zod.coerce.string(),
 });
 
-export const GetConsignmentResponse = zod.object({
-  id: zod.string(),
-  consignmentRef: zod.string().optional(),
-  sellerId: zod.string(),
-  sellerName: zod.string().optional(),
-  commodityType: zod.string(),
-  grade: zod.string().nullish(),
-  quantity: zod.number(),
-  unit: zod.string(),
-  packaging: zod.string().nullish(),
-  warehouseId: zod.string(),
-  warehouseName: zod.string().optional(),
-  originCountry: zod.string().optional(),
-  incoterms: zod.string().optional(),
-  transportMode: zod.string().nullish(),
-  expectedArrival: zod.string().optional(),
-  status: zod.string(),
-  documents: zod.array(zod.string()).optional(),
-  createdAt: zod.string(),
-  updatedAt: zod.string().optional(),
-});
+export const GetConsignmentResponse = zod
+  .object({
+    id: zod.string(),
+    referenceNo: zod.string(),
+    userId: zod.string(),
+    commodityName: zod.string(),
+    commodityCategory: zod.string().nullish(),
+    hsCode: zod.string().nullish(),
+    quantity: zod.number(),
+    unit: zod.string(),
+    qualityGrade: zod.string().nullish(),
+    originCountry: zod.string(),
+    packingType: zod.string().nullish(),
+    targetHubCode: zod.string().nullish(),
+    incoterms: zod.string(),
+    askingPriceCents: zod.number().nullish(),
+    askingCurrency: zod.string().nullish(),
+    estimatedValueCents: zod.number().nullish(),
+    harvestDate: zod.string().nullish(),
+    batchNumber: zod.string().nullish(),
+    notes: zod.string().nullish(),
+    complianceDeclarations: zod.record(zod.string(), zod.unknown()).nullish(),
+    status: zod.string(),
+    submittedAt: zod.string().nullish(),
+    approvedAt: zod.string().nullish(),
+    createdAt: zod.string(),
+    updatedAt: zod.string().nullish(),
+  })
+  .and(
+    zod.object({
+      documents: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            consignmentId: zod.string(),
+            docType: zod.string(),
+            docLabel: zod.string().nullish(),
+            isRequired: zod.boolean(),
+            status: zod.enum(["pending", "uploaded", "verified", "rejected"]),
+            fileName: zod.string().nullish(),
+            fileSize: zod.number().nullish(),
+            mimeType: zod.string().nullish(),
+            downloadPath: zod
+              .string()
+              .nullish()
+              .describe(
+                "API path that returns a short-lived signed URL (use GET to fetch a fresh one).",
+              ),
+            signedUrl: zod
+              .string()
+              .nullish()
+              .describe(
+                "Short-lived signed URL for direct download (expires after `signedUrlExpiresIn` seconds).",
+              ),
+            signedUrlExpiresIn: zod.number().nullish(),
+            uploadedAt: zod.string().nullish(),
+            reviewedAt: zod.string().nullish(),
+            reviewNotes: zod.string().nullish(),
+          }),
+        )
+        .optional(),
+      history: zod.array(zod.record(zod.string(), zod.unknown())).optional(),
+      requirements: zod
+        .array(
+          zod.object({
+            docType: zod.string(),
+            label: zod.string(),
+            description: zod.string().optional(),
+            required: zod.boolean(),
+          }),
+        )
+        .optional(),
+    }),
+  );
 
 /**
  * @summary Update consignment status
@@ -285,39 +390,46 @@ export const UpdateConsignmentStatusParams = zod.object({
 
 export const UpdateConsignmentStatusBody = zod.object({
   status: zod.enum([
-    "draft",
-    "submitted",
-    "awaiting_verification",
-    "compliance_check",
-    "booking_confirmed",
-    "in_transit",
-    "arrived",
-    "verified",
-    "ready_for_trade",
+    "Draft",
+    "Submitted",
+    "Pending Review",
+    "Under Review",
+    "Approved",
+    "Rejected",
+    "At Warehouse",
+    "Verified",
+    "In Transit",
+    "Rejected at Warehouse",
   ]),
   notes: zod.string().optional(),
 });
 
 export const UpdateConsignmentStatusResponse = zod.object({
   id: zod.string(),
-  consignmentRef: zod.string().optional(),
-  sellerId: zod.string(),
-  sellerName: zod.string().optional(),
-  commodityType: zod.string(),
-  grade: zod.string().nullish(),
+  referenceNo: zod.string(),
+  userId: zod.string(),
+  commodityName: zod.string(),
+  commodityCategory: zod.string().nullish(),
+  hsCode: zod.string().nullish(),
   quantity: zod.number(),
   unit: zod.string(),
-  packaging: zod.string().nullish(),
-  warehouseId: zod.string(),
-  warehouseName: zod.string().optional(),
-  originCountry: zod.string().optional(),
-  incoterms: zod.string().optional(),
-  transportMode: zod.string().nullish(),
-  expectedArrival: zod.string().optional(),
+  qualityGrade: zod.string().nullish(),
+  originCountry: zod.string(),
+  packingType: zod.string().nullish(),
+  targetHubCode: zod.string().nullish(),
+  incoterms: zod.string(),
+  askingPriceCents: zod.number().nullish(),
+  askingCurrency: zod.string().nullish(),
+  estimatedValueCents: zod.number().nullish(),
+  harvestDate: zod.string().nullish(),
+  batchNumber: zod.string().nullish(),
+  notes: zod.string().nullish(),
+  complianceDeclarations: zod.record(zod.string(), zod.unknown()).nullish(),
   status: zod.string(),
-  documents: zod.array(zod.string()).optional(),
+  submittedAt: zod.string().nullish(),
+  approvedAt: zod.string().nullish(),
   createdAt: zod.string(),
-  updatedAt: zod.string().optional(),
+  updatedAt: zod.string().nullish(),
 });
 
 /**

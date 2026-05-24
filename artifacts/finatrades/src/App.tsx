@@ -11,6 +11,7 @@ import Register from "@/pages/Register";
 import DashboardLayout from "@/components/DashboardLayout";
 import DashboardOverview from "@/pages/dashboard/DashboardOverview";
 import Consignments from "@/pages/dashboard/Consignments";
+import ConsignmentDetail from "@/pages/dashboard/ConsignmentDetail";
 import Marketplace from "@/pages/dashboard/Marketplace";
 import Inventory from "@/pages/dashboard/Inventory";
 import Orders from "@/pages/dashboard/Orders";
@@ -104,6 +105,9 @@ function AppRoutes() {
       {/* Trade Operations */}
       <Route path="/consignments">
         <ProtectedRoute path="/consignments" component={Consignments} />
+      </Route>
+      <Route path="/consignments/:id">
+        <ProtectedRoute path="/consignments/:id" component={ConsignmentDetail} />
       </Route>
       <Route path="/inventory">
         <ProtectedRoute path="/inventory" component={Inventory} />

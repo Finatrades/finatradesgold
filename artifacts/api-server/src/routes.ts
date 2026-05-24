@@ -116,6 +116,7 @@ import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
 import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
 import adminVaultExposureRoutes from "./admin-vault-exposure-routes";
 import b2bRoutes from "./b2b-routes";
+import consignmentsRouter from "./routes/consignments";
 import unifiedTallyRoutes from "./unified-tally-routes";
 import physicalDepositRoutes from "./physical-deposit-routes";
 import { WingoldUserSyncService } from "./wingold-user-sync-service";
@@ -1043,6 +1044,7 @@ export async function registerRoutes(
   app.use("/api/b2b", b2bRoutes);
   // Register B2B USD Wallet routes (Task #74)
   registerWalletRoutes(app);
+  app.use("/api/b2b/consignments", consignmentsRouter);
 
   // File upload endpoint for Deal Room and other attachments
   app.post("/api/documents/upload", ensureAuthenticated, upload.single('file'), async (req: Request, res: Response) => {

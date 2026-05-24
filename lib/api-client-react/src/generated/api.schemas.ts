@@ -186,53 +186,63 @@ export interface PlatformStats {
   totalVolumeUsd?: number;
 }
 
-export type ConsignmentInputUnit =
-  (typeof ConsignmentInputUnit)[keyof typeof ConsignmentInputUnit];
+/**
+ * @nullable
+ */
+export type ConsignmentInputQualityGrade =
+  | (typeof ConsignmentInputQualityGrade)[keyof typeof ConsignmentInputQualityGrade]
+  | null;
 
-export const ConsignmentInputUnit = {
-  MT: "MT",
-  KG: "KG",
-  Liters: "Liters",
-  Barrels: "Barrels",
-} as const;
-
-export type ConsignmentInputTransportMode =
-  (typeof ConsignmentInputTransportMode)[keyof typeof ConsignmentInputTransportMode];
-
-export const ConsignmentInputTransportMode = {
-  sea_freight: "sea_freight",
-  air_cargo: "air_cargo",
-  road: "road",
-  rail: "rail",
+export const ConsignmentInputQualityGrade = {
+  "A+": "A+",
+  A: "A",
+  "B+": "B+",
+  B: "B",
+  C: "C",
+  D: "D",
 } as const;
 
 export interface ConsignmentInput {
-  commodityType: string;
-  grade?: string;
+  commodityName: string;
+  commodityCategory: string;
+  /** @nullable */
+  hsCode?: string | null;
   quantity: number;
-  unit: ConsignmentInputUnit;
-  packaging?: string;
-  warehouseId: string;
+  unit: string;
+  /** @nullable */
+  qualityGrade?: ConsignmentInputQualityGrade;
   originCountry: string;
+  /** @nullable */
+  packingType?: string | null;
+  targetHubCode: string;
   incoterms: string;
-  transportMode?: ConsignmentInputTransportMode;
-  expectedArrival: string;
-  description?: string;
+  estimatedValueCents?: number;
+  askingPriceCents?: number;
+  askingCurrency?: string;
+  /** @nullable */
+  harvestDate?: string | null;
+  /** @nullable */
+  batchNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** JSON-encoded compliance declarations object */
+  complianceDeclarations?: string;
 }
 
 export type ConsignmentStatusUpdateStatus =
   (typeof ConsignmentStatusUpdateStatus)[keyof typeof ConsignmentStatusUpdateStatus];
 
 export const ConsignmentStatusUpdateStatus = {
-  draft: "draft",
-  submitted: "submitted",
-  awaiting_verification: "awaiting_verification",
-  compliance_check: "compliance_check",
-  booking_confirmed: "booking_confirmed",
-  in_transit: "in_transit",
-  arrived: "arrived",
-  verified: "verified",
-  ready_for_trade: "ready_for_trade",
+  Draft: "Draft",
+  Submitted: "Submitted",
+  Pending_Review: "Pending Review",
+  Under_Review: "Under Review",
+  Approved: "Approved",
+  Rejected: "Rejected",
+  At_Warehouse: "At Warehouse",
+  Verified: "Verified",
+  In_Transit: "In Transit",
+  Rejected_at_Warehouse: "Rejected at Warehouse",
 } as const;
 
 export interface ConsignmentStatusUpdate {
@@ -240,29 +250,126 @@ export interface ConsignmentStatusUpdate {
   notes?: string;
 }
 
+/**
+ * @nullable
+ */
+export type ConsignmentComplianceDeclarations = {
+  [key: string]: unknown;
+} | null;
+
 export interface Consignment {
   id: string;
-  consignmentRef?: string;
-  sellerId: string;
-  sellerName?: string;
-  commodityType: string;
+  referenceNo: string;
+  userId: string;
+  commodityName: string;
   /** @nullable */
-  grade?: string | null;
+  commodityCategory?: string | null;
+  /** @nullable */
+  hsCode?: string | null;
   quantity: number;
   unit: string;
   /** @nullable */
-  packaging?: string | null;
-  warehouseId: string;
-  warehouseName?: string;
-  originCountry?: string;
-  incoterms?: string;
+  qualityGrade?: string | null;
+  originCountry: string;
   /** @nullable */
-  transportMode?: string | null;
-  expectedArrival?: string;
+  packingType?: string | null;
+  /** @nullable */
+  targetHubCode?: string | null;
+  incoterms: string;
+  /** @nullable */
+  askingPriceCents?: number | null;
+  /** @nullable */
+  askingCurrency?: string | null;
+  /** @nullable */
+  estimatedValueCents?: number | null;
+  /** @nullable */
+  harvestDate?: string | null;
+  /** @nullable */
+  batchNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** @nullable */
+  complianceDeclarations?: ConsignmentComplianceDeclarations;
   status: string;
-  documents?: string[];
+  /** @nullable */
+  submittedAt?: string | null;
+  /** @nullable */
+  approvedAt?: string | null;
   createdAt: string;
-  updatedAt?: string;
+  /** @nullable */
+  updatedAt?: string | null;
+}
+
+export type ConsignmentDocumentStatus =
+  (typeof ConsignmentDocumentStatus)[keyof typeof ConsignmentDocumentStatus];
+
+export const ConsignmentDocumentStatus = {
+  pending: "pending",
+  uploaded: "uploaded",
+  verified: "verified",
+  rejected: "rejected",
+} as const;
+
+export interface ConsignmentDocument {
+  id: string;
+  consignmentId: string;
+  docType: string;
+  /** @nullable */
+  docLabel?: string | null;
+  isRequired: boolean;
+  status: ConsignmentDocumentStatus;
+  /** @nullable */
+  fileName?: string | null;
+  /** @nullable */
+  fileSize?: number | null;
+  /** @nullable */
+  mimeType?: string | null;
+  /**
+   * API path that returns a short-lived signed URL (use GET to fetch a fresh one).
+   * @nullable
+   */
+  downloadPath?: string | null;
+  /**
+   * Short-lived signed URL for direct download (expires after `signedUrlExpiresIn` seconds).
+   * @nullable
+   */
+  signedUrl?: string | null;
+  /** @nullable */
+  signedUrlExpiresIn?: number | null;
+  /** @nullable */
+  uploadedAt?: string | null;
+  /** @nullable */
+  reviewedAt?: string | null;
+  /** @nullable */
+  reviewNotes?: string | null;
+}
+
+export type ConsignmentDetailHistoryItem = { [key: string]: unknown };
+
+export interface ConsignmentDocumentRequirement {
+  docType: string;
+  label: string;
+  description?: string;
+  required: boolean;
+}
+
+export type ConsignmentDetail = Consignment & {
+  documents?: ConsignmentDocument[];
+  history?: ConsignmentDetailHistoryItem[];
+  requirements?: ConsignmentDocumentRequirement[];
+};
+
+export interface ConsignmentRequirements {
+  /** @nullable */
+  category?: string | null;
+  documents: ConsignmentDocumentRequirement[];
+}
+
+export interface ConsignmentEligibility {
+  eligible: boolean;
+  reason?: string;
+  kycStatus?: string;
+  kycTier?: string;
 }
 
 export type InventoryStatusUpdateStatus =
@@ -713,3 +820,7 @@ export interface Warehouse {
   /** @nullable */
   lng?: number | null;
 }
+
+export type GetConsignmentRequirementsParams = {
+  category?: string;
+};

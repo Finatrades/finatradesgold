@@ -5,19 +5,31 @@
  * Finatrades B2B Commodity Trade Platform API
  * OpenAPI spec version: 0.1.0
  */
-import type { ConsignmentInputTransportMode } from "./consignmentInputTransportMode";
-import type { ConsignmentInputUnit } from "./consignmentInputUnit";
+import type { ConsignmentInputQualityGrade } from "./consignmentInputQualityGrade";
 
 export interface ConsignmentInput {
-  commodityType: string;
-  grade?: string;
+  commodityName: string;
+  commodityCategory: string;
+  /** @nullable */
+  hsCode?: string | null;
   quantity: number;
-  unit: ConsignmentInputUnit;
-  packaging?: string;
-  warehouseId: string;
+  unit: string;
+  /** @nullable */
+  qualityGrade?: ConsignmentInputQualityGrade;
   originCountry: string;
+  /** @nullable */
+  packingType?: string | null;
+  targetHubCode: string;
   incoterms: string;
-  transportMode?: ConsignmentInputTransportMode;
-  expectedArrival: string;
-  description?: string;
+  estimatedValueCents?: number;
+  askingPriceCents?: number;
+  askingCurrency?: string;
+  /** @nullable */
+  harvestDate?: string | null;
+  /** @nullable */
+  batchNumber?: string | null;
+  /** @nullable */
+  notes?: string | null;
+  /** JSON-encoded compliance declarations object */
+  complianceDeclarations?: string;
 }
