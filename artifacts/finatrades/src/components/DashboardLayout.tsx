@@ -85,7 +85,17 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen flex" style={{ background: '#FAFAF8' }}>
+    <div
+      className="min-h-screen flex"
+      style={{
+        background: `
+          radial-gradient(120% 60% at 100% 0%, rgba(255,200,180,0.45) 0%, transparent 55%),
+          radial-gradient(80% 60% at 0% 100%, rgba(168,47,27,0.55) 0%, transparent 60%),
+          linear-gradient(135deg, #C73B22 0%, #A82F1B 55%, #7A1F12 100%)
+        `,
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <Sidebar
         isOpen={sidebarOpen}
         setIsOpen={setSidebarOpen}
@@ -100,11 +110,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       >
         {/* Top header */}
         <header
-          className="sticky top-0 z-30 flex items-center gap-4 px-6"
+          className="sticky top-0 z-30 flex items-center gap-4 px-6 mx-4 mt-3 rounded-2xl"
           style={{
-            height: '60px',
-            background: '#FFFFFF',
-            borderBottom: '1px solid #E8E2DC',
+            height: '56px',
+            background: 'rgba(255,255,255,0.55)',
+            backdropFilter: 'blur(14px) saturate(140%)',
+            WebkitBackdropFilter: 'blur(14px) saturate(140%)',
+            border: '1px solid rgba(255,255,255,0.7)',
+            boxShadow: '0 2px 8px rgba(26,26,26,0.08), 0 1px 0 rgba(255,255,255,0.9) inset',
           }}
         >
           {/* Mobile menu toggle */}
@@ -127,8 +140,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div
             className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium"
             style={{
-              background: '#FAFAF8',
-              border: '1px solid #E8E2DC',
+              background: 'rgba(255,255,255,0.6)',
+              border: '1px solid rgba(255,255,255,0.8)',
               color: '#1A1A1A',
             }}
           >
@@ -150,7 +163,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <button
             onClick={() => setSearchOpen(true)}
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-colors"
-            style={{ background: '#FAFAF8', border: '1px solid #E8E2DC', color: '#888880' }}
+            style={{ background: 'rgba(255,255,255,0.6)', border: '1px solid rgba(255,255,255,0.8)', color: '#4A4A48' }}
           >
             <Search size={14} />
             <span className="hidden md:block text-xs">Search…</span>
@@ -164,7 +177,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button className="flex items-center gap-2.5 pl-1 pr-2 py-1 rounded-xl transition-colors outline-none"
-                style={{ border: '1px solid #E8E2DC', background: '#FAFAF8' }}>
+                style={{ border: '1px solid rgba(255,255,255,0.7)', background: 'rgba(255,255,255,0.6)' }}>
                 <div
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold text-white"
                   style={{ background: '#C73B22' }}
@@ -220,7 +233,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 p-6 overflow-auto">
+        <main className="flex-1 px-4 pt-4 pb-6 overflow-auto">
           {children}
         </main>
       </div>

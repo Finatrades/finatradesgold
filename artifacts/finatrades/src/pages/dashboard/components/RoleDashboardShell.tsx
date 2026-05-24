@@ -379,30 +379,9 @@ export default function RoleDashboardShell({ config }: { config: RoleDashboardCo
 
   return (
     <div
-      className="relative text-[#1A1A1A] font-sans selection:bg-white selection:text-[#C73B22] rounded-3xl -m-6 p-6 lg:-m-8 lg:p-8"
-      style={{
-        fontFamily: 'Inter, system-ui, sans-serif',
-        background: `
-          radial-gradient(120% 60% at 100% 0%, rgba(255,200,180,0.55) 0%, transparent 55%),
-          radial-gradient(80% 60% at 0% 100%, rgba(168,47,27,0.55) 0%, transparent 60%),
-          linear-gradient(135deg, #C73B22 0%, #A82F1B 55%, #7A1F12 100%)
-        `,
-      }}
+      className="relative text-[#1A1A1A] font-sans selection:bg-white selection:text-[#C73B22]"
+      style={{ fontFamily: 'Inter, system-ui, sans-serif' }}
     >
-      {/* Soft inner highlights */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden rounded-3xl">
-        <div className="absolute top-[10%] right-[8%] w-[640px] h-[640px] rounded-full" style={{
-          background: 'radial-gradient(circle, rgba(255,180,150,0.45) 0%, transparent 65%)',
-          filter: 'blur(80px)',
-        }} />
-        <div className="absolute bottom-[5%] left-[2%] w-[520px] h-[520px] rounded-full" style={{
-          background: 'radial-gradient(circle, rgba(255,255,255,0.18) 0%, transparent 65%)',
-          filter: 'blur(90px)',
-        }} />
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(255,255,255,0.10) 0%, transparent 50%)',
-        }} />
-      </div>
 
       <div className="relative z-10">
         {/* Welcome row (replaces sticky header) */}
