@@ -178,9 +178,8 @@ import { getCsrfTokenHandler, logAdminAction, sanitizeRequest } from "./security
 import { checkIsSuperAdmin, loadUserPermissions } from "./rbac-middleware";
 import { registerSsoRoutes } from "./sso-routes";
 import vcRoutes from "./vc-routes";
-import { registerWingoldPartnerRoutes } from "./wingold-partner-api";
-import { registerWingoldWebhookRoutes } from "./wingold-webhook-routes";
-// admin-vault-exposure-routes removed with the rest of the legacy gold stack.
+// wingold-partner-api, wingold-webhook-routes, and admin-vault-exposure-routes
+// removed with the rest of the legacy gold stack.
 import b2bRoutes from "./b2b-routes";
 import consignmentsRouter from "./routes/consignments";
 import marketplaceRouter from "./routes/marketplace";
@@ -1147,10 +1146,8 @@ export async function registerRoutes(
   registerSsoRoutes(app);
   // Register Verifiable Credentials routes for W3C VC 2.0
   app.use("/api", vcRoutes);
-  // Register Wingold Partner API routes for user data sharing
-  registerWingoldPartnerRoutes(app);
-  // Register Wingold Admin Approval Webhook routes
-  registerWingoldWebhookRoutes(app);
+  // Wingold partner / webhook route registrations removed with the rest of the
+  // legacy gold stack.
 
   // Brevo Email Bounce / Complaint Webhook
   // Brevo sends POST events: hard_bounce, soft_bounce, complaint, invalid_email

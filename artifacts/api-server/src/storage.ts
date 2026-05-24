@@ -9,7 +9,7 @@ import {
   contentPages, contentBlocks, templates, mediaAssets, cmsLabels,
   platformBankAccounts, platformFees, depositRequests, withdrawalRequests,
   peerTransfers, peerRequests,
-  vaultDepositRequests, vaultWithdrawalRequests, vaultOwnershipSummary, fpgwBatches,
+  vaultOwnershipSummary, fpgwBatches,
   binanceTransactions, reconciliationReports,
   ngeniusTransactions,
   paymentGatewaySettings,
@@ -67,8 +67,6 @@ import {
   type WithdrawalRequest, type InsertWithdrawalRequest,
   type PeerTransfer, type InsertPeerTransfer,
   type PeerRequest, type InsertPeerRequest,
-  type VaultDepositRequest, type InsertVaultDepositRequest,
-  type VaultWithdrawalRequest, type InsertVaultWithdrawalRequest,
   type BinanceTransaction, type InsertBinanceTransaction,
   type NgeniusTransaction, type InsertNgeniusTransaction,
   type PaymentGatewaySettings, type InsertPaymentGatewaySettings,
@@ -2553,137 +2551,10 @@ export class DatabaseStorage implements IStorage {
     return id;
   }
 
-  // ============================================
-  // VAULT DEPOSIT REQUESTS
-  // ============================================
-  
-  generateVaultDepositReferenceNumber(): string {
-    const prefix = 'VD';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
-  }
-
-  async getVaultDepositRequest(id: string): Promise<VaultDepositRequest | undefined> {
-    const [request] = await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.id, id));
-    return request || undefined;
-  }
-
-  async getVaultDepositRequestByRef(referenceNumber: string): Promise<VaultDepositRequest | undefined> {
-    const [request] = await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.referenceNumber, referenceNumber));
-    return request || undefined;
-  }
-
-  async getUserVaultDepositRequests(userId: string): Promise<VaultDepositRequest[]> {
-    return await db.select().from(vaultDepositRequests).where(eq(vaultDepositRequests.userId, userId)).orderBy(desc(vaultDepositRequests.createdAt));
-  }
-
-  async getAllVaultDepositRequests(): Promise<VaultDepositRequest[]> {
-    return await db.select().from(vaultDepositRequests).orderBy(desc(vaultDepositRequests.createdAt));
-  }
-
-  async getVaultDepositRequestsPaginated(options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<VaultDepositRequest>[]; total: number }> {
-    const { status, limit = 50, offset = 0 } = options;
-    const lightweightColumns = {
-      id: vaultDepositRequests.id,
-      referenceNumber: vaultDepositRequests.referenceNumber,
-      userId: vaultDepositRequests.userId,
-      vaultLocation: vaultDepositRequests.vaultLocation,
-      depositType: vaultDepositRequests.depositType,
-      totalDeclaredWeightGrams: vaultDepositRequests.totalDeclaredWeightGrams,
-      deliveryMethod: vaultDepositRequests.deliveryMethod,
-      status: vaultDepositRequests.status,
-      reviewedBy: vaultDepositRequests.reviewedBy,
-      createdAt: vaultDepositRequests.createdAt,
-      updatedAt: vaultDepositRequests.updatedAt,
-    };
-    const baseQuery = status && status !== "all" ? eq(vaultDepositRequests.status, status as any) : undefined;
-    const [data, countResult] = await Promise.all([
-      baseQuery
-        ? db.select(lightweightColumns).from(vaultDepositRequests).where(baseQuery).orderBy(desc(vaultDepositRequests.createdAt)).limit(limit).offset(offset)
-        : db.select(lightweightColumns).from(vaultDepositRequests).orderBy(desc(vaultDepositRequests.createdAt)).limit(limit).offset(offset),
-      baseQuery
-        ? db.select({ count: sql<number>`count(*)` }).from(vaultDepositRequests).where(baseQuery)
-        : db.select({ count: sql<number>`count(*)` }).from(vaultDepositRequests)
-    ]);
-    return { data, total: Number(countResult[0]?.count || 0) };
-  }
-
-  async getPendingVaultDepositRequests(): Promise<VaultDepositRequest[]> {
-    return await db.select().from(vaultDepositRequests)
-      .where(or(
-        eq(vaultDepositRequests.status, 'Submitted'),
-        eq(vaultDepositRequests.status, 'Under Review'),
-        eq(vaultDepositRequests.status, 'Approved'),
-        eq(vaultDepositRequests.status, 'Awaiting Delivery'),
-        eq(vaultDepositRequests.status, 'Received')
-      ))
-      .orderBy(desc(vaultDepositRequests.createdAt));
-  }
-
-  async createVaultDepositRequest(insertRequest: InsertVaultDepositRequest): Promise<VaultDepositRequest> {
-    const [request] = await db.insert(vaultDepositRequests).values(insertRequest).returning();
-    return request;
-  }
-
-  async updateVaultDepositRequest(id: string, updates: Partial<VaultDepositRequest>): Promise<VaultDepositRequest | undefined> {
-    const [request] = await db.update(vaultDepositRequests).set({ ...updates, updatedAt: new Date() }).where(eq(vaultDepositRequests.id, id)).returning();
-    return request || undefined;
-  }
-
-  // ============================================
-  // VAULT WITHDRAWAL REQUESTS
-  // ============================================
-
-  generateVaultWithdrawalReferenceNumber(): string {
-    const prefix = 'VW';
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    return `${prefix}-${timestamp}-${random}`;
-  }
-
-  async getVaultWithdrawalRequest(id: string): Promise<VaultWithdrawalRequest | undefined> {
-    const [request] = await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.id, id));
-    return request || undefined;
-  }
-
-  async getVaultWithdrawalRequestByRef(referenceNumber: string): Promise<VaultWithdrawalRequest | undefined> {
-    const [request] = await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.referenceNumber, referenceNumber));
-    return request || undefined;
-  }
-
-  async getUserVaultWithdrawalRequests(userId: string): Promise<VaultWithdrawalRequest[]> {
-    return await db.select().from(vaultWithdrawalRequests).where(eq(vaultWithdrawalRequests.userId, userId)).orderBy(desc(vaultWithdrawalRequests.createdAt));
-  }
-
-  async getAllVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
-    return await db.select().from(vaultWithdrawalRequests).orderBy(desc(vaultWithdrawalRequests.createdAt));
-  }
-
-  async getVaultWithdrawalRequestsPaginated(_options: { status?: string; limit?: number; offset?: number }): Promise<{ data: Partial<VaultWithdrawalRequest>[]; total: number }> {
-    return { data: [], total: 0 };
-  }
-
-  async getPendingVaultWithdrawalRequests(): Promise<VaultWithdrawalRequest[]> {
-    return await db.select().from(vaultWithdrawalRequests)
-      .where(or(
-        eq(vaultWithdrawalRequests.status, 'Submitted'),
-        eq(vaultWithdrawalRequests.status, 'Under Review'),
-        eq(vaultWithdrawalRequests.status, 'Approved'),
-        eq(vaultWithdrawalRequests.status, 'Processing')
-      ))
-      .orderBy(desc(vaultWithdrawalRequests.createdAt));
-  }
-
-  async createVaultWithdrawalRequest(insertRequest: InsertVaultWithdrawalRequest): Promise<VaultWithdrawalRequest> {
-    const [request] = await db.insert(vaultWithdrawalRequests).values(insertRequest).returning();
-    return request;
-  }
-
-  async updateVaultWithdrawalRequest(id: string, updates: Partial<VaultWithdrawalRequest>): Promise<VaultWithdrawalRequest | undefined> {
-    const [request] = await db.update(vaultWithdrawalRequests).set({ ...updates, updatedAt: new Date() }).where(eq(vaultWithdrawalRequests.id, id)).returning();
-    return request || undefined;
-  }
+  // VAULT DEPOSIT / WITHDRAWAL REQUEST helpers (FinaVault gold-stack) removed.
+  // Schema tables `vault_deposit_requests` and `vault_withdrawal_requests`
+  // remain in the database for now; drop them in a follow-up migration once any
+  // remaining rows are exported / archived.
 
   // ============================================
   // BINANCE PAY TRANSACTIONS
@@ -5802,102 +5673,7 @@ export class DatabaseStorage implements IStorage {
     return result.rows[0];
   }
 
-  // Vault Overview Data for Dashboard
-  async getVaultOverviewData(): Promise<any> {
-    const digitalResult = await db.execute(sql`
-      SELECT 
-        COALESCE(SUM(gold_grams), 0) as mpgw_grams,
-        COUNT(CASE WHEN gold_grams > 0 THEN 1 END) as mpgw_count,
-        0 as fpgw_grams,
-        0 as fpgw_count,
-        COALESCE(SUM(gold_grams), 0) as total_digital_grams
-      FROM wallets
-    `);
-
-    const pscPhysicalResult = await db.execute(sql`
-      SELECT COALESCE(SUM(gold_grams), 0) as total_physical_grams
-      FROM physical_storage_certificates
-      WHERE status IN ('Active', 'Linked')
-    `);
-    
-    const tallyPhysicalResult = await db.execute(sql`
-      SELECT COALESCE(SUM(t.physical_gold_allocated_g), 0) as total_physical_grams
-      FROM unified_tally_transactions t
-      WHERE t.status = 'COMPLETED' 
-        AND t.physical_gold_allocated_g IS NOT NULL 
-        AND t.storage_certificate_id IS NOT NULL
-        AND NOT EXISTS (
-          SELECT 1 FROM physical_storage_certificates psc 
-          WHERE psc.physical_storage_ref = t.storage_certificate_id
-        )
-    `);
-
-    const byLocationResult = await db.execute(sql`
-      WITH vault_physical AS (
-        SELECT v.name, COALESCE(SUM(psc.gold_grams), 0) as grams
-        FROM third_party_vault_locations v
-        LEFT JOIN physical_storage_certificates psc ON psc.vault_location_id = v.id AND psc.status IN ('Active', 'Linked')
-        WHERE v.is_active = true
-        GROUP BY v.id, v.name
-      ),
-      tally_physical AS (
-        SELECT COALESCE(t.vault_location, 'Wingold & Metals DMCC') as name, 
-               COALESCE(SUM(t.physical_gold_allocated_g), 0) as grams
-        FROM unified_tally_transactions t
-        WHERE t.status = 'COMPLETED' 
-          AND t.physical_gold_allocated_g IS NOT NULL 
-          AND t.storage_certificate_id IS NOT NULL
-          AND NOT EXISTS (
-            SELECT 1 FROM physical_storage_certificates psc 
-            WHERE psc.physical_storage_ref = t.storage_certificate_id
-          )
-        GROUP BY t.vault_location
-      )
-      SELECT name, SUM(grams) as grams FROM (
-        SELECT name, grams FROM vault_physical
-        UNION ALL
-        SELECT name, grams FROM tally_physical
-      ) combined
-      GROUP BY name
-      ORDER BY grams DESC
-    `);
-
-    const unlinkedResult = await db.execute(sql`
-      SELECT COUNT(*) as count
-      FROM physical_storage_certificates
-      WHERE status = 'Active' AND linked_vault_certificate_id IS NULL
-    `);
-
-    const digital: any = digitalResult.rows[0] || {};
-    const pscPhysical = parseFloat((pscPhysicalResult.rows[0] as any)?.total_physical_grams || '0');
-    const tallyPhysical = parseFloat((tallyPhysicalResult.rows[0] as any)?.total_physical_grams || '0');
-    const totalPhysical = pscPhysical + tallyPhysical;
-
-    return {
-      totalDigitalLiability: parseFloat(digital.total_digital_grams || '0'),
-      totalPhysicalCustody: totalPhysical,
-      mpgw: {
-        totalGrams: parseFloat(digital.mpgw_grams || '0'),
-        count: parseInt(digital.mpgw_count || '0')
-      },
-      fpgw: {
-        totalGrams: parseFloat(digital.fpgw_grams || '0'),
-        count: parseInt(digital.fpgw_count || '0'),
-        weightedAvgPrice: 0
-      },
-      byBucket: {
-        available: parseFloat(digital.total_digital_grams || '0'),
-        reservedP2P: 0,
-        lockedBNSL: 0,
-        allocatedTrade: 0
-      },
-      byVaultLocation: Object.fromEntries(
-        byLocationResult.rows.map((r: any) => [r.name, parseFloat(r.grams || '0')])
-      ),
-      unlinkedDeposits: parseInt((unlinkedResult.rows[0] as any)?.count || '0'),
-      alerts: []
-    };
-  }
+  // getVaultOverviewData (FinaVault gold-stack overview) removed.
 
   // ============================================
   // UNIFIED GOLD TALLY SYSTEM
