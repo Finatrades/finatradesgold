@@ -52,8 +52,11 @@ export default function Sidebar({ isOpen, setIsOpen, collapsed, setCollapsed }: 
         style={{
           width: sidebarW,
           padding: '12px 10px 12px 12px',
-          background:
-            'radial-gradient(120% 60% at 0% 0%, rgba(199,59,34,0.06) 0%, transparent 60%), #FAFAF8',
+          background: `
+            radial-gradient(120% 60% at 0% 0%, rgba(255,200,180,0.45) 0%, transparent 55%),
+            radial-gradient(80% 60% at 100% 100%, rgba(168,47,27,0.55) 0%, transparent 60%),
+            linear-gradient(180deg, #C73B22 0%, #A82F1B 55%, #7A1F12 100%)
+          `,
           transform: isOpen ? 'translateX(0)' : '',
         }}
       >
