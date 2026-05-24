@@ -74,6 +74,32 @@ import {
 import { storage } from "../storage";
 import { loadCounterpartyByUserId } from "../lib/counterparty";
 import { sendEmailDirect } from "../email";
+import { sendTradePushNotification } from "../push-notifications";
+
+/**
+ * Push the importer (case owner) that one or more milestones moved into a
+ * state that needs their attention/approval. Deep-links to `/deals/<caseId>`
+ * which is the mobile importer's milestone-approval screen.
+ * Fire-and-forget; never blocks the originating request path.
+ */
+function pushImporterMilestoneReady(input: {
+  importerUserId: string | null;
+  caseId: string | null;
+  caseNumber?: string | null;
+  reason?: string | null;
+  milestoneCount?: number;
+}): void {
+  if (!input.importerUserId || !input.caseId) return;
+  if (input.milestoneCount !== undefined && input.milestoneCount <= 0) return;
+  void sendTradePushNotification(input.importerUserId, "milestone_ready", {
+    caseId: input.caseId,
+    caseNumber: input.caseNumber ?? "",
+    reason: input.reason ?? "",
+    milestoneCount: String(input.milestoneCount ?? ""),
+  }).catch(() => undefined);
+}
+
+export { pushImporterMilestoneReady };
 
 /**
  * Fire-and-forget notification for trade-finance lifecycle events. Pulls
@@ -591,6 +617,13 @@ export function registerTradeFinanceRoutes(app: Express): void {
         releasedBy: req.session!.userId!,
         reason: `Trigger event: ${trigger}`,
       });
+      pushImporterMilestoneReady({
+        importerUserId: parties.importerUserId,
+        caseId: parties.resolvedCaseId,
+        caseNumber: parties.case?.caseNumber ?? null,
+        reason: `Trigger fired: ${trigger.replace(/_/g, " ")}`,
+        milestoneCount: result.released.length,
+      });
       res.json(result);
     } catch (err: any) {
       res.status(err?.status || 500).json({ message: err?.message || "Trigger failed" });
@@ -1069,6 +1102,17 @@ export function registerTradeFinanceRoutes(app: Express): void {
         } catch (e: any) {
           triggerResult = { released: [], errors: [{ milestoneId: null, message: e?.message }] };
         }
+        // Push importer so they can review the next milestone on the go.
+        try {
+          const parties = await caseParties(lc.tradeCaseId);
+          pushImporterMilestoneReady({
+            importerUserId: parties.importerUserId,
+            caseId: parties.resolvedCaseId,
+            caseNumber: parties.case?.caseNumber ?? null,
+            reason: `LC ${lc.lcRef} marked Compliant`,
+            milestoneCount: triggerResult?.released?.length ?? 1,
+          });
+        } catch { /* best-effort */ }
       }
       res.json({ presentation: pres, lcStatus: newLcStatus, triggerResult });
     } catch (err: any) {

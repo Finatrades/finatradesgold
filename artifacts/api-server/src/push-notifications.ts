@@ -19,7 +19,8 @@ export type TradePushEvent =
   | 'dispute_raised'
   | 'dispute_resolved'
   | 'document_uploaded'
-  | 'deal_room_message';
+  | 'deal_room_message'
+  | 'milestone_ready';
 
 export type FinancialPushEvent =
   | 'gold_purchased'
@@ -191,7 +192,15 @@ const TRADE_PUSH_MESSAGES: Record<TradePushEvent, (data: Record<string, string>)
     body: `You have a new message in trade ${data.tradeRef}`,
     data,
     link: `/finabridge/deal-room/${data.dealRoomId}`
-  })
+  }),
+  milestone_ready: (data) => ({
+    title: 'Milestone ready to approve',
+    body: data.reason
+      ? `${data.reason} — review and approve on case ${data.caseNumber || data.caseId}`
+      : `A milestone on case ${data.caseNumber || data.caseId} needs your approval.`,
+    data,
+    link: `/deals/${data.caseId}`,
+  }),
 };
 
 export async function registerDeviceToken(

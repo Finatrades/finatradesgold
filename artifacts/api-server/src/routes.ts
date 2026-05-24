@@ -283,7 +283,7 @@ const geoRestrictionMiddleware = (opts?: { allowRegistrationBypass?: boolean }) 
 import { queueDocumentVerification } from "./jobs/verify-document.job";
 import { queueTradeEmail } from "./jobs/trade-emails.job";
 import { registerWalletRoutes } from "./routes/wallet";
-import { registerTradeFinanceRoutes } from "./routes/trade-finance";
+import { registerTradeFinanceRoutes, pushImporterMilestoneReady } from "./routes/trade-finance";
 
 // ============================================================================
 // IDEMPOTENCY KEY MIDDLEWARE (PAYMENT PROTECTION)
@@ -9196,11 +9196,18 @@ export async function registerRoutes(
                 : await storage.getDealRoomByTradeRequest(tradeRequestId);
               if (dealRoom) {
                 const r = await resolveCaseKey(dealRoom.id);
-                await triggerMilestones({
+                const tr = await triggerMilestones({
                   tradeCaseId: r.case.id,
                   trigger: "customs_cleared",
                   releasedBy: req.session?.userId || 'system',
                   reason: `Customs marked Cleared on shipment ${trackingNumber || existing.id}`,
+                });
+                pushImporterMilestoneReady({
+                  importerUserId: r.case.userId,
+                  caseId: r.case.id,
+                  caseNumber: r.case.caseNumber ?? null,
+                  reason: `Customs cleared on shipment ${trackingNumber || existing.id}`,
+                  milestoneCount: tr.released.length,
                 });
               }
             } catch (e) {
@@ -9643,11 +9650,20 @@ export async function registerRoutes(
       void (async () => {
         try {
           const r = await resolveCaseKey(dealRoom.id);
-          await triggerMilestones({
+          const tr = await triggerMilestones({
             tradeCaseId: r.case.id,
             trigger: "shipment_documents_uploaded",
             releasedBy: sessionUserId,
             reason: `Deal-room document ${documentType} uploaded by ${userRole}`,
+          });
+          // "Shipment dispatched" / "exporter-requested release" — let the
+          // importer know on mobile that a milestone needs attention.
+          pushImporterMilestoneReady({
+            importerUserId: r.case.userId,
+            caseId: r.case.id,
+            caseNumber: r.case.caseNumber ?? null,
+            reason: `Shipment document ${documentType} uploaded`,
+            milestoneCount: tr.released.length,
           });
         } catch (e) {
           console.error('[TradeFinance] shipment_documents_uploaded trigger failed:', e);
