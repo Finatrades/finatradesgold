@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, CreditCard, TrendingUp, ArrowRight, Briefcase, Bell, Info } from 'lucide-react';
+import { Wallet, CreditCard, ArrowRight, Briefcase, Bell, Info } from 'lucide-react';
 import { Link } from 'wouter';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
@@ -16,13 +16,6 @@ interface WalletData {
   transactions?: number;
 }
 
-interface BnslData {
-  goldGrams: number;
-  usdValue: number;
-  lockedGrams: number;
-  activePlans: number;
-}
-
 interface FinaBridgeData {
   goldGrams: number;
   usdValue: number;
@@ -32,7 +25,6 @@ interface FinaBridgeData {
 
 interface DashboardWalletCardsProps {
   finaPayWallet: WalletData;
-  bnslData: BnslData;
   finaBridgeData?: FinaBridgeData;
   userName?: string;
   isBusinessUser?: boolean;
@@ -40,13 +32,12 @@ interface DashboardWalletCardsProps {
 
 export default function DashboardWalletCards({ 
   finaPayWallet, 
-  bnslData,
   finaBridgeData,
   userName = 'User',
   isBusinessUser = false 
 }: DashboardWalletCardsProps) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <Card className="group relative p-4 bg-gradient-to-br from-emerald-50 to-green-50 border-2 border-emerald-200 dark:border-emerald-800/40 rounded-xl shadow-sm hover:shadow-md hover:border-emerald-300 hover:-translate-y-0.5 transition-all duration-200">
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
@@ -195,56 +186,6 @@ export default function DashboardWalletCards({
         </Card>
       )}
 
-      <Card className="group relative p-4 bg-gradient-to-br from-violet-50 to-purple-50 border-2 border-violet-200 dark:border-violet-800/40 rounded-xl shadow-sm hover:shadow-md hover:border-violet-300 hover:-translate-y-0.5 transition-all duration-200">
-        <div className="relative z-10">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-md">
-                <TrendingUp className="w-4 h-4 text-white" />
-              </div>
-              <span className="font-semibold text-[14px] text-foreground">BNSL Wallet</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="w-7 h-7 rounded-full bg-violet-200 flex items-center justify-center cursor-pointer hover:bg-violet-300 transition-colors">
-                      <Info className="w-4 h-4 text-violet-700 dark:text-violet-300" />
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="top" className="max-w-[250px] text-sm">
-                    <p>Gold locked in investment plans for returns.</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <Link href="/bnsl">
-                <span className="text-xs text-violet-600 dark:text-violet-400 hover:text-violet-700 dark:text-violet-300 flex items-center gap-0.5 cursor-pointer font-medium">
-                  View <ArrowRight className="w-3 h-3" />
-                </span>
-              </Link>
-            </div>
-          </div>
-        
-          <div>
-            <p className="text-[12px] text-muted-foreground mb-0.5">Available Balance</p>
-            <p className="text-[24px] font-bold text-foreground">
-              {Number(bnslData.goldGrams).toFixed(2)} <span className="text-base text-muted-foreground">g</span>
-            </p>
-            <p className="text-[12px] text-muted-foreground/70">≈ ${Number(bnslData.usdValue).toFixed(2)} USD</p>
-          </div>
-          
-          <div className="flex justify-between pt-3 mt-3 border-t border-violet-200 dark:border-violet-800/40">
-            <div>
-              <p className="text-[12px] text-muted-foreground">Locked</p>
-              <p className="text-sm font-semibold text-violet-600 dark:text-violet-400">{Number(bnslData.lockedGrams).toFixed(2)}g</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[12px] text-muted-foreground">Active Plans</p>
-              <p className="text-sm font-semibold text-foreground">{bnslData.activePlans}</p>
-            </div>
-          </div>
-        </div>
-      </Card>
     </div>
   );
 }

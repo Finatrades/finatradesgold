@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Plus, ShoppingCart, Landmark, Send, Download, Clock, 
-  Coins, TrendingUp, Database, ArrowUpRight, Sparkles, RefreshCw
+  Plus, ShoppingCart, Landmark, Send, Download,
+  Coins, TrendingUp, Database, ArrowUpRight, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -70,7 +70,6 @@ export default function MobileDashboard() {
     { icon: Landmark, label: 'Deposit', gradient: 'bg-gradient-to-br from-amber-400 to-amber-600', onClick: () => setLocation('/finavault') },
     { icon: Send, label: 'Send', gradient: 'bg-gradient-to-br from-blue-400 to-blue-600', onClick: () => setLocation('/finapay') },
     { icon: Download, label: 'Request', gradient: 'bg-gradient-to-br from-pink-400 to-pink-600', onClick: () => setLocation('/finapay') },
-    { icon: Clock, label: 'BNSL', gradient: 'bg-gradient-to-br from-fuchsia-500 to-fuchsia-700', onClick: () => setLocation('/bnsl') },
   ];
 
   return (
@@ -201,15 +200,6 @@ export default function MobileDashboard() {
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 gap-2">
         <MobileKPICard
-          icon={Sparkles}
-          label="BNSL"
-          value={`${formatNumber(totals.bnslLockedGrams || 0, 1)}g`}
-          subValue={`+$${formatNumber(totals.bnslTotalProfit || 0)}`}
-          gradient="purple"
-          delay={0}
-          onClick={() => setLocation('/bnsl')}
-        />
-        <MobileKPICard
           icon={Database}
           label="Vault"
           value={`${formatNumber(totals.vaultGoldGrams || 0, 2)}g`}
@@ -221,7 +211,7 @@ export default function MobileDashboard() {
         <MobileKPICard
           icon={ArrowUpRight}
           label="Profit"
-          value={`+$${formatNumber(totals.bnslTotalProfit || 0)}`}
+          value="—"
           subValue="Total ROI"
           gradient="emerald"
           delay={2}
