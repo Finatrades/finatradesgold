@@ -139,7 +139,11 @@ async function handleTradeDocumentUploaded(data: Extract<TradeEmailJobData, { ki
   const uploaderName = uploaderUser
     ? `${uploaderUser.firstName || ''} ${uploaderUser.lastName || ''}`.trim() || uploaderUser.email
     : 'User';
-  const adminEmails = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
+  const adminEmails = await storage.getTradeOpsNotificationEmails();
+  if (adminEmails.length === 0) {
+    console.log('[TradeEmails] No trade ops notification recipients configured — skipping admin notification');
+    return;
+  }
   for (const adminEmail of adminEmails) {
     await sendEmail(adminEmail, EMAIL_TEMPLATES.TRADE_DOCUMENT_UPLOADED, {
       user_name: uploaderName,

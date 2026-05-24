@@ -3724,6 +3724,31 @@ export class DatabaseStorage implements IStorage {
     return result.length > 0;
   }
 
+  async getTradeOpsNotificationEmails(): Promise<string[]> {
+    const FALLBACK = ['macy@finatrades.com', 'farah@finatrades.com', 'reda@finatrades.com'];
+    try {
+      const config = await this.getPlatformConfig('trade_ops_notification_emails');
+      if (!config || !config.isActive) return [];
+      const raw = (config.configValue ?? '').trim();
+      if (!raw) return [];
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(raw);
+      } catch {
+        parsed = raw.split(',');
+      }
+      const list = Array.isArray(parsed) ? parsed : [parsed];
+      const emails = list
+        .map((v) => (typeof v === 'string' ? v.trim() : ''))
+        .filter((v) => v.length > 0 && v.includes('@'));
+      const deduped = Array.from(new Set(emails.map((e) => e.toLowerCase())));
+      return deduped;
+    } catch (err) {
+      console.error('[PlatformConfig] Failed to load trade_ops_notification_emails, using fallback:', err);
+      return FALLBACK;
+    }
+  }
+
   async seedDefaultPlatformConfig(): Promise<void> {
     const existingConfigs = await this.getAllPlatformConfigs();
     if (existingConfigs.length > 0) return;
@@ -3802,6 +3827,7 @@ export class DatabaseStorage implements IStorage {
       { category: 'system_settings', configKey: 'sms_notifications_enabled', configValue: 'false', configType: 'boolean', displayName: 'SMS Notifications', description: 'Enable SMS alerts', displayOrder: 4 },
       { category: 'system_settings', configKey: 'session_timeout_minutes', configValue: '30', configType: 'number', displayName: 'Session Timeout (minutes)', description: 'Auto-logout after inactivity', displayOrder: 5 },
       { category: 'system_settings', configKey: 'require_2fa', configValue: 'false', configType: 'boolean', displayName: '2FA Required', description: 'Force 2FA for all users', displayOrder: 6 },
+      { category: 'system_settings', configKey: 'trade_ops_notification_emails', configValue: '["macy@finatrades.com","farah@finatrades.com","reda@finatrades.com"]', configType: 'json', displayName: 'Trade Ops Notification Recipients', description: 'Email addresses notified when a user uploads a trade finance document. Stored as a JSON array of email strings.', displayOrder: 20 },
 
       // Vault Settings
       { category: 'vault_settings', configKey: 'vault_inventory_grams', configValue: '125000', configType: 'number', displayName: 'Vault Inventory (grams)', description: 'Total physical gold in vault', displayOrder: 1 },
