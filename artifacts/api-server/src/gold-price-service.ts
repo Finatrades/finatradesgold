@@ -178,7 +178,7 @@ async function fetchFromMetalsApi(apiKey: string, currentEtag?: string): Promise
     }
     
     const newEtag = response.headers.get('ETag') || undefined;
-    const data = await response.json();
+    const data: any = await response.json();
     
     if (data.success && data.rates?.XAU) {
       const pricePerOunce = 1 / data.rates.XAU;
@@ -242,7 +242,7 @@ async function fetchFromGoldApiCom(): Promise<GoldPriceData> {
       throw new Error(`gold-api.com returned status ${response.status}`);
     }
     
-    const data = await response.json();
+    const data: any = await response.json();
     
     if (data.price) {
       const pricePerOunce = data.price;

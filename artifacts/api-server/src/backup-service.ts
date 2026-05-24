@@ -284,14 +284,14 @@ export async function verifyBackup(backupId: string): Promise<{ valid: boolean; 
   }
   
   try {
-    let fileData = fs.readFileSync(backup.filePath);
+    let fileData: Buffer = fs.readFileSync(backup.filePath);
     
     if (backup.isEncrypted && BACKUP_ENCRYPTION_KEY && BACKUP_ENCRYPTION_KEY.length >= 32) {
-      fileData = decryptBuffer(fileData, BACKUP_ENCRYPTION_KEY);
+      fileData = decryptBuffer(fileData, BACKUP_ENCRYPTION_KEY) as Buffer;
     }
     
     if (backup.isCompressed) {
-      fileData = await decompressBuffer(fileData);
+      fileData = (await decompressBuffer(fileData)) as Buffer;
     }
     
     const sqlPreview = fileData.toString('utf-8', 0, 1000);
@@ -325,14 +325,14 @@ export async function restoreBackup(
   }
   
   try {
-    let fileData = fs.readFileSync(backup.filePath);
+    let fileData: Buffer = fs.readFileSync(backup.filePath);
     
     if (backup.isEncrypted && BACKUP_ENCRYPTION_KEY && BACKUP_ENCRYPTION_KEY.length >= 32) {
-      fileData = decryptBuffer(fileData, BACKUP_ENCRYPTION_KEY);
+      fileData = decryptBuffer(fileData, BACKUP_ENCRYPTION_KEY) as Buffer;
     }
     
     if (backup.isCompressed) {
-      fileData = await decompressBuffer(fileData);
+      fileData = (await decompressBuffer(fileData)) as Buffer;
     }
     
     const databaseUrl = process.env.DATABASE_URL;

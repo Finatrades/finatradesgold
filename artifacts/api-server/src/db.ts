@@ -19,7 +19,7 @@ export const pool = new Pool({
 
 export const secondaryPool = null;
 
-export const db = drizzle(pool, { schema });
+export const db = drizzle(pool as any, { schema });
 export const secondaryDb = null;
 
 export async function checkDatabaseHealth() {

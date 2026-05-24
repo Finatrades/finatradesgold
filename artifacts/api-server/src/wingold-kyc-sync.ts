@@ -220,7 +220,7 @@ export async function syncKycToWingold(userId: string): Promise<KycSyncResult> {
     });
 
     const processingTime = Date.now() - startTime;
-    const responseData = await response.json();
+    const responseData: any = await response.json();
 
     if (!response.ok) {
       console.error('[KYC Sync] Wingold returned error:', response.status, responseData);

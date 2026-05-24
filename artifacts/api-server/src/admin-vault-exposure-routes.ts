@@ -30,8 +30,8 @@ router.get('/dashboard', async (req: Request, res: Response) => {
 
     // Get current gold price
     const goldPriceRes = await fetch('http://localhost:5000/api/gold-price');
-    const goldPriceData = await goldPriceRes.json();
-    const goldPricePerGram = goldPriceData?.pricePerGram || 142;
+    const goldPriceData: any = await goldPriceRes.json();
+    const goldPricePerGram = (goldPriceData as any)?.pricePerGram || 142;
 
     // Calculate total LGPW exposure
     const mpgwTotals = await db.select({
@@ -104,7 +104,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString(),
       goldPrice: {
         perGram: goldPricePerGram,
-        perOunce: goldPriceData?.pricePerOunce || 4416
+        perOunce: (goldPriceData as any)?.pricePerOunce || 4416
       },
       mpgw: {
         totalGrams: totalMpgwGrams.toFixed(6),
@@ -547,8 +547,8 @@ router.post('/check-reconciliation', async (req: Request, res: Response) => {
 
     // Get current gold price
     const goldPriceRes = await fetch('http://localhost:5000/api/gold-price');
-    const goldPriceData = await goldPriceRes.json();
-    const goldPricePerGram = goldPriceData?.pricePerGram || 142;
+    const goldPriceData: any = await goldPriceRes.json();
+    const goldPricePerGram = (goldPriceData as any)?.pricePerGram || 142;
 
     // Check LGPW vs Physical
     const mpgwTotal = await db.select({

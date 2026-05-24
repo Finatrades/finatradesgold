@@ -78,8 +78,8 @@ export async function getSignedDownloadUrl(key: string, expiresInSeconds = 900):
   if (!R2_BUCKET_NAME) throw new Error("R2_BUCKET_NAME not configured");
   const client = getR2Client();
   return getSignedUrl(
-    client,
-    new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }),
+    client as any,
+    new GetObjectCommand({ Bucket: R2_BUCKET_NAME, Key: key }) as any,
     { expiresIn: expiresInSeconds },
   );
 }

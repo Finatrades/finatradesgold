@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy Vite SSR helper from initial template; api-server no longer serves frontend (vite.config and client/ no longer present). Kept for reference, not reachable from index.ts.
 import { type Express } from "express";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";

@@ -301,7 +301,7 @@ export function setupSocketIO(httpServer: HttpServer) {
     // Handle WebRTC offer (caller sends to callee)
     socket.on("webrtc:offer", (data: { 
       sessionId: string; 
-      offer: RTCSessionDescriptionInit;
+      offer: any;
       callerId: string;
       callType: 'audio' | 'video';
     }) => {
@@ -317,7 +317,7 @@ export function setupSocketIO(httpServer: HttpServer) {
     // Handle WebRTC answer (callee responds to caller)
     socket.on("webrtc:answer", (data: { 
       sessionId: string; 
-      answer: RTCSessionDescriptionInit;
+      answer: any;
       answererId: string;
     }) => {
       console.log(`[WebRTC] Answer from ${data.answererId} in session ${data.sessionId}`);
@@ -331,7 +331,7 @@ export function setupSocketIO(httpServer: HttpServer) {
     // Handle ICE candidate exchange
     socket.on("webrtc:ice-candidate", (data: { 
       sessionId: string; 
-      candidate: RTCIceCandidateInit;
+      candidate: any;
       senderId: string;
     }) => {
       socket.to(`session-${data.sessionId}`).emit('webrtc:ice-candidate', {
@@ -344,7 +344,7 @@ export function setupSocketIO(httpServer: HttpServer) {
     // Handle call renegotiation (for adding/removing tracks)
     socket.on("webrtc:renegotiate", (data: { 
       sessionId: string; 
-      offer: RTCSessionDescriptionInit;
+      offer: any;
       senderId: string;
     }) => {
       console.log(`[WebRTC] Renegotiation from ${data.senderId} in session ${data.sessionId}`);

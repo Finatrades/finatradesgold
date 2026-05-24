@@ -447,7 +447,7 @@ const VALID_BAR_SIZES: Record<string, number> = {
 async function getServerGoldPrice(): Promise<number> {
   try {
     const res = await fetch('https://metals-api.com/api/latest?access_key=' + process.env.METALS_API_KEY + '&base=USD&symbols=XAU');
-    const data = await res.json();
+    const data: any = await res.json();
     if (data.success && data.rates?.XAU) {
       return 1 / data.rates.XAU;
     }

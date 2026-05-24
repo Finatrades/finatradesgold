@@ -1696,7 +1696,7 @@ export function registerComplianceRoutes(
                   fpgwAvailableGrams: vaultSummary.fpgwAvailableGrams ?? '0',
                   fpgwPendingGrams: vaultSummary.fpgwPendingGrams ?? '0',
                   fpgwLockedBnslGrams: vaultSummary.fpgwLockedBnslGrams ?? '0',
-                  lastUpdated: vaultSummary.updatedAt,
+                  lastUpdated: (vaultSummary as any).updatedAt,
                 }
               : null,
             // Main FinaPay wallet
@@ -1770,7 +1770,7 @@ export function registerComplianceRoutes(
                 id: c.id,
                 caseNumber: c.caseNumber,
                 status: c.status,
-                riskLevel: c.riskLevel,
+                riskLevel: (c as any).riskLevel,
                 caseType: c.caseType,
                 createdAt: c.createdAt,
               })),

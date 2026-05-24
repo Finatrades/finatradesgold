@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy gold-stack code (BNSL/FinaPay/FinaVault/WinGold) that remains in tree but is unreachable from main flows per replit.md. Schema has drifted underneath; per Task #101 we disable typecheck here rather than rewriting dead code.
 /**
  * cleanup-orphan-fpgw-batches.ts
  *

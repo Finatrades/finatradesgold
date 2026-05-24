@@ -29,7 +29,7 @@ async function getCountryFromIP(clientIp: string): Promise<{ countryCode: string
     });
     
     if (response.ok) {
-      const data = await response.json();
+      const data: any = await response.json();
       if (data.country_code && !data.error) {
         const result = { countryCode: data.country_code, countryName: data.country_name || 'Unknown' };
         geoCache.set(clientIp, { result, expiry: Date.now() + GEO_CACHE_TTL });
@@ -47,7 +47,7 @@ async function getCountryFromIP(clientIp: string): Promise<{ countryCode: string
     });
     
     if (response.ok) {
-      const data = await response.json();
+      const data: any = await response.json();
       if (data.countryCode) {
         const result = { countryCode: data.countryCode, countryName: data.countryName || 'Unknown' };
         geoCache.set(clientIp, { result, expiry: Date.now() + GEO_CACHE_TTL });

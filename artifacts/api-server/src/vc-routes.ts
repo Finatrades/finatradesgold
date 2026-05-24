@@ -228,7 +228,7 @@ router.get('/vc/user/:userId', ensureAuthenticated, async (req: Request, res: Re
 
 router.get('/vc/my-credential', ensureAuthenticated, async (req: Request, res: Response) => {
   try {
-    const activeCredential = await credentialIssuer.getUserActiveCredential(req.session!.userId);
+    const activeCredential = await credentialIssuer.getUserActiveCredential(req.session!.userId!);
 
     if (!activeCredential) {
       return res.json({
@@ -339,7 +339,7 @@ router.get('/vc/partner/credential/:credentialId', async (req: Request, res: Res
     res.json({
       '@context': 'https://www.w3.org/2018/credentials/v1',
       credentialId: credential.credentialId,
-      vcJwt: credential.credentialJwt,
+      vcJwt: (credential as any).credentialJwt ?? (credential as any).vcJwt,
       status: credential.status,
       issuedAt: credential.issuedAt,
       expiresAt: credential.expiresAt,

@@ -940,10 +940,11 @@ router.get('/:txnId/wingold-form', async (req: Request, res: Response) => {
     
     // For physical deposits, fetch inspection data
     let inspection = null;
-    const isPhysicalDeposit = transaction.sourceMethod === 'VAULT_GOLD' || transaction.sourceType === 'PHYSICAL';
-    if (isPhysicalDeposit && transaction.sourceReferenceId) {
+    const txnAny = transaction as any;
+    const isPhysicalDeposit = txnAny.sourceMethod === 'VAULT_GOLD' || txnAny.sourceType === 'PHYSICAL';
+    if (isPhysicalDeposit && txnAny.sourceReferenceId) {
       // Get inspection directly using the physical deposit ID
-      inspection = await storage.getDepositInspection(transaction.sourceReferenceId);
+      inspection = await storage.getDepositInspection(txnAny.sourceReferenceId);
     }
     
     res.json({

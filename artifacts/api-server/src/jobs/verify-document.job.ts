@@ -142,7 +142,7 @@ async function processVerifyDocument(job: Job<VerifyDocumentJobData>): Promise<v
     await db.update(tradeDocuments)
       .set({
         aiVerificationStatus: 'completed',
-        aiFraudScore: fraudResult.totalScore,
+        aiFraudScore: String(fraudResult.totalScore),
         aiExtractedData: { extracted, fraudResult },
         aiRejectionReason: fraudResult.recommendation === 'reject' ? fraudResult.summary : null,
         aiVerifiedAt: new Date(),

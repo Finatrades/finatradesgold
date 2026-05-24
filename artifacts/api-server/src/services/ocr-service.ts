@@ -457,10 +457,6 @@ Set "is_identity_document" to false only if clearly not an ID (e.g. invoice, rec
         document_number: null,
         expiry_date: null,
         document_type: null,
-        issue_date: null,
-        issuing_country: null,
-        address: null,
-        sex: null,
       };
     }
     response = await visionClient.chat.completions.create({

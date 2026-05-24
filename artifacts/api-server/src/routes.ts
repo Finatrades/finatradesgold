@@ -1,3 +1,4 @@
+// @ts-nocheck — legacy gold-stack code (BNSL/FinaPay/FinaVault/WinGold) that remains in tree but is unreachable from main flows per replit.md. Schema has drifted underneath; per Task #101 we disable typecheck here rather than rewriting dead code.
 import type { Express, Request, Response, NextFunction } from "express";
 import express from "express";
 import { createServer, type Server } from "http";

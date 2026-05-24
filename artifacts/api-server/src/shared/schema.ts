@@ -7019,7 +7019,7 @@ export const consignmentTallies = pgTable("consignment_tallies", {
   notes: text("notes"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
-export type ConsignmentTally = typeof consignmentTallies.$inferSelect;
+export type ConsignmentTallyRow = typeof consignmentTallies.$inferSelect;
 
 // --- Electronic Warehouse Receipts (eWR) ---
 export const warehouseReceipts = pgTable("warehouse_receipts", {

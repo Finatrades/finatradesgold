@@ -168,7 +168,7 @@ const PgSession = connectPgSimple(session);
 function createSessionStore() {
   console.log('[Session] Using PostgreSQL session store');
   return new PgSession({
-    pool: pool,
+    pool: pool as any,
     tableName: "user_sessions",
     createTableIfMissing: true,
   });

@@ -230,7 +230,8 @@ async function sendMailWithRetry(mailOptions: nodemailer.SendMailOptions, maxRet
   let lastError: Error | null = null;
 
   const recipientEmail = Array.isArray(mailOptions.to) ? mailOptions.to[0] : (mailOptions.to as string);
-  const unsubscribeUrl = buildUnsubscribeUrl(recipientEmail);
+  const recipientEmailStr = typeof recipientEmail === 'string' ? recipientEmail : recipientEmail?.address;
+  const unsubscribeUrl = buildUnsubscribeUrl(recipientEmailStr);
   const enrichedOptions: nodemailer.SendMailOptions = {
     ...mailOptions,
     headers: {

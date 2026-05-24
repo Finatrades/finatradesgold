@@ -128,7 +128,7 @@ vi.mock("../../r2-storage", () => ({
 }));
 
 // ─── email mock ────────────────────────────────────────────────────────────
-const queueEmailWithTemplateMock = vi.fn(async () => {});
+const queueEmailWithTemplateMock = vi.fn(async (..._args: any[]) => {});
 vi.mock("../../email", () => ({
   EMAIL_TEMPLATES: {
     CONSIGNMENT_DOCS_APPROVED: "consignment_docs_approved",
